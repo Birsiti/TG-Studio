@@ -5,19 +5,37 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Оставить заявку — Студия Ботов</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+(function(){
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var scheme = (tg && tg.colorScheme) ? tg.colorScheme
+    : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  document.documentElement.setAttribute('data-theme', scheme);
+})();
+</script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
   :root{
+    --radius:14px; --radius-sm:10px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root[data-theme="dark"]{
     --bg:#111417; --surface:#1A1E22; --surface-2:#20252A; --surface-3:#262B31;
     --ink:#EDEFF0; --ink-soft:#8C949C; --ink-faint:#565D64;
     --accent:#7C5CFC; --accent-dark:#6144D9; --accent-soft:rgba(124,92,252,.16);
     --ok:#38A89D; --ok-soft:rgba(56,168,157,.14);
     --danger:#E5626A; --danger-soft:rgba(229,98,106,.12);
     --line:#2A2F35; --line-strong:#3A414A;
-    --radius:14px; --radius-sm:10px;
-    --safe-top: env(safe-area-inset-top, 0px);
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root[data-theme="light"]{
+    --bg:#F4F6F8; --surface:#FFFFFF; --surface-2:#EEF1F4; --surface-3:#E4E8EC;
+    --ink:#171A1D; --ink-soft:#5B6570; --ink-faint:#98A1AA;
+    --accent:#7C5CFC; --accent-dark:#6144D9; --accent-soft:rgba(124,92,252,.12);
+    --ok:#2E9B8F; --ok-soft:rgba(46,155,143,.12);
+    --danger:#D6505A; --danger-soft:rgba(214,80,90,.10);
+    --line:#E2E6EA; --line-strong:#CDD3D9;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
@@ -53,18 +71,18 @@
   .intro p{margin:0;color:var(--ink-soft);font-size:14px;line-height:1.55;}
 
   form{display:flex;flex-direction:column;gap:18px;}
-  .field label{display:block;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;
+  .field > label{display:block;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;
     letter-spacing:.04em;color:var(--ink-faint);margin-bottom:7px;}
-  .field label .req{color:var(--accent);}
-  .field input[type="text"],
-  .field input[type="tel"],
-  .field textarea{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);
+  .field > label .req{color:var(--accent);}
+  .field > input[type="text"],
+  .field > input[type="tel"],
+  .field > textarea{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);
     padding:13px 14px;color:var(--ink);font-family:'Inter',sans-serif;font-size:16px;outline:none;
     transition:border-color .15s;}
-  .field textarea{resize:none;min-height:96px;line-height:1.5;}
-  .field input::placeholder,.field textarea::placeholder{color:var(--ink-faint);}
-  .field input:focus,.field textarea:focus{border-color:var(--accent);}
-  .field.invalid input,.field.invalid textarea{border-color:var(--danger);}
+  .field > textarea{resize:none;min-height:96px;line-height:1.5;}
+  .field > input::placeholder,.field > textarea::placeholder{color:var(--ink-faint);}
+  .field > input:focus,.field > textarea:focus{border-color:var(--accent);}
+  .field.invalid > input,.field.invalid > textarea{border-color:var(--danger);}
   .field-error{display:none;color:var(--danger);font-size:12.5px;margin-top:6px;line-height:1.4;}
   .field.invalid .field-error{display:block;}
 
@@ -73,9 +91,15 @@
   .phone-row:focus-within{border-color:var(--accent);}
   .field.invalid .phone-row{border-color:var(--danger);}
   .phone-prefix{color:var(--ink-soft);font-weight:600;flex-shrink:0;}
-  .phone-row input{flex:1;min-width:0;background:transparent;border:none;padding:13px 0;color:var(--ink);
-    font-family:'JetBrains Mono',monospace;font-size:16px;outline:none;}
+  .phone-row input{flex:1;min-width:0;background:transparent;border:none;box-shadow:none;padding:13px 0;
+    color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:16px;outline:none;
+    -webkit-appearance:none;appearance:none;border-radius:0;}
   .phone-row input::placeholder{color:var(--ink-faint);}
+  .phone-row input:-webkit-autofill{
+    -webkit-text-fill-color:var(--ink);
+    -webkit-box-shadow:0 0 0 1000px var(--surface-2) inset;
+    transition:background-color 9999s ease-in-out 0s;
+  }
 
   .chip-group{display:flex;flex-wrap:wrap;gap:8px;}
   .chip{position:relative;display:flex;align-items:center;justify-content:center;min-height:44px;
@@ -210,11 +234,20 @@ function haptic(style) {
     else tg.HapticFeedback.impactOccurred(style || "light");
   }
 }
+function applyTelegramTheme() {
+  const scheme = (tg && tg.colorScheme) ? tg.colorScheme
+    : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  document.documentElement.setAttribute("data-theme", scheme);
+  if (tg) {
+    const s = getComputedStyle(document.documentElement);
+    try { tg.setHeaderColor(s.getPropertyValue("--surface").trim()); tg.setBackgroundColor(s.getPropertyValue("--bg").trim()); } catch(e) {}
+  }
+}
 function initTelegram() {
   if (!tg) return;
   tg.ready(); tg.expand();
-  const s = getComputedStyle(document.body);
-  try { tg.setHeaderColor(s.getPropertyValue("--surface").trim()); tg.setBackgroundColor(s.getPropertyValue("--bg").trim()); } catch(e) {}
+  applyTelegramTheme();
+  tg.onEvent && tg.onEvent("themeChanged", applyTelegramTheme);
 }
 document.getElementById("backBtn").addEventListener("click", () => {
   haptic("light");
