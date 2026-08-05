@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>МОСТ — панель управления</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@600;700;800;900&family=Work+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f1e8d6;
+    --surface:#fbf7ee;
+    --surface-2:#e6dac0;
+    --ink:#2b241d;
+    --ink-soft:#7a6e58;
+    --jade:#2f6f5e;
+    --jade-deep:#1f4e42;
+    --jade-tint:#dfe9e0;
+    --honey:#a66f22;
+    --honey-light:#d9a54b;
+    --honey-tint:#f0e2c4;
+    --seal:#c1432b;
+    --seal-tint:#f3ddd6;
+    --line:rgba(43,36,29,0.14);
+    --font-display:'Golos Text', sans-serif;
+    --font-body:'Work Sans', sans-serif;
+    --font-cn:'Noto Sans SC', sans-serif;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{ background:var(--bg); color:var(--ink); font-family:var(--font-body); min-height:100vh; display:flex; justify-content:center; }
+  body[data-lang="cn"] .i18n{font-family:var(--font-cn);}
+  .app{ width:100%; max-width:480px; min-height:100vh; background:var(--bg); position:relative; padding-bottom:88px; }
+
+  /* ---------- Header ---------- */
+  .topbar{
+    position:relative; padding:20px 20px 18px; overflow:hidden;
+    background:linear-gradient(100deg, var(--jade) 0%, var(--jade) 48%, var(--honey) 52%, var(--honey) 100%);
+    color:#fff;
+  }
+  .topbar-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .brand{display:flex; align-items:center; gap:11px;}
+  .brand-mark{
+    width:40px; height:40px; flex:none; border-radius:50%;
+    background:var(--seal); border:2px dashed rgba(255,255,255,0.6);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-cn); font-weight:700; font-size:17px; color:#fff;
+    transform:rotate(-6deg);
+  }
+  h1.brand-name{ font-family:var(--font-display); font-weight:800; font-size:19px; letter-spacing:0.02em; margin:0; line-height:1.08; text-transform:uppercase; }
+  .tagline{margin:3px 0 0; font-size:11.5px; color:rgba(255,255,255,0.85); font-weight:500;}
+  .lang-toggle{
+    background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.4); color:#fff;
+    font-family:var(--font-body); font-weight:700; font-size:12px; padding:7px 11px; border-radius:20px; cursor:pointer; flex:none;
+  }
+
+  .accept-row{
+    margin-top:16px; display:flex; align-items:center; justify-content:space-between;
+    background:rgba(251,247,238,0.95); padding:10px 14px; border-radius:16px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.16);
+  }
+  .accept-label{font-size:12.5px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:7px;}
+  .accept-dot{width:7px; height:7px; border-radius:50%; background:var(--jade); flex:none;}
+  .accept-row.off .accept-dot{background:var(--seal);}
+
+  /* ---------- Switch ---------- */
+  .switch{ width:40px; height:24px; border-radius:14px; background:var(--surface-2); position:relative; cursor:pointer; flex:none; transition:background .2s; }
+  .switch.on{background:var(--jade);}
+  .switch-knob{ width:18px; height:18px; border-radius:50%; background:#fff; position:absolute; top:3px; left:3px; transition:left .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3); }
+  .switch.on .switch-knob{left:19px;}
+
+  /* ---------- Views ---------- */
+  .view{padding:16px 20px 4px;}
+  .section-title{ font-family:var(--font-display); font-weight:700; font-size:11px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-soft); margin:16px 2px 8px; }
+  .section-title:first-child{margin-top:0;}
+
+  /* ---------- Order cards ---------- */
+  .order-card{
+    background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--ink-soft);
+    border-radius:14px; padding:13px 14px; margin-bottom:10px; cursor:pointer;
+  }
+  .order-card.status-new{border-left-color:var(--seal);}
+  .order-card.status-preparing{border-left-color:var(--honey);}
+  .order-card.status-ready{border-left-color:var(--jade);}
+  .order-card.status-done{border-left-color:var(--ink-soft); opacity:0.5;}
+  .order-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+  .order-id{font-family:var(--font-display); font-weight:700; font-size:13.5px;}
+  .status-chip{ font-size:10px; font-weight:800; text-transform:uppercase; padding:3px 8px; border-radius:20px; letter-spacing:0.03em; }
+  .status-chip.status-new{background:var(--seal-tint); color:var(--seal);}
+  .status-chip.status-preparing{background:var(--honey-tint); color:var(--honey);}
+  .status-chip.status-ready{background:var(--jade-tint); color:var(--jade-deep);}
+  .status-chip.status-done{background:var(--surface-2); color:var(--ink-soft);}
+  .order-type-tag{font-size:11px; color:var(--ink-soft); font-weight:600; margin-bottom:4px;}
+  .order-items-preview{font-size:12.5px; color:var(--ink); line-height:1.4; margin-bottom:8px;}
+  .order-bottom{display:flex; align-items:center; justify-content:space-between;}
+  .order-total{font-family:var(--font-display); font-weight:800; font-size:14.5px; color:var(--jade-deep);}
+  .order-action{
+    border:none; border-radius:12px; padding:9px 14px; font-family:var(--font-body);
+    font-weight:700; font-size:12px; cursor:pointer; background:var(--ink); color:var(--surface);
+  }
+  .order-action.ready{background:var(--jade);}
+  .order-done-label{font-size:12px; font-weight:700; color:var(--ink-soft);}
+  .empty-state{padding:36px 10px; text-align:center; color:var(--ink-soft); font-size:13px;}
+
+  .fab{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:88px; z-index:15;
+    background:var(--seal); color:#fff; border:none; border-radius:30px;
+    padding:13px 22px; font-family:var(--font-body); font-weight:800; font-size:13px;
+    box-shadow:0 10px 26px rgba(0,0,0,0.25); cursor:pointer;
+  }
+
+  /* ---------- Menu view ---------- */
+  .menu-item{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px 10px 10px 14px; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .menu-item.out{opacity:0.5;}
+  .menu-item-body{flex:1; min-width:0;}
+  .menu-item-name{font-weight:700; font-size:13.5px; margin:0 0 2px;}
+  .menu-item-price{font-size:12px; color:var(--ink-soft);}
+  .star-btn{ background:none; border:none; font-size:17px; cursor:pointer; color:var(--surface-2); flex:none; padding:4px; }
+  .star-btn.on{color:var(--seal);}
+  .edit-btn{ background:var(--surface-2); border:none; border-radius:10px; width:30px; height:30px; font-size:13px; cursor:pointer; color:var(--ink-soft); flex:none; }
+  .add-dish-row{
+    background:var(--surface); border:1.5px dashed var(--jade); border-radius:14px; padding:13px;
+    text-align:center; font-weight:700; font-size:13px; color:var(--jade-deep); cursor:pointer; margin-top:4px;
+  }
+
+  /* ---------- Stats view ---------- */
+  .stats-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px;}
+  .stat-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px;}
+  .stat-value{font-family:var(--font-display); font-weight:800; font-size:21px; color:var(--ink);}
+  .stat-label{font-size:10.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; margin-top:2px; font-weight:700;}
+
+  .split-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px; margin-top:4px;}
+  .split-bar{height:10px; border-radius:8px; overflow:hidden; display:flex; margin:10px 0 8px;}
+  .split-bar .pickup{background:var(--jade);}
+  .split-bar .delivery{background:var(--honey-light);}
+  .split-legend{display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft); font-weight:600;}
+  .split-legend .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px;}
+
+  .top-item-row{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .top-item-name{width:38%; font-size:12.5px; font-weight:700; flex:none;}
+  .top-item-bar-wrap{flex:1; background:var(--surface-2); border-radius:6px; height:10px; overflow:hidden;}
+  .top-item-bar{height:100%; background:var(--jade); border-radius:6px;}
+  .top-item-count{font-size:11.5px; color:var(--ink-soft); font-weight:700; width:26px; text-align:right; flex:none;}
+
+  /* ---------- Bottom nav ---------- */
+  .bottom-nav{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:480px;
+    display:flex; background:var(--surface); border-top:1px solid var(--line); z-index:20;
+    padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+  }
+  .nav-btn{
+    flex:1; background:none; border:none; padding:8px 4px; display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-family:var(--font-body); font-weight:700; font-size:10.5px; color:var(--ink-soft); cursor:pointer; position:relative;
+  }
+  .nav-btn.active{color:var(--jade-deep);}
+  .nav-icon{font-size:18px;}
+  .nav-badge{
+    position:absolute; top:2px; right:22%; background:var(--seal); color:#fff; font-size:9px; font-weight:800;
+    min-width:15px; height:15px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:0 3px;
+  }
+
+  /* ---------- Sheet (item editor) ---------- */
+  .overlay{ position:fixed; inset:0; background:rgba(20,18,16,0.5); opacity:0; pointer-events:none; transition:opacity .25s; z-index:30; }
+  .overlay.show{opacity:1; pointer-events:auto;}
+  .sheet{
+    position:fixed; left:50%; bottom:0; transform:translate(-50%,100%); width:100%; max-width:480px;
+    background:var(--surface); border-radius:24px 24px 0 0; padding:20px 20px 26px;
+    z-index:31; transition:transform .3s ease; max-height:86vh; overflow-y:auto;
+  }
+  .sheet.show{transform:translate(-50%,0);}
+  .sheet-handle{width:36px; height:4px; border-radius:3px; background:var(--line); margin:0 auto 16px;}
+  .sheet-title{font-family:var(--font-display); font-weight:700; font-size:17px; margin:0 0 14px;}
+  .field-label{font-size:12px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin:14px 0 6px;}
+  .field-label:first-of-type{margin-top:0;}
+  .text-input{ width:100%; border:1px solid var(--line); border-radius:12px; padding:12px 14px; font-family:var(--font-body); font-size:13.5px; background:var(--surface); color:var(--ink); }
+  .text-input:focus{outline:2px solid var(--jade); outline-offset:1px;}
+  select.text-input{ appearance:none; background-image:linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%), linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%); background-position:calc(100% - 18px) center, calc(100% - 13px) center; background-size:5px 5px, 5px 5px; background-repeat:no-repeat; }
+  .btn-primary{ width:100%; margin-top:18px; background:var(--jade); color:var(--surface); border:none; border-radius:16px; padding:16px; font-family:var(--font-body); font-weight:800; font-size:14.5px; cursor:pointer; }
+  .btn-ghost{ width:100%; margin-top:10px; background:transparent; border:none; padding:10px; font-family:var(--font-body); font-weight:700; font-size:13px; cursor:pointer; color:var(--ink-soft); }
+</style>
+</head>
+<body data-lang="ru">
+
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="brand">
+        <div class="brand-mark">桥</div>
+        <div>
+          <h1 class="brand-name i18n" data-i18n="brandName">Мост · Панель</h1>
+          <p class="tagline i18n" data-i18n="subtitle">для персонала и владельца</p>
+        </div>
+      </div>
+      <button class="lang-toggle" id="langToggle">中文</button>
+    </div>
+    <div class="accept-row" id="acceptRow">
+      <span class="accept-label"><span class="accept-dot"></span><span class="i18n" data-i18n="acceptingLabel">Приём заказов</span></span>
+      <div class="switch on" id="acceptSwitch"><div class="switch-knob"></div></div>
+    </div>
+  </div>
+
+  <div class="view" id="ordersView">
+    <div class="section-title i18n" data-i18n="tabOrders">Заказы</div>
+    <div id="ordersList"></div>
+  </div>
+
+  <div class="view" id="menuView" style="display:none;">
+    <div id="menuList"></div>
+  </div>
+
+  <div class="view" id="statsView" style="display:none;">
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="split-card">
+      <div class="section-title i18n" data-i18n="splitLabel" style="margin:0 0 2px;">Самовывoz / Доставка</div>
+      <div class="split-bar"><div class="pickup" id="splitPickup"></div><div class="delivery" id="splitDelivery"></div></div>
+      <div class="split-legend">
+        <span><span class="dot" style="background:var(--jade);"></span><span class="i18n" data-i18n="pickupTab">Самовывoz</span> — <span id="splitPickupPct"></span>%</span>
+        <span><span class="dot" style="background:var(--honey-light);"></span><span class="i18n" data-i18n="deliveryTab">Доставка</span> — <span id="splitDeliveryPct"></span>%</span>
+      </div>
+    </div>
+    <div class="section-title i18n" data-i18n="topItemsLabel">Топ позиций за неделю</div>
+    <div id="topItemsList"></div>
+  </div>
+</div>
+
+<button class="fab" id="fabBtn"><span id="fabLabel">+ Новый заказ</span></button>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-tab="orders">
+    <span class="nav-icon">📋</span><span class="i18n" data-i18n="tabOrders">Заказы</span>
+    <span class="nav-badge" id="ordersBadge">0</span>
+  </button>
+  <button class="nav-btn" data-tab="menu">
+    <span class="nav-icon">🍽</span><span class="i18n" data-i18n="tabMenu">Меню</span>
+  </button>
+  <button class="nav-btn" data-tab="stats">
+    <span class="nav-icon">📊</span><span class="i18n" data-i18n="tabStats">Статистика</span>
+  </button>
+</nav>
+
+<div class="overlay" id="overlay"></div>
+<div class="sheet" id="itemSheet">
+  <div class="sheet-handle"></div>
+  <h2 class="sheet-title" id="itemSheetTitle">Блюдо</h2>
+
+  <div class="field-label i18n" data-i18n="categoryLabel">Категория</div>
+  <select class="text-input" id="editCat"></select>
+
+  <div class="field-label i18n" data-i18n="nameRuLabel">Название (RU)</div>
+  <input class="text-input" id="editNameRu">
+
+  <div class="field-label i18n" data-i18n="nameCnLabel">Название (中文)</div>
+  <input class="text-input" id="editNameCn">
+
+  <div class="field-label i18n" data-i18n="priceLabel">Цена, BYN</div>
+  <input class="text-input" id="editPrice" type="number" step="0.10" inputmode="decimal">
+
+  <button class="btn-primary i18n" id="saveItemBtn" data-i18n="saveBtn">Сохранить</button>
+  <button class="btn-ghost" id="deleteItemBtn" style="color:var(--seal);"></button>
+  <button class="btn-ghost i18n" id="cancelItemBtn" data-i18n="cancelBtn">Отмена</button>
+</div>
+
+<script>
+/* ---------------- i18n ---------------- */
+const I18N = {
+  ru:{
+    brandName:'Мост · Панель', subtitle:'для персонала и владельца',
+    acceptingLabel:'Приём заказов', tabOrders:'Заказы', tabMenu:'Меню', tabStats:'Статистика',
+    statusNew:'Новый', statusPreparing:'Готовится', statusReady:'Готов', statusDone:'Выдан',
+    actionStart:'Взять в работу', actionReady:'Готово', actionServe:'Выдать', doneLabel:'Выдан ✓',
+    emptyOrders:'Нет активных заказов', simulateBtn:'+ Новый заказ', addDishBtn:'+ Добавить блюдо',
+    pickupTab:'Самовывoz', deliveryTab:'Доставка',
+    inStockLabel:'В наличии', revenueLabel:'Выручка сегодня', ordersCountLabel:'Заказов',
+    avgCheckLabel:'Средний чек', splitLabel:'Самовывoz / Доставка', topItemsLabel:'Топ позиций за неделю',
+    categoryLabel:'Категория', nameRuLabel:'Название (RU)', nameCnLabel:'Название (中文)', priceLabel:'Цена, BYN',
+    saveBtn:'Сохранить', deleteBtn:'Удалить блюдо', cancelBtn:'Отмена',
+    editDishTitle:'Изменить блюдо', newDishTitle:'Новое блюдо',
+  },
+  cn:{
+    brandName:'桥 · 后台', subtitle:'员工与店主端',
+    acceptingLabel:'接受订单', tabOrders:'订单', tabMenu:'菜单', tabStats:'统计',
+    statusNew:'新订单', statusPreparing:'制作中', statusReady:'已完成', statusDone:'已取餐',
+    actionStart:'开始制作', actionReady:'已做好', actionServe:'交付顾客', doneLabel:'已取餐 ✓',
+    emptyOrders:'暂无订单', simulateBtn:'+ 模拟订单', addDishBtn:'+ 添加菜品',
+    pickupTab:'自取', deliveryTab:'外送',
+    inStockLabel:'有货', revenueLabel:'今日营收', ordersCountLabel:'订单数',
+    avgCheckLabel:'客单价', splitLabel:'自取 / 外送', topItemsLabel:'本周热销',
+    categoryLabel:'分类', nameRuLabel:'名称（俄语）', nameCnLabel:'名称（中文）', priceLabel:'价格（BYN）',
+    saveBtn:'保存', deleteBtn:'删除菜品', cancelBtn:'取消',
+    editDishTitle:'编辑菜品', newDishTitle:'新增菜品',
+  }
+};
+
+/* ---------------- Categories & menu catalog ---------------- */
+const CATEGORIES = [
+  { id:'fusion', ru:'Фьюжн', cn:'融合' },
+  { id:'coffee', ru:'Кофе', cn:'咖啡' },
+  { id:'lunch',  ru:'Обед', cn:'午餐' },
+  { id:'bakery', ru:'Выпечка', cn:'烘焙' },
+  { id:'drinks', ru:'Напитки', cn:'饮品' },
+];
+
+let ITEMS = [
+  { id:16, cat:'fusion', price:6.50, hit:true,  inStock:true,  name:{ru:'Пян-се с курицей', cn:'鸡肉蒸包'} },
+  { id:17, cat:'fusion', price:7.20, hit:false, inStock:true,  name:{ru:'Онигири с копчёной сельдью', cn:'熏鲱鱼饭团'} },
+  { id:18, cat:'fusion', price:8.90, hit:true,  inStock:true,  name:{ru:'Драники, соус чили-мёд', cn:'辣蜜土豆饼'} },
+  { id:19, cat:'fusion', price:7.50, hit:false, inStock:false, name:{ru:'Момо, картофель-грибы', cn:'土豆蘑菇饺子'} },
+  { id:1,  cat:'coffee', price:3.80, hit:false, inStock:true,  name:{ru:'Эспрессо', cn:'浓缩咖啡'} },
+  { id:2,  cat:'coffee', price:4.50, hit:false, inStock:true,  name:{ru:'Американо', cn:'美式咖啡'} },
+  { id:3,  cat:'coffee', price:6.20, hit:true,  inStock:true,  name:{ru:'Капучино', cn:'卡布奇诺'} },
+  { id:4,  cat:'coffee', price:6.50, hit:false, inStock:true,  name:{ru:'Латте', cn:'拿铁'} },
+  { id:5,  cat:'coffee', price:7.80, hit:false, inStock:true,  name:{ru:'Раф на овсяном', cn:'燕麦生椰拿铁'} },
+  { id:6,  cat:'lunch',  price:12.50,hit:true,  inStock:true,  name:{ru:'Бизнес-ланч №1', cn:'商务套餐 1号'} },
+  { id:7,  cat:'lunch',  price:12.90,hit:false, inStock:true,  name:{ru:'Бизнес-ланч №2', cn:'商务套餐 2号'} },
+  { id:8,  cat:'lunch',  price:9.40, hit:false, inStock:true,  name:{ru:'Салат с курицей', cn:'鸡肉沙拉'} },
+  { id:9,  cat:'lunch',  price:7.90, hit:false, inStock:true,  name:{ru:'Тёплый сэндвич', cn:'热三明治'} },
+  { id:10, cat:'bakery', price:4.90, hit:false, inStock:true,  name:{ru:'Круассан', cn:'牛角包'} },
+  { id:11, cat:'bakery', price:6.90, hit:false, inStock:false, name:{ru:'Чизкейк', cn:'芝士蛋糕'} },
+  { id:12, cat:'bakery', price:3.20, hit:false, inStock:true,  name:{ru:'Овсяное печенье', cn:'燕麦饼干'} },
+  { id:13, cat:'drinks', price:2.50, hit:false, inStock:true,  name:{ru:'Вода негазированная', cn:'矿泉水'} },
+  { id:14, cat:'drinks', price:3.50, hit:false, inStock:true,  name:{ru:'Чай чёрный / улун', cn:'红茶/乌龙茶'} },
+  { id:15, cat:'drinks', price:5.90, hit:false, inStock:true,  name:{ru:'Домашний лимонад', cn:'自制柠檬水'} },
+];
+
+/* ---------------- Mock orders ---------------- */
+const STATUS_FLOW = ['new','preparing','ready','done'];
+let orderSeq = 104;
+let orders = [
+  { id:'М-104', time:'12:40', type:'delivery', items:[{n:'Момо, картофель-грибы',q:2},{n:'Чай чёрный / улун',q:2}], total:22.00, status:'new' },
+  { id:'М-103', time:'12:36', type:'pickup',   items:[{n:'Драники, соус чили-мёд',q:1},{n:'Американо',q:1}], total:13.40, status:'new' },
+  { id:'М-102', time:'12:31', type:'pickup',   items:[{n:'Бизнес-ланч №1',q:1},{n:'Капучино',q:1}], total:18.70, status:'preparing' },
+  { id:'М-101', time:'12:24', type:'delivery', items:[{n:'Пян-се с курицей',q:2},{n:'Латте',q:1}], total:20.20, status:'ready' },
+  { id:'М-098', time:'12:05', type:'delivery', items:[{n:'Онигири с копчёной сельдью',q:1},{n:'Домашний лимонад',q:1}], total:13.10, status:'done' },
+  { id:'М-095', time:'11:52', type:'pickup',   items:[{n:'Круассан',q:2},{n:'Раф на овсяном',q:1}], total:17.60, status:'done' },
+];
+
+const statsData = {
+  revenue:428.60, count:34, avg:12.60, pickupPct:62, deliveryPct:38,
+  top:[ {name:{ru:'Капучино',cn:'卡布奇诺'}, count:19}, {name:{ru:'Пян-се с курицей',cn:'鸡肉蒸包'}, count:14}, {name:{ru:'Бизнес-ланч №1',cn:'商务套餐 1号'}, count:11} ]
+};
+
+/* ---------------- State ---------------- */
+let lang = 'ru';
+let activeTab = 'orders';
+let acceptingOrders = true;
+let editingId = null;
+
+function t(key){ return I18N[lang][key] || key; }
+function fmt(n){ return n.toFixed(2).replace('.', ',') + ' BYN'; }
+
+/* ---------------- Static i18n ---------------- */
+function applyStaticI18n(){
+  document.body.setAttribute('data-lang', lang);
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    if(I18N[lang][key] !== undefined) el.textContent = I18N[lang][key];
+  });
+  document.getElementById('langToggle').textContent = lang === 'ru' ? '中文' : 'RU';
+  document.getElementById('fabLabel').textContent = activeTab === 'menu' ? t('addDishBtn') : t('simulateBtn');
+}
+
+/* ---------------- Tabs ---------------- */
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    activeTab = btn.getAttribute('data-tab');
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b===btn));
+    document.getElementById('ordersView').style.display = activeTab === 'orders' ? 'block' : 'none';
+    document.getElementById('menuView').style.display = activeTab === 'menu' ? 'block' : 'none';
+    document.getElementById('statsView').style.display = activeTab === 'stats' ? 'block' : 'none';
+    document.getElementById('fabBtn').style.display = activeTab === 'stats' ? 'none' : 'block';
+    document.getElementById('fabLabel').textContent = activeTab === 'menu' ? t('addDishBtn') : t('simulateBtn');
+    if(activeTab === 'stats') renderStats();
+  });
+});
+
+/* ---------------- Orders ---------------- */
+function statusOrder(status){ return STATUS_FLOW.indexOf(status); }
+function sortedOrders(){ return [...orders].sort((a,b)=> statusOrder(a.status) - statusOrder(b.status)); }
+
+function actionLabelFor(status){
+  if(status === 'new') return t('actionStart');
+  if(status === 'preparing') return t('actionReady');
+  if(status === 'ready') return t('actionServe');
+  return '';
+}
+
+function advanceOrder(id){
+  const order = orders.find(o=>o.id===id);
+  const idx = STATUS_FLOW.indexOf(order.status);
+  if(idx < STATUS_FLOW.length - 1) order.status = STATUS_FLOW[idx+1];
+  renderOrders();
+}
+
+function renderOrders(){
+  const wrap = document.getElementById('ordersList');
+  wrap.innerHTML = '';
+  const list = sortedOrders();
+  const activeCount = orders.filter(o=>o.status!=='done').length;
+  document.getElementById('ordersBadge').textContent = activeCount;
+  document.getElementById('ordersBadge').style.display = activeCount > 0 ? 'flex' : 'none';
+
+  if(list.length === 0){
+    wrap.innerHTML = `<div class="empty-state">${t('emptyOrders')}</div>`;
+    return;
+  }
+
+  list.forEach(o=>{
+    const card = document.createElement('div');
+    card.className = `order-card status-${o.status}`;
+    const itemsText = o.items.map(i=>`${i.q}× ${i.n}`).join(', ');
+    const typeLabel = o.type === 'pickup' ? t('pickupTab') : t('deliveryTab');
+    const statusLabelKey = 'status' + o.status.charAt(0).toUpperCase() + o.status.slice(1);
+
+    card.innerHTML = `
+      <div class="order-top">
+        <span class="order-id">${o.id}</span>
+        <span class="status-chip status-${o.status}">${t(statusLabelKey)}</span>
+      </div>
+      <div class="order-type-tag">${o.time} · ${typeLabel}</div>
+      <div class="order-items-preview">${itemsText}</div>
+      <div class="order-bottom">
+        <span class="order-total">${fmt(o.total)}</span>
+      </div>
+    `;
+    const bottom = card.querySelector('.order-bottom');
+    if(o.status === 'done'){
+      const doneLabel = document.createElement('span');
+      doneLabel.className = 'order-done-label';
+      doneLabel.textContent = t('doneLabel');
+      bottom.appendChild(doneLabel);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'order-action' + (o.status === 'ready' ? ' ready' : '');
+      btn.textContent = actionLabelFor(o.status);
+      btn.onclick = (e)=>{ e.stopPropagation(); advanceOrder(o.id); };
+      bottom.appendChild(btn);
+    }
+    wrap.appendChild(card);
+  });
+}
+
+const MOCK_TEMPLATES = [
+  { type:'pickup', items:[{n:'Капучино',q:1},{n:'Круассан',q:1}], total:11.10 },
+  { type:'delivery', items:[{n:'Бизнес-ланч №2',q:1},{n:'Латте',q:1}], total:19.40 },
+  { type:'pickup', items:[{n:'Пян-се с курицей',q:1},{n:'Американо',q:1}], total:11.00 },
+  { type:'delivery', items:[{n:'Драники, соус чили-мёд',q:2},{n:'Домашний лимонад',q:1}], total:23.70 },
+];
+
+function simulateOrder(){
+  orderSeq += 1;
+  const tpl = MOCK_TEMPLATES[Math.floor(Math.random()*MOCK_TEMPLATES.length)];
+  const now = new Date();
+  const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  orders.unshift({ id:'М-'+orderSeq, time, type:tpl.type, items:tpl.items, total:tpl.total, status:'new' });
+  renderOrders();
+}
+
+document.getElementById('fabBtn').onclick = ()=>{
+  if(activeTab === 'menu') openItemEditor(null);
+  else simulateOrder();
+};
+
+/* ---------------- Accepting orders switch ---------------- */
+document.getElementById('acceptSwitch').onclick = ()=>{
+  acceptingOrders = !acceptingOrders;
+  document.getElementById('acceptSwitch').classList.toggle('on', acceptingOrders);
+  document.getElementById('acceptRow').classList.toggle('off', !acceptingOrders);
+};
+
+/* ---------------- Menu view ---------------- */
+function renderMenu(){
+  const wrap = document.getElementById('menuList');
+  wrap.innerHTML = '';
+
+  CATEGORIES.forEach(cat=>{
+    const items = ITEMS.filter(i=>i.cat===cat.id);
+    if(items.length === 0) return;
+    const title = document.createElement('div');
+    title.className = 'section-title';
+    title.textContent = lang === 'ru' ? cat.ru : cat.cn;
+    wrap.appendChild(title);
+
+    items.forEach(item=>{
+      const row = document.createElement('div');
+      row.className = 'menu-item' + (item.inStock ? '' : ' out');
+      row.innerHTML = `
+        <button class="star-btn ${item.hit ? 'on' : ''}" data-act="star">★</button>
+        <div class="menu-item-body">
+          <p class="menu-item-name">${item.name[lang]}</p>
+          <p class="menu-item-price">${fmt(item.price)}</p>
+        </div>
+      `;
+      const sw = document.createElement('div');
+      sw.className = 'switch' + (item.inStock ? ' on' : '');
+      sw.innerHTML = `<div class="switch-knob"></div>`;
+      sw.onclick = ()=>{ item.inStock = !item.inStock; renderMenu(); };
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'edit-btn';
+      editBtn.textContent = '✎';
+      editBtn.onclick = ()=> openItemEditor(item);
+
+      row.querySelector('[data-act="star"]').onclick = ()=>{ item.hit = !item.hit; renderMenu(); };
+      row.appendChild(sw);
+      row.appendChild(editBtn);
+      wrap.appendChild(row);
+    });
+  });
+
+  const addRow = document.createElement('div');
+  addRow.className = 'add-dish-row';
+  addRow.textContent = t('addDishBtn');
+  addRow.onclick = ()=> openItemEditor(null);
+  wrap.appendChild(addRow);
+}
+
+/* ---------------- Item editor sheet ---------------- */
+const overlay = document.getElementById('overlay');
+const itemSheet = document.getElementById('itemSheet');
+
+function populateCatSelect(selectedCat){
+  const sel = document.getElementById('editCat');
+  sel.innerHTML = '';
+  CATEGORIES.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = lang === 'ru' ? c.ru : c.cn;
+    if(c.id === selectedCat) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function openItemEditor(item){
+  editingId = item ? item.id : null;
+  document.getElementById('itemSheetTitle').textContent = item ? t('editDishTitle') : t('newDishTitle');
+  populateCatSelect(item ? item.cat : CATEGORIES[0].id);
+  document.getElementById('editNameRu').value = item ? item.name.ru : '';
+  document.getElementById('editNameCn').value = item ? item.name.cn : '';
+  document.getElementById('editPrice').value = item ? item.price : '';
+  const delBtn = document.getElementById('deleteItemBtn');
+  delBtn.style.display = item ? 'block' : 'none';
+  delBtn.textContent = t('deleteBtn');
+  overlay.classList.add('show');
+  itemSheet.classList.add('show');
+}
+
+function closeItemEditor(){
+  overlay.classList.remove('show');
+  itemSheet.classList.remove('show');
+}
+
+overlay.addEventListener('click', ()=>{ if(itemSheet.classList.contains('show')) closeItemEditor(); });
+document.getElementById('cancelItemBtn').onclick = closeItemEditor;
+
+document.getElementById('saveItemBtn').onclick = ()=>{
+  const cat = document.getElementById('editCat').value;
+  const nameRu = document.getElementById('editNameRu').value.trim();
+  const nameCn = document.getElementById('editNameCn').value.trim();
+  const price = parseFloat(document.getElementById('editPrice').value);
+  if(!nameRu || isNaN(price)) return;
+
+  if(editingId){
+    const item = ITEMS.find(i=>i.id===editingId);
+    item.cat = cat; item.name.ru = nameRu; item.name.cn = nameCn || nameRu; item.price = price;
+  } else {
+    const newId = Math.max(...ITEMS.map(i=>i.id)) + 1;
+    ITEMS.push({ id:newId, cat, price, hit:false, inStock:true, name:{ru:nameRu, cn:nameCn || nameRu} });
+  }
+  closeItemEditor();
+  renderMenu();
+};
+
+document.getElementById('deleteItemBtn').onclick = ()=>{
+  if(!editingId) return;
+  ITEMS = ITEMS.filter(i=>i.id !== editingId);
+  closeItemEditor();
+  renderMenu();
+};
+
+/* ---------------- Stats view ---------------- */
+function renderStats(){
+  const grid = document.getElementById('statsGrid');
+  grid.innerHTML = `
+    <div class="stat-card"><div class="stat-value">${statsData.revenue.toFixed(0)} BYN</div><div class="stat-label">${t('revenueLabel')}</div></div>
+    <div class="stat-card"><div class="stat-value">${statsData.count}</div><div class="stat-label">${t('ordersCountLabel')}</div></div>
+    <div class="stat-card" style="grid-column:1 / -1;"><div class="stat-value">${fmt(statsData.avg)}</div><div class="stat-label">${t('avgCheckLabel')}</div></div>
+  `;
+  document.getElementById('splitPickup').style.width = statsData.pickupPct + '%';
+  document.getElementById('splitDelivery').style.width = statsData.deliveryPct + '%';
+  document.getElementById('splitPickupPct').textContent = statsData.pickupPct;
+  document.getElementById('splitDeliveryPct').textContent = statsData.deliveryPct;
+
+  const topWrap = document.getElementById('topItemsList');
+  topWrap.innerHTML = '';
+  const maxCount = Math.max(...statsData.top.map(i=>i.count));
+  statsData.top.forEach(i=>{
+    const row = document.createElement('div');
+    row.className = 'top-item-row';
+    row.innerHTML = `
+      <span class="top-item-name">${i.name[lang]}</span>
+      <span class="top-item-bar-wrap"><span class="top-item-bar" style="width:${(i.count/maxCount*100).toFixed(0)}%;"></span></span>
+      <span class="top-item-count">${i.count}</span>
+    `;
+    topWrap.appendChild(row);
+  });
+}
+
+/* ---------------- Lang toggle ---------------- */
+document.getElementById('langToggle').onclick = ()=>{
+  lang = lang === 'ru' ? 'cn' : 'ru';
+  applyStaticI18n();
+  renderOrders();
+  renderMenu();
+  if(activeTab === 'stats') renderStats();
+};
+
+/* ---------------- Init ---------------- */
+applyStaticI18n();
+renderOrders();
+renderMenu();
+</script>
+
+</body>
+</html>
