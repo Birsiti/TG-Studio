@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Панель владельца</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body data-theme="avtohimiya">
+
+<!-- ============ КОНФИГ ПО УМОЛЧАНИЮ (используется, если реестр недоступен) ============ -->
+<script>
+  const REGISTRY_URL = "PASTE_REGISTRY_URL_HERE"; // общий на все мойки, не меняется от инсталляции к инсталляции
+  const DEMO_CONFIG = {
+    businessName: "БЛЕСК",
+    apiUrl: "PASTE_APPS_SCRIPT_URL_HERE",
+    allowedOwnerIds: [],
+    status: "active",
+    theme: "avtohimiya"   // voda | avtohimiya | chrome | mercedes
+  };
+</script>
+<script src="bootstrap.js"></script>
+
+<div class="app" id="app">
+
+  <div class="boot-overlay" id="bootLoading">
+    <div class="boot-spinner"></div>
+  </div>
+  <div class="boot-overlay" id="bootPaused" style="display:none;">
+    <div class="boot-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg></div>
+    <div class="boot-title">Сервис временно недоступен</div>
+    <div class="boot-sub">Обратитесь к владельцу мойки</div>
+  </div>
+
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-brand display"><span class="drop"></span><span id="brandName"></span></div>
+      <span class="badge-role" id="roleBadge">Владелец</span>
+    </div>
+    <div class="hero-glow"></div>
+  </div>
+
+  <div class="lock-screen" id="lockScreen" style="display:none;">
+    <div class="lock-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
+    <h2 style="font-size:17px; margin-bottom:8px;">Доступ запрещён</h2>
+    <div style="color:var(--ink-soft); font-size:13.5px;">Этот раздел доступен только владельцу мойки.</div>
+  </div>
+
+  <div id="mainUi" style="display:none;">
+
+    <!-- ================= TAB: ОБЗОР ================= -->
+    <div class="tab-panel active fade-step" id="tab-overview">
+      <div class="stat-row" id="overviewStats"></div>
+      <div class="section" style="padding-top:0;">
+        <div class="chip-group" id="periodChips" style="margin-bottom:14px;"></div>
+        <div class="card">
+          <div class="section-title" style="margin-top:0;">Выручка по дням</div>
+          <div class="chart-row" id="chartRow"></div>
+        </div>
+        <div class="card">
+          <div class="section-title" style="margin-top:0;">Топ услуг по выручке</div>
+          <div id="rankList"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= TAB: БОКСЫ ================= -->
+    <div class="tab-panel" id="tab-bays">
+      <div class="section" style="padding-top:16px;">
+        <button class="add-btn" id="addBayBtn">+ Добавить бокс</button>
+        <div id="bayList"></div>
+      </div>
+    </div>
+
+    <!-- ================= TAB: ПЕРСОНАЛ ================= -->
+    <div class="tab-panel" id="tab-staff">
+      <div class="section" style="padding-top:16px;">
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+          <div><div class="section-title" style="margin:0;">Фонд оплаты, месяц</div></div>
+          <div class="mono" style="font-size:19px; font-weight:700;" id="payrollFund">0 BYN</div>
+        </div>
+        <button class="add-btn" id="addStaffBtn">+ Добавить сотрудника</button>
+        <div id="staffList"></div>
+      </div>
+    </div>
+
+    <!-- ================= TAB: СКЛАД ================= -->
+    <div class="tab-panel" id="tab-inventory">
+      <div class="section" style="padding-top:16px;">
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+          <div><div class="section-title" style="margin:0;">Стоимость склада</div></div>
+          <div class="mono" style="font-size:19px; font-weight:700;" id="inventoryValue">0 BYN</div>
+        </div>
+        <button class="add-btn" id="addInvBtn">+ Добавить позицию</button>
+        <div id="invList"></div>
+      </div>
+    </div>
+
+    <!-- ================= TAB: МАГАЗИН ================= -->
+    <div class="tab-panel" id="tab-shop">
+      <div class="section" style="padding-top:16px;">
+        <div class="screen-sub" style="color:var(--ink-soft); font-size:13px; margin-bottom:14px;">Товары автохимии, доступные к продаже клиентам в мини-приложении</div>
+        <button class="add-btn" id="addShopBtn">+ Добавить товар</button>
+        <div id="shopList"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="tabbar" id="tabbar" style="display:none;">
+    <div class="tab-indicator" id="tabIndicator"></div>
+    <button class="tab-btn active" data-tab="overview">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>
+      <span class="lbl">Обзор</span>
+    </button>
+    <button class="tab-btn" data-tab="bays">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="18" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span class="lbl">Боксы</span>
+    </button>
+    <button class="tab-btn" data-tab="staff">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span class="lbl">Персонал</span>
+    </button>
+    <button class="tab-btn" data-tab="inventory">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8L12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+      <span class="lbl">Склад</span>
+    </button>
+    <button class="tab-btn" data-tab="shop">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 4h9L18 2"/><path d="M3 6h18l-1.5 13a2 2 0 0 1-2 1.8H6.5a2 2 0 0 1-2-1.8L3 6z"/><path d="M9 10a3 3 0 0 0 6 0"/></svg>
+      <span class="lbl">Магазин</span>
+    </button>
+  </div>
+
+</div>
+
+<div class="sheet-overlay" id="sheetOverlay"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div id="sheetContent"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ ОБЩАЯ ЛОГИКА ИЗ bootstrap.js ============ */
+  const tg = App.tg;
+  const tgUser = App.tgUser;
+  const haptic = App.haptic;
+  const $ = (id)=>document.getElementById(id);
+  let CONFIG = null;
+  let isAllowed = false;
+
+  /* ============ MOCK DATA (заменить на реальные ответы API_URL) ============ */
+  let OVERVIEW = {
+    today:{revenue:820, bookings:19, avgCheck:43, payroll:210},
+    week:{revenue:5210, bookings:132, avgCheck:39, payroll:1480},
+    month:{revenue:21400, bookings:540, avgCheck:40, payroll:6100}
+  };
+  let WEEK_CHART = [
+    {d:'Пн', v:410},{d:'Вт', v:380},{d:'Ср', v:520},{d:'Чт', v:460},{d:'Пт', v:610},{d:'Сб', v:790},{d:'Вс', v:340}
+  ];
+  let TOP_SERVICES = [
+    {name:'Полная химчистка салона', revenue:6600},
+    {name:'Стандарт', revenue:4970},
+    {name:'VIP', revenue:4480},
+    {name:'Бесконтактная мойка', revenue:2520},
+    {name:'Nano VIP', revenue:2090}
+  ];
+  let BAYS = [
+    {id:'bay1', name:'Бокс 1', status:'busy', note:'1234 AB-7 · до 14:20', todayCount:9, todayRevenue:420},
+    {id:'bay2', name:'Бокс 2', status:'free', note:'Свободен', todayCount:7, todayRevenue:310},
+    {id:'bay3', name:'Бокс 3', status:'maintenance', note:'Замена насоса высокого давления', todayCount:0, todayRevenue:0}
+  ];
+  let STAFF = [
+    {id:'st1', name:'Алексей Ковалёв', role:'Мойщик', payType:'percent', rate:35, phone:'+375291112233', shiftsMonth:18, accruedMonth:1240},
+    {id:'st2', name:'Дмитрий Орлов', role:'Мойщик', payType:'percent', rate:35, phone:'+375291112234', shiftsMonth:16, accruedMonth:1080},
+    {id:'st3', name:'Марина Соколова', role:'Администратор', payType:'fixed', rate:900, phone:'+375291112235', shiftsMonth:20, accruedMonth:900},
+    {id:'st4', name:'Игорь Быков', role:'Администратор', payType:'fixed', rate:900, phone:'+375291112236', shiftsMonth:18, accruedMonth:810}
+  ];
+  let INVENTORY = [
+    {id:'inv1', name:'Шампунь бесконтактный', unit:'л', qty:38, min:15, price:6.5},
+    {id:'inv2', name:'Воск защитный', unit:'л', qty:9, min:10, price:14},
+    {id:'inv3', name:'Полироль пластика', unit:'л', qty:22, min:8, price:9.2},
+    {id:'inv4', name:'Микрофибра', unit:'шт', qty:64, min:20, price:2.1},
+    {id:'inv5', name:'Ароматизатор', unit:'шт', qty:5, min:10, price:3.4},
+    {id:'inv6', name:'NANO-консервант', unit:'л', qty:12, min:6, price:28}
+  ];
+  let SHOP = [
+    {id:'shop1', name:'Шампунь-концентрат 1л', price:18, stock:24, visible:true},
+    {id:'shop2', name:'Полироль пластика 500мл', price:14, stock:16, visible:true},
+    {id:'shop3', name:'Ароматизатор «Новая машина»', price:9, stock:30, visible:true},
+    {id:'shop4', name:'Чернитель резины 500мл', price:11, stock:0, visible:false}
+  ];
+
+  const STATUS_TXT = {free:'Свободен', busy:'Занят', maintenance:'На обслуживании'};
+
+  /* ============ API WRAPPER ============ */
+  async function api(action, payload){
+    payload = payload || {};
+    try{
+      if(CONFIG.apiUrl.indexOf('PASTE_') === 0) throw new Error('demo mode');
+      const res = await fetch(CONFIG.apiUrl, {method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(Object.assign({action}, payload))});
+      if(!res.ok) throw new Error('bad response');
+      return await res.json();
+    }catch(e){ return mockApi(action, payload); }
+  }
+  function mockApi(action, payload){
+    if(action==='getOverview') return {ok:true, overview:OVERVIEW, chart:WEEK_CHART, topServices:TOP_SERVICES};
+    if(action==='getBays') return {ok:true, bays:BAYS};
+    if(action==='saveBay'){
+      const idx = BAYS.findIndex(b=>b.id===payload.bay.id);
+      if(idx>-1) BAYS[idx]=payload.bay; else BAYS.push(payload.bay);
+      return {ok:true};
+    }
+    if(action==='deleteBay'){ BAYS = BAYS.filter(b=>b.id!==payload.id); return {ok:true}; }
+    if(action==='getStaff') return {ok:true, staff:STAFF};
+    if(action==='saveStaff'){
+      const idx = STAFF.findIndex(s=>s.id===payload.staff.id);
+      if(idx>-1) STAFF[idx]=payload.staff; else STAFF.push(payload.staff);
+      return {ok:true};
+    }
+    if(action==='deleteStaff'){ STAFF = STAFF.filter(s=>s.id!==payload.id); return {ok:true}; }
+    if(action==='getInventory') return {ok:true, items:INVENTORY};
+    if(action==='saveInventoryItem'){
+      const idx = INVENTORY.findIndex(i=>i.id===payload.item.id);
+      if(idx>-1) INVENTORY[idx]=payload.item; else INVENTORY.push(payload.item);
+      return {ok:true};
+    }
+    if(action==='deleteInventoryItem'){ INVENTORY = INVENTORY.filter(i=>i.id!==payload.id); return {ok:true}; }
+    if(action==='getShop') return {ok:true, items:SHOP};
+    if(action==='saveShopItem'){
+      const idx = SHOP.findIndex(i=>i.id===payload.item.id);
+      if(idx>-1) SHOP[idx]=payload.item; else SHOP.push(payload.item);
+      return {ok:true};
+    }
+    if(action==='deleteShopItem'){ SHOP = SHOP.filter(i=>i.id!==payload.id); return {ok:true}; }
+    return {ok:false};
+  }
+
+  /* ============ TABS ============ */
+  const tabbar = $('tabbar'); const tabIndicator = $('tabIndicator');
+  function positionIndicator(btn){
+    const r = btn.getBoundingClientRect(), pr = tabbar.getBoundingClientRect();
+    tabIndicator.style.width = (r.width-6)+'px';
+    tabIndicator.style.left = (r.left-pr.left+3)+'px';
+  }
+  document.querySelectorAll('.tab-btn').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('active', b===btn));
+      document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active', p.id==='tab-'+btn.dataset.tab));
+      positionIndicator(btn); haptic();
+      if(btn.dataset.tab==='bays') renderBays();
+      if(btn.dataset.tab==='staff') renderStaff();
+      if(btn.dataset.tab==='inventory') renderInventory();
+      if(btn.dataset.tab==='shop') renderShop();
+    });
+  });
+  window.addEventListener('resize', ()=>{ const a=document.querySelector('.tab-btn.active'); if(a) positionIndicator(a); });
+
+  /* ============ SHEET ============ */
+  const sheet = $('sheet'), sheetOverlay = $('sheetOverlay');
+  function openSheet(html){
+    $('sheetContent').innerHTML = html;
+    sheet.classList.add('open'); sheetOverlay.classList.add('open');
+    if(tg && tg.BackButton){ try{ tg.BackButton.show(); tg.BackButton.onClick(closeSheet); }catch(e){} }
+  }
+  function closeSheet(){
+    sheet.classList.remove('open'); sheetOverlay.classList.remove('open');
+    if(tg && tg.BackButton){ try{ tg.BackButton.hide(); }catch(e){} }
+  }
+  sheetOverlay.addEventListener('click', closeSheet);
+
+  /* ============ TOAST ============ */
+  let toastEl = null, toastTimer = null;
+  function showToast(msg, isError){
+    if(!toastEl){ toastEl = document.createElement('div'); toastEl.className='toast'; document.body.appendChild(toastEl); }
+    toastEl.textContent = msg;
+    toastEl.className = 'toast show' + (isError ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 2600);
+  }
+
+  /* ============ TAB: ОБЗОР ============ */
+  const periods = [{id:'today', label:'Сегодня'},{id:'week', label:'Неделя'},{id:'month', label:'Месяц'}];
+  let activePeriod = 'week';
+
+  function renderPeriodChips(){
+    const wrap = $('periodChips'); wrap.innerHTML='';
+    periods.forEach(p=>{
+      const chip = document.createElement('div');
+      chip.className='chip'+(activePeriod===p.id?' active':'');
+      chip.textContent=p.label;
+      chip.addEventListener('click', ()=>{ activePeriod=p.id; haptic(); renderOverview(); });
+      wrap.appendChild(chip);
+    });
+  }
+
+  async function renderOverview(){
+    renderPeriodChips();
+    const res = await api('getOverview');
+    if(res.ok){ OVERVIEW = res.overview; WEEK_CHART = res.chart; TOP_SERVICES = res.topServices; }
+    else showToast('Не удалось загрузить аналитику', true);
+    const o = OVERVIEW[activePeriod];
+    const statsWrap = $('overviewStats');
+    statsWrap.innerHTML = `
+      <div class="stat-card"><div class="l">Выручка</div><div class="v up">${o.revenue} BYN</div></div>
+      <div class="stat-card"><div class="l">Записей</div><div class="v">${o.bookings}</div></div>
+      <div class="stat-card"><div class="l">Средний чек</div><div class="v">${o.avgCheck} BYN</div></div>
+      <div class="stat-card"><div class="l">Фонд оплаты</div><div class="v warn">${o.payroll} BYN</div></div>
+    `;
+    const max = Math.max(...WEEK_CHART.map(d=>d.v));
+    const chart = $('chartRow'); chart.innerHTML='';
+    WEEK_CHART.forEach((d,i)=>{
+      const col = document.createElement('div'); col.className='bar-col';
+      const h = Math.max(6, Math.round((d.v/max)*90));
+      col.innerHTML = `<div class="bar-val">${d.v}</div><div class="bar-track"><div class="bar fill${i===WEEK_CHART.length-1?' today':''}" style="height:0px" data-h="${h}"></div></div><div class="bar-day">${d.d}</div>`;
+      chart.appendChild(col);
+    });
+    requestAnimationFrame(()=>{
+      document.querySelectorAll('#chartRow .bar').forEach(b=>{ b.style.height = b.dataset.h+'px'; });
+    });
+
+    const maxRev = Math.max(...TOP_SERVICES.map(s=>s.revenue));
+    const rankWrap = $('rankList'); rankWrap.innerHTML='';
+    TOP_SERVICES.forEach((s,i)=>{
+      const row = document.createElement('div'); row.className='rank-row';
+      row.innerHTML = `
+        <div class="rank-num">${i+1}</div>
+        <div class="rank-main">
+          <div class="rank-name">${s.name}</div>
+          <div class="rank-bar-track"><div class="rank-bar-fill" style="width:${Math.round((s.revenue/maxRev)*100)}%"></div></div>
+        </div>
+        <div class="rank-val">${s.revenue} BYN</div>
+      `;
+      rankWrap.appendChild(row);
+    });
+  }
+
+  /* ============ TAB: БОКСЫ ============ */
+  async function renderBays(){
+    const res = await api('getBays');
+    if(res.ok) BAYS = res.bays; else showToast('Не удалось загрузить боксы', true);
+    const wrap = $('bayList'); wrap.innerHTML='';
+    if(!BAYS.length){ wrap.innerHTML = `<div class="empty-state"><div class="drop-big"></div>Боксы ещё не добавлены</div>`; return; }
+    BAYS.forEach((b,i)=>{
+      const el = document.createElement('div'); el.className='bay-card stagger'; el.style.animationDelay=(i*50)+'ms';
+      el.innerHTML = `
+        <div class="bay-top">
+          <div class="bay-name"><span class="status-dot ${b.status}"></span>${b.name}</div>
+          <span class="bay-status-txt ${b.status}">${STATUS_TXT[b.status]}</span>
+        </div>
+        <div class="bay-meta">${b.note||''}</div>
+        <div class="bay-stats"><span>Сегодня: <b>${b.todayCount}</b> записей</span><span>Выручка: <b>${b.todayRevenue} BYN</b></span></div>
+      `;
+      el.addEventListener('click', ()=>openBaySheet(b));
+      wrap.appendChild(el);
+    });
+  }
+  function openBaySheet(bay){
+    const isNew = !bay;
+    const b = bay || {id:'bay-'+Date.now(), name:'', status:'free', note:'', todayCount:0, todayRevenue:0};
+    openSheet(`
+      <div class="sheet-title">${isNew?'Новый бокс':'Редактировать бокс'}</div>
+      <div class="field"><label>Название</label><input type="text" id="bName" value="${b.name}" placeholder="Бокс 4"></div>
+      <div class="field"><label>Статус</label>
+        <select id="bStatus">
+          <option value="free" ${b.status==='free'?'selected':''}>Свободен</option>
+          <option value="busy" ${b.status==='busy'?'selected':''}>Занят</option>
+          <option value="maintenance" ${b.status==='maintenance'?'selected':''}>На обслуживании</option>
+        </select>
+      </div>
+      <div class="field"><label>Комментарий</label><input type="text" id="bNote" value="${b.note||''}" placeholder="Например: замена насоса"></div>
+      <div class="sheet-footer-row">
+        ${isNew?'':`<button class="btn btn-danger btn-block" id="delBayBtn">Удалить</button>`}
+        <button class="btn btn-primary btn-block" id="saveBayBtn">Сохранить</button>
+      </div>
+    `);
+    if(!isNew){
+      $('delBayBtn').addEventListener('click', async ()=>{
+        if(!confirm('Удалить «'+b.name+'»?')) return;
+        const res = await api('deleteBay', {id:b.id});
+        if(!res.ok){ showToast('Не удалось удалить бокс', true); return; }
+        haptic('success'); closeSheet(); renderBays();
+      });
+    }
+    $('saveBayBtn').addEventListener('click', async ()=>{
+      const updated = Object.assign({}, b, {name:$('bName').value.trim()||'Без названия', status:$('bStatus').value, note:$('bNote').value.trim()});
+      const res = await api('saveBay', {bay:updated});
+      if(!res.ok){ showToast('Не удалось сохранить бокс', true); return; }
+      haptic('success'); closeSheet(); renderBays();
+    });
+  }
+  $('addBayBtn').addEventListener('click', ()=>openBaySheet(null));
+
+  /* ============ TAB: ПЕРСОНАЛ ============ */
+  function initials(name){ return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
+  async function renderStaff(){
+    const res = await api('getStaff');
+    if(res.ok) STAFF = res.staff; else showToast('Не удалось загрузить персонал', true);
+    $('payrollFund').textContent = STAFF.reduce((s,x)=>s+x.accruedMonth,0)+' BYN';
+    const wrap = $('staffList'); wrap.innerHTML='';
+    if(!STAFF.length){ wrap.innerHTML = `<div class="empty-state"><div class="drop-big"></div>Сотрудники не добавлены</div>`; return; }
+    STAFF.forEach((s,i)=>{
+      const row = document.createElement('div'); row.className='staff-row stagger'; row.style.animationDelay=(i*40)+'ms';
+      row.innerHTML = `
+        <div class="avatar">${initials(s.name)}</div>
+        <div class="staff-main"><div class="staff-name">${s.name}</div><div class="staff-role">${s.role} · ${s.shiftsMonth} смен</div></div>
+        <div class="staff-pay"><div class="v">${s.accruedMonth} BYN</div><div class="l">за месяц</div></div>
+      `;
+      row.addEventListener('click', ()=>openStaffSheet(s));
+      wrap.appendChild(row);
+    });
+  }
+  function openStaffSheet(staff){
+    const isNew = !staff;
+    const s = staff || {id:'st-'+Date.now(), name:'', role:'Мойщик', payType:'percent', rate:30, phone:'', shiftsMonth:0, accruedMonth:0};
+    openSheet(`
+      <div class="sheet-title">${isNew?'Новый сотрудник':'Сотрудник'}</div>
+      <div class="field"><label>Имя</label><input type="text" id="sName" value="${s.name}"></div>
+      <div class="field"><label>Роль</label>
+        <select id="sRole"><option value="Мойщик" ${s.role==='Мойщик'?'selected':''}>Мойщик</option><option value="Администратор" ${s.role==='Администратор'?'selected':''}>Администратор</option></select>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Тип оплаты</label>
+          <select id="sPayType"><option value="percent" ${s.payType==='percent'?'selected':''}>% от выручки</option><option value="fixed" ${s.payType==='fixed'?'selected':''}>Фиксированная</option></select>
+        </div>
+        <div class="field"><label>Ставка</label><input type="number" id="sRate" value="${s.rate}"></div>
+      </div>
+      <div class="field"><label>Телефон</label><input type="tel" id="sPhone" value="${s.phone}"></div>
+      <div class="ticket-row"><span class="k">Начислено за месяц</span><span class="v">${s.accruedMonth} BYN</span></div>
+      <div class="sheet-footer-row">
+        ${isNew?'':`<a class="btn btn-outline btn-block" href="tel:${s.phone}">Позвонить</a>`}
+        <button class="btn btn-primary btn-block" id="saveStaffBtn">Сохранить</button>
+      </div>
+      ${isNew?'':`<button class="btn btn-danger btn-block" id="delStaffBtn" style="width:100%; margin-top:10px;">Удалить сотрудника</button>`}
+    `);
+    if(!isNew){
+      $('delStaffBtn').addEventListener('click', async ()=>{
+        if(!confirm('Удалить «'+s.name+'»?')) return;
+        const res = await api('deleteStaff', {id:s.id});
+        if(!res.ok){ showToast('Не удалось удалить сотрудника', true); return; }
+        haptic('success'); closeSheet(); renderStaff();
+      });
+    }
+    $('saveStaffBtn').addEventListener('click', async ()=>{
+      const updated = Object.assign({}, s, {
+        name:$('sName').value.trim()||'Без имени', role:$('sRole').value,
+        payType:$('sPayType').value, rate:Number($('sRate').value)||0, phone:$('sPhone').value.trim()
+      });
+      const res = await api('saveStaff', {staff:updated});
+      if(!res.ok){ showToast('Не удалось сохранить сотрудника', true); return; }
+      haptic('success'); closeSheet(); renderStaff();
+    });
+  }
+  $('addStaffBtn').addEventListener('click', ()=>openStaffSheet(null));
+
+  /* ============ TAB: СКЛАД ============ */
+  async function renderInventory(){
+    const res = await api('getInventory');
+    if(res.ok) INVENTORY = res.items; else showToast('Не удалось загрузить склад', true);
+    $('inventoryValue').textContent = INVENTORY.reduce((s,x)=>s+x.qty*x.price,0).toFixed(0)+' BYN';
+    const wrap = $('invList'); wrap.innerHTML='';
+    if(!INVENTORY.length){ wrap.innerHTML = `<div class="empty-state"><div class="drop-big"></div>Склад пуст</div>`; return; }
+    INVENTORY.forEach((it,i)=>{
+      const low = it.qty <= it.min;
+      const pct = Math.min(100, Math.round((it.qty/(it.min*2||1))*100));
+      const row = document.createElement('div'); row.className='inv-row stagger'; row.style.animationDelay=(i*40)+'ms';
+      row.innerHTML = `
+        <div class="inv-top">
+          <div class="inv-name">${it.name}${low?'<span class="low-badge">Мало</span>':''}</div>
+          <div class="inv-qty">${it.qty} ${it.unit}</div>
+        </div>
+        <div class="inv-bar-track"><div class="inv-bar-fill${low?' low':''}" style="width:${pct}%"></div></div>
+      `;
+      row.addEventListener('click', ()=>openInvSheet(it));
+      wrap.appendChild(row);
+    });
+  }
+  function openInvSheet(item){
+    const isNew = !item;
+    const it = item || {id:'inv-'+Date.now(), name:'', unit:'л', qty:0, min:0, price:0};
+    openSheet(`
+      <div class="sheet-title">${isNew?'Новая позиция':'Склад: позиция'}</div>
+      <div class="field"><label>Название</label><input type="text" id="iName" value="${it.name}"></div>
+      <div class="field-row">
+        <div class="field"><label>Ед. измерения</label><input type="text" id="iUnit" value="${it.unit}" placeholder="л / шт / кг"></div>
+        <div class="field"><label>Цена за ед., BYN</label><input type="number" id="iPrice" value="${it.price}"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Остаток</label><input type="number" id="iQty" value="${it.qty}"></div>
+        <div class="field"><label>Мин. остаток</label><input type="number" id="iMin" value="${it.min}"></div>
+      </div>
+      <div class="sheet-footer-row">
+        ${isNew?'':`<button class="btn btn-danger btn-block" id="delInvBtn">Удалить</button>`}
+        <button class="btn btn-primary btn-block" id="saveInvBtn">Сохранить</button>
+      </div>
+    `);
+    if(!isNew){
+      $('delInvBtn').addEventListener('click', async ()=>{
+        if(!confirm('Удалить «'+it.name+'»?')) return;
+        const res = await api('deleteInventoryItem', {id:it.id});
+        if(!res.ok){ showToast('Не удалось удалить позицию', true); return; }
+        haptic('success'); closeSheet(); renderInventory();
+      });
+    }
+    $('saveInvBtn').addEventListener('click', async ()=>{
+      const updated = Object.assign({}, it, {
+        name:$('iName').value.trim()||'Без названия', unit:$('iUnit').value.trim()||'шт',
+        price:Number($('iPrice').value)||0, qty:Number($('iQty').value)||0, min:Number($('iMin').value)||0
+      });
+      const res = await api('saveInventoryItem', {item:updated});
+      if(!res.ok){ showToast('Не удалось сохранить позицию', true); return; }
+      haptic('success'); closeSheet(); renderInventory();
+    });
+  }
+  $('addInvBtn').addEventListener('click', ()=>openInvSheet(null));
+
+  /* ============ TAB: МАГАЗИН ============ */
+  async function renderShop(){
+    const res = await api('getShop');
+    if(res.ok) SHOP = res.items; else showToast('Не удалось загрузить магазин', true);
+    const wrap = $('shopList'); wrap.innerHTML='';
+    if(!SHOP.length){ wrap.innerHTML = `<div class="empty-state"><div class="drop-big"></div>Товаров пока нет</div>`; return; }
+    SHOP.forEach((it,i)=>{
+      const row = document.createElement('div'); row.className='shop-row stagger'+(it.visible===false?' hidden-item':''); row.style.animationDelay=(i*40)+'ms';
+      row.innerHTML = `
+        <div class="shop-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2l1.5 4h9L18 2"/><path d="M3 6h18l-1.5 13a2 2 0 0 1-2 1.8H6.5a2 2 0 0 1-2-1.8L3 6z"/></svg></div>
+        <div class="shop-main"><div class="shop-name">${it.name}</div><div class="shop-sub">${it.stock>0? 'В наличии: '+it.stock+' шт' : 'Нет в наличии'}${it.visible===false? ' · скрыт':''}</div></div>
+        <div class="shop-price">${it.price} BYN</div>
+      `;
+      row.addEventListener('click', ()=>openShopSheet(it));
+      wrap.appendChild(row);
+    });
+  }
+  function openShopSheet(item){
+    const isNew = !item;
+    const it = item || {id:'shop-'+Date.now(), name:'', price:0, stock:0, visible:true};
+    openSheet(`
+      <div class="sheet-title">${isNew?'Новый товар':'Товар магазина'}</div>
+      <div class="field"><label>Название</label><input type="text" id="shName" value="${it.name}"></div>
+      <div class="field-row">
+        <div class="field"><label>Цена, BYN</label><input type="number" id="shPrice" value="${it.price}"></div>
+        <div class="field"><label>Остаток, шт</label><input type="number" id="shStock" value="${it.stock}"></div>
+      </div>
+      <div class="switch-row"><div class="switch${it.visible!==false?' on':''}" id="shVisSwitch"></div><span>Виден клиентам в магазине</span></div>
+      <div class="sheet-footer-row">
+        ${isNew?'':`<button class="btn btn-danger btn-block" id="delShopBtn">Удалить</button>`}
+        <button class="btn btn-primary btn-block" id="saveShopBtn">Сохранить</button>
+      </div>
+    `);
+    let visibleState = it.visible!==false;
+    $('shVisSwitch').addEventListener('click', ()=>{ visibleState=!visibleState; $('shVisSwitch').classList.toggle('on', visibleState); });
+    if(!isNew){
+      $('delShopBtn').addEventListener('click', async ()=>{
+        if(!confirm('Удалить «'+it.name+'»?')) return;
+        const res = await api('deleteShopItem', {id:it.id});
+        if(!res.ok){ showToast('Не удалось удалить товар', true); return; }
+        haptic('success'); closeSheet(); renderShop();
+      });
+    }
+    $('saveShopBtn').addEventListener('click', async ()=>{
+      const updated = Object.assign({}, it, {
+        name:$('shName').value.trim()||'Без названия', price:Number($('shPrice').value)||0,
+        stock:Number($('shStock').value)||0, visible:visibleState
+      });
+      const res = await api('saveShopItem', {item:updated});
+      if(!res.ok){ showToast('Не удалось сохранить товар', true); return; }
+      haptic('success'); closeSheet(); renderShop();
+    });
+  }
+  $('addShopBtn').addEventListener('click', ()=>openShopSheet(null));
+
+  /* ============ BOOTSTRAP ============ */
+  async function bootstrapApp(){
+    CONFIG = await App.loadConfig();
+
+    document.body.dataset.theme = CONFIG.theme || 'avtohimiya';
+    const cs = getComputedStyle(document.body);
+    App.setChrome(cs.getPropertyValue('--bg').trim(), cs.getPropertyValue('--surface').trim());
+
+    if(CONFIG.status === 'paused'){
+      $('bootLoading').style.display='none';
+      $('bootPaused').style.display='flex';
+      return;
+    }
+
+    $('brandName').textContent = CONFIG.businessName;
+    isAllowed = CONFIG.allowedOwnerIds.length===0 || CONFIG.allowedOwnerIds.includes(tgUser.id);
+    if(CONFIG.allowedOwnerIds.length===0){ $('roleBadge').textContent='Демо'; $('roleBadge').classList.add('badge-demo'); }
+    if(!isAllowed){ $('lockScreen').style.display='block'; }
+    else { $('mainUi').style.display='block'; $('tabbar').style.display='flex'; }
+
+    if(isAllowed){
+      renderOverview();
+      requestAnimationFrame(()=>{ const a=document.querySelector('.tab-btn.active'); if(a) positionIndicator(a); });
+    }
+
+    $('bootLoading').style.display='none';
+  }
+  bootstrapApp();
+})();
+</script>
+</body>
+</html>

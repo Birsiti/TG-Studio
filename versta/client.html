@@ -1,0 +1,1136 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10131A">
+<title>ВЕРСТА — билет на маршрутку</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#10131A;
+    --surface:#1A1F29;
+    --surface2:#232936;
+    --ink:#F1F3F7;
+    --ink-soft:#8891A3;
+    --ink-faint:#5B6373;
+    --line:rgba(255,255,255,0.08);
+    --accent:#FF9640;
+    --accent-ink:#241300;
+    --accent2:#2FD9B9;
+    --warn:#FFC53D;
+    --danger:#FF5C6C;
+    --radius:16px;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:#05060a;
+    font-family:'Manrope',sans-serif;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    align-items:flex-start;
+    min-height:100vh;
+    padding:28px 14px;
+  }
+  h1,h2,h3,.display{
+    font-family:'Oswald',sans-serif;
+    text-transform:uppercase;
+    letter-spacing:0.03em;
+    font-weight:600;
+    margin:0;
+  }
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button{font-family:inherit; cursor:pointer;}
+  *:focus-visible{outline:2px solid var(--accent2); outline-offset:2px;}
+
+  .phone{
+    position:relative;
+    width:390px;
+    height:844px;
+    background:var(--bg);
+    border-radius:42px;
+    overflow:hidden;
+    box-shadow:0 40px 90px rgba(0,0,0,.65), 0 0 0 9px #0b0d12, 0 0 0 10px #262b36;
+  }
+  @media (max-width:430px){
+    body{padding:0;}
+    .phone{width:100%; height:100dvh; border-radius:0; box-shadow:none;}
+  }
+
+  /* ---------- topbar / progress ---------- */
+  .topbar{
+    height:52px;
+    display:flex;
+    align-items:center;
+    padding:0 16px;
+    position:relative;
+  }
+  .back-btn{
+    width:44px;height:44px;border-radius:50%;
+    background:var(--surface); border:none; color:var(--ink);
+    font-size:20px; display:flex; align-items:center; justify-content:center;
+    visibility:hidden;
+  }
+  .back-btn.show{visibility:visible;}
+  .wordmark{
+    position:absolute; left:0; right:0; text-align:center;
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:15px;
+    letter-spacing:0.12em; color:var(--ink);
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    pointer-events:none;
+  }
+  .demo-tag{
+    font-family:'Manrope',sans-serif; font-weight:700; text-transform:none;
+    letter-spacing:0; font-size:9px; color:var(--accent-ink);
+    background:var(--accent); padding:2px 6px; border-radius:6px;
+  }
+
+  .progress{
+    display:flex; align-items:center; justify-content:center; gap:6px;
+    padding:2px 20px 14px;
+  }
+  .progress .dot{
+    height:3px; flex:1; max-width:38px; border-radius:2px;
+    background:var(--line); position:relative; overflow:hidden;
+  }
+  .progress .dot.done, .progress .dot.active{background:var(--accent);}
+  .progress .dot.active::after{
+    content:''; position:absolute; inset:0; background:rgba(255,255,255,.5);
+    animation:pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse{0%,100%{opacity:.15} 50%{opacity:.55}}
+
+  /* ---------- screens ---------- */
+  .screens{position:absolute; top:96px; bottom:0; left:0; right:0;}
+  .screen{
+    display:none; flex-direction:column; height:100%;
+    padding:6px 20px 24px; overflow-y:auto;
+  }
+  .screen.active{display:flex; animation:fadein .25s ease;}
+  @keyframes fadein{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+
+  .eyebrow{color:var(--ink-soft); font-size:13px; margin:0 0 4px;}
+  .title{font-size:26px; margin:0 0 18px;}
+  .grow{flex:1;}
+
+  /* ---------- buttons ---------- */
+  .btn{
+    width:100%; border:none; border-radius:14px; padding:16px;
+    font-weight:700; font-size:15px; text-align:center;
+  }
+  .btn-primary{background:var(--accent); color:var(--accent-ink);}
+  .btn-primary:disabled{background:var(--surface2); color:var(--ink-faint);}
+  .btn-secondary{background:var(--surface); color:var(--ink); border:1px solid var(--line);}
+
+  /* ---------- direction screen ---------- */
+  .route-fields{position:relative; display:flex; flex-direction:column; gap:10px; margin-bottom:18px;}
+  .pill{
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:12px 16px; display:flex; flex-direction:column; gap:2px;
+  }
+  .pill-label{font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.06em;}
+  .pill-value{font-size:16px; font-weight:600;}
+  .pill-value.placeholder{color:var(--ink-faint); font-weight:500;}
+  .swap-btn{
+    position:absolute; right:14px; top:50%; transform:translateY(-50%);
+    width:34px; height:34px; border-radius:50%; background:var(--surface2);
+    border:1px solid var(--line); color:var(--accent2); font-size:16px;
+  }
+
+  .section-label{font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.06em; margin:4px 0 10px;}
+  .chips{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;}
+  .chip{
+    display:flex; align-items:center; gap:7px; background:var(--surface);
+    border:1px solid var(--line); border-radius:12px; padding:9px 12px;
+    font-size:13px; font-weight:600;
+  }
+  .badge{
+    font-family:'Oswald',sans-serif; font-weight:700; font-size:11px;
+    background:var(--accent); color:var(--accent-ink); border:1.5px solid var(--ink);
+    border-radius:5px; padding:1px 5px; box-shadow:0 0 0 2px var(--bg);
+  }
+
+  /* ---------- sheet ---------- */
+  .sheet-overlay{
+    position:absolute; inset:0; background:rgba(0,0,0,.55);
+    opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:5;
+  }
+  .sheet-overlay.open{opacity:1; pointer-events:auto;}
+  .sheet{
+    position:absolute; left:0; right:0; bottom:0; background:var(--surface);
+    border-radius:20px 20px 0 0; padding:10px 20px 26px;
+    transform:translateY(100%); transition:transform .25s ease; z-index:6;
+    max-height:70%; overflow-y:auto;
+  }
+  .sheet.open{transform:translateY(0);}
+  .sheet-handle{width:36px; height:4px; background:var(--line); border-radius:2px; margin:4px auto 14px;}
+  .sheet-title{font-size:18px; margin-bottom:12px;}
+  .sheet-item{
+    padding:14px 4px; border-bottom:1px solid var(--line); font-size:15px; font-weight:600;
+  }
+  .sheet-item:last-child{border-bottom:none;}
+
+  /* ---------- date screen ---------- */
+  .date-strip{display:flex; flex-shrink:0; gap:8px; overflow-x:auto; padding-bottom:6px; margin:0 -20px; padding-left:20px; padding-right:20px;}
+  .date-btn{
+    flex:0 0 auto; width:58px; background:var(--surface); border:1px solid var(--line);
+    border-radius:14px; padding:12px 0; text-align:center;
+  }
+  .date-btn .dow{font-size:11px; color:var(--ink-soft); text-transform:uppercase;}
+  .date-btn .num{font-family:'Oswald'; font-size:20px; font-weight:600; margin-top:2px;}
+  .date-btn.today .dow{color:var(--accent2);}
+  .date-btn.active{background:var(--accent); border-color:var(--accent);}
+  .date-btn.active .dow,.date-btn.active .num{color:var(--accent-ink);}
+
+  /* ---------- trips screen ---------- */
+  .route-recap{
+    display:flex; align-items:center; gap:8px; color:var(--ink-soft); font-size:13px; margin-bottom:16px;
+  }
+  .trip-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    padding:14px; margin-bottom:10px; display:flex; gap:12px; align-items:center;
+  }
+  .trip-card.sold{opacity:.45;}
+  .trip-time{font-family:'JetBrains Mono'; font-weight:700; font-size:20px; min-width:56px;}
+  .trip-mid{flex:1;}
+  .trip-arrival{font-size:12px; color:var(--ink-soft); margin-top:2px;}
+  .trip-right{text-align:right;}
+  .trip-price{font-family:'JetBrains Mono'; font-weight:700; font-size:15px;}
+  .trip-seats{font-size:11px; margin-top:3px; font-weight:600;}
+  .seats-ok{color:var(--accent2);}
+  .seats-low{color:var(--warn);}
+  .seats-none{color:var(--danger);}
+  .empty-state{text-align:center; color:var(--ink-soft); padding:40px 10px; font-size:14px;}
+
+  /* ---------- points screen ---------- */
+  .points-block{margin-bottom:22px;}
+  .points-block.disabled{opacity:.35; pointer-events:none;}
+  .roadline{position:relative;}
+  .point-row{display:flex; gap:12px; padding:9px 0; cursor:pointer;}
+  .rail{width:16px; display:flex; flex-direction:column; align-items:center;}
+  .rail-dot{width:10px; height:10px; border-radius:50%; background:var(--ink-faint); margin-top:4px; flex:0 0 auto;}
+  .rail-line{width:2px; flex:1; background:var(--line); margin-top:2px;}
+  .point-row:last-child .rail-line{display:none;}
+  .point-row.selected .rail-dot{background:var(--accent); box-shadow:0 0 0 4px rgba(255,150,64,.18);}
+  .point-name{font-size:14px; font-weight:600;}
+  .point-row.selected .point-name{color:var(--accent);}
+  .point-offset{font-size:11px; color:var(--ink-soft); margin-top:1px;}
+
+  /* ---------- checkout screen ---------- */
+  .summary-card{
+    background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:16px;
+  }
+  .summary-row{display:flex; justify-content:space-between; font-size:13px; padding:5px 0; color:var(--ink-soft);}
+  .summary-row b{color:var(--ink); font-weight:600;}
+  .stepper{
+    display:flex; align-items:center; justify-content:center; gap:22px; margin:6px 0 18px;
+  }
+  .step-btn{
+    width:44px; height:44px; border-radius:50%; background:var(--surface2);
+    border:1px solid var(--line); color:var(--ink); font-size:20px; font-weight:700;
+  }
+  .step-val{font-family:'JetBrains Mono'; font-size:26px; font-weight:700; min-width:34px; text-align:center;}
+  .field{margin-bottom:12px;}
+  .field label{font-size:12px; color:var(--ink-soft); display:block; margin-bottom:6px;}
+  .field input{
+    width:100%; background:var(--surface); border:1px solid var(--line); color:var(--ink);
+    border-radius:12px; padding:13px 14px; font-size:15px; font-family:inherit;
+  }
+  .field input::placeholder{color:var(--ink-faint);}
+  .total-line{display:flex; justify-content:space-between; align-items:baseline; margin:16px 0 6px;}
+  .total-line .label{color:var(--ink-soft); font-size:14px;}
+  .total-line .value{font-family:'JetBrains Mono'; font-size:26px; font-weight:700; color:var(--accent);}
+
+  /* hold timer */
+  .hold-banner{display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--line);
+    border-radius:12px; padding:11px 14px; margin-bottom:16px; font-size:13px; color:var(--ink-soft);}
+  .hold-dot{width:7px; height:7px; border-radius:50%; background:var(--accent2); box-shadow:0 0 0 3px rgba(47,217,185,.18);
+    flex:0 0 auto; animation:holdPulse 1.6s ease-in-out infinite;}
+  @keyframes holdPulse{0%,100%{opacity:1} 50%{opacity:.35}}
+  @media (prefers-reduced-motion: reduce){ .hold-dot{animation:none;} }
+  .hold-time{margin-left:auto; font-weight:700; color:var(--ink);}
+  .hold-banner.warn .hold-time{color:var(--warn);}
+  .hold-banner.warn .hold-dot{background:var(--warn); box-shadow:0 0 0 3px rgba(255,197,61,.18);}
+  .hold-banner.expired{background:rgba(255,92,108,.1); border-color:rgba(255,92,108,.3);
+    flex-direction:column; align-items:stretch; gap:10px;}
+  .hold-expired-text{color:var(--danger); font-weight:700; font-size:13.5px;}
+
+  /* payment */
+  .payment-tag{display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--line);
+    border-radius:12px; padding:11px 14px; font-size:12.5px; color:var(--ink-soft); margin:6px 0 16px;}
+  .payment-tag svg{flex:0 0 auto; color:var(--accent2);}
+  .pay-chip{display:inline-block; background:var(--surface2); color:var(--ink-soft); font-size:11px; font-weight:600;
+    padding:5px 10px; border-radius:8px; margin-top:9px;}
+
+  .step-btn:disabled{opacity:.4;}
+  .field input:disabled{opacity:.5;}
+
+  .field .phone-input-group{display:flex; align-items:center; background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+  .field .phone-input-group.error{border-color:var(--danger);}
+  .field .phone-input-group .phone-prefix{padding:13px 2px 13px 14px; color:var(--ink-soft); font-weight:700; font-size:14.5px; font-family:'JetBrains Mono',monospace;}
+  .field .phone-input-group input{border:none; background:transparent; flex:1; width:auto; padding:13px 14px 13px 4px; font-family:'JetBrains Mono',monospace; letter-spacing:0.02em;}
+
+  .btn-danger{background:rgba(255,92,108,.12); color:var(--danger); border:1px solid rgba(255,92,108,.3);}
+  .link-btn{width:100%; background:none; border:none; color:var(--ink-soft); font-size:13px; font-weight:700;
+    padding:12px; text-decoration:underline; text-underline-offset:3px;}
+
+  .ticket{position:relative;}
+  .ticket-stamp{
+    position:absolute; top:34%; left:50%; transform:translate(-50%,-50%) rotate(-13deg);
+    border:3px solid var(--danger); color:var(--danger); font-family:'Oswald',sans-serif; font-weight:700;
+    font-size:21px; letter-spacing:0.08em; padding:5px 16px; border-radius:8px; text-transform:uppercase;
+    background:rgba(16,19,26,.6); pointer-events:none;
+  }
+
+  /* ---------- ticket screen ---------- */
+  .ticket-wrap{display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:6px;}
+  .ticket-icon{
+    width:56px; height:56px; border-radius:50%; background:rgba(47,217,185,.12);
+    display:flex; align-items:center; justify-content:center; font-size:26px; color:var(--accent2);
+    margin-bottom:14px;
+  }
+  .ticket{
+    width:100%; background:var(--surface); border-radius:20px; overflow:hidden;
+    border:1px solid var(--line); margin-bottom:18px; text-align:left;
+  }
+  .ticket-top{padding:18px 18px 14px; border-top:4px solid var(--accent);}
+  .ticket-route{display:flex; align-items:center; gap:10px; margin:10px 0 4px;}
+  .ticket-route .cities{font-size:20px;}
+  .ticket-sub{font-size:12px; color:var(--ink-soft);}
+  .ticket-tear{
+    position:relative; height:0; border-top:2px dashed rgba(255,255,255,.14); margin:2px 0;
+  }
+  .ticket-tear::before,.ticket-tear::after{
+    content:''; position:absolute; top:-11px; width:22px; height:22px; border-radius:50%; background:#05060a;
+  }
+  @media (max-width:430px){.ticket-tear::before,.ticket-tear::after{background:var(--bg);}}
+  .ticket-tear::before{left:-11px;}
+  .ticket-tear::after{right:-11px;}
+  .ticket-bottom{padding:16px 18px 18px;}
+  .tk-row{display:flex; justify-content:space-between; padding:6px 0; font-size:13px; color:var(--ink-soft);}
+  .tk-row b{color:var(--ink); font-family:'JetBrains Mono'; font-weight:700;}
+  .ticket-note{color:var(--ink-faint); font-size:11.5px; line-height:1.5; margin-bottom:18px;}
+  .ticket-actions{display:flex; flex-direction:column; gap:10px; width:100%;}
+
+  .notif-list{width:100%; background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:4px 14px; margin-bottom:18px; text-align:left;}
+  .notif-item{display:flex; gap:10px; align-items:flex-start; padding:11px 0; border-bottom:1px solid var(--line);}
+  .notif-item:last-child{border-bottom:none;}
+  .notif-icon{width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .notif-icon.sent{background:rgba(47,217,185,.14); color:var(--accent2);}
+  .notif-icon.pending{background:var(--surface2); color:var(--ink-faint);}
+  .notif-icon.cancel{background:rgba(255,92,108,.14); color:var(--danger);}
+  .notif-body{flex:1; min-width:0;}
+  .notif-title{font-size:12.5px; font-weight:700;}
+  .notif-sub{font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .notif-call{font-family:'JetBrains Mono'; font-size:11.5px; font-weight:700; color:var(--accent2); margin-top:5px; display:inline-block;}
+
+  /* ---------- home screen ---------- */
+  .home-cta{margin:4px 0 26px;}
+  .mytrip-row{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:13px; margin-bottom:9px;}
+  .mytrip-top{display:flex; align-items:center; gap:8px; margin-bottom:5px;}
+  .mytrip-route{flex:1; font-size:13.5px; font-weight:700;}
+  .mytrip-status{font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:8px;}
+  .mytrip-status.st-ok{background:rgba(47,217,185,.14); color:var(--accent2);}
+  .mytrip-status.st-cancel{background:var(--surface2); color:var(--ink-faint);}
+  .mytrip-sub{font-size:11.5px; color:var(--ink-soft);}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">‹</button>
+    <div class="wordmark">ВЕРСТА <span class="demo-tag">демо</span></div>
+  </div>
+
+  <div class="progress" id="progressBar">
+    <div class="dot" data-step="1"></div>
+    <div class="dot" data-step="2"></div>
+    <div class="dot" data-step="3"></div>
+    <div class="dot" data-step="4"></div>
+  </div>
+
+  <div class="screens">
+
+    <!-- 0. ГЛАВНАЯ -->
+    <section class="screen active" data-screen="home">
+      <p class="eyebrow">Здравствуйте!</p>
+      <h1 class="title">Куда едем?</h1>
+      <button class="btn btn-primary home-cta" id="newBookingBtn">Забронировать поездку</button>
+
+      <p class="section-label">Мои поездки</p>
+      <div id="myTripsList"></div>
+    </section>
+
+    <!-- 1. НАПРАВЛЕНИЕ -->
+    <section class="screen" data-screen="direction">
+      <p class="eyebrow">Шаг 1 из 4</p>
+      <h1 class="title">Куда едем?</h1>
+
+      <div class="route-fields">
+        <div class="pill" id="fromPill">
+          <span class="pill-label">Откуда</span>
+          <span class="pill-value placeholder" id="fromValue">Выбрать город</span>
+        </div>
+        <div class="pill" id="toPill">
+          <span class="pill-label">Куда</span>
+          <span class="pill-value placeholder" id="toValue">Выбрать город</span>
+        </div>
+        <button class="swap-btn" id="swapBtn" aria-label="Поменять местами">⇄</button>
+      </div>
+
+      <p class="section-label">Популярные направления</p>
+      <div class="chips" id="popularChips"></div>
+
+      <div class="grow"></div>
+      <button class="btn btn-primary" id="directionContinue" disabled>Найти рейсы</button>
+    </section>
+
+    <!-- 2. ДАТА И РЕЙСЫ -->
+    <section class="screen" data-screen="date">
+      <p class="eyebrow">Шаг 2 из 4</p>
+      <h1 class="title" style="margin-bottom:14px;">Когда едем?</h1>
+      <div class="date-strip" id="dateStrip"></div>
+      <div class="route-recap" id="tripsRecap" style="margin-top:18px;"></div>
+      <div id="tripsList"></div>
+    </section>
+
+    <!-- 3. ТОЧКИ -->
+    <section class="screen" data-screen="points">
+      <p class="eyebrow">Шаг 3 из 4</p>
+      <h1 class="title" style="margin-bottom:4px;">Где сесть и выйти?</h1>
+      <p class="route-recap" id="pointsRecap"></p>
+
+      <div class="points-block">
+        <p class="section-label">Точка посадки</p>
+        <div class="roadline" id="pickupList"></div>
+      </div>
+
+      <div class="points-block disabled" id="dropoffBlock">
+        <p class="section-label">Точка высадки</p>
+        <div class="roadline" id="dropoffList"></div>
+      </div>
+
+      <div class="grow"></div>
+      <button class="btn btn-primary" id="pointsContinue" disabled>Далее</button>
+    </section>
+
+    <!-- 5. ОФОРМЛЕНИЕ -->
+    <section class="screen" data-screen="checkout">
+      <p class="eyebrow">Шаг 4 из 4</p>
+      <h1 class="title">Оформление</h1>
+
+      <div class="hold-banner" id="holdBanner">
+        <span class="hold-dot"></span>
+        <span>Место удержано:</span>
+        <span class="hold-time mono" id="holdTimeText">06:00</span>
+      </div>
+
+      <div class="summary-card" id="checkoutSummary"></div>
+
+      <p class="section-label" style="text-align:center;">Сколько мест</p>
+      <div class="stepper">
+        <button class="step-btn" id="seatsMinus" aria-label="Меньше мест">−</button>
+        <div class="step-val mono" id="seatsVal">1</div>
+        <button class="step-btn" id="seatsPlus" aria-label="Больше мест">+</button>
+      </div>
+
+      <div class="field">
+        <label for="nameInput">Имя</label>
+        <input type="text" id="nameInput" placeholder="Как к вам обращаться">
+      </div>
+      <div class="field">
+        <label for="phoneInput">Телефон</label>
+        <div class="phone-input-group" id="phoneGroup">
+          <span class="phone-prefix">+375</span>
+          <input type="tel" id="phoneInput" inputmode="numeric" placeholder="29 123 45 67" maxlength="12">
+        </div>
+      </div>
+
+      <div class="total-line">
+        <span class="label">Итого</span>
+        <span class="value mono" id="totalPrice">0 BYN</span>
+      </div>
+
+      <div class="payment-tag">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="3"/><path d="M6 9v.01M18 15v.01" stroke-linecap="round"/></svg>
+        <span>Оплата водителю наличными при посадке</span>
+      </div>
+
+      <button class="btn btn-primary" id="bookBtn">Забронировать</button>
+    </section>
+
+    <!-- 6. БИЛЕТ -->
+    <section class="screen" data-screen="ticket">
+      <div class="ticket-wrap">
+        <div class="ticket-icon" id="ticketIcon">✓</div>
+        <h1 class="title" id="ticketTitle" style="margin-bottom:4px;">Место забронировано</h1>
+        <p class="eyebrow" style="margin-bottom:20px;">Билет и водитель придут в чат бота</p>
+
+        <div class="ticket" id="ticketCard"></div>
+
+        <p class="section-label" style="width:100%; text-align:left;">Уведомления</p>
+        <div class="notif-list" id="notifList"></div>
+
+        <p class="ticket-note">Это демо-версия. Рейсы, цены и места свободны для показа — реальный бэкенд и оплата подключаются на следующем шаге.</p>
+
+        <div class="ticket-actions">
+          <button class="btn btn-primary" id="homeBtn">На главную</button>
+          <button class="btn btn-secondary" id="restartBtn">Новая бронь</button>
+          <button class="link-btn" id="cancelBtn">Отменить бронь</button>
+        </div>
+      </div>
+    </section>
+
+  </div>
+
+  <div class="sheet-overlay" id="cancelOverlay"></div>
+  <div class="sheet" id="cancelSheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title">Отменить бронь?</h3>
+    <p style="color:var(--ink-soft); font-size:13.5px; line-height:1.5; margin:0 0 20px;" id="cancelRecap"></p>
+    <button class="btn btn-danger" id="cancelConfirmBtn" style="margin-bottom:10px;">Да, отменить</button>
+    <button class="btn btn-secondary" id="cancelDismissBtn">Нет, оставить</button>
+  </div>
+
+  <div class="sheet-overlay" id="sheetOverlay"></div>
+  <div class="sheet" id="citySheet">
+    <div class="sheet-handle"></div>
+    <h3 class="sheet-title" id="sheetTitle">Откуда едем?</h3>
+    <div id="sheetList"></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  try{
+    if(window.Telegram && window.Telegram.WebApp){
+      var tg = window.Telegram.WebApp;
+      tg.ready(); tg.expand();
+    }
+  }catch(e){}
+
+  /* ---------------- mock data ---------------- */
+  var CORRIDORS = [
+    { code:'M1', fullPrice:22, points:[
+      {name:'Минск, Центральный автовокзал', offset:0},
+      {name:'Барановичи, АВ', offset:90},
+      {name:'Кобрин', offset:165},
+      {name:'Брест, АВ', offset:195}
+    ]},
+    { code:'M5', fullPrice:20, points:[
+      {name:'Минск, Восточный автовокзал', offset:0},
+      {name:'Бобруйск, АВ', offset:100},
+      {name:'Жлобин', offset:150},
+      {name:'Гомель, АВ', offset:205}
+    ]},
+    { code:'M6', fullPrice:21, points:[
+      {name:'Минск, Центральный автовокзал', offset:0},
+      {name:'Ивенец', offset:55},
+      {name:'Лида, АВ', offset:150},
+      {name:'Гродно, АВ', offset:215}
+    ]},
+    { code:'M3', fullPrice:19, points:[
+      {name:'Минск, Центральный автовокзал', offset:0},
+      {name:'Плещеницы', offset:60},
+      {name:'Лепель', offset:130},
+      {name:'Витебск, АВ', offset:200}
+    ]},
+    { code:'M4', fullPrice:16, points:[
+      {name:'Минск, Восточный автовокзал', offset:0},
+      {name:'Червень', offset:45},
+      {name:'Березино', offset:80},
+      {name:'Могилёв, АВ', offset:140}
+    ]}
+  ];
+  var DEP_TIMES = ['06:20','08:45','11:30','14:15','17:00','19:40'];
+  var SEATS_TOTAL = 16;
+  var MAX_BOOK_SEATS = 6;
+  var CITIES = ['Минск','Брест','Гомель','Гродно','Витебск','Могилёв'];
+  var DOW = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  var MONTHS = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+  var DRIVERS = ['Сергей Ковалёв','Алексей Дайнеко','Игорь Русак','Павел Шпак'];
+  function genDriverPhone(){
+    var n = Math.floor(1000000+Math.random()*9000000);
+    var s = ''+n;
+    return '+375 29 '+s.substr(0,3)+'-'+s.substr(3,2)+'-'+s.substr(5,2);
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function cityOf(name){ return name.split(',')[0].trim(); }
+
+  function connectionsFrom(city){
+    if(city === 'Минск'){
+      var out = [];
+      CORRIDORS.forEach(function(c){
+        var last = cityOf(c.points[c.points.length-1].name);
+        if(out.indexOf(last) === -1) out.push(last);
+      });
+      return out;
+    }
+    return ['Минск'];
+  }
+
+  function getCorridor(fromCity, toCity){
+    for(var i=0;i<CORRIDORS.length;i++){
+      var c = CORRIDORS[i];
+      var first = cityOf(c.points[0].name), last = cityOf(c.points[c.points.length-1].name);
+      if(first===fromCity && last===toCity){
+        return { code:c.code, fullPrice:c.fullPrice, points:c.points };
+      }
+      if(first===toCity && last===fromCity){
+        var total = c.points[c.points.length-1].offset;
+        var rev = c.points.slice().reverse().map(function(p){ return {name:p.name, offset: total-p.offset}; });
+        return { code:c.code, fullPrice:c.fullPrice, points:rev };
+      }
+    }
+    return null;
+  }
+
+  function hashStr(s){
+    var h=0;
+    for(var i=0;i<s.length;i++){ h = (h*31 + s.charCodeAt(i)) >>> 0; }
+    return h;
+  }
+  function seededFree(dateKey, time, code){
+    return hashStr(dateKey+time+code) % (SEATS_TOTAL+1);
+  }
+  function parseMin(t){ var p=t.split(':'); return (+p[0])*60 + (+p[1]); }
+  function fmtTime(min){
+    min = ((min % 1440)+1440)%1440;
+    var h=Math.floor(min/60), m=min%60;
+    return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;
+  }
+  function fmtDuration(min){
+    var h=Math.floor(min/60), m=min%60;
+    if(h===0) return m+' мин';
+    return h+' ч'+(m? ' '+m+' мин':'');
+  }
+  function segmentPrice(corridor, fromOffset, toOffset){
+    var total = corridor.points[corridor.points.length-1].offset;
+    var perMin = corridor.fullPrice/total;
+    return Math.max(5, Math.round((toOffset-fromOffset)*perMin));
+  }
+  function dateKey(d){
+    return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+  }
+
+  /* ---------------- state ---------------- */
+  var state = {
+    from:null, to:null,
+    dateObj:null, dateLabel:null, dateKey:null,
+    corridor:null,
+    trip:null,
+    pickupIdx:null, dropoffIdx:null,
+    seats:1, name:'', phone:''
+  };
+  var MY_TRIPS = [];
+  var openTripId = null;
+
+  var SCREEN_ORDER = ['home','direction','date','points','checkout','ticket'];
+  var WIZARD_SCREENS = ['direction','date','points','checkout'];
+  var HOLD_SECONDS = 360; // 6 минут на оформление
+  var holdInterval = null;
+  var holdRemaining = 0;
+
+  function clearHoldTimer(){
+    if(holdInterval){ clearInterval(holdInterval); holdInterval = null; }
+  }
+  function renderHoldBanner(){
+    var banner = document.getElementById('holdBanner');
+    var m = Math.floor(holdRemaining/60), s = holdRemaining%60;
+    banner.className = 'hold-banner'+(holdRemaining<=60?' warn':'');
+    banner.innerHTML = '<span class="hold-dot"></span><span>Место удержано:</span>'+
+      '<span class="hold-time mono">'+m+':'+(s<10?'0':'')+s+'</span>';
+  }
+  function startHoldTimer(){
+    clearHoldTimer();
+    holdRemaining = HOLD_SECONDS;
+    renderHoldBanner();
+    holdInterval = setInterval(function(){
+      holdRemaining--;
+      if(holdRemaining<=0){ clearHoldTimer(); expireHold(); return; }
+      renderHoldBanner();
+    }, 1000);
+  }
+  function expireHold(){
+    var banner = document.getElementById('holdBanner');
+    banner.className = 'hold-banner expired';
+    banner.innerHTML = '<div class="hold-expired-text">Время на оформление истекло — место освобождено</div>'+
+      '<button class="btn btn-secondary" id="reholdBtn">Выбрать рейс заново</button>';
+    document.getElementById('reholdBtn').addEventListener('click', function(){ renderTrips(); goTo('date'); });
+    document.getElementById('bookBtn').disabled = true;
+    document.getElementById('seatsMinus').disabled = true;
+    document.getElementById('seatsPlus').disabled = true;
+    document.getElementById('nameInput').disabled = true;
+    document.getElementById('phoneInput').disabled = true;
+  }
+
+  /* ---------------- navigation ---------------- */
+  function goTo(name){
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    var target = document.querySelector('.screen[data-screen="'+name+'"]');
+    target.classList.add('active');
+    target.scrollTop = 0;
+
+    document.getElementById('backBtn').classList.toggle('show', name!=='home' && name!=='ticket');
+
+    var progress = document.getElementById('progressBar');
+    var wizIdx = WIZARD_SCREENS.indexOf(name);
+    if(wizIdx===-1){ progress.style.visibility='hidden'; }
+    else{
+      progress.style.visibility='visible';
+      document.querySelectorAll('.progress .dot').forEach(function(dot,i){
+        dot.classList.remove('active','done');
+        if(i < wizIdx) dot.classList.add('done');
+        else if(i === wizIdx) dot.classList.add('active');
+      });
+    }
+  }
+
+  document.getElementById('backBtn').addEventListener('click', function(){
+    var current = document.querySelector('.screen.active').dataset.screen;
+    if(current==='checkout') clearHoldTimer();
+    var idx = SCREEN_ORDER.indexOf(current);
+    if(idx>0) goTo(SCREEN_ORDER[idx-1]);
+  });
+
+  /* ---------------- 1. direction ---------------- */
+  var sheetField = null;
+  function openSheet(field){
+    sheetField = field;
+    document.getElementById('sheetTitle').textContent = field==='from' ? 'Откуда едем?' : 'Куда едем?';
+    var list = document.getElementById('sheetList');
+    list.innerHTML = '';
+    var options = field==='from' ? CITIES.slice() : (state.from ? connectionsFrom(state.from) : CITIES.slice());
+    options.forEach(function(city){
+      var item = document.createElement('div');
+      item.className = 'sheet-item';
+      item.textContent = city;
+      item.addEventListener('click', function(){ selectCity(field, city); });
+      list.appendChild(item);
+    });
+    document.getElementById('sheetOverlay').classList.add('open');
+    document.getElementById('citySheet').classList.add('open');
+  }
+  function closeSheet(){
+    document.getElementById('sheetOverlay').classList.remove('open');
+    document.getElementById('citySheet').classList.remove('open');
+  }
+  document.getElementById('sheetOverlay').addEventListener('click', closeSheet);
+  document.getElementById('fromPill').addEventListener('click', function(){ openSheet('from'); });
+  document.getElementById('toPill').addEventListener('click', function(){ openSheet('to'); });
+
+  function selectCity(field, city){
+    if(field==='from'){
+      state.from = city;
+      document.getElementById('fromValue').textContent = city;
+      document.getElementById('fromValue').classList.remove('placeholder');
+      if(state.to && connectionsFrom(city).indexOf(state.to)===-1){
+        state.to = null;
+        document.getElementById('toValue').textContent = 'Выбрать город';
+        document.getElementById('toValue').classList.add('placeholder');
+      }
+    } else {
+      state.to = city;
+      document.getElementById('toValue').textContent = city;
+      document.getElementById('toValue').classList.remove('placeholder');
+    }
+    closeSheet();
+    updateDirectionContinue();
+  }
+
+  document.getElementById('swapBtn').addEventListener('click', function(){
+    var f = state.from, t = state.to;
+    if(!f && !t) return;
+    state.from = t; state.to = f;
+    document.getElementById('fromValue').textContent = state.from || 'Выбрать город';
+    document.getElementById('fromValue').classList.toggle('placeholder', !state.from);
+    document.getElementById('toValue').textContent = state.to || 'Выбрать город';
+    document.getElementById('toValue').classList.toggle('placeholder', !state.to);
+    updateDirectionContinue();
+  });
+
+  function updateDirectionContinue(){
+    var ok = state.from && state.to && getCorridor(state.from, state.to);
+    document.getElementById('directionContinue').disabled = !ok;
+  }
+
+  function buildPopularChips(){
+    var wrap = document.getElementById('popularChips');
+    wrap.innerHTML='';
+    CORRIDORS.slice(0,4).forEach(function(c){
+      var from = cityOf(c.points[0].name), to = cityOf(c.points[c.points.length-1].name);
+      var chip = document.createElement('div');
+      chip.className='chip';
+      chip.innerHTML = '<span class="badge">'+c.code+'</span><span>'+from+' → '+to+'</span>';
+      chip.addEventListener('click', function(){
+        state.from = from; state.to = to;
+        buildDateStrip();
+        goTo('date');
+      });
+      wrap.appendChild(chip);
+    });
+  }
+
+  document.getElementById('directionContinue').addEventListener('click', function(){
+    buildDateStrip();
+    goTo('date');
+  });
+
+  /* ---------------- 2. date + trips ---------------- */
+  function selectDate(dObj){
+    state.dateObj = dObj;
+    state.dateKey = dateKey(dObj);
+    state.dateLabel = DOW[dObj.getDay()]+', '+dObj.getDate()+' '+MONTHS[dObj.getMonth()];
+    state.corridor = getCorridor(state.from, state.to);
+    renderTrips();
+  }
+
+  function buildDateStrip(){
+    var strip = document.getElementById('dateStrip');
+    strip.innerHTML='';
+    var today = new Date();
+    var firstBtn = null;
+    for(var i=0;i<10;i++){
+      var d = new Date(today.getFullYear(), today.getMonth(), today.getDate()+i);
+      var btn = document.createElement('button');
+      btn.className='date-btn'+(i===0?' today active':'');
+      btn.innerHTML = '<div class="dow">'+(i===0?'сегодня':DOW[d.getDay()])+'</div><div class="num">'+d.getDate()+'</div>';
+      btn.addEventListener('click', function(dObj, self){
+        return function(){
+          document.querySelectorAll('#dateStrip .date-btn').forEach(function(b){ b.classList.remove('active'); });
+          self.classList.add('active');
+          selectDate(dObj);
+        };
+      }(d, btn));
+      strip.appendChild(btn);
+      if(i===0) firstBtn = d;
+    }
+    strip.scrollLeft = 0;
+    selectDate(firstBtn);
+  }
+
+  /* ---------------- 3. trips (live-обновляется внутри экрана "date") ---------------- */
+  function renderTrips(){
+    document.getElementById('tripsRecap').innerHTML =
+      '<span class="badge">'+state.corridor.code+'</span><span>'+state.from+' → '+state.to+'</span>';
+
+    var list = document.getElementById('tripsList');
+    list.innerHTML='';
+    var lastOffset = state.corridor.points[state.corridor.points.length-1].offset;
+    var anyFree = false;
+
+    DEP_TIMES.forEach(function(time){
+      var free = seededFree(state.dateKey, time, state.corridor.code);
+      if(free>0) anyFree = true;
+      var depMin = parseMin(time);
+      var arrMin = depMin + lastOffset;
+      var card = document.createElement('div');
+      card.className = 'trip-card'+(free===0?' sold':'');
+      var seatsClass = free===0?'seats-none':(free<=3?'seats-low':'seats-ok');
+      var seatsText = free===0?'Мест нет':(free+' своб.');
+      card.innerHTML =
+        '<div class="trip-time mono">'+time+'</div>'+
+        '<div class="trip-mid"><div>'+state.from+' → '+state.to+'</div>'+
+          '<div class="trip-arrival">Прибытие ≈ '+fmtTime(arrMin)+' · в пути '+fmtDuration(lastOffset)+'</div></div>'+
+        '<div class="trip-right"><div class="trip-price mono">от 5–'+state.corridor.fullPrice+' BYN</div>'+
+          '<div class="trip-seats '+seatsClass+'">'+seatsText+'</div></div>';
+      if(free>0){
+        card.addEventListener('click', function(t, f){
+          return function(){
+            state.trip = {time:t, arrMin: depMin+lastOffset, free:f};
+            state.pickupIdx = null; state.dropoffIdx = null;
+            renderPoints();
+            goTo('points');
+          };
+        }(time, free));
+      }
+      list.appendChild(card);
+    });
+
+    if(!anyFree){
+      var empty = document.createElement('div');
+      empty.className='empty-state';
+      empty.textContent='На эту дату свободных мест нет — попробуйте другой день.';
+      list.appendChild(empty);
+    }
+  }
+
+  /* ---------------- 4. points ---------------- */
+  function renderPoints(){
+    document.getElementById('pointsRecap').innerHTML =
+      '<span class="badge">'+state.corridor.code+'</span> '+state.from+' → '+state.to+' · '+state.trip.time;
+
+    renderPointList('pickupList', state.corridor.points, null, state.pickupIdx, function(i){
+      state.pickupIdx = i;
+      if(state.dropoffIdx!==null && state.dropoffIdx<=i) state.dropoffIdx = null;
+      document.getElementById('dropoffBlock').classList.remove('disabled');
+      renderPoints();
+    });
+
+    var dropoffPoints = state.pickupIdx===null ? [] : state.corridor.points;
+    renderPointList('dropoffList', dropoffPoints, state.pickupIdx, state.dropoffIdx, function(i){
+      state.dropoffIdx = i;
+      renderPoints();
+    });
+    document.getElementById('dropoffBlock').classList.toggle('disabled', state.pickupIdx===null);
+
+    document.getElementById('pointsContinue').disabled = !(state.pickupIdx!==null && state.dropoffIdx!==null);
+  }
+
+  function renderPointList(containerId, points, minIdxExclusive, selectedIdx, onSelect){
+    var el = document.getElementById(containerId);
+    el.innerHTML='';
+    points.forEach(function(p, i){
+      if(minIdxExclusive!==null && i<=minIdxExclusive) return;
+      var row = document.createElement('div');
+      row.className = 'point-row'+(i===selectedIdx?' selected':'');
+      row.innerHTML =
+        '<div class="rail"><div class="rail-dot"></div><div class="rail-line"></div></div>'+
+        '<div><div class="point-name">'+p.name+'</div><div class="point-offset">+'+fmtDuration(p.offset)+' от старта</div></div>';
+      row.addEventListener('click', function(){ onSelect(i); });
+      el.appendChild(row);
+    });
+  }
+
+  document.getElementById('pointsContinue').addEventListener('click', function(){
+    state.seats = 1;
+    document.getElementById('seatsVal').textContent = '1';
+    document.getElementById('nameInput').value='';
+    document.getElementById('phoneInput').value='';
+    document.getElementById('bookBtn').disabled = false;
+    document.getElementById('seatsMinus').disabled = false;
+    document.getElementById('seatsPlus').disabled = false;
+    document.getElementById('nameInput').disabled = false;
+    document.getElementById('phoneInput').disabled = false;
+    document.getElementById('nameInput').style.borderColor = '';
+    document.getElementById('phoneGroup').classList.remove('error');
+    renderCheckout();
+    goTo('checkout');
+    startHoldTimer();
+  });
+
+  /* ---------------- 5. checkout ---------------- */
+  function currentPickup(){ return state.corridor.points[state.pickupIdx]; }
+  function currentDropoff(){ return state.corridor.points[state.dropoffIdx]; }
+  function perSeatPrice(){ return segmentPrice(state.corridor, currentPickup().offset, currentDropoff().offset); }
+  function maxSeats(){ return Math.max(1, Math.min(MAX_BOOK_SEATS, state.trip.free)); }
+
+  function renderCheckout(){
+    var summary = document.getElementById('checkoutSummary');
+    summary.innerHTML =
+      '<div class="summary-row"><span>Маршрут</span><b>'+state.corridor.code+'  '+state.from+' → '+state.to+'</b></div>'+
+      '<div class="summary-row"><span>Дата и время</span><b>'+state.dateLabel+', '+state.trip.time+'</b></div>'+
+      '<div class="summary-row"><span>Посадка</span><b>'+currentPickup().name+'</b></div>'+
+      '<div class="summary-row"><span>Высадка</span><b>'+currentDropoff().name+'</b></div>'+
+      '<div class="summary-row"><span>Цена за место</span><b>'+perSeatPrice()+' BYN</b></div>';
+    updateCheckoutTotals();
+  }
+  function updateCheckoutTotals(){
+    document.getElementById('seatsVal').textContent = state.seats;
+    document.getElementById('totalPrice').textContent = (perSeatPrice()*state.seats)+' BYN';
+  }
+  document.getElementById('seatsMinus').addEventListener('click', function(){
+    if(state.seats>1){ state.seats--; updateCheckoutTotals(); }
+  });
+  document.getElementById('seatsPlus').addEventListener('click', function(){
+    if(state.seats<maxSeats()){ state.seats++; updateCheckoutTotals(); }
+  });
+
+  document.getElementById('phoneInput').addEventListener('input', function(e){
+    var digits = e.target.value.replace(/\D/g,'').slice(0,9);
+    var out = digits.slice(0,2);
+    if(digits.length>2) out += ' '+digits.slice(2,5);
+    if(digits.length>5) out += ' '+digits.slice(5,7);
+    if(digits.length>7) out += ' '+digits.slice(7,9);
+    e.target.value = out;
+    document.getElementById('phoneGroup').classList.remove('error');
+  });
+
+  document.getElementById('bookBtn').addEventListener('click', function(){
+    var name = document.getElementById('nameInput').value.trim();
+    var phoneDigits = document.getElementById('phoneInput').value.replace(/\D/g,'');
+    var nameField = document.getElementById('nameInput');
+    var phoneGroup = document.getElementById('phoneGroup');
+    nameField.style.borderColor = name ? 'var(--line)' : 'var(--danger)';
+    phoneGroup.classList.toggle('error', phoneDigits.length!==9);
+    if(!name || phoneDigits.length!==9) return;
+    state.name = name; state.phone = '+375 '+document.getElementById('phoneInput').value.trim();
+    clearHoldTimer();
+
+    var entry = {
+      id: Date.now(),
+      code: state.corridor.code, from: state.from, to: state.to,
+      dateLabel: state.dateLabel, time: state.trip.time,
+      pickupName: currentPickup().name, dropoffName: currentDropoff().name,
+      name: state.name, seats: state.seats,
+      price: perSeatPrice()*state.seats,
+      ticketCode: 'V-'+Math.floor(100000+Math.random()*900000),
+      driver: DRIVERS[Math.floor(Math.random()*DRIVERS.length)],
+      driverPhone: genDriverPhone(),
+      cancelled: false
+    };
+    MY_TRIPS.push(entry);
+    openTripId = entry.id;
+    renderTicketScreen(entry);
+    goTo('ticket');
+  });
+
+  /* ---------------- 6. ticket ---------------- */
+  function buildTicketCardHTML(entry){
+    return '<div class="ticket-top">'+
+        '<span class="badge">'+entry.code+'</span>'+
+        '<div class="ticket-route"><span class="display cities">'+entry.from+' → '+entry.to+'</span></div>'+
+        '<div class="ticket-sub">'+entry.dateLabel+' · отправление '+entry.time+'</div>'+
+        '<div class="pay-chip">Оплата наличными при посадке</div>'+
+      '</div>'+
+      '<div class="ticket-tear"></div>'+
+      '<div class="ticket-bottom">'+
+        '<div class="tk-row"><span>Посадка</span><b>'+entry.pickupName+'</b></div>'+
+        '<div class="tk-row"><span>Высадка</span><b>'+entry.dropoffName+'</b></div>'+
+        '<div class="tk-row"><span>Пассажир</span><b>'+escapeHtml(entry.name)+'</b></div>'+
+        '<div class="tk-row"><span>Мест</span><b>'+entry.seats+'</b></div>'+
+        '<div class="tk-row"><span>Код брони</span><b>'+entry.ticketCode+'</b></div>'+
+        '<div class="tk-row" style="border-top:1px solid var(--line); margin-top:6px; padding-top:12px;"><span>К оплате водителю</span><b style="color:var(--accent); font-size:16px;">'+entry.price+' BYN</b></div>'+
+      '</div>';
+  }
+
+  var NOTIF_ICONS = {
+    check: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>',
+    phone: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>',
+    clock: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
+    cross: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>'
+  };
+
+  function buildNotificationsHTML(entry){
+    var items = [
+      { icon:'check', state:'sent', title:'Бронь подтверждена', sub:'Код '+entry.ticketCode }
+    ];
+    items.push({ icon:'phone', state:'sent', title:'Водитель назначен: '+entry.driver, call:entry.driverPhone });
+    if(entry.cancelled){
+      items.push({ icon:'cross', state:'cancel', title:'Рейс отменён', sub:'Уведомление отправлено в чат бота' });
+    } else {
+      items.push({ icon:'clock', state:'pending', title:'Напоминание за 1 час до отправления', sub:'Придёт в чат бота автоматически' });
+    }
+    return items.map(function(it){
+      return '<div class="notif-item"><div class="notif-icon '+it.state+'">'+NOTIF_ICONS[it.icon]+'</div>'+
+        '<div class="notif-body"><div class="notif-title">'+it.title+'</div>'+
+        (it.sub ? '<div class="notif-sub">'+it.sub+'</div>' : '')+
+        (it.call ? '<a class="notif-call mono" href="tel:'+it.call.replace(/\s|-/g,'')+'">'+it.call+' · позвонить</a>' : '')+
+        '</div></div>';
+    }).join('');
+  }
+
+  function renderTicketScreen(entry){
+    document.getElementById('ticketIcon').textContent = entry.cancelled ? '✕' : '✓';
+    document.getElementById('ticketIcon').style.background = entry.cancelled ? 'rgba(255,92,108,.14)' : '';
+    document.getElementById('ticketIcon').style.color = entry.cancelled ? 'var(--danger)' : '';
+    document.getElementById('ticketTitle').textContent = entry.cancelled ? 'Бронь отменена' : 'Место забронировано';
+
+    var card = document.getElementById('ticketCard');
+    card.innerHTML = buildTicketCardHTML(entry);
+    card.classList.toggle('cancelled', entry.cancelled);
+    if(entry.cancelled){
+      var stamp = document.createElement('div');
+      stamp.className = 'ticket-stamp';
+      stamp.textContent = 'Отменено';
+      card.appendChild(stamp);
+    }
+    document.getElementById('cancelBtn').style.display = entry.cancelled ? 'none' : '';
+    document.getElementById('notifList').innerHTML = buildNotificationsHTML(entry);
+  }
+
+  var cancelOverlay = document.getElementById('cancelOverlay');
+  var cancelSheet = document.getElementById('cancelSheet');
+  function closeCancelSheet(){ cancelOverlay.classList.remove('open'); cancelSheet.classList.remove('open'); }
+
+  document.getElementById('cancelBtn').addEventListener('click', function(){
+    var entry = MY_TRIPS.filter(function(t){ return t.id===openTripId; })[0];
+    if(!entry) return;
+    document.getElementById('cancelRecap').textContent =
+      entry.code+'  '+entry.from+' → '+entry.to+' · '+entry.dateLabel+', '+entry.time+'. Место освободится и станет доступно другим пассажирам.';
+    cancelOverlay.classList.add('open');
+    cancelSheet.classList.add('open');
+  });
+  document.getElementById('cancelDismissBtn').addEventListener('click', closeCancelSheet);
+  cancelOverlay.addEventListener('click', closeCancelSheet);
+  document.getElementById('cancelConfirmBtn').addEventListener('click', function(){
+    closeCancelSheet();
+    var entry = MY_TRIPS.filter(function(t){ return t.id===openTripId; })[0];
+    if(!entry) return;
+    entry.cancelled = true;
+    renderTicketScreen(entry);
+  });
+
+  /* ---------------- home ---------------- */
+  function resetWizardState(){
+    state = {from:null,to:null,dateObj:null,dateLabel:null,dateKey:null,corridor:null,trip:null,pickupIdx:null,dropoffIdx:null,seats:1,name:'',phone:''};
+    document.getElementById('fromValue').textContent='Выбрать город';
+    document.getElementById('fromValue').classList.add('placeholder');
+    document.getElementById('toValue').textContent='Выбрать город';
+    document.getElementById('toValue').classList.add('placeholder');
+    document.getElementById('directionContinue').disabled = true;
+  }
+
+  function renderHome(){
+    var wrap = document.getElementById('myTripsList');
+    if(MY_TRIPS.length===0){
+      wrap.innerHTML = '<div class="empty-state">Пока нет поездок — самое время забронировать первую.</div>';
+      return;
+    }
+    wrap.innerHTML = MY_TRIPS.slice().reverse().map(function(entry){
+      var statusClass = entry.cancelled ? 'st-cancel' : 'st-ok';
+      var statusText = entry.cancelled ? 'отменена' : 'ожидается';
+      return '<div class="mytrip-row" data-id="'+entry.id+'">'+
+        '<div class="mytrip-top"><span class="badge">'+entry.code+'</span><span class="mytrip-route">'+entry.from+' → '+entry.to+'</span>'+
+          '<span class="mytrip-status '+statusClass+'">'+statusText+'</span></div>'+
+        '<div class="mytrip-sub">'+entry.dateLabel+', '+entry.time+' · '+entry.seats+' мест · '+entry.price+' BYN</div>'+
+      '</div>';
+    }).join('');
+    document.querySelectorAll('.mytrip-row').forEach(function(row){
+      row.addEventListener('click', function(){
+        var entry = MY_TRIPS.filter(function(t){ return t.id===+row.dataset.id; })[0];
+        if(!entry) return;
+        openTripId = entry.id;
+        renderTicketScreen(entry);
+        goTo('ticket');
+      });
+    });
+  }
+
+  document.getElementById('newBookingBtn').addEventListener('click', function(){
+    resetWizardState();
+    goTo('direction');
+  });
+  document.getElementById('homeBtn').addEventListener('click', function(){
+    renderHome();
+    goTo('home');
+  });
+  document.getElementById('restartBtn').addEventListener('click', function(){
+    clearHoldTimer();
+    resetWizardState();
+    goTo('direction');
+  });
+
+  /* ---------------- init ---------------- */
+  buildPopularChips();
+  renderHome();
+  goTo('home');
+})();
+</script>
+</body>
+</html>
