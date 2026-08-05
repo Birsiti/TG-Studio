@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Прокат — админ</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+  :root{
+    --bg:#111417; --surface:#1A1E22; --surface-2:#20252A; --surface-3:#262B31;
+    --ink:#EDEFF0; --ink-soft:#8C949C; --ink-faint:#565D64;
+    --accent:#F5A300; --accent-dark:#D88C00; --accent-soft:rgba(245,163,0,.13);
+    --accent-2:#38A89D; --accent-2-soft:rgba(56,168,157,.14);
+    --warn:#D98324; --warn-soft:rgba(217,131,36,.14);
+    --danger:#E5484D; --danger-soft:rgba(229,72,77,.14);
+    --line:#2A2F35; --line-strong:#3A414A;
+    --radius:14px; --radius-sm:10px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  /* Светлая тема — включается по цветовой схеме Telegram или системной, см. applyTheme() в скрипте */
+  :root[data-theme="light"]{
+    --bg:#F2F3F5; --surface:#FFFFFF; --surface-2:#F5F6F7; --surface-3:#EBEDEF;
+    --ink:#181B1F; --ink-soft:#5C636B; --ink-faint:#8D949B;
+    --accent:#B8720A; --accent-dark:#8F5900; --accent-soft:rgba(184,114,10,.12);
+    --accent-2:#1F7A6E; --accent-2-soft:rgba(31,122,110,.12);
+    --warn:#9C5A0E; --warn-soft:rgba(156,90,14,.12);
+    --danger:#C4282E; --danger-soft:rgba(196,40,46,.12);
+    --line:#E3E5E8; --line-strong:#CBCED2;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme]),:root[data-theme="light"]{
+      --bg:#F2F3F5; --surface:#FFFFFF; --surface-2:#F5F6F7; --surface-3:#EBEDEF;
+      --ink:#181B1F; --ink-soft:#5C636B; --ink-faint:#8D949B;
+      --accent:#B8720A; --accent-dark:#8F5900; --accent-soft:rgba(184,114,10,.12);
+      --accent-2:#1F7A6E; --accent-2-soft:rgba(31,122,110,.12);
+      --warn:#9C5A0E; --warn-soft:rgba(156,90,14,.12);
+      --danger:#C4282E; --danger-soft:rgba(196,40,46,.12);
+      --line:#E3E5E8; --line-strong:#CBCED2;
+    }
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;font-size:15px;line-height:1.4;min-height:100vh;padding-bottom:max(100px, calc(74px + env(safe-area-inset-bottom, 34px)));}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  h1,h2,h3{font-family:'Chakra Petch',sans-serif;font-weight:600;}
+  button{font-family:inherit;border:none;cursor:pointer;background:none;color:inherit;}
+  input,select,textarea{font-family:inherit;font-size:15px;}
+
+  .power-rail{height:3px;background:linear-gradient(90deg,var(--accent-dark),var(--accent),var(--accent-2));}
+
+  /* topbar */
+  .topbar{position:sticky;top:0;z-index:30;padding:calc(14px + var(--safe-top)) 18px 14px;background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+  .brand{display:flex;align-items:center;gap:11px;}
+  .brand-mark{width:36px;height:36px;border-radius:8px;background:var(--surface-3);border:1px solid var(--line-strong);display:flex;align-items:center;justify-content:center;color:var(--accent);}
+  .brand-mark svg{width:18px;height:18px;}
+  .brand-name{font-family:'Chakra Petch',sans-serif;font-size:14.5px;font-weight:700;text-transform:uppercase;letter-spacing:.02em;}
+  .brand-sub{font-size:12.5px;color:var(--ink-faint);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+  .topbar-right{display:flex;align-items:center;gap:8px;}
+  .role-badge{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;padding:5px 10px;border-radius:6px;background:var(--accent-soft);color:var(--accent);text-transform:uppercase;letter-spacing:.04em;}
+  .icon-btn{width:44px;height:44px;border-radius:9px;background:var(--surface-3);border:1px solid var(--line-strong);display:flex;align-items:center;justify-content:center;color:var(--ink);}
+  .icon-btn svg{width:16px;height:16px;}
+  .icon-btn.accent{background:var(--accent);color:#15130A;border-color:var(--accent);}
+
+  /* screens */
+  .screen{padding:16px 16px 8px;display:none;}
+  .screen.active{display:block;}
+  .section-label{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:12.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-faint);font-weight:600;margin:20px 2px 10px;}
+  .section-label:first-child{margin-top:2px;}
+  .section-label::after{content:'';flex:1;height:1px;background:var(--line);}
+  .section-label .count{color:var(--ink-soft);font-weight:700;}
+
+  /* tabbar */
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--surface);border-top:1px solid var(--line);padding:8px 10px calc(8px + var(--safe-bottom));display:flex;gap:4px;}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 4px;border-radius:10px;color:var(--ink-faint);}
+  .tab svg{width:20px;height:20px;}
+  .tab span{font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
+  .tab.active{color:var(--accent);}
+
+  /* stat cards */
+  .stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:4px;}
+  .stat-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 13px;}
+  .stat-card .lbl{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;}
+  .stat-card .val{font-family:'JetBrains Mono',monospace;font-size:19px;font-weight:700;margin-top:4px;color:var(--accent);}
+
+  /* op rows */
+  .op-row{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:13px 14px;margin-bottom:8px;}
+  .op-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}
+  .op-model{font-weight:700;font-size:14px;}
+  .op-client{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .op-dates{font-size:12.5px;color:var(--ink-faint);margin-top:3px;font-family:'JetBrains Mono',monospace;}
+  .op-addr{font-size:12.5px;color:var(--warn);margin-top:3px;}
+  .method-tag{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;padding:3px 8px;border-radius:5px;text-transform:uppercase;white-space:nowrap;}
+  .method-tag.pickup{background:var(--accent-2-soft);color:var(--accent-2);}
+  .method-tag.delivery{background:var(--accent-soft);color:var(--accent);}
+  .op-actions{margin-top:11px;display:flex;gap:8px;}
+  .op-actions .btn{flex:1;}
+
+  /* buttons */
+  .btn{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border-radius:var(--radius-sm);font-size:13.5px;font-weight:700;font-family:'Chakra Petch',sans-serif;text-transform:uppercase;letter-spacing:.03em;text-decoration:none;}
+  .btn-primary{background:var(--accent);color:#15130A;}
+  .btn-primary:disabled{background:var(--surface-3);color:var(--ink-faint);}
+  .btn-ghost{background:var(--surface-3);color:var(--ink);border:1px solid var(--line-strong);}
+  .btn-warn{background:var(--warn-soft);color:var(--warn);border:1px solid rgba(217,131,36,.3);}
+
+  .empty-state{text-align:center;padding:44px 20px;color:var(--ink-faint);}
+  .empty-state svg{width:34px;height:34px;margin-bottom:10px;opacity:.5;}
+
+  /* inventory */
+  .model-group{margin-bottom:16px;}
+  .model-group-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;padding:0 2px;}
+  .model-group-head .name{font-weight:700;font-size:13.5px;}
+  .model-group-head .right{display:flex;align-items:center;gap:6px;}
+  .model-group-head .ratio{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-soft);}
+  .unit-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;}
+  .unit-chip{aspect-ratio:1;border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;border:1px solid var(--line-strong);}
+  .unit-chip.free{background:var(--accent-2-soft);color:var(--accent-2);}
+  .unit-chip.rented{background:var(--surface-3);color:var(--ink-soft);border-style:dashed;}
+  .unit-chip.repair{background:var(--danger-soft);color:var(--danger);}
+  .unit-chip.add{background:transparent;color:var(--ink-faint);border-style:dashed;font-size:18px;}
+
+  /* bookings search */
+  .search-wrap{position:relative;margin-bottom:8px;}
+  .search-wrap svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--ink-faint);pointer-events:none;}
+  .search-input{width:100%;padding:10px 12px 10px 34px;border-radius:var(--radius-sm);border:1px solid var(--line-strong);background:var(--surface-2);color:var(--ink);font-size:14px;}
+  .search-input::placeholder{color:var(--ink-faint);}
+  .search-input:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+
+  /* filter chips */
+  .filter-row{display:flex;gap:6px;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:none;margin-bottom:6px;}
+  .filter-row::-webkit-scrollbar{display:none;}
+  .fchip{flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:8px 13px;border-radius:8px;background:var(--surface-2);border:1px solid var(--line);font-size:12px;font-weight:600;color:var(--ink-soft);font-family:'JetBrains Mono',monospace;}
+  .fchip.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
+  .status-chip{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700;padding:3px 8px;border-radius:5px;white-space:nowrap;text-transform:uppercase;}
+  .status-chip.pending_handout,.status-chip.pending_return{background:var(--surface-3);color:var(--ink-soft);}
+  .status-chip.active{background:var(--accent-2-soft);color:var(--accent-2);}
+  .status-chip.overdue{background:var(--danger-soft);color:var(--danger);}
+  .status-chip.returned{background:var(--surface-3);color:var(--ink-faint);}
+
+  /* sheets */
+  .sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:60;opacity:0;pointer-events:none;transition:opacity .2s;}
+  .sheet-scrim.open{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;z-index:61;background:var(--bg);border-radius:18px 18px 0 0;border-top:1px solid var(--line-strong);max-height:92vh;display:flex;flex-direction:column;transform:translateY(110%);opacity:0;visibility:hidden;transition:transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s ease, visibility 0s linear .28s;}
+  .sheet.open{transform:translateY(0);opacity:1;visibility:visible;transition:transform .28s cubic-bezier(.2,.8,.2,1), opacity .28s ease, visibility 0s linear 0s;}
+  .sheet-handle{width:36px;height:4px;border-radius:3px;background:var(--line-strong);margin:10px auto 4px;}
+  .sheet-head{padding:6px 18px 12px;display:flex;align-items:center;justify-content:space-between;}
+  .sheet-head h3{font-family:'Chakra Petch',sans-serif;text-transform:uppercase;letter-spacing:.02em;font-size:15px;margin:0;}
+  .sheet-body{overflow-y:auto;padding:0 18px calc(20px + var(--safe-bottom));}
+
+  /* forms */
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--ink-soft);margin-bottom:7px;text-transform:uppercase;letter-spacing:.03em;}
+  .field textarea,.field input,.field select{width:100%;padding:12px 13px;border-radius:var(--radius-sm);border:1px solid var(--line-strong);background:var(--surface-3);color:var(--ink);}
+  .field select option{background:var(--surface-3);}
+  .field textarea:focus,.field input:focus,.field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);}
+  .field-hint{font-size:12.5px;color:var(--ink-faint);margin-top:5px;font-family:'JetBrains Mono',monospace;}
+  .field-row{display:flex;gap:10px;}
+  .field-row .field{flex:1;}
+  input[type="date"]{color-scheme:dark;}
+  :root[data-theme="light"] input[type="date"]{color-scheme:light;}
+
+  /* unit pick */
+  .unit-pick-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;}
+  .unit-pick{aspect-ratio:1;border-radius:9px;border:1.5px solid var(--line-strong);background:var(--surface-2);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;color:var(--ink-soft);}
+  .unit-pick.selected{border-color:var(--accent);background:var(--accent-soft);color:var(--accent);}
+  .unit-pick:disabled{opacity:.3;}
+
+  /* condition toggle */
+  .toggle-row{display:flex;gap:8px;margin-bottom:14px;}
+  .toggle-opt{flex:1;min-height:44px;padding:14px 13px;border-radius:var(--radius-sm);border:1.5px solid var(--line-strong);background:var(--surface-2);text-align:center;font-weight:700;font-size:13px;display:flex;align-items:center;justify-content:center;gap:7px;}
+  .toggle-opt svg{width:16px;height:16px;}
+  .toggle-opt.ok.selected{border-color:var(--accent-2);background:var(--accent-2-soft);color:var(--accent-2);}
+  .toggle-opt.bad.selected{border-color:var(--danger);background:var(--danger-soft);color:var(--danger);}
+
+  /* photo upload in inspection */
+  .photo-upload-area{border:1.5px dashed var(--line-strong);border-radius:var(--radius-sm);background:var(--surface-3);display:flex;align-items:center;justify-content:center;min-height:80px;margin-bottom:14px;overflow:hidden;position:relative;cursor:pointer;}
+  .photo-upload-area input[type="file"]{position:absolute;inset:0;opacity:0;cursor:pointer;}
+  .photo-upload-hint{display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--ink-faint);pointer-events:none;}
+  .photo-upload-hint svg{width:22px;height:22px;}
+  .photo-upload-hint span{font-family:'JetBrains Mono',monospace;font-size:12.5px;text-transform:uppercase;letter-spacing:.04em;}
+  .photo-thumbs{display:flex;gap:8px;flex-wrap:wrap;padding:10px;}
+  .photo-thumb{width:70px;height:70px;border-radius:8px;object-fit:cover;border:1px solid var(--line-strong);}
+
+  /* unit detail */
+  .unit-detail-info{background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--radius-sm);padding:14px;margin-bottom:16px;}
+  .unit-detail-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:13px;}
+  .unit-detail-row:last-child{border-bottom:none;}
+  .unit-detail-row .k{color:var(--ink-soft);font-family:'JetBrains Mono',monospace;font-size:13px;}
+  .unit-detail-row .v{font-weight:600;}
+
+  /* edit model sheet */
+  .edit-photo-preview{width:100%;aspect-ratio:16/9;background:var(--surface-3);border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:10px;border:1px solid var(--line-strong);}
+  .edit-photo-preview img{width:100%;height:100%;object-fit:cover;}
+  .edit-photo-preview .no-photo{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;}
+  .char-count{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--ink-faint);text-align:right;margin-top:4px;}
+
+  /* loading */
+  .loading-screen{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+  .spinner{width:24px;height:24px;border-radius:4px;border:3px solid var(--line-strong);border-top-color:var(--accent);animation:spin .7s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading-screen span{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;}
+  .toast{position:fixed;left:16px;right:16px;bottom:calc(84px + var(--safe-bottom));background:var(--surface-3);border:1px solid var(--line-strong);color:var(--ink);padding:13px 16px;border-radius:10px;font-size:13.5px;font-weight:600;z-index:200;transform:translateY(120%);transition:transform .25s ease;display:flex;align-items:center;gap:8px;}
+  .toast.show{transform:translateY(0);}
+</style>
+</head>
+<body>
+<div class="power-rail"></div>
+<div class="loading-screen" id="loadingScreen"><div class="spinner"></div><span>Инициализация…</span></div>
+
+<div id="app" style="display:none;">
+  <div class="topbar">
+    <div class="brand">
+      <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></div>
+      <div><div class="brand-name" id="brandName">Прокат-Инструмент</div><div class="brand-sub">СМЕНА · <span id="todayDate"></span></div></div>
+    </div>
+    <div class="topbar-right">
+      <!-- Создать бронь вручную — всегда доступна из шапки -->
+      <button class="icon-btn accent" id="newBookingBtn" title="Создать бронь вручную">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <div class="role-badge">АДМИН</div>
+    </div>
+  </div>
+
+  <!-- СЕГОДНЯ -->
+  <div class="screen active" id="screen-today">
+    <div class="stat-row">
+      <div class="stat-card"><div class="lbl">Выдать сегодня</div><div class="val" id="statHandout">0</div></div>
+      <div class="stat-card"><div class="lbl">Принять сегодня</div><div class="val" id="statReturn">0</div></div>
+    </div>
+    <div class="section-label">Выдать <span class="count" id="handoutCount"></span></div>
+    <div id="handoutList"></div>
+    <div class="section-label">Принять <span class="count" id="returnCount"></span></div>
+    <div id="returnList"></div>
+  </div>
+
+  <!-- ИНВЕНТАРЬ -->
+  <div class="screen" id="screen-inventory">
+    <div class="section-label">Единицы по моделям</div>
+    <div id="inventoryList"></div>
+  </div>
+
+  <!-- БРОНИ -->
+  <div class="screen" id="screen-bookings">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input class="search-input" id="bookingSearch" type="search" placeholder="Клиент или номер ЗК-…" autocomplete="off">
+    </div>
+    <div class="filter-row" id="filterRow"></div>
+    <div id="bookingsAllList"></div>
+  </div>
+
+  <div class="tabbar">
+    <button class="tab active" data-screen="today">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg>
+      <span>Сегодня</span>
+    </button>
+    <button class="tab" data-screen="inventory">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+      <span>Инвентарь</span>
+    </button>
+    <button class="tab" data-screen="bookings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <span>Брони</span>
+    </button>
+  </div>
+</div>
+
+<!-- SHEET: ОСМОТР (выдача / возврат) -->
+<div class="sheet-scrim" id="opScrim"></div>
+<div class="sheet" id="opSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <h3 id="opSheetTitle">Выдача</h3>
+    <button class="icon-btn" id="opSheetClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="sheet-body" id="opSheetBody"></div>
+</div>
+
+<!-- SHEET: ДЕТАЛИ ЕДИНИЦЫ В АРЕНДЕ -->
+<div class="sheet-scrim" id="unitScrim"></div>
+<div class="sheet" id="unitSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <h3 id="unitSheetTitle">Единица в аренде</h3>
+    <button class="icon-btn" id="unitSheetClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="sheet-body" id="unitSheetBody"></div>
+</div>
+
+<!-- SHEET: РУЧНОЕ СОЗДАНИЕ БРОНИ -->
+<div class="sheet-scrim" id="newBookingScrim"></div>
+<div class="sheet" id="newBookingSheet" style="max-height:92vh;">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <h3>Новая бронь</h3>
+    <button class="icon-btn" id="newBookingClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="sheet-body" id="newBookingBody"></div>
+</div>
+
+<!-- SHEET: РЕДАКТИРОВАНИЕ МОДЕЛИ (фото/описание) -->
+<div class="sheet-scrim" id="editScrim"></div>
+<div class="sheet" id="editSheet" style="max-height:92vh;">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <h3 id="editSheetTitle">Редактировать</h3>
+    <button class="icon-btn" id="editSheetClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="sheet-body" id="editSheetBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ============================================================ CONFIG ============================================================ */
+const CONFIG = { businessName: "Прокат-Инструмент", apiUrl: "PASTE_APPS_SCRIPT_URL_HERE" };
+
+/* ============================================================ MOCK DATA ============================================================ */
+let MOCK_MODELS = [
+  { id: "m1", name: "Перфоратор Bosch GBH 2-26", totalQty: 5, specs: "800 Вт · SDS-plus · 2.7 кг", photoUrl: "", description: "Профессиональный перфоратор для сверления в бетоне." },
+  { id: "m2", name: "Болгарка Makita 230мм",      totalQty: 4, specs: "2000 Вт · диск 230мм · 5.2 кг", photoUrl: "", description: "Угловая шлифмашина для резки металла и камня." },
+  { id: "m3", name: "Бетономешалка 130л",          totalQty: 2, specs: "130 л · 550 Вт · на колёсах", photoUrl: "", description: "Электрическая бетономешалка на стальной раме." },
+  { id: "m4", name: "Строительные леса 4×2м",      totalQty: 3, specs: "высота 4м · сталь · площадка 2м", photoUrl: "", description: "Рамные строительные леса из оцинкованной стали." },
+  { id: "m5", name: "Триммер бензиновый",          totalQty: 6, specs: "25.4 см³ · катушка+нож · 6.4 кг", photoUrl: "", description: "Бензиновый триммер с катушкой и ножом." },
+];
+
+function genUnits() {
+  const seeds = { m1:["rented","rented","free","free","repair"], m2:["rented","free","free","free"], m3:["rented","free"], m4:["free","free","free"], m5:["rented","rented","free","free","free","free"] };
+  const units = [];
+  MOCK_MODELS.forEach(m => {
+    const statuses = seeds[m.id] || Array(m.totalQty).fill("free");
+    statuses.forEach((st,i) => units.push({ id:`${m.id}-${i+1}`, modelId:m.id, num:i+1, status:st }));
+  });
+  return units;
+}
+let MOCK_UNITS = genUnits();
+
+let MOCK_BOOKINGS = [
+  { id:"ЗК-1058", modelId:"m1", model:"Перфоратор Bosch GBH 2-26", client:"Игорь Савчук",  phone:"+375 29 111 22 33", from:"2026-07-20", to:"2026-07-23", method:"pickup",   status:"pending_handout" },
+  { id:"ЗК-1059", modelId:"m4", model:"Строительные леса 4×2м",     client:"Наталья Дрозд", phone:"+375 33 444 55 66", from:"2026-07-20", to:"2026-07-25", method:"delivery", address:"ул. Сурганова, 12, кв. 5", status:"pending_handout" },
+  { id:"ЗК-1051", modelId:"m5", model:"Триммер бензиновый",         client:"Пётр Мельник",  phone:"+375 25 777 88 99", from:"2026-07-17", to:"2026-07-20", method:"delivery", address:"ул. Немига, 3", status:"pending_return" },
+  { id:"ЗК-1046", modelId:"m2", model:"Болгарка Makita 230мм",      client:"Сергей Ким",    phone:"+375 29 000 11 22", from:"2026-07-16", to:"2026-07-20", method:"pickup",   status:"pending_return",  unitId:"m2-1" },
+  { id:"ЗК-1042", modelId:"m2", model:"Болгарка Makita 230мм",      client:"Анна Реут",     phone:"+375 29 222 33 44", from:"2026-07-14", to:"2026-07-17", method:"pickup",   status:"returned" },
+  { id:"ЗК-1039", modelId:"m1", model:"Перфоратор Bosch GBH 2-26", client:"Дмитрий Волк",  phone:"+375 33 555 66 77", from:"2026-07-10", to:"2026-07-14", method:"delivery", address:"ул. Козлова, 8", status:"overdue", unitId:"m1-1" },
+  { id:"ЗК-1035", modelId:"m3", model:"Бетономешалка 130л",         client:"Олег Юрчик",    phone:"+375 25 333 22 11", from:"2026-07-08", to:"2026-07-12", method:"pickup",   status:"returned" },
+];
+// Связываем единицы m1-1 и m2-1 с активными бронями
+MOCK_UNITS.find(u => u.id === "m1-1").bookingId = "ЗК-1039";
+MOCK_UNITS.find(u => u.id === "m2-1").bookingId = "ЗК-1046";
+
+/* ============================================================ api(action, payload) ============================================================ */
+function api(action, payload) {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      switch (action) {
+
+        case "getToday": {
+          const handout = MOCK_BOOKINGS.filter(b => b.status === "pending_handout");
+          const ret     = MOCK_BOOKINGS.filter(b => b.status === "pending_return");
+          resolve({ ok:true, handout, ret });
+          break;
+        }
+        case "getUnits":
+          resolve({ ok:true, units:MOCK_UNITS, models:MOCK_MODELS });
+          break;
+
+        case "getFreeUnits": {
+          const free = MOCK_UNITS.filter(u => u.modelId === payload.modelId && u.status === "free");
+          resolve({ ok:true, units:free });
+          break;
+        }
+        case "getUnitBooking": {
+          const u = MOCK_UNITS.find(x => x.id === payload.unitId);
+          const booking = u?.bookingId ? MOCK_BOOKINGS.find(b => b.id === u.bookingId) : null;
+          resolve({ ok:true, booking });
+          break;
+        }
+
+        case "checkOut": {
+          const b = MOCK_BOOKINGS.find(x => x.id === payload.bookingId);
+          if (b) { b.status = "active"; b.unitId = payload.unitId; }
+          const u = MOCK_UNITS.find(x => x.id === payload.unitId);
+          if (u) { u.status = "rented"; u.bookingId = payload.bookingId; }
+          resolve({ ok:true });
+          break;
+        }
+        case "checkIn": {
+          const b = MOCK_BOOKINGS.find(x => x.id === payload.bookingId);
+          if (b) { b.status = "returned"; }
+          const u = MOCK_UNITS.find(x => x.id === b?.unitId);
+          if (u) { u.status = payload.damaged ? "repair" : "free"; delete u.bookingId; }
+          resolve({ ok:true });
+          break;
+        }
+        case "setUnitStatus": {
+          const u = MOCK_UNITS.find(x => x.id === payload.unitId);
+          if (u) u.status = payload.status;
+          resolve({ ok:true });
+          break;
+        }
+        case "addUnit": {
+          const m = MOCK_MODELS.find(x => x.id === payload.modelId);
+          if (m) {
+            const cnt = MOCK_UNITS.filter(u => u.modelId === payload.modelId).length;
+            MOCK_UNITS.push({ id:`${payload.modelId}-${cnt+1}`, modelId:payload.modelId, num:cnt+1, status:"free" });
+            m.totalQty = cnt + 1;
+          }
+          resolve({ ok:true });
+          break;
+        }
+
+        case "updateModel": {
+          const m = MOCK_MODELS.find(x => x.id === payload.modelId);
+          if (m) { m.photoUrl=payload.photoUrl; m.description=payload.description; m.specs=payload.specs; }
+          resolve({ ok:true });
+          break;
+        }
+
+        case "getAllBookings":
+          resolve({ ok:true, bookings:MOCK_BOOKINGS });
+          break;
+
+        case "createBookingManual": {
+          const orderId = "ЗК-" + (2000 + Math.floor(Math.random() * 900));
+          const model = MOCK_MODELS.find(m => m.id === payload.modelId);
+          MOCK_BOOKINGS.unshift({
+            id: orderId,
+            modelId: payload.modelId,
+            model:  model?.name || "",
+            client: payload.client,
+            phone:  payload.phone,
+            from:   payload.from,
+            to:     payload.to,
+            method: payload.method,
+            address:payload.address || "",
+            status: "pending_handout"
+          });
+          resolve({ ok:true, orderId });
+          break;
+        }
+
+        case "setDeliveryStatus": {
+          const b = MOCK_BOOKINGS.find(x => x.id === payload.bookingId);
+          if (b) b.deliveryStatus = payload.status;
+          resolve({ ok:true });
+          break;
+        }
+
+        default:
+          resolve({ ok:false, error:"unknown action" });
+      }
+    }, 220);
+  });
+}
+
+/* ============================================================ TELEGRAM ============================================================ */
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+function haptic(style){ if(tg?.HapticFeedback){ if(["success","error","warning"].includes(style)) tg.HapticFeedback.notificationOccurred(style); else tg.HapticFeedback.impactOccurred(style||"light"); } }
+function confirmDialog(message){
+  return new Promise((resolve)=>{
+    if(tg?.showConfirm && tg.isVersionAtLeast?.("6.2")){
+      try { tg.showConfirm(message, (ok)=>resolve(ok)); return; } catch(e){}
+    }
+    resolve(window.confirm(message));
+  });
+}
+function setChrome(){ if(!tg)return; const s=getComputedStyle(document.body); try{tg.setHeaderColor(s.getPropertyValue("--surface").trim());tg.setBackgroundColor(s.getPropertyValue("--bg").trim());}catch(e){} }
+function applyTheme(){
+  const scheme = tg?.colorScheme || (window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  document.documentElement.dataset.theme = scheme;
+  setChrome();
+}
+function initTelegram(){
+  if(!tg){ applyTheme(); return; }
+  tg.ready(); tg.expand(); applyTheme();
+  tg.onEvent?.("themeChanged", applyTheme);
+  // У приложения свой скролл — отключаем свайп-закрытие, иначе Telegram рисует поверх интерфейса свою полосу-индикатор
+  if (tg.isVersionAtLeast?.("7.7")) { try { tg.disableVerticalSwipes(); } catch(e) {} }
+}
+
+function fmtDate(iso){ if(!iso)return""; const d=new Date(iso); return d.toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"}); }
+function fmtShort(iso){ if(!iso)return""; const d=new Date(iso); return d.toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit"}); }
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); setTimeout(()=>t.classList.remove("show"),2400); }
+function escHtml(s){ return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+/* ============================================================ SHEET HELPERS ============================================================ */
+function openSheet(scrimId, sheetId){ document.getElementById(scrimId).classList.add("open"); document.getElementById(sheetId).classList.add("open"); }
+function closeSheet(scrimId, sheetId){ document.getElementById(scrimId).classList.remove("open"); document.getElementById(sheetId).classList.remove("open"); }
+
+/* ============================================================ TABS ============================================================ */
+document.querySelectorAll(".tab").forEach(el => el.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(t=>t.classList.remove("active"));
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  el.classList.add("active");
+  document.getElementById("screen-" + el.dataset.screen).classList.add("active");
+  haptic("light");
+  if(el.dataset.screen==="inventory") loadInventory();
+  if(el.dataset.screen==="bookings")  loadAllBookings();
+}));
+
+/* ============================================================ СЕГОДНЯ ============================================================ */
+async function loadToday() {
+  const res = await api("getToday", {});
+  document.getElementById("statHandout").textContent = res.handout.length;
+  document.getElementById("statReturn").textContent  = res.ret.length;
+  document.getElementById("handoutCount").textContent = `(${res.handout.length})`;
+  document.getElementById("returnCount").textContent  = `(${res.ret.length})`;
+
+  const hList = document.getElementById("handoutList");
+  hList.innerHTML = res.handout.length ? res.handout.map(b=>opRowHtml(b,"handout")).join("") :
+    emptyState("Выдач на сегодня нет");
+
+  const rList = document.getElementById("returnList");
+  rList.innerHTML = res.ret.length ? res.ret.map(b=>opRowHtml(b,"return")).join("") :
+    emptyState("Возвратов на сегодня нет");
+
+  document.querySelectorAll("[data-op]").forEach(el=>el.addEventListener("click",()=>openOpSheet(el.dataset.op, el.dataset.id)));
+  document.querySelectorAll("[data-courier]").forEach(el=>el.addEventListener("click", async()=>{
+    el.disabled=true; el.textContent="Отмечено";
+    await api("setDeliveryStatus",{bookingId:el.dataset.courier, status:"out"});
+    haptic("success"); toast("Статус доставки обновлён");
+  }));
+}
+
+function opRowHtml(b, kind) {
+  const isDelivery = b.method === "delivery";
+  const courierBtn = isDelivery && kind === "handout"
+    ? `<button class="btn btn-warn" data-courier="${b.id}" style="padding:12px 10px;font-size:12px;">Курьер выехал</button>`
+    : "";
+  return `
+  <div class="op-row">
+    <div class="op-top">
+      <div>
+        <div class="op-model">${escHtml(b.model)}</div>
+        <div class="op-client">${escHtml(b.client)} · ${escHtml(b.phone)}</div>
+        <div class="op-dates">${fmtShort(b.from)} — ${fmtShort(b.to)} · ${b.id}</div>
+        ${isDelivery && b.address ? `<div class="op-addr">📍 ${escHtml(b.address)}</div>` : ""}
+      </div>
+      <span class="method-tag ${b.method}">${isDelivery ? "Доставка" : "Самовывоз"}</span>
+    </div>
+    <div class="op-actions">
+      <button class="btn btn-primary" data-op="${kind}" data-id="${b.id}">${kind==="handout"?"Оформить выдачу":"Оформить возврат"}</button>
+      ${courierBtn}
+    </div>
+  </div>`;
+}
+
+function emptyState(text){ return `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><div>${text}</div></div>`; }
+
+/* ============================================================ OP SHEET (осмотр + фото) ============================================================ */
+let opState = { kind:null, booking:null, unitId:null, condition:null, comment:"", photos:[] };
+
+async function openOpSheet(kind, bookingId) {
+  const res = await api("getAllBookings", {});
+  const booking = res.bookings.find(b=>b.id===bookingId);
+  opState = { kind, booking, unitId:null, condition:null, comment:"", photos:[] };
+  document.getElementById("opSheetTitle").textContent = kind==="handout" ? "Выдача — осмотр" : "Возврат — осмотр";
+  haptic("light");
+  openSheet("opScrim","opSheet");
+  await renderOpSheet();
+}
+function closeOpSheet(){ closeSheet("opScrim","opSheet"); }
+
+async function renderOpSheet() {
+  const body = document.getElementById("opSheetBody");
+  const b = opState.booking;
+  let unitPickerHtml = "";
+  if(opState.kind==="handout") {
+    const res = await api("getFreeUnits",{modelId:b.modelId});
+    unitPickerHtml = `
+      <div class="field"><label>Выберите единицу (${res.units.length} свободно)</label></div>
+      <div class="unit-pick-grid" id="unitGrid">
+        ${res.units.length ? res.units.map(u=>`<button class="unit-pick" data-unit="${u.id}">№${u.num}</button>`).join("") : "<p style='color:var(--ink-faint);font-size:13px;'>Свободных единиц нет</p>"}
+      </div>
+    `;
+  }
+  body.innerHTML = `
+    <div class="field"><label>Заявка</label>
+      <div style="font-weight:700;font-size:14.5px;">${escHtml(b.model)}</div>
+      <div style="font-size:12px;color:var(--ink-soft);margin-top:3px;">${escHtml(b.client)} · ${b.id}</div>
+    </div>
+    ${unitPickerHtml}
+    <div class="field">
+      <label>Состояние инструмента</label>
+      <div class="toggle-row">
+        <button class="toggle-opt ok" data-cond="ok">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>Исправен
+        </button>
+        <button class="toggle-opt bad" data-cond="bad">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 9v4M12 17h.01"/><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Повреждён
+        </button>
+      </div>
+    </div>
+    <div class="field">
+      <label>Фото состояния</label>
+      <div class="photo-upload-area" id="photoArea">
+        <input type="file" id="photoInput" accept="image/*" capture="environment" multiple>
+        <div class="photo-upload-hint">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span>Нажмите, чтобы сфотографировать</span>
+        </div>
+      </div>
+      <div id="photoThumbs"></div>
+    </div>
+    <div class="field">
+      <label>Комментарий</label>
+      <textarea id="opComment" rows="2" placeholder="Царапины, вмятины, некомплект…"></textarea>
+    </div>
+    <button class="btn btn-primary" id="opConfirm" disabled style="margin-bottom:8px;">${opState.kind==="handout"?"Подтвердить выдачу":"Подтвердить возврат"}</button>
+  `;
+
+  // Выбор единицы
+  if(opState.kind==="handout") {
+    document.querySelectorAll("#unitGrid .unit-pick").forEach(el=>el.addEventListener("click",()=>{
+      document.querySelectorAll("#unitGrid .unit-pick").forEach(x=>x.classList.remove("selected"));
+      el.classList.add("selected"); opState.unitId=el.dataset.unit; haptic("light"); updateOpConfirm();
+    }));
+  }
+
+  // Выбор состояния
+  document.querySelectorAll(".toggle-opt").forEach(el=>el.addEventListener("click",()=>{
+    document.querySelectorAll(".toggle-opt").forEach(x=>x.classList.remove("selected"));
+    el.classList.add("selected"); opState.condition=el.dataset.cond; haptic("light"); updateOpConfirm();
+  }));
+
+  // Фото
+  document.getElementById("photoInput").addEventListener("change",(e)=>{
+    const files = Array.from(e.target.files);
+    opState.photos.push(...files);
+    const thumbs = document.getElementById("photoThumbs");
+    // Показываем превью
+    files.forEach(f=>{
+      const reader=new FileReader();
+      reader.onload=ev=>{
+        const img=document.createElement("img");
+        img.src=ev.target.result; img.className="photo-thumb";
+        thumbs.appendChild(img);
+      };
+      reader.readAsDataURL(f);
+    });
+    // Убираем плейсхолдер после первого фото
+    document.getElementById("photoArea").querySelector(".photo-upload-hint").style.display="none";
+  });
+
+  document.getElementById("opComment").addEventListener("input",e=>{ opState.comment=e.target.value; });
+  document.getElementById("opConfirm").addEventListener("click", confirmOp);
+  updateOpConfirm();
+}
+
+function updateOpConfirm(){
+  const btn=document.getElementById("opConfirm"); if(!btn)return;
+  const unitOk = opState.kind==="return" || !!opState.unitId;
+  btn.disabled = !(unitOk && opState.condition);
+}
+
+async function confirmOp() {
+  const btn=document.getElementById("opConfirm");
+  btn.disabled=true; btn.textContent="Сохраняем…";
+  try {
+    // В реальном Apps Script здесь загружаем фото в Drive и передаём URL
+    let res;
+    if(opState.kind==="handout") {
+      res = await api("checkOut",{bookingId:opState.booking.id, unitId:opState.unitId, condition:opState.condition, comment:opState.comment});
+    } else {
+      res = await api("checkIn",{bookingId:opState.booking.id, damaged:opState.condition==="bad", comment:opState.comment});
+    }
+    if(!res.ok) throw new Error(res.error||"op failed");
+    toast(opState.kind==="handout"
+      ? "Выдача оформлена, договор и чек отправлены клиенту"
+      : (opState.condition==="bad" ? "Возврат принят, единица отправлена в ремонт" : "Возврат принят"));
+    haptic("success"); closeOpSheet(); loadToday();
+  } catch(e) {
+    haptic("error"); toast("Не удалось сохранить, попробуйте ещё раз");
+    btn.disabled=false; btn.textContent = opState.kind==="handout"?"Подтвердить выдачу":"Подтвердить возврат";
+  }
+}
+
+document.getElementById("opSheetClose").addEventListener("click", closeOpSheet);
+document.getElementById("opScrim").addEventListener("click", closeOpSheet);
+
+/* ============================================================ ДЕТАЛИ ЕДИНИЦЫ В АРЕНДЕ ============================================================ */
+async function openUnitSheet(unitId) {
+  const unit = MOCK_UNITS.find(u=>u.id===unitId);
+  const res  = await api("getUnitBooking",{unitId});
+  const b    = res.booking;
+  document.getElementById("unitSheetTitle").textContent = `${MOCK_MODELS.find(m=>m.id===unit.modelId)?.name||""} №${unit.num}`;
+  const body = document.getElementById("unitSheetBody");
+  if(!b) {
+    body.innerHTML = `<div class="empty-state">Активная бронь не найдена</div>`;
+  } else {
+    const today = new Date().toISOString().slice(0,10);
+    const isOverdue = b.to < today;
+    body.innerHTML = `
+      <div class="unit-detail-info">
+        <div class="unit-detail-row"><div class="k">ЗАЯВКА</div><div class="v mono">${b.id}</div></div>
+        <div class="unit-detail-row"><div class="k">КЛИЕНТ</div><div class="v">${escHtml(b.client)}</div></div>
+        <div class="unit-detail-row"><div class="k">ТЕЛЕФОН</div><div class="v mono">${escHtml(b.phone)}</div></div>
+        <div class="unit-detail-row"><div class="k">ВЫДАН</div><div class="v mono">${fmtDate(b.from)}</div></div>
+        <div class="unit-detail-row"><div class="k">ВЕРНУТЬ</div><div class="v ${isOverdue?"":"mono"}" style="${isOverdue?"color:var(--danger);":""}">
+          ${fmtDate(b.to)}${isOverdue?" · ПРОСРОЧЕНО":""}
+        </div></div>
+        <div class="unit-detail-row"><div class="k">СПОСОБ</div><div class="v">${b.method==="pickup"?"Самовывоз":"Доставка"}</div></div>
+      </div>
+      <a class="btn btn-ghost" href="tel:${escHtml(b.phone.replace(/\s/g,""))}" style="margin-bottom:8px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        Позвонить клиенту
+      </a>
+      <div style="height:8px;"></div>
+    `;
+  }
+  haptic("light"); openSheet("unitScrim","unitSheet");
+}
+
+document.getElementById("unitSheetClose").addEventListener("click",()=>closeSheet("unitScrim","unitSheet"));
+document.getElementById("unitScrim").addEventListener("click",()=>closeSheet("unitScrim","unitSheet"));
+
+/* ============================================================ ИНВЕНТАРЬ ============================================================ */
+async function loadInventory() {
+  const res  = await api("getUnits",{});
+  const wrap = document.getElementById("inventoryList");
+  wrap.innerHTML = res.models.map(m=>{
+    const units = res.units.filter(u=>u.modelId===m.id);
+    const free  = units.filter(u=>u.status==="free").length;
+    return `
+    <div class="model-group">
+      <div class="model-group-head">
+        <div class="name">${escHtml(m.name)}</div>
+        <div class="right">
+          <div class="ratio">${free}/${units.length} своб.</div>
+          <button class="icon-btn" style="width:30px;height:30px;border-radius:7px;" data-edit="${m.id}" title="Описание и фото">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="unit-grid">
+        ${units.map(u=>`<button class="unit-chip ${u.status}" data-unit="${u.id}" data-status="${u.status}" data-model="${m.id}">№${u.num}</button>`).join("")}
+        <button class="unit-chip add" data-add="${m.id}" title="Добавить единицу">+</button>
+      </div>
+    </div>`;
+  }).join("");
+
+  wrap.querySelectorAll(".unit-chip:not(.add)").forEach(el=>el.addEventListener("click",()=>handleUnitTap(el)));
+  wrap.querySelectorAll("[data-add]").forEach(el=>el.addEventListener("click",()=>addUnit(el.dataset.add)));
+  wrap.querySelectorAll("[data-edit]").forEach(el=>el.addEventListener("click",(e)=>{ e.stopPropagation(); openEditSheet(el.dataset.edit); }));
+}
+
+async function handleUnitTap(el) {
+  const status = el.dataset.status;
+  if(status==="rented") {
+    // Показываем детали — кому выдана, до когда
+    await openUnitSheet(el.dataset.unit);
+    return;
+  }
+  // free ↔ repair
+  const next = status==="free" ? "repair" : "free";
+  await api("setUnitStatus",{unitId:el.dataset.unit, status:next});
+  haptic("light"); loadInventory();
+}
+
+async function addUnit(modelId) {
+  await api("addUnit",{modelId});
+  haptic("success");
+  toast("Новая единица добавлена");
+  loadInventory();
+}
+
+/* ============================================================ РУЧНОЕ СОЗДАНИЕ БРОНИ ============================================================ */
+function openNewBookingSheet() {
+  const body = document.getElementById("newBookingBody");
+  const today = new Date().toISOString().slice(0,10);
+  body.innerHTML = `
+    <div class="field">
+      <label>Инструмент</label>
+      <select id="nbModel">
+        <option value="">— Выберите —</option>
+        ${MOCK_MODELS.map(m=>`<option value="${m.id}">${escHtml(m.name)}</option>`).join("")}
+      </select>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Дата выдачи</label><input type="date" id="nbFrom" min="${today}" value="${today}"></div>
+      <div class="field"><label>Дата возврата</label><input type="date" id="nbTo" min="${today}"></div>
+    </div>
+    <div class="field">
+      <label>Способ получения</label>
+      <select id="nbMethod">
+        <option value="pickup">Самовывоз</option>
+        <option value="delivery">Доставка</option>
+      </select>
+    </div>
+    <div class="field" id="nbAddrWrap" style="display:none;">
+      <label>Адрес доставки</label>
+      <textarea id="nbAddress" rows="2" placeholder="Улица, дом, квартира"></textarea>
+    </div>
+    <div class="field"><label>Имя клиента</label><input type="text" id="nbClient" placeholder="Иван Петров"></div>
+    <div class="field"><label>Телефон</label><input type="tel" id="nbPhone" placeholder="+375 29 000 00 00"></div>
+    <button class="btn btn-primary" id="nbSave" style="margin-bottom:8px;">Создать бронь</button>
+    <button class="btn btn-ghost" id="nbCancel">Отмена</button>
+    <div style="height:20px;"></div>
+  `;
+
+  // показываем поле адреса при выборе доставки
+  document.getElementById("nbMethod").addEventListener("change",(e)=>{
+    document.getElementById("nbAddrWrap").style.display = e.target.value==="delivery" ? "block" : "none";
+  });
+  // синхронизируем min на дату возврата
+  document.getElementById("nbFrom").addEventListener("change",(e)=>{
+    document.getElementById("nbTo").min = e.target.value;
+  });
+
+  document.getElementById("nbSave").addEventListener("click", async()=>{
+    const modelId = document.getElementById("nbModel").value;
+    const from    = document.getElementById("nbFrom").value;
+    const to      = document.getElementById("nbTo").value;
+    const method  = document.getElementById("nbMethod").value;
+    const client  = document.getElementById("nbClient").value.trim();
+    const phone   = document.getElementById("nbPhone").value.trim();
+    const address = document.getElementById("nbAddress")?.value.trim()||"";
+
+    if(!modelId||!from||!to||!client||!phone){ toast("Заполните все обязательные поля"); return; }
+    if(to<from){ toast("Дата возврата не может быть раньше выдачи"); return; }
+
+    const model = MOCK_MODELS.find(m=>m.id===modelId);
+    const occupyingStatuses = ["pending_handout","pending_return","active","overdue"];
+    const busyQty = MOCK_BOOKINGS.filter(b =>
+      b.modelId === modelId &&
+      occupyingStatuses.includes(b.status) &&
+      from <= b.to && b.from <= to
+    ).length;
+    const free = (model?.totalQty || 0) - busyQty;
+    if (free <= 0) {
+      toast(`На эти даты свободных единиц «${model?.name||""}» нет`);
+      return;
+    }
+
+    const btn=document.getElementById("nbSave");
+    btn.disabled=true; btn.textContent="Создаём…";
+    try {
+      const res = await api("createBookingManual",{modelId,from,to,method,address,client,phone});
+      if(!res.ok) throw new Error(res.error||"create failed");
+      haptic("success");
+      toast(`Бронь ${res.orderId} создана`);
+      closeSheet("newBookingScrim","newBookingSheet");
+      loadToday();
+    } catch(e) {
+      haptic("error"); toast("Не удалось создать бронь, попробуйте ещё раз");
+      btn.disabled=false; btn.textContent="Создать бронь";
+    }
+  });
+
+  document.getElementById("nbCancel").addEventListener("click",()=>closeSheet("newBookingScrim","newBookingSheet"));
+  haptic("light");
+  openSheet("newBookingScrim","newBookingSheet");
+}
+
+function hasNewBookingData(){
+  return !!(document.getElementById("nbModel")?.value || document.getElementById("nbClient")?.value.trim() || document.getElementById("nbPhone")?.value.trim());
+}
+async function closeNewBookingSheetGuarded(){
+  if(hasNewBookingData() && !(await confirmDialog("Закрыть? Введённые данные будут потеряны."))) return;
+  closeSheet("newBookingScrim","newBookingSheet");
+}
+document.getElementById("newBookingBtn").addEventListener("click", openNewBookingSheet);
+document.getElementById("newBookingClose").addEventListener("click", closeNewBookingSheetGuarded);
+document.getElementById("newBookingScrim").addEventListener("click", closeNewBookingSheetGuarded);
+
+/* ============================================================ РЕДАКТИРОВАНИЕ МОДЕЛИ ============================================================ */
+let editModelId = null;
+function openEditSheet(modelId) {
+  const m = MOCK_MODELS.find(x=>x.id===modelId);
+  editModelId = modelId;
+  document.getElementById("editSheetTitle").textContent = m.name;
+  openSheet("editScrim","editSheet");
+  haptic("light");
+
+  const body = document.getElementById("editSheetBody");
+  body.innerHTML = `
+    <div class="field">
+      <label>Фото — URL изображения</label>
+      <div class="edit-photo-preview" id="photoPreview">
+        ${m.photoUrl?`<img src="${escHtml(m.photoUrl)}" alt="">`:`<div class="no-photo">Фото не добавлено</div>`}
+      </div>
+      <input type="url" id="editPhotoUrl" placeholder="https://drive.google.com/…" value="${escHtml(m.photoUrl||"")}">
+      <div class="field-hint">Google Drive → Поделиться → Прямая ссылка на файл</div>
+    </div>
+    <div class="field">
+      <label>Характеристики (одной строкой)</label>
+      <input type="text" id="editSpecs" value="${escHtml(m.specs||"")}" placeholder="800 Вт · SDS-plus · 2.7 кг">
+    </div>
+    <div class="field">
+      <label>Описание</label>
+      <textarea id="editDesc" rows="5" placeholder="Для чего, комплект, особенности…">${escHtml(m.description||"")}</textarea>
+      <div class="char-count"><span id="charCount">${(m.description||"").length}</span> / 500</div>
+    </div>
+    <button class="btn btn-primary" id="editSaveBtn" style="margin-bottom:8px;">Сохранить</button>
+    <button class="btn btn-ghost" id="editCancelBtn">Отмена</button>
+    <div style="height:20px;"></div>
+  `;
+
+  document.getElementById("editPhotoUrl").addEventListener("input",(e)=>{
+    const url=e.target.value.trim();
+    const p=document.getElementById("photoPreview");
+    p.innerHTML = url?`<img src="${escHtml(url)}" alt="" onerror="this.parentNode.innerHTML='<div class=&quot;no-photo&quot;>Недоступно</div>'">`:`<div class="no-photo">Фото не добавлено</div>`;
+  });
+  document.getElementById("editDesc").addEventListener("input",(e)=>{ document.getElementById("charCount").textContent=e.target.value.length; });
+  document.getElementById("editSaveBtn").addEventListener("click", async()=>{
+    const btn=document.getElementById("editSaveBtn"); btn.disabled=true; btn.textContent="Сохраняем…";
+    await api("updateModel",{modelId:editModelId, photoUrl:document.getElementById("editPhotoUrl").value.trim(), specs:document.getElementById("editSpecs").value.trim(), description:document.getElementById("editDesc").value.trim()});
+    haptic("success"); toast("Описание сохранено"); closeSheet("editScrim","editSheet"); loadInventory();
+  });
+  document.getElementById("editCancelBtn").addEventListener("click",()=>closeSheet("editScrim","editSheet"));
+
+  editOriginal = { photoUrl:m.photoUrl||"", specs:m.specs||"", description:m.description||"" };
+}
+function hasEditSheetChanges(){
+  if(!editOriginal) return false;
+  return document.getElementById("editPhotoUrl")?.value.trim() !== editOriginal.photoUrl
+    || document.getElementById("editSpecs")?.value.trim() !== editOriginal.specs
+    || document.getElementById("editDesc")?.value.trim() !== editOriginal.description;
+}
+async function closeEditSheetGuarded(){
+  if(hasEditSheetChanges() && !(await confirmDialog("Закрыть? Несохранённые изменения будут потеряны."))) return;
+  closeSheet("editScrim","editSheet");
+}
+let editOriginal = null;
+document.getElementById("editSheetClose").addEventListener("click", closeEditSheetGuarded);
+document.getElementById("editScrim").addEventListener("click", closeEditSheetGuarded);
+
+/* ============================================================ БРОНИ (все) + ПОИСК ============================================================ */
+const STATUS_LABEL = { pending_handout:"К выдаче", pending_return:"К возврату", active:"В аренде", overdue:"Просрочено", returned:"Возвращено" };
+let bookingsFilter = "all";
+let bookingsSearch = "";
+const FILTERS = [
+  {id:"all",name:"ВСЕ"},{id:"pending_handout",name:"К ВЫДАЧЕ"},{id:"pending_return",name:"К ВОЗВРАТУ"},
+  {id:"active",name:"В АРЕНДЕ"},{id:"overdue",name:"ПРОСРОЧЕНО"},{id:"returned",name:"ЗАКРЫТО"}
+];
+
+document.getElementById("bookingSearch").addEventListener("input",(e)=>{
+  bookingsSearch = e.target.value.toLowerCase();
+  renderBookingsList();
+});
+
+function renderFilters() {
+  const row = document.getElementById("filterRow");
+  row.innerHTML = FILTERS.map(f=>`<button class="fchip ${f.id===bookingsFilter?"active":""}" data-f="${f.id}">${f.name}</button>`).join("");
+  row.querySelectorAll(".fchip").forEach(el=>el.addEventListener("click",()=>{ bookingsFilter=el.dataset.f; haptic("light"); renderFilters(); renderBookingsList(); }));
+}
+
+let allBookings = [];
+async function loadAllBookings() {
+  renderFilters();
+  const res = await api("getAllBookings",{});
+  allBookings = res.bookings;
+  renderBookingsList();
+}
+
+function renderBookingsList() {
+  let list = bookingsFilter==="all" ? allBookings : allBookings.filter(b=>b.status===bookingsFilter);
+  if(bookingsSearch) {
+    list = list.filter(b=>
+      b.client.toLowerCase().includes(bookingsSearch) ||
+      b.id.toLowerCase().includes(bookingsSearch) ||
+      b.model.toLowerCase().includes(bookingsSearch)
+    );
+  }
+  const wrap = document.getElementById("bookingsAllList");
+  wrap.innerHTML = list.length ? list.map(b=>`
+    <div class="op-row">
+      <div class="op-top">
+        <div>
+          <div class="op-model">${escHtml(b.model)}</div>
+          <div class="op-client">${escHtml(b.client)} · <span class="mono" style="font-size:13px;">${escHtml(b.phone)}</span></div>
+          <div class="op-dates">${fmtDate(b.from)} — ${fmtDate(b.to)} · ${b.id}</div>
+        </div>
+        <span class="status-chip ${b.status}">${STATUS_LABEL[b.status]}</span>
+      </div>
+    </div>`).join("") : `<div class="empty-state">Нет броней${bookingsSearch?" по запросу «"+bookingsSearch+"»":""}</div>`;
+}
+
+/* ============================================================ INIT ============================================================ */
+async function init() {
+  initTelegram();
+  document.getElementById("brandName").textContent = CONFIG.businessName;
+  document.getElementById("todayDate").textContent = new Date().toLocaleDateString("ru-RU",{day:"2-digit",month:"2-digit",year:"numeric"});
+  await loadToday();
+  document.getElementById("loadingScreen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+}
+init();
+</script>
+</body>
+</html>

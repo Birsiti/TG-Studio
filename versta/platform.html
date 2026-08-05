@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10131A">
+<title>ВЕРСТА — платформа</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#10131A; --surface:#1A1F29; --surface2:#232936;
+    --ink:#F1F3F7; --ink-soft:#8891A3; --ink-faint:#5B6373;
+    --line:rgba(255,255,255,0.08);
+    --accent:#FF9640; --accent-ink:#241300;
+    --accent2:#2FD9B9; --warn:#FFC53D; --danger:#FF5C6C;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{background:#05060a; font-family:'Manrope',sans-serif; color:var(--ink); display:flex; justify-content:center; min-height:100vh; padding:28px 14px;}
+  h1,h2,.display{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.03em; font-weight:600; margin:0;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button,select,input{font-family:inherit;}
+  button{cursor:pointer;}
+  *:focus-visible{outline:2px solid var(--accent2); outline-offset:2px;}
+
+  .phone{position:relative; width:390px; height:844px; background:var(--bg); border-radius:42px; overflow:hidden;
+    box-shadow:0 40px 90px rgba(0,0,0,.65), 0 0 0 9px #0b0d12, 0 0 0 10px #262b36;}
+  @media (max-width:430px){ body{padding:0;} .phone{width:100%; height:100dvh; border-radius:0; box-shadow:none;} }
+
+  .topbar{height:52px; display:flex; align-items:center; justify-content:center; gap:6px;}
+  .wordmark{font-family:'Oswald'; font-weight:700; font-size:15px; letter-spacing:.12em;}
+  .role-tag{font-family:'Manrope'; font-weight:700; font-size:9px; letter-spacing:0; text-transform:none;
+    color:var(--accent-ink); background:var(--accent); padding:2px 6px; border-radius:6px;}
+
+  .content{position:absolute; top:52px; bottom:0; left:0; right:0; overflow-y:auto; padding:6px 18px 30px;}
+
+  .title{font-size:24px; margin:0 0 2px;}
+  .eyebrow{color:var(--ink-soft); font-size:12.5px; margin:0 0 16px;}
+  .row-between{display:flex; align-items:center; justify-content:space-between; margin:20px 0 10px;}
+  .section-label{font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin:0;}
+
+  .badge{font-family:'Oswald'; font-weight:700; font-size:10.5px; background:var(--accent); color:var(--accent-ink);
+    border:1.5px solid var(--ink); border-radius:5px; padding:1px 5px; box-shadow:0 0 0 2px var(--bg);}
+
+  .btn{border:none; border-radius:12px; padding:11px 16px; font-weight:700; font-size:13px;}
+  .btn-primary{background:var(--accent); color:var(--accent-ink);}
+  .btn-secondary{background:var(--surface2); color:var(--ink); border:1px solid var(--line);}
+  .btn-danger{background:rgba(255,92,108,.12); color:var(--danger); border:1px solid rgba(255,92,108,.3);}
+  .btn-block{width:100%;}
+  .btn-sm{padding:7px 12px; font-size:12px; border-radius:9px;}
+
+  .kpi-grid{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
+  .kpi-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px;}
+  .kpi-value{font-family:'JetBrains Mono'; font-weight:700; font-size:19px;}
+  .kpi-label{font-size:10.5px; color:var(--ink-soft); margin-top:4px; line-height:1.3;}
+
+  .filter-chips{display:flex; gap:7px; overflow-x:auto; margin-bottom:12px;}
+  .filter-chip{flex:0 0 auto; background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    padding:7px 11px; font-size:12px; font-weight:600; color:var(--ink-soft);}
+  .filter-chip.active{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+
+  .tenant-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:10px;}
+  .tenant-card.suspended{opacity:.55;}
+  .tenant-top{display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:10px;}
+  .tenant-name{font-size:15.5px; font-weight:700;}
+  .tenant-city{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+  .status-chip{font-size:10px; font-weight:700; padding:4px 9px; border-radius:8px; white-space:nowrap;}
+  .st-active{background:rgba(47,217,185,.14); color:var(--accent2);}
+  .st-paused{background:rgba(255,92,108,.12); color:var(--danger);}
+  .st-onboard{background:rgba(255,197,61,.14); color:var(--warn);}
+  .tenant-stats{display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft);}
+  .tenant-stats b{color:var(--ink); font-family:'JetBrains Mono'; font-weight:700;}
+
+  .empty-state{text-align:center; color:var(--ink-soft); padding:40px 10px; font-size:14px;}
+
+  /* panels */
+  .panel-overlay{position:absolute; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:6;}
+  .panel-overlay.open{opacity:1; pointer-events:auto;}
+  .panel{position:absolute; left:0; right:0; bottom:0; top:9%; background:var(--bg); border-radius:22px 22px 0 0;
+    transform:translateY(100%); transition:transform .25s ease; z-index:7; display:flex; flex-direction:column;
+    box-shadow:0 -10px 30px rgba(0,0,0,.4);}
+  .panel.open{transform:translateY(0);}
+  .panel-header{display:flex; align-items:center; gap:10px; padding:16px 18px 12px; border-bottom:1px solid var(--line);}
+  .panel-header h2{font-size:17px; flex:1;}
+  .close-btn{width:44px; height:44px; border-radius:50%; background:var(--surface); border:none; color:var(--ink); font-size:17px; flex:0 0 auto;}
+  .panel-body{flex:1; overflow-y:auto; padding:16px 18px 30px;}
+
+  .field{margin-bottom:13px;}
+  .field label{font-size:11.5px; color:var(--ink-soft); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em;}
+  .field select,.field input{width:100%; background:var(--surface); border:1px solid var(--line); color:var(--ink);
+    border-radius:12px; padding:12px 13px; font-size:14.5px; font-family:inherit;}
+
+  .stat-row-detail{display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid var(--line); font-size:13px; color:var(--ink-soft);}
+  .stat-row-detail:last-child{border-bottom:none;}
+  .stat-row-detail b{color:var(--ink); font-family:'JetBrains Mono'; font-weight:700;}
+
+  .route-chip-list{display:flex; flex-wrap:wrap; gap:7px; margin-top:4px;}
+  .route-chip{display:flex; align-items:center; gap:6px; background:var(--surface2); border-radius:9px; padding:6px 10px; font-size:12px; font-weight:600;}
+
+  .mini-item-row{display:flex; align-items:center; justify-content:space-between; gap:8px; background:var(--surface2);
+    border-radius:10px; padding:9px 11px; margin-bottom:7px; font-size:12.5px;}
+  .mini-item-remove{background:none; border:none; color:var(--ink-faint); font-size:15px; padding:10px; margin:-10px; flex:0 0 auto;}
+  .mini-add-row{display:flex; gap:6px; margin-bottom:16px;}
+  .mini-add-row input{flex:1; min-width:0; background:var(--surface); border:1px solid var(--line); color:var(--ink);
+    border-radius:10px; padding:9px 10px; font-size:12.5px; font-family:inherit;}
+  .mini-add-row input.price{flex:0 0 58px;}
+  .mini-add-btn{flex:0 0 auto; width:36px; height:36px; border-radius:10px; background:var(--accent);
+    color:var(--accent-ink); border:none; font-weight:700; font-size:17px;}
+  .empty-mini{color:var(--ink-faint); font-size:12px; padding:4px 0 10px;}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="topbar">
+    <span class="wordmark">ВЕРСТА</span>
+    <span class="role-tag">платформа · демо</span>
+  </div>
+
+  <div class="content">
+    <h1 class="title">Все перевозчики</h1>
+    <p class="eyebrow">SaaS-обзор за последние 7 дней</p>
+
+    <div class="kpi-grid" id="kpiGrid"></div>
+
+    <div class="row-between">
+      <p class="section-label">Арендаторы</p>
+      <button class="btn btn-primary btn-sm" id="openAddBtn">+ Подключить</button>
+    </div>
+    <div class="filter-chips" id="filterChips"></div>
+    <div id="tenantList"></div>
+  </div>
+
+  <div class="panel-overlay" id="panelOverlay"></div>
+
+  <div class="panel" id="tenantPanel">
+    <div class="panel-header"><h2 id="tenantPanelTitle">Перевозчик</h2><button class="close-btn" id="tenantPanelClose" aria-label="Закрыть">✕</button></div>
+    <div class="panel-body" id="tenantPanelBody"></div>
+  </div>
+
+  <div class="panel" id="addPanel">
+    <div class="panel-header"><h2>Новый перевозчик</h2><button class="close-btn" id="addPanelClose" aria-label="Закрыть">✕</button></div>
+    <div class="panel-body">
+      <div class="field"><label for="addName">Название</label><input type="text" id="addName" placeholder="Напр. Слоним-Транс"></div>
+      <div class="field"><label for="addCity">Город базирования</label><input type="text" id="addCity" placeholder="Напр. Слоним"></div>
+      <div class="field"><label for="addPhone">Контактный телефон</label><input type="tel" id="addPhone" placeholder="+375 29 000-00-00"></div>
+      <div class="field"><label for="addCommission">Комиссия платформы, %</label><input type="number" id="addCommission" value="12" min="0" max="40"></div>
+
+      <p class="section-label" style="margin:18px 0 8px;">Маршруты перевозчика</p>
+      <div id="addRoutesList"></div>
+      <div class="mini-add-row">
+        <input type="text" id="addRouteFrom" placeholder="Откуда">
+        <input type="text" id="addRouteTo" placeholder="Куда">
+        <input type="number" id="addRoutePrice" placeholder="BYN" class="price">
+        <button class="mini-add-btn" id="addRouteBtn" type="button">+</button>
+      </div>
+
+      <p class="section-label" style="margin:6px 0 8px;">Водители</p>
+      <div id="addDriversList"></div>
+      <div class="mini-add-row">
+        <input type="text" id="addDriverName" placeholder="Имя водителя">
+        <input type="tel" id="addDriverPhone" placeholder="Телефон">
+        <button class="mini-add-btn" id="addDriverBtn" type="button">+</button>
+      </div>
+
+      <p class="section-label" style="margin:6px 0 8px;">Транспорт</p>
+      <div id="addVehiclesList"></div>
+      <div class="mini-add-row">
+        <input type="text" id="addVehiclePlate" placeholder="Гос. номер">
+        <input type="text" id="addVehicleModel" placeholder="Модель">
+        <input type="number" id="addVehicleSeats" placeholder="Мест" class="price">
+        <button class="mini-add-btn" id="addVehicleBtn" type="button">+</button>
+      </div>
+
+      <button class="btn btn-primary btn-block" id="addSubmit" style="margin-top:6px;">Подключить перевозчика</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  try{ if(window.Telegram && window.Telegram.WebApp){ window.Telegram.WebApp.ready(); window.Telegram.WebApp.expand(); } }catch(e){}
+
+  function hashStr(s){ var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return h; }
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function genPhone(h){ var n=(h%9000000)+1000000; var s=''+n; return '+375 29 '+s.substr(0,3)+'-'+s.substr(3,2)+'-'+s.substr(5,2); }
+  function dphone(name){ return genPhone(hashStr(name)); }
+
+  var TENANTS = [
+    { id:1, name:'ВЕРСТА Минск', city:'Минск', status:'активен', commission:12, joined:'14.03.2026',
+      routes:[
+        {id:'r1', from:'Минск', to:'Брест', price:22},
+        {id:'r2', from:'Минск', to:'Гомель', price:20},
+        {id:'r3', from:'Минск', to:'Гродно', price:21},
+        {id:'r4', from:'Минск', to:'Витебск', price:19},
+        {id:'r5', from:'Минск', to:'Могилёв', price:16}
+      ],
+      drivers:[
+        {id:'d1', name:'Сергей Ковалёв', phone:dphone('Сергей Ковалёв')},
+        {id:'d2', name:'Алексей Дайнеко', phone:dphone('Алексей Дайнеко')},
+        {id:'d3', name:'Игорь Русак', phone:dphone('Игорь Русак')},
+        {id:'d4', name:'Павел Шпак', phone:dphone('Павел Шпак')}
+      ],
+      vehicles:[
+        {id:'v1', plate:'AI 1234-7', model:'Mercedes Sprinter', seats:16},
+        {id:'v2', plate:'AI 5821-7', model:'Mercedes Sprinter', seats:16},
+        {id:'v3', plate:'AI 0092-7', model:'Ford Transit', seats:18},
+        {id:'v4', plate:'AI 7743-7', model:'Mercedes Sprinter', seats:16}
+      ]
+    },
+    { id:2, name:'Гродно-Экспресс', city:'Гродно', status:'активен', commission:15, joined:'02.05.2026',
+      routes:[
+        {id:'r6', from:'Гродно', to:'Лида', price:18},
+        {id:'r7', from:'Гродно', to:'Слоним', price:14},
+        {id:'r8', from:'Гродно', to:'Ивье', price:12}
+      ],
+      drivers:[
+        {id:'d5', name:'Виктор Янковский', phone:dphone('Виктор Янковский')},
+        {id:'d6', name:'Дмитрий Реут', phone:dphone('Дмитрий Реут')}
+      ],
+      vehicles:[
+        {id:'v5', plate:'AK 3311-4', model:'Mercedes Vito', seats:14},
+        {id:'v6', plate:'AK 9087-4', model:'Ford Transit', seats:16}
+      ]
+    },
+    { id:3, name:'Полесье Тревел', city:'Брест', status:'активен', commission:10, joined:'18.06.2026',
+      routes:[
+        {id:'r9', from:'Брест', to:'Пинск', price:16},
+        {id:'r10', from:'Брест', to:'Кобрин', price:8},
+        {id:'r11', from:'Пинск', to:'Столин', price:11},
+        {id:'r12', from:'Брест', to:'Иваново', price:10}
+      ],
+      drivers:[
+        {id:'d7', name:'Николай Ковальчук', phone:dphone('Николай Ковальчук')},
+        {id:'d8', name:'Андрей Пилипчук', phone:dphone('Андрей Пилипчук')},
+        {id:'d9', name:'Сергей Бондарук', phone:dphone('Сергей Бондарук')}
+      ],
+      vehicles:[
+        {id:'v7', plate:'AE 2201-1', model:'Mercedes Sprinter', seats:16},
+        {id:'v8', plate:'AE 4456-1', model:'Peugeot Boxer', seats:16},
+        {id:'v9', plate:'AE 8890-1', model:'Mercedes Vito', seats:14}
+      ]
+    },
+    { id:4, name:'Витебск Авто', city:'Витебск', status:'приостановлен', commission:14, joined:'20.01.2026',
+      routes:[
+        {id:'r13', from:'Витебск', to:'Полоцк', price:13},
+        {id:'r14', from:'Витебск', to:'Орша', price:10}
+      ],
+      drivers:[
+        {id:'d10', name:'Олег Мельник', phone:dphone('Олег Мельник')},
+        {id:'d11', name:'Виталий Гром', phone:dphone('Виталий Гром')}
+      ],
+      vehicles:[
+        {id:'v10', plate:'AB 1120-2', model:'Ford Transit', seats:18},
+        {id:'v11', plate:'AB 5567-2', model:'Mercedes Sprinter', seats:16}
+      ]
+    },
+    { id:5, name:'Могилёв Линии', city:'Могилёв', status:'подключается', commission:12, joined:'19.07.2026',
+      routes:[], drivers:[], vehicles:[]
+    }
+  ];
+
+  function tenantStats(t){
+    if(t.status==='подключается') return { revenue:0, trips:0, commission:0 };
+    var h = hashStr(t.name+'-rev');
+    var revenue = 400 + (h % 2600);
+    if(t.status==='приостановлен') revenue = Math.round(revenue*0.2);
+    var trips = 6 + (hashStr(t.name+'-trips') % 40);
+    if(t.status==='приостановлен') trips = Math.round(trips*0.2);
+    var commission = Math.round(revenue * t.commission/100);
+    return { revenue:revenue, trips:trips, commission:commission };
+  }
+
+  var currentFilter = 'all';
+
+  function renderKPI(){
+    var totalRevenue=0, totalCommission=0, activeCount=0, totalTrips=0;
+    TENANTS.forEach(function(t){
+      var s = tenantStats(t);
+      totalRevenue += s.revenue; totalCommission += s.commission; totalTrips += s.trips;
+      if(t.status==='активен') activeCount++;
+    });
+    document.getElementById('kpiGrid').innerHTML =
+      '<div class="kpi-card"><div class="kpi-value mono">'+totalRevenue+' BYN</div><div class="kpi-label">Оборот платформы</div></div>'+
+      '<div class="kpi-card"><div class="kpi-value mono" style="color:var(--accent);">'+totalCommission+' BYN</div><div class="kpi-label">Комиссия платформы</div></div>'+
+      '<div class="kpi-card"><div class="kpi-value mono">'+activeCount+'</div><div class="kpi-label">Активных перевозчиков</div></div>'+
+      '<div class="kpi-card"><div class="kpi-value mono">'+totalTrips+'</div><div class="kpi-label">Рейсов всего</div></div>';
+  }
+
+  function renderFilters(){
+    var opts = [['all','Все'],['активен','Активные'],['приостановлен','Приостановлены'],['подключается','Подключаются']];
+    document.getElementById('filterChips').innerHTML = opts.map(function(o){
+      return '<button class="filter-chip'+(currentFilter===o[0]?' active':'')+'" data-f="'+o[0]+'">'+o[1]+'</button>';
+    }).join('');
+    document.querySelectorAll('.filter-chip').forEach(function(chip){
+      chip.addEventListener('click', function(){ currentFilter = chip.dataset.f; renderAll(); });
+    });
+  }
+
+  function renderList(){
+    var wrap = document.getElementById('tenantList');
+    var list = TENANTS.filter(function(t){ return currentFilter==='all' || t.status===currentFilter; });
+    if(list.length===0){ wrap.innerHTML = '<div class="empty-state">Ничего не найдено.</div>'; return; }
+
+    wrap.innerHTML = list.map(function(t){
+      var s = tenantStats(t);
+      var chipClass = t.status==='активен'?'st-active':(t.status==='приостановлен'?'st-paused':'st-onboard');
+      return '<div class="tenant-card'+(t.status==='приостановлен'?' suspended':'')+'" data-id="'+t.id+'">'+
+        '<div class="tenant-top"><div><div class="tenant-name">'+escapeHtml(t.name)+'</div><div class="tenant-city">'+escapeHtml(t.city)+' · с '+t.joined+'</div></div>'+
+          '<span class="status-chip '+chipClass+'">'+t.status+'</span></div>'+
+        '<div class="tenant-stats"><span>Выручка: <b>'+s.revenue+' BYN</b></span><span>Комиссия: <b>'+s.commission+' BYN</b></span><span>Рейсов: <b>'+s.trips+'</b></span></div>'+
+      '</div>';
+    }).join('');
+
+    document.querySelectorAll('.tenant-card').forEach(function(card){
+      card.addEventListener('click', function(){ openTenantPanel(+card.dataset.id); });
+    });
+  }
+
+  function renderAll(){ renderKPI(); renderFilters(); renderList(); }
+
+  /* ---------------- tenant detail panel ---------------- */
+  var overlay = document.getElementById('panelOverlay');
+  var tenantPanel = document.getElementById('tenantPanel');
+  var addPanel = document.getElementById('addPanel');
+  var openId = null;
+
+  function openTenantPanel(id){
+    openId = id;
+    renderTenantPanel();
+    overlay.classList.add('open'); tenantPanel.classList.add('open');
+  }
+  function closeTenantPanel(){ overlay.classList.remove('open'); tenantPanel.classList.remove('open'); openId=null; }
+  document.getElementById('tenantPanelClose').addEventListener('click', closeTenantPanel);
+
+  function renderTenantPanel(){
+    var t = TENANTS.filter(function(x){ return x.id===openId; })[0];
+    if(!t) return;
+    var s = tenantStats(t);
+    document.getElementById('tenantPanelTitle').textContent = t.name;
+
+    var body = '<p class="eyebrow" style="margin-bottom:16px;">'+escapeHtml(t.city)+' · подключён '+t.joined+'</p>';
+
+    body += '<div class="field"><label>Комиссия платформы, %</label><input type="number" id="commissionInput" value="'+t.commission+'" min="0" max="40"></div>';
+
+    body += '<div style="margin:16px 0;">'+
+      '<div class="stat-row-detail"><span>Выручка за 7 дней</span><b>'+s.revenue+' BYN</b></div>'+
+      '<div class="stat-row-detail"><span>Комиссия платформы</span><b>'+s.commission+' BYN</b></div>'+
+      '<div class="stat-row-detail"><span>Рейсов</span><b>'+s.trips+'</b></div>'+
+      '<div class="stat-row-detail"><span>Маршрутов</span><b>'+t.routes.length+'</b></div>'+
+      '<div class="stat-row-detail"><span>Водителей</span><b>'+t.drivers.length+'</b></div>'+
+      '<div class="stat-row-detail"><span>Транспорта</span><b>'+t.vehicles.length+'</b></div>'+
+    '</div>';
+
+    body += '<p class="section-label" style="margin:18px 0 8px;">Маршруты</p>';
+    body += '<div id="tenantRoutesList">'+
+      (t.routes.length===0 ? '<div class="empty-mini">Маршрутов пока нет.</div>' :
+        t.routes.map(function(r){
+          return '<div class="mini-item-row"><span>'+escapeHtml(r.from)+' → '+escapeHtml(r.to)+' · <b class="mono">'+r.price+' BYN</b></span>'+
+            '<button class="mini-item-remove" data-remove-route="'+r.id+'" aria-label="Удалить маршрут">✕</button></div>';
+        }).join(''))+
+    '</div>';
+    body += '<div class="mini-add-row">'+
+      '<input type="text" id="tenantRouteFrom" placeholder="Откуда">'+
+      '<input type="text" id="tenantRouteTo" placeholder="Куда">'+
+      '<input type="number" id="tenantRoutePrice" placeholder="BYN" class="price">'+
+      '<button class="mini-add-btn" id="tenantRouteAddBtn" type="button">+</button>'+
+    '</div>';
+
+    body += '<p class="section-label" style="margin:6px 0 8px;">Водители</p>';
+    body += '<div id="tenantDriversList">'+
+      (t.drivers.length===0 ? '<div class="empty-mini">Водителей пока нет.</div>' :
+        t.drivers.map(function(d){
+          return '<div class="mini-item-row"><span>'+escapeHtml(d.name)+' · <span class="mono">'+escapeHtml(d.phone)+'</span></span>'+
+            '<button class="mini-item-remove" data-remove-driver="'+d.id+'" aria-label="Удалить водителя">✕</button></div>';
+        }).join(''))+
+    '</div>';
+    body += '<div class="mini-add-row">'+
+      '<input type="text" id="tenantDriverName" placeholder="Имя водителя">'+
+      '<input type="tel" id="tenantDriverPhone" placeholder="Телефон">'+
+      '<button class="mini-add-btn" id="tenantDriverAddBtn" type="button">+</button>'+
+    '</div>';
+
+    body += '<p class="section-label" style="margin:6px 0 8px;">Транспорт</p>';
+    body += '<div id="tenantVehiclesList">'+
+      (t.vehicles.length===0 ? '<div class="empty-mini">Транспорта пока нет.</div>' :
+        t.vehicles.map(function(v){
+          return '<div class="mini-item-row"><span>'+escapeHtml(v.plate)+' · '+escapeHtml(v.model)+' · <b class="mono">'+v.seats+' мест</b></span>'+
+            '<button class="mini-item-remove" data-remove-vehicle="'+v.id+'" aria-label="Удалить транспорт">✕</button></div>';
+        }).join(''))+
+    '</div>';
+    body += '<div class="mini-add-row">'+
+      '<input type="text" id="tenantVehiclePlate" placeholder="Гос. номер">'+
+      '<input type="text" id="tenantVehicleModel" placeholder="Модель">'+
+      '<input type="number" id="tenantVehicleSeats" placeholder="Мест" class="price">'+
+      '<button class="mini-add-btn" id="tenantVehicleAddBtn" type="button">+</button>'+
+    '</div>';
+
+    var toggleLabel = t.status==='приостановлен' ? 'Возобновить работу' : 'Приостановить перевозчика';
+    var toggleClass = t.status==='приостановлен' ? 'btn-secondary' : 'btn-danger';
+    body += '<button class="btn '+toggleClass+' btn-block" id="toggleStatusBtn" style="margin-top:18px;">'+toggleLabel+'</button>';
+
+    document.getElementById('tenantPanelBody').innerHTML = body;
+
+    document.getElementById('commissionInput').addEventListener('change', function(e){
+      t.commission = +e.target.value || 0;
+      renderTenantPanel(); renderAll();
+    });
+    document.getElementById('tenantRouteAddBtn').addEventListener('click', function(){
+      var from = document.getElementById('tenantRouteFrom').value.trim();
+      var to = document.getElementById('tenantRouteTo').value.trim();
+      var price = +document.getElementById('tenantRoutePrice').value || 0;
+      if(!from || !to) return;
+      t.routes.push({ id:'r'+Date.now(), from:from, to:to, price:price });
+      renderTenantPanel(); renderAll();
+    });
+    document.querySelectorAll('[data-remove-route]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        t.routes = t.routes.filter(function(r){ return r.id!==btn.dataset.removeRoute; });
+        renderTenantPanel(); renderAll();
+      });
+    });
+    document.getElementById('tenantDriverAddBtn').addEventListener('click', function(){
+      var name = document.getElementById('tenantDriverName').value.trim();
+      var phone = document.getElementById('tenantDriverPhone').value.trim();
+      if(!name) return;
+      t.drivers.push({ id:'d'+Date.now(), name:name, phone: phone || '—' });
+      renderTenantPanel(); renderAll();
+    });
+    document.querySelectorAll('[data-remove-driver]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        t.drivers = t.drivers.filter(function(d){ return d.id!==btn.dataset.removeDriver; });
+        renderTenantPanel(); renderAll();
+      });
+    });
+    document.getElementById('tenantVehicleAddBtn').addEventListener('click', function(){
+      var plate = document.getElementById('tenantVehiclePlate').value.trim();
+      var model = document.getElementById('tenantVehicleModel').value.trim();
+      var seats = +document.getElementById('tenantVehicleSeats').value || 16;
+      if(!plate || !model) return;
+      t.vehicles.push({ id:'v'+Date.now(), plate:plate, model:model, seats:seats });
+      renderTenantPanel(); renderAll();
+    });
+    document.querySelectorAll('[data-remove-vehicle]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        t.vehicles = t.vehicles.filter(function(v){ return v.id!==btn.dataset.removeVehicle; });
+        renderTenantPanel(); renderAll();
+      });
+    });
+    document.getElementById('toggleStatusBtn').addEventListener('click', function(){
+      t.status = t.status==='приостановлен' ? 'активен' : 'приостановлен';
+      renderTenantPanel(); renderAll();
+    });
+  }
+
+  /* ---------------- add tenant panel ---------------- */
+  var addDraft = { routes: [], drivers: [], vehicles: [] };
+
+  function renderAddRoutesList(){
+    var wrap = document.getElementById('addRoutesList');
+    wrap.innerHTML = addDraft.routes.length===0 ? '<div class="empty-mini">Пока не добавлено.</div>' :
+      addDraft.routes.map(function(r){
+        return '<div class="mini-item-row"><span>'+escapeHtml(r.from)+' → '+escapeHtml(r.to)+' · <b class="mono">'+r.price+' BYN</b></span>'+
+          '<button class="mini-item-remove" data-i="'+r.id+'" aria-label="Удалить маршрут">✕</button></div>';
+      }).join('');
+    wrap.querySelectorAll('[data-i]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        addDraft.routes = addDraft.routes.filter(function(r){ return r.id!==btn.dataset.i; });
+        renderAddRoutesList();
+      });
+    });
+  }
+  function renderAddDriversList(){
+    var wrap = document.getElementById('addDriversList');
+    wrap.innerHTML = addDraft.drivers.length===0 ? '<div class="empty-mini">Пока не добавлено.</div>' :
+      addDraft.drivers.map(function(d){
+        return '<div class="mini-item-row"><span>'+escapeHtml(d.name)+' · <span class="mono">'+escapeHtml(d.phone)+'</span></span>'+
+          '<button class="mini-item-remove" data-i="'+d.id+'" aria-label="Удалить водителя">✕</button></div>';
+      }).join('');
+    wrap.querySelectorAll('[data-i]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        addDraft.drivers = addDraft.drivers.filter(function(d){ return d.id!==btn.dataset.i; });
+        renderAddDriversList();
+      });
+    });
+  }
+  function renderAddVehiclesList(){
+    var wrap = document.getElementById('addVehiclesList');
+    wrap.innerHTML = addDraft.vehicles.length===0 ? '<div class="empty-mini">Пока не добавлено.</div>' :
+      addDraft.vehicles.map(function(v){
+        return '<div class="mini-item-row"><span>'+escapeHtml(v.plate)+' · '+escapeHtml(v.model)+' · <b class="mono">'+v.seats+' мест</b></span>'+
+          '<button class="mini-item-remove" data-i="'+v.id+'" aria-label="Удалить транспорт">✕</button></div>';
+      }).join('');
+    wrap.querySelectorAll('[data-i]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        addDraft.vehicles = addDraft.vehicles.filter(function(v){ return v.id!==btn.dataset.i; });
+        renderAddVehiclesList();
+      });
+    });
+  }
+
+  document.getElementById('addRouteBtn').addEventListener('click', function(){
+    var from = document.getElementById('addRouteFrom').value.trim();
+    var to = document.getElementById('addRouteTo').value.trim();
+    var price = +document.getElementById('addRoutePrice').value || 0;
+    if(!from || !to) return;
+    addDraft.routes.push({ id:'r'+Date.now()+Math.floor(Math.random()*999), from:from, to:to, price:price });
+    document.getElementById('addRouteFrom').value=''; document.getElementById('addRouteTo').value=''; document.getElementById('addRoutePrice').value='';
+    renderAddRoutesList();
+  });
+  document.getElementById('addDriverBtn').addEventListener('click', function(){
+    var name = document.getElementById('addDriverName').value.trim();
+    var phone = document.getElementById('addDriverPhone').value.trim();
+    if(!name) return;
+    addDraft.drivers.push({ id:'d'+Date.now()+Math.floor(Math.random()*999), name:name, phone: phone || '—' });
+    document.getElementById('addDriverName').value=''; document.getElementById('addDriverPhone').value='';
+    renderAddDriversList();
+  });
+  document.getElementById('addVehicleBtn').addEventListener('click', function(){
+    var plate = document.getElementById('addVehiclePlate').value.trim();
+    var model = document.getElementById('addVehicleModel').value.trim();
+    var seats = +document.getElementById('addVehicleSeats').value || 16;
+    if(!plate || !model) return;
+    addDraft.vehicles.push({ id:'v'+Date.now()+Math.floor(Math.random()*999), plate:plate, model:model, seats:seats });
+    document.getElementById('addVehiclePlate').value=''; document.getElementById('addVehicleModel').value=''; document.getElementById('addVehicleSeats').value='';
+    renderAddVehiclesList();
+  });
+
+  function openAddPanel(){
+    document.getElementById('addName').value='';
+    document.getElementById('addCity').value='';
+    document.getElementById('addPhone').value='';
+    document.getElementById('addCommission').value=12;
+    addDraft = { routes: [], drivers: [], vehicles: [] };
+    renderAddRoutesList();
+    renderAddDriversList();
+    renderAddVehiclesList();
+    overlay.classList.add('open'); addPanel.classList.add('open');
+  }
+  function closeAddPanel(){ overlay.classList.remove('open'); addPanel.classList.remove('open'); }
+  document.getElementById('openAddBtn').addEventListener('click', openAddPanel);
+  document.getElementById('addPanelClose').addEventListener('click', closeAddPanel);
+
+  document.getElementById('addSubmit').addEventListener('click', function(){
+    var name = document.getElementById('addName').value.trim();
+    var city = document.getElementById('addCity').value.trim();
+    var commission = +document.getElementById('addCommission').value || 12;
+    if(!name || !city) return;
+    var d = new Date();
+    var joined = (d.getDate()<10?'0':'')+d.getDate()+'.'+((d.getMonth()+1)<10?'0':'')+(d.getMonth()+1)+'.'+d.getFullYear();
+    TENANTS.unshift({ id: Date.now(), name:name, city:city, status:'подключается', commission:commission, joined:joined,
+      routes: addDraft.routes.slice(), drivers: addDraft.drivers.slice(), vehicles: addDraft.vehicles.slice() });
+    closeAddPanel();
+    currentFilter = 'all';
+    renderAll();
+  });
+
+  overlay.addEventListener('click', function(){ closeTenantPanel(); closeAddPanel(); });
+
+  renderAll();
+})();
+</script>
+</body>
+</html>

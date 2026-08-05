@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>БРИТВА — владелец</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@500;600;700&display=swap');
+  :root{
+    --bg:#161D18; --surface:#1E2820; --surface-2:#253227; --surface-3:#2C3B2E;
+    --ink:#F3E9D6; --ink-soft:#B9AD94; --ink-faint:#8A9686;
+    --accent:#C89B3C; --accent-dark:#A17D2C; --accent-soft:rgba(200,155,60,.16); --on-accent:#1A1108;
+    --red:#7A2632; --red-soft:rgba(122,38,50,.18);
+    --ok:#5C8A61; --ok-soft:rgba(92,138,97,.16);
+    --line:#33412F; --line-strong:#455040;
+    --radius:16px; --radius-sm:11px;
+    --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root[data-theme="light"]{
+    --bg:#F7F1E3; --surface:#FFFFFF; --surface-2:#F1E9D4; --surface-3:#EAE0C6;
+    --ink:#1D2418; --ink-soft:#5B5341; --ink-faint:#6B6354;
+    --accent:#8C6B24; --accent-dark:#6E5219; --accent-soft:rgba(140,107,36,.14); --on-accent:#FFFFFF;
+    --red:#7A2632; --red-soft:rgba(122,38,50,.12);
+    --ok:#3F6B44; --ok-soft:rgba(63,107,68,.14);
+    --line:#E4D9BC; --line-strong:#D6C89F;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:'Lora',serif;font-size:15px;line-height:1.45;
+    min-height:100vh;padding-bottom:max(100px, calc(78px + var(--safe-bottom)));transition:background-color .25s,color .25s;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Alfa Slab One',cursive;}
+  button{font-family:inherit;border:none;cursor:pointer;background:none;color:inherit;}
+
+  .pole-rail{height:6px;background:repeating-linear-gradient(115deg,var(--red) 0 14px,var(--ink) 14px 28px,var(--accent) 28px 42px);}
+  header{padding:calc(14px + var(--safe-top)) 18px 12px;border-bottom:1px solid var(--line);background:var(--surface);}
+  .hdr-title{font-family:'Alfa Slab One',cursive;font-size:19px;color:var(--accent);}
+  .hdr-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint);margin-top:2px;letter-spacing:.06em;}
+
+  main{padding:16px;max-width:520px;margin:0 auto;}
+  .screen{display:none;} .screen.active{display:block;}
+  .section-label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin:18px 2px 10px;}
+  .section-label:first-child{margin-top:0;}
+
+  .period-row{display:flex;gap:6px;margin-bottom:14px;}
+  .period-opt{flex:1;min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:var(--radius-sm);background:var(--surface);
+    border:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--ink-soft);}
+  .period-opt.active{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
+
+  .kpi-card{background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius);padding:18px;margin-bottom:10px;}
+  .kpi-lbl{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.05em;}
+  .kpi-val{font-family:'Alfa Slab One',cursive;font-size:32px;color:var(--accent);margin-top:6px;}
+  .kpi-split{display:flex;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line);}
+  .kpi-split div{flex:1;}
+  .kpi-split .k{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-faint);text-transform:uppercase;}
+  .kpi-split .v{font-size:16px;font-weight:600;margin-top:3px;}
+
+  .rank-row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius-sm);padding:12px 14px;margin-bottom:8px;}
+  .rank-num{font-family:'Alfa Slab One',cursive;font-size:17px;color:var(--ink-faint);width:22px;flex-shrink:0;}
+  .rank-row.top .rank-num{color:var(--accent);}
+  .avatar-sm{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    font-family:'Alfa Slab One',cursive;font-size:12px;color:#1A1108;flex-shrink:0;}
+  .rank-info{flex:1;}
+  .rank-info .name{font-weight:600;font-size:14px;}
+  .rank-info .sub{font-size:11.5px;color:var(--ink-soft);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+  .rank-val{font-family:'JetBrains Mono',monospace;font-size:14px;color:var(--accent);font-weight:700;}
+
+  .bar-row{margin-bottom:12px;}
+  .bar-head{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:5px;}
+  .bar-head .day{color:var(--ink-soft);}
+  .bar-head .pct{font-family:'JetBrains Mono',monospace;color:var(--accent);font-weight:700;}
+  .bar-track{height:10px;background:var(--surface-3);border-radius:6px;overflow:hidden;}
+  .bar-fill{height:100%;background:linear-gradient(90deg,var(--accent-dark),var(--accent));border-radius:6px;}
+
+  .svc-row{display:flex;justify-content:space-between;align-items:center;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius-sm);padding:13px 15px;margin-bottom:8px;}
+  .svc-name{font-size:14.5px;}
+  .svc-price{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--accent);font-weight:700;}
+
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--surface);border-top:1px solid var(--line);
+    padding:8px 6px calc(8px + var(--safe-bottom));display:flex;gap:2px;}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 2px;border-radius:10px;color:var(--ink-faint);}
+  .tab svg{width:19px;height:19px;}
+  .tab span{font-family:'JetBrains Mono',monospace;font-size:9.5px;text-transform:uppercase;letter-spacing:.02em;font-weight:600;}
+  .tab.active{color:var(--accent);}
+
+  .sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;}
+  .sheet-scrim.show{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surface-2);border-radius:20px 20px 0 0;
+    padding:18px 18px calc(18px + var(--safe-bottom));transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);z-index:61;}
+  .sheet.show{transform:translateY(0);}
+  .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .sheet-head h3{font-family:'Alfa Slab One',cursive;font-size:17px;margin:0;}
+  .icon-btn{width:40px;height:40px;border-radius:10px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;}
+  .icon-btn svg{width:16px;height:16px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px;}
+  .field input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 13px;color:var(--ink);font-family:'Lora',serif;font-size:16px;outline:none;}
+  .cta-btn{width:100%;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:15px;padding:14px;border-radius:var(--radius-sm);margin-top:4px;text-align:center;}
+  .toast{position:fixed;left:50%;bottom:calc(90px + var(--safe-bottom));transform:translateX(-50%) translateY(20px);background:var(--ok);
+    color:#fff;padding:11px 20px;border-radius:24px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;
+    transition:all .35s cubic-bezier(.34,1.56,.64,1);z-index:70;box-shadow:0 8px 24px rgba(0,0,0,.35);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="pole-rail"></div>
+<header>
+  <div class="hdr-title">БРИТВА · владелец</div>
+  <div class="hdr-sub">МИНСК · ОБЗОР БИЗНЕСА</div>
+</header>
+
+<main>
+  <div class="screen active" id="screen-overview">
+    <div class="period-row" id="periodRow">
+      <div class="period-opt active" data-p="day">Сегодня</div>
+      <div class="period-opt" data-p="week">Неделя</div>
+      <div class="period-opt" data-p="month">Месяц</div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-lbl">Выручка</div>
+      <div class="kpi-val mono" id="kpiRevenue"></div>
+      <div class="kpi-split">
+        <div><div class="k">Записей</div><div class="v" id="kpiCount"></div></div>
+        <div><div class="k">Средний чек</div><div class="v" id="kpiAvg"></div></div>
+        <div><div class="k">Заполняемость</div><div class="v" id="kpiFill"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="screen" id="screen-masters">
+    <div class="section-label">Рейтинг мастеров за месяц</div>
+    <div id="rankList"></div>
+  </div>
+
+  <div class="screen" id="screen-load">
+    <div class="section-label">Загрузка по дням недели</div>
+    <div id="loadBars"></div>
+  </div>
+
+  <div class="screen" id="screen-services">
+    <div class="section-label">Прайс-лист</div>
+    <div id="svcList"></div>
+  </div>
+</main>
+
+<div class="tabbar">
+  <button class="tab active" data-screen="overview">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18M7 15l4-5 3 3 5-7"/></svg><span>Обзор</span>
+  </button>
+  <button class="tab" data-screen="masters">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span>Мастера</span>
+  </button>
+  <button class="tab" data-screen="load">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M12 20V4M20 20v-7"/></svg><span>Загрузка</span>
+  </button>
+  <button class="tab" data-screen="services">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg><span>Услуги</span>
+  </button>
+</div>
+
+<div class="sheet-scrim" id="scrim"></div>
+<div class="sheet" id="editSheet">
+  <div class="sheet-head"><h3 id="editTitle">Цена</h3><button class="icon-btn" id="editClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+  <div class="field"><label for="editPrice">Цена, BYN</label><input type="number" id="editPrice"></div>
+  <button class="cta-btn" id="editSave">Сохранить</button>
+</div>
+
+<div class="toast" id="toast">Сохранено ✓</div>
+
+<script>
+/* ============================================================ CONFIG ============================================================ */
+const CONFIG = { businessName: "БРИТВА", apiUrl: "PASTE_APPS_SCRIPT_URL_HERE" };
+
+/* ============================================================ MOCK DATA ============================================================ */
+const KPI = {
+  day:   { revenue: 612,  count: 14, avg: 44,  fill: "62%" },
+  week:  { revenue: 3840, count: 88, avg: 44,  fill: "71%" },
+  month: { revenue: 15960,count: 362,avg: 44,  fill: "68%" },
+};
+const RANK = [
+  { name:"Игорь Соколов", color:"#C89B3C", initials:"ИС", bookings:96, revenue:4680 },
+  { name:"Артём Волков", color:"#7A2632", initials:"АВ", bookings:88, revenue:4120 },
+  { name:"Максим Орлов", color:"#5C8A61", initials:"МО", bookings:81, revenue:3560 },
+  { name:"Денис Крылов", color:"#A17D2C", initials:"ДК", bookings:97, revenue:3600 },
+];
+const LOAD = [ ["Пн",54],["Вт",61],["Ср",58],["Чт",72],["Пт",89],["Сб",96],["Вс",47] ];
+let SERVICES = [
+  { name:"Стрижка машинкой", price:28 }, { name:"Стрижка ножницами", price:35 },
+  { name:"Стрижка + борода", price:48 }, { name:"Королевское бритьё", price:32 },
+  { name:"Оформление бороды", price:18 }, { name:"Детская стрижка", price:22 },
+];
+
+/* ============================================================ RENDER: OVERVIEW ============================================================ */
+function renderOverview(period){
+  const k = KPI[period];
+  document.getElementById("kpiRevenue").textContent = k.revenue + " BYN";
+  document.getElementById("kpiCount").textContent = k.count;
+  document.getElementById("kpiAvg").textContent = k.avg + " BYN";
+  document.getElementById("kpiFill").textContent = k.fill;
+}
+document.getElementById("periodRow").addEventListener("click", e => {
+  const opt = e.target.closest(".period-opt"); if(!opt) return;
+  document.querySelectorAll(".period-opt").forEach(o=>o.classList.remove("active"));
+  opt.classList.add("active"); renderOverview(opt.dataset.p); haptic("light");
+});
+
+/* ============================================================ RENDER: RANK ============================================================ */
+function renderRank(){
+  const sorted = [...RANK].sort((a,b)=>b.revenue-a.revenue);
+  document.getElementById("rankList").innerHTML = sorted.map((r,i) => `
+    <div class="rank-row ${i===0?'top':''}">
+      <div class="rank-num">${i+1}</div>
+      <div class="avatar-sm" style="background:${r.color}">${r.initials}</div>
+      <div class="rank-info"><div class="name">${r.name}</div><div class="sub">${r.bookings} записей за месяц</div></div>
+      <div class="rank-val">${r.revenue} BYN</div>
+    </div>
+  `).join("");
+}
+
+/* ============================================================ RENDER: LOAD ============================================================ */
+function renderLoad(){
+  document.getElementById("loadBars").innerHTML = LOAD.map(([d,p]) => `
+    <div class="bar-row">
+      <div class="bar-head"><span class="day">${d}</span><span class="pct mono">${p}%</span></div>
+      <div class="bar-track"><div class="bar-fill" style="width:${p}%"></div></div>
+    </div>
+  `).join("");
+}
+
+/* ============================================================ RENDER: SERVICES ============================================================ */
+function renderServices(){
+  document.getElementById("svcList").innerHTML = SERVICES.map((s,i) => `
+    <div class="svc-row" data-i="${i}"><div class="svc-name">${s.name}</div><div class="svc-price">${s.price} BYN</div></div>
+  `).join("");
+  document.querySelectorAll(".svc-row").forEach(r => r.addEventListener("click", () => openEdit(+r.dataset.i)));
+}
+function openEdit(i){
+  const s = SERVICES[i];
+  document.getElementById("editTitle").textContent = s.name;
+  document.getElementById("editPrice").value = s.price;
+  document.getElementById("scrim").classList.add("show");
+  document.getElementById("editSheet").classList.add("show");
+  document.getElementById("editSave").onclick = () => {
+    s.price = +document.getElementById("editPrice").value || s.price;
+    renderServices(); closeEdit(); showToast();
+  };
+}
+function closeEdit(){ document.getElementById("scrim").classList.remove("show"); document.getElementById("editSheet").classList.remove("show"); }
+document.getElementById("editClose").addEventListener("click", closeEdit);
+document.getElementById("scrim").addEventListener("click", closeEdit);
+
+/* ============================================================ NAV ============================================================ */
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); t.classList.add("active");
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById("screen-"+t.dataset.screen).classList.add("active");
+  haptic("light");
+}));
+function showToast(){ const t=document.getElementById("toast"); t.classList.add("show"); haptic("success"); setTimeout(()=>t.classList.remove("show"),2200); }
+
+/* ============================================================ TELEGRAM ============================================================ */
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+function haptic(style){ if(tg && tg.HapticFeedback){ if(["success","error","warning"].includes(style)) tg.HapticFeedback.notificationOccurred(style); else tg.HapticFeedback.impactOccurred(style||"light"); } }
+function applyTheme(){
+  const scheme = (tg && tg.colorScheme) || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  document.documentElement.setAttribute("data-theme", scheme);
+  if(tg){ requestAnimationFrame(() => { const s=getComputedStyle(document.body); try{tg.setHeaderColor(s.getPropertyValue("--surface").trim());tg.setBackgroundColor(s.getPropertyValue("--bg").trim());}catch(e){} }); }
+}
+function initTelegram(){
+  if(!tg){ applyTheme(); matchMedia("(prefers-color-scheme: light)").addEventListener("change", applyTheme); return; }
+  tg.ready(); tg.expand(); applyTheme(); tg.onEvent("themeChanged", applyTheme);
+}
+
+/* ============================================================ INIT ============================================================ */
+initTelegram();
+renderOverview("day"); renderRank(); renderLoad(); renderServices();
+</script>
+</body>
+</html>

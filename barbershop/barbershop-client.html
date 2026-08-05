@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>БРИТВА — запись</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+  :root{
+    --bg:#161D18; --surface:#1E2820; --surface-2:#253227; --surface-3:#2C3B2E;
+    --ink:#F3E9D6; --ink-soft:#B9AD94; --ink-faint:#8A9686;
+    --accent:#C89B3C; --accent-dark:#A17D2C; --accent-soft:rgba(200,155,60,.16); --on-accent:#1A1108;
+    --red:#7A2632; --red-soft:rgba(122,38,50,.18);
+    --ok:#5C8A61; --ok-soft:rgba(92,138,97,.16);
+    --line:#33412F; --line-strong:#455040;
+    --radius:16px; --radius-sm:11px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root[data-theme="light"]{
+    --bg:#F7F1E3; --surface:#FFFFFF; --surface-2:#F1E9D4; --surface-3:#EAE0C6;
+    --ink:#1D2418; --ink-soft:#5B5341; --ink-faint:#6B6354;
+    --accent:#8C6B24; --accent-dark:#6E5219; --accent-soft:rgba(140,107,36,.14); --on-accent:#FFFFFF;
+    --red:#7A2632; --red-soft:rgba(122,38,50,.12);
+    --ok:#3F6B44; --ok-soft:rgba(63,107,68,.14);
+    --line:#E4D9BC; --line-strong:#D6C89F;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:'Lora',serif;font-size:15px;line-height:1.5;
+    min-height:100vh;padding-bottom:40px;transition:background-color .25s,color .25s;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Alfa Slab One',cursive;}
+  button{font-family:inherit;border:none;cursor:pointer;background:none;color:inherit;}
+  ::selection{background:var(--accent-soft);}
+
+  /* signature: barber-pole rail */
+  .pole-rail{height:7px;background:repeating-linear-gradient(115deg,var(--red) 0 14px,var(--ink) 14px 28px,var(--accent) 28px 42px);
+    background-size:160% 100%;animation:polespin 9s linear infinite;flex-shrink:0;}
+  @media (prefers-reduced-motion: reduce){ .pole-rail{animation:none;} }
+  @keyframes polespin{ from{background-position:0 0;} to{background-position:-200px 0;} }
+
+  header{padding:calc(18px + var(--safe-top)) 20px 16px;text-align:center;border-bottom:1px solid var(--line);
+    background:radial-gradient(circle at 50% -20%, var(--surface-2), var(--bg) 70%);position:relative;}
+  .hdr-icon-btn{position:absolute;top:calc(16px + var(--safe-top));right:16px;width:44px;height:44px;
+    border-radius:50%;background:var(--surface-2);border:1px solid var(--line-strong);display:flex;
+    align-items:center;justify-content:center;color:var(--accent);}
+  .hdr-icon-btn svg{width:18px;height:18px;}
+  .brand{font-size:30px;letter-spacing:.03em;color:var(--accent);text-shadow:0 2px 0 rgba(0,0,0,.35);}
+  .brand-sub{margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;
+    text-transform:uppercase;color:var(--ink-faint);}
+
+  main{padding:18px 16px 100px;max-width:520px;margin:0 auto;}
+  .screen{display:none;} .screen.active{display:block;}
+
+  .section-label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+    color:var(--ink-faint);margin:22px 2px 10px;}
+  .section-label:first-child{margin-top:0;}
+
+  /* barber cards */
+  .barber-card{display:flex;gap:13px;align-items:center;background:var(--surface);border:1px solid var(--line);
+    border-radius:var(--radius);padding:14px;margin-bottom:10px;transition:border-color .2s;}
+  .barber-card:active{border-color:var(--accent);}
+  .avatar{width:56px;height:56px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+    font-family:'Alfa Slab One',cursive;font-size:18px;color:#1A1108;border:2px solid var(--accent-dark);
+    box-shadow:0 0 0 3px var(--accent-soft);}
+  .barber-info{flex:1;min-width:0;}
+  .barber-name{font-size:16.5px;font-weight:600;color:var(--ink);}
+  .barber-spec{font-size:12.5px;color:var(--ink-soft);margin-top:2px;font-style:italic;}
+  .barber-meta{display:flex;gap:12px;margin-top:7px;align-items:center;}
+  .rating{display:flex;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--accent);}
+  .rating svg{width:11px;height:11px;fill:var(--accent);}
+  .next-slot{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ok);}
+  .chev{color:var(--ink-faint);flex-shrink:0;}
+  .chev svg{width:16px;height:16px;}
+
+  /* detail screen */
+  .back-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;color:var(--ink-soft);font-size:13.5px;}
+  .back-row svg{width:16px;height:16px;}
+
+  .progress-track{display:flex;gap:6px;margin-bottom:18px;}
+  .progress-track .seg{flex:1;height:4px;border-radius:2px;background:var(--line);}
+  .progress-track .seg.done{background:var(--accent);}
+
+  .detail-hero{display:flex;gap:16px;align-items:center;margin-bottom:18px;}
+  .detail-hero .avatar{width:74px;height:74px;font-size:24px;}
+  .detail-name{font-family:'Alfa Slab One',cursive;font-size:21px;color:var(--ink);letter-spacing:.01em;}
+  .detail-spec{font-size:13px;color:var(--accent);font-style:italic;margin-top:3px;}
+  .detail-exp{font-size:12px;color:var(--ink-faint);margin-top:4px;font-family:'JetBrains Mono',monospace;}
+  .bio-text{font-size:14px;color:var(--ink-soft);margin-bottom:20px;font-style:italic;line-height:1.6;
+    border-left:2px solid var(--accent);padding-left:12px;}
+
+  .service-row{display:flex;justify-content:space-between;align-items:center;background:var(--surface);
+    border:1px solid var(--line);border-radius:var(--radius-sm);padding:13px 15px;margin-bottom:8px;}
+  .service-row.selected{border-color:var(--accent);background:var(--accent-soft);}
+  .service-name{font-size:14.5px;color:var(--ink);}
+  .service-dur{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint);margin-top:3px;}
+  .service-price{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--accent);font-weight:700;white-space:nowrap;}
+
+  .cta-btn{width:100%;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:15px;
+    padding:15px;border-radius:var(--radius-sm);margin-top:8px;text-align:center;letter-spacing:.01em;}
+  .cta-btn:active{background:var(--accent-dark);}
+  .cta-btn.ghost{background:transparent;border:1px solid var(--line-strong);color:var(--ink-soft);}
+  .cta-btn.disabled{opacity:.4;pointer-events:none;}
+
+  /* booking steps */
+  .step-title{font-family:'Alfa Slab One',cursive;font-size:18px;color:var(--ink);margin:0 0 14px;letter-spacing:.01em;}
+  .day-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;margin-bottom:16px;}
+  .day-chip{flex-shrink:0;width:58px;padding:10px 0;border-radius:var(--radius-sm);background:var(--surface);
+    border:1px solid var(--line);text-align:center;}
+  .day-chip.active{background:var(--accent-soft);border-color:var(--accent);}
+  .day-chip .dow{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-faint);text-transform:uppercase;}
+  .day-chip .num{font-size:16px;font-weight:600;margin-top:2px;color:var(--ink);}
+  .day-chip.active .num{color:var(--accent);}
+
+  .slot-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+  .slot{min-height:44px;display:flex;align-items:center;justify-content:center;text-align:center;border-radius:var(--radius-sm);background:var(--surface);
+    border:1px solid var(--line);font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--ink-soft);}
+  .slot.busy{opacity:.3;text-decoration:line-through;pointer-events:none;}
+  .slot.active{background:var(--accent);border-color:var(--accent);color:var(--on-accent);font-weight:700;}
+
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;
+    letter-spacing:.05em;color:var(--ink-faint);margin-bottom:6px;}
+  .field input,.field select{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:12px 14px;color:var(--ink);font-family:'Lora',serif;font-size:16px;outline:none;}
+  .field select{font-family:'JetBrains Mono',monospace;}
+  .field input:focus,.field select:focus{border-color:var(--accent);}
+  .field-row{display:flex;gap:10px;}
+  .field-row .field:first-child{flex:0 0 92px;}
+  .field-row .field:last-child{flex:1;min-width:0;}
+  .step-sub{font-size:13px;color:var(--ink-faint);margin:-8px 0 16px;}
+
+  .saved-contact{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--surface);
+    border:1px solid var(--accent);border-radius:var(--radius);padding:14px 16px;margin-bottom:16px;}
+  .saved-contact-name{font-size:14.5px;font-weight:600;color:var(--ink);}
+  .saved-contact-phone{font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--ink-soft);margin-top:3px;}
+  .link-btn{font-family:'JetBrains Mono',monospace;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;
+    color:var(--accent);padding:12px 6px;min-height:44px;display:flex;align-items:center;flex-shrink:0;}
+
+  .summary-card{background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius);padding:16px;margin-bottom:16px;}
+  .sum-row{display:flex;justify-content:space-between;padding:7px 0;font-size:13.5px;border-bottom:1px solid var(--line);}
+  .sum-row:last-child{border-bottom:none;}
+  .sum-row .k{color:var(--ink-faint);font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;}
+  .sum-row .v{color:var(--ink);text-align:right;}
+
+  /* my bookings */
+  .booking-card{display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:10px;}
+  .booking-card .avatar{width:40px;height:40px;font-size:13px;flex-shrink:0;}
+  .booking-body{flex:1;min-width:0;}
+  .bk-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}
+  .bk-service{font-weight:600;font-size:14.5px;}
+  .bk-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 9px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;white-space:nowrap;}
+  .bk-badge.upcoming{background:var(--ok-soft);color:var(--ok);}
+  .bk-badge.done{background:var(--surface-3);color:var(--ink-faint);}
+  .bk-meta{font-size:12.5px;color:var(--ink-soft);margin-top:5px;}
+  .bk-meta .mono{color:var(--ink-faint);}
+  .bk-rebook{margin-top:10px;padding:9px 4px;font-family:'JetBrains Mono',monospace;font-size:11.5px;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--accent);min-height:44px;display:flex;align-items:center;gap:5px;}
+
+  .empty-note{text-align:center;color:var(--ink-faint);font-size:13px;padding:30px 10px;font-style:italic;}
+
+  /* sheet (confirmation) */
+  .sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;}
+  .sheet-scrim.show{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surface-2);border-radius:20px 20px 0 0;
+    padding:22px 18px calc(22px + var(--safe-bottom));transform:translateY(100%);transition:transform .3s cubic-bezier(.32,.72,0,1);
+    z-index:61;max-height:80vh;overflow-y:auto;text-align:center;}
+  .sheet.show{transform:translateY(0);}
+  .sheet-check{width:56px;height:56px;border-radius:50%;background:var(--ok-soft);display:flex;align-items:center;
+    justify-content:center;margin:0 auto 14px;}
+  .sheet-check svg{width:26px;height:26px;color:var(--ok);}
+  .sheet-title{font-family:'Alfa Slab One',cursive;font-size:19px;margin-bottom:8px;}
+  .sheet-text{color:var(--ink-soft);font-size:13.5px;margin-bottom:18px;}
+
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--accent);
+    color:var(--on-accent);padding:11px 20px;border-radius:24px;font-size:13.5px;font-weight:700;opacity:0;pointer-events:none;
+    transition:all .35s cubic-bezier(.34,1.56,.64,1);z-index:70;box-shadow:0 8px 24px rgba(0,0,0,.4);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+
+<div class="pole-rail"></div>
+<header>
+  <button class="hdr-icon-btn" id="myBookingsBtn" title="Мои записи" aria-label="Мои записи">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+  </button>
+  <div class="brand display">БРИТВА</div>
+  <div class="brand-sub">барбершоп · минск</div>
+</header>
+
+<main>
+
+  <!-- SCREEN: список мастеров -->
+  <div class="screen active" id="screen-list">
+    <div class="section-label">Наши мастера</div>
+    <div id="barberList"></div>
+  </div>
+
+  <!-- SCREEN: карточка мастера -->
+  <div class="screen" id="screen-detail">
+    <div class="back-row" data-back="screen-list">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> К мастерам
+    </div>
+    <div class="progress-track" data-step="1"></div>
+    <div class="detail-hero">
+      <div class="avatar" id="detailAvatar"></div>
+      <div>
+        <div class="detail-name" id="detailName"></div>
+        <div class="detail-spec" id="detailSpec"></div>
+        <div class="detail-exp" id="detailExp"></div>
+      </div>
+    </div>
+    <div class="bio-text" id="detailBio"></div>
+    <div class="section-label">Услуги</div>
+    <div id="serviceList"></div>
+  </div>
+
+  <!-- SCREEN: выбор времени -->
+  <div class="screen" id="screen-time">
+    <div class="back-row" data-back="screen-detail"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Назад</div>
+    <div class="progress-track" data-step="2"></div>
+    <div class="step-title">На какое время?</div>
+    <div class="day-row" id="dayRow"></div>
+    <div class="slot-grid" id="slotGrid"></div>
+    <button class="cta-btn disabled" id="toContactBtn">Продолжить</button>
+  </div>
+
+  <!-- SCREEN: контакты -->
+  <div class="screen" id="screen-contact">
+    <div class="back-row" data-back="screen-time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Назад</div>
+    <div class="progress-track" data-step="3"></div>
+    <div class="step-title">Ваши контакты</div>
+    <div class="step-sub">Нужны, чтобы подтвердить запись</div>
+
+    <div class="saved-contact" id="savedContactCard" style="display:none;">
+      <div>
+        <div class="saved-contact-name" id="savedContactName"></div>
+        <div class="saved-contact-phone" id="savedContactPhone"></div>
+      </div>
+      <button class="link-btn" id="editContactBtn">Изменить</button>
+    </div>
+
+    <div id="contactForm">
+      <div class="field"><label for="inName">Имя</label><input type="text" id="inName" placeholder="Как к вам обращаться"></div>
+      <div class="field-row">
+        <div class="field">
+          <label for="inPhoneCode">Код</label>
+          <select id="inPhoneCode"><option value="+375">+375</option><option value="+7">+7</option><option value="+380">+380</option></select>
+        </div>
+        <div class="field"><label for="inPhone">Телефон</label><input type="tel" id="inPhone" placeholder="29 123-45-67" inputmode="numeric"></div>
+      </div>
+    </div>
+
+    <button class="cta-btn disabled" id="toConfirmBtn">Продолжить</button>
+  </div>
+
+  <!-- SCREEN: подтверждение -->
+  <div class="screen" id="screen-confirm">
+    <div class="back-row" data-back="screen-contact"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> Назад</div>
+    <div class="progress-track" data-step="4"></div>
+    <div class="step-title">Проверьте и подтвердите</div>
+    <div class="summary-card" id="summaryCard"></div>
+    <button class="cta-btn" id="confirmBtn">Записаться</button>
+  </div>
+
+  <!-- SCREEN: мои записи -->
+  <div class="screen" id="screen-my">
+    <div class="back-row" data-back="screen-list"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg> К мастерам</div>
+    <div class="section-label">Мои записи</div>
+    <div id="myList"></div>
+  </div>
+
+</main>
+
+<div class="sheet-scrim" id="scrim"></div>
+<div class="sheet" id="doneSheet">
+  <div class="sheet-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+  <div class="sheet-title display">Записаны!</div>
+  <div class="sheet-text" id="doneText"></div>
+  <button class="cta-btn" id="doneOkBtn">Отлично</button>
+</div>
+
+<div class="toast" id="toast">Запись сохранена ✓</div>
+
+<script>
+/* ============================================================ CONFIG ============================================================ */
+const DEMO_CONFIG = { businessName: "БРИТВА", city: "MINSK / BY", apiUrl: "PASTE_APPS_SCRIPT_URL_HERE" };
+let CONFIG = DEMO_CONFIG;
+
+/* ============================================================ MOCK DATA ============================================================ */
+const MOCK_BARBERS = [
+  { id:"b1", name:"Игорь Соколов", spec:"Классика и опасная бритва", exp:"8 лет за креслом", initials:"ИС",
+    color:"#C89B3C", rating:4.9, next:"сегодня, 15:40",
+    bio:"Работает по классической школе — ножницы, филировка, горячее полотенце перед бритьём. Тишина или разговор — как вам удобнее." },
+  { id:"b2", name:"Артём Волков", spec:"Фейды и текстурные стрижки", exp:"5 лет за креслом", initials:"АВ",
+    color:"#7A2632", rating:4.8, next:"сегодня, 17:10",
+    bio:"Специализация — чёткие переходы и современные формы. Смотрит референсы, объясняет, что подойдёт под форму лица." },
+  { id:"b3", name:"Максим Орлов", spec:"Бороды и усы", exp:"6 лет за креслом", initials:"МО",
+    color:"#5C8A61", rating:4.9, next:"завтра, 11:00",
+    bio:"Оформление и уход за бородой — от лёгкой коррекции до полного скульптурирования по форме лица." },
+  { id:"b4", name:"Денис Крылов", spec:"Детские и семейные стрижки", exp:"4 года за креслом", initials:"ДК",
+    color:"#A17D2C", rating:4.7, next:"сегодня, 12:20",
+    bio:"Терпеливо работает с детьми, найдёт подход даже к тем, кто стрижку не любит." },
+];
+
+const MOCK_SERVICES = [
+  { id:"s1", name:"Стрижка машинкой", dur:"30 мин", price:28 },
+  { id:"s2", name:"Стрижка ножницами", dur:"40 мин", price:35 },
+  { id:"s3", name:"Стрижка + борода", dur:"55 мин", price:48 },
+  { id:"s4", name:"Королевское бритьё", dur:"35 мин", price:32 },
+  { id:"s5", name:"Оформление бороды", dur:"20 мин", price:18 },
+  { id:"s6", name:"Детская стрижка", dur:"25 мин", price:22 },
+];
+
+const MOCK_MY_BOOKINGS = [
+  { service:"Стрижка + борода", barber:"Игорь Соколов", date:"31 июля", time:"15:40", status:"upcoming" },
+  { service:"Стрижка машинкой", barber:"Артём Волков", date:"14 июля", time:"18:00", status:"done" },
+];
+
+const DOW = ["ВС","ПН","ВТ","СР","ЧТ","ПТ","СБ"];
+const TIMES = ["10:00","10:40","11:20","12:00","12:40","13:20","14:00","14:40","15:20","16:00","16:40","17:20","18:00","18:40","19:20"];
+
+/* ============================================================ STATE ============================================================ */
+let state = { barber:null, service:null, day:0, time:null, name:"", phoneCode:"+375", phoneRaw:"", phone:"" };
+
+/* ============================================================ RENDER: LIST ============================================================ */
+function renderBarberList(){
+  const el = document.getElementById("barberList");
+  el.innerHTML = MOCK_BARBERS.map(b => `
+    <div class="barber-card" data-id="${b.id}">
+      <div class="avatar" style="background:${b.color}">${b.initials}</div>
+      <div class="barber-info">
+        <div class="barber-name">${b.name}</div>
+        <div class="barber-spec">${b.spec}</div>
+        <div class="barber-meta">
+          <div class="rating"><svg viewBox="0 0 24 24"><path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.9L12 17.8 5.8 21.1 7 14.2 2 9.3l6.9-1z"/></svg>${b.rating}</div>
+          <div class="next-slot">● ${b.next}</div>
+        </div>
+      </div>
+      <div class="chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></div>
+    </div>
+  `).join("");
+  el.querySelectorAll(".barber-card").forEach(c => c.addEventListener("click", () => openBarber(c.dataset.id)));
+}
+
+/* ============================================================ RENDER: DETAIL ============================================================ */
+function openBarber(id){
+  haptic("light");
+  const b = MOCK_BARBERS.find(x => x.id === id);
+  state.barber = b; state.service = null;
+  document.getElementById("detailAvatar").textContent = b.initials;
+  document.getElementById("detailAvatar").style.background = b.color;
+  document.getElementById("detailName").textContent = b.name;
+  document.getElementById("detailSpec").textContent = b.spec;
+  document.getElementById("detailExp").textContent = b.exp.toUpperCase();
+  document.getElementById("detailBio").textContent = b.bio;
+  renderServices();
+  showScreen("screen-detail");
+}
+function renderServices(){
+  const el = document.getElementById("serviceList");
+  el.innerHTML = MOCK_SERVICES.map(s => `
+    <div class="service-row" data-id="${s.id}">
+      <div><div class="service-name">${s.name}</div><div class="service-dur mono">${s.dur}</div></div>
+      <div class="service-price">${s.price} BYN</div>
+    </div>
+  `).join("");
+  el.querySelectorAll(".service-row").forEach(r => r.addEventListener("click", () => {
+    state.service = MOCK_SERVICES.find(s => s.id === r.dataset.id);
+    haptic("light");
+    renderTimeScreen();
+    showScreen("screen-time");
+  }));
+}
+
+/* ============================================================ RENDER: TIME ============================================================ */
+function renderTimeScreen(){
+  state.day = 0; state.time = null;
+  const dayRow = document.getElementById("dayRow");
+  const today = new Date();
+  let html = "";
+  for(let i=0;i<7;i++){
+    const d = new Date(today); d.setDate(today.getDate()+i);
+    html += `<div class="day-chip ${i===0?'active':''}" data-i="${i}">
+      <div class="dow mono">${i===0?'СЕГ':DOW[d.getDay()]}</div><div class="num">${d.getDate()}</div></div>`;
+  }
+  dayRow.innerHTML = html;
+  dayRow.querySelectorAll(".day-chip").forEach(c => c.addEventListener("click", () => {
+    dayRow.querySelectorAll(".day-chip").forEach(x=>x.classList.remove("active"));
+    c.classList.add("active"); state.day = +c.dataset.i; state.time = null;
+    renderSlots();
+  }));
+  renderSlots();
+}
+function renderSlots(){
+  const grid = document.getElementById("slotGrid");
+  grid.innerHTML = TIMES.map((t,i) => {
+    const busy = (i + state.day*3) % 5 === 0;
+    return `<div class="slot ${busy?'busy':''}" data-t="${t}">${t}</div>`;
+  }).join("");
+  grid.querySelectorAll(".slot:not(.busy)").forEach(s => s.addEventListener("click", () => {
+    grid.querySelectorAll(".slot").forEach(x=>x.classList.remove("active"));
+    s.classList.add("active"); state.time = s.dataset.t; haptic("light");
+    document.getElementById("toContactBtn").classList.remove("disabled");
+  }));
+}
+document.getElementById("toContactBtn").addEventListener("click", () => { renderContactScreen(); showScreen("screen-contact"); });
+
+/* ============================================================ CONTACT ============================================================ */
+const CONTACT_KEY = "britva_contact_v1";
+function loadSavedContact(){
+  try{ return JSON.parse(localStorage.getItem(CONTACT_KEY) || "null"); }catch(e){ return null; }
+}
+function persistContact(){
+  try{ localStorage.setItem(CONTACT_KEY, JSON.stringify({ name: state.name, code: state.phoneCode, phone: state.phoneRaw })); }catch(e){}
+}
+function renderContactScreen(){
+  const saved = loadSavedContact();
+  const card = document.getElementById("savedContactCard");
+  const form = document.getElementById("contactForm");
+  if(saved && saved.name && saved.phone){
+    state.name = saved.name; state.phoneCode = saved.code || "+375"; state.phoneRaw = saved.phone;
+    document.getElementById("savedContactName").textContent = saved.name;
+    document.getElementById("savedContactPhone").textContent = `${saved.code} ${saved.phone}`;
+    card.style.display = "flex"; form.style.display = "none";
+  } else {
+    card.style.display = "none"; form.style.display = "block";
+  }
+  document.getElementById("inName").value = state.name;
+  document.getElementById("inPhoneCode").value = state.phoneCode;
+  document.getElementById("inPhone").value = state.phoneRaw;
+  updateContactValidity();
+}
+function updateContactValidity(){
+  const ok = state.name.trim().length > 1 && state.phoneRaw.replace(/\D/g,"").length >= 7;
+  document.getElementById("toConfirmBtn").classList.toggle("disabled", !ok);
+}
+document.getElementById("editContactBtn").addEventListener("click", () => {
+  document.getElementById("savedContactCard").style.display = "none";
+  document.getElementById("contactForm").style.display = "block";
+  haptic("light");
+});
+document.getElementById("inName").addEventListener("input", e => { state.name = e.target.value.trim(); updateContactValidity(); });
+document.getElementById("inPhoneCode").addEventListener("change", e => { state.phoneCode = e.target.value; updateContactValidity(); });
+document.getElementById("inPhone").addEventListener("input", e => { state.phoneRaw = e.target.value.trim(); updateContactValidity(); });
+document.getElementById("toConfirmBtn").addEventListener("click", () => {
+  state.phone = `${state.phoneCode} ${state.phoneRaw}`;
+  renderSummary(); showScreen("screen-confirm");
+});
+
+function renderSummary(){
+  const d = new Date(); d.setDate(d.getDate()+state.day);
+  const dateStr = d.toLocaleDateString("ru-RU",{day:"numeric",month:"long"});
+  document.getElementById("summaryCard").innerHTML = `
+    <div class="sum-row"><div class="k">Мастер</div><div class="v">${state.barber.name}</div></div>
+    <div class="sum-row"><div class="k">Услуга</div><div class="v">${state.service.name}</div></div>
+    <div class="sum-row"><div class="k">Когда</div><div class="v">${dateStr}, ${state.time}</div></div>
+    <div class="sum-row"><div class="k">Стоимость</div><div class="v">${state.service.price} BYN</div></div>
+    <div class="sum-row"><div class="k">Контакт</div><div class="v">${state.name}, ${state.phone}</div></div>
+  `;
+}
+
+document.getElementById("confirmBtn").addEventListener("click", () => {
+  haptic("success");
+  persistContact();
+  document.getElementById("doneText").textContent =
+    `${state.barber.name} ждёт вас ${state.time===null?'':''}${document.getElementById("summaryCard").children[2].querySelector(".v").textContent}. Напомним за час до записи.`;
+  openSheet();
+});
+
+/* ============================================================ MY BOOKINGS ============================================================ */
+document.getElementById("myBookingsBtn").addEventListener("click", () => { renderMy(); showScreen("screen-my"); });
+function renderMy(){
+  const el = document.getElementById("myList");
+  if(!MOCK_MY_BOOKINGS.length){ el.innerHTML = `<div class="empty-note">Пока нет записей — выберите мастера и запишитесь</div>`; return; }
+  el.innerHTML = MOCK_MY_BOOKINGS.map((b,i) => {
+    const barber = MOCK_BARBERS.find(x => x.name === b.barber);
+    return `
+    <div class="booking-card">
+      <div class="avatar" style="background:${barber ? barber.color : "var(--surface-3)"}">${barber ? barber.initials : "?"}</div>
+      <div class="booking-body">
+        <div class="bk-top"><div class="bk-service">${b.service}</div>
+          <div class="bk-badge ${b.status}">${b.status==="upcoming"?"предстоит":"завершено"}</div></div>
+        <div class="bk-meta">${b.barber} · <span class="mono">${b.date}, ${b.time}</span></div>
+        ${b.status==="done" ? `<button class="bk-rebook" data-i="${i}">↻ Записаться снова</button>` : ""}
+      </div>
+    </div>
+  `;
+  }).join("");
+  el.querySelectorAll(".bk-rebook").forEach(btn => btn.addEventListener("click", () => rebook(MOCK_MY_BOOKINGS[+btn.dataset.i])));
+}
+function rebook(b){
+  const barber = MOCK_BARBERS.find(x => x.name === b.barber);
+  if(!barber) return;
+  haptic("light");
+  openBarber(barber.id);
+  const service = MOCK_SERVICES.find(x => x.name === b.service);
+  if(service){ state.service = service; renderTimeScreen(); showScreen("screen-time"); }
+}
+
+/* ============================================================ SCREENS / SHEET ============================================================ */
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  window.scrollTo(0,0);
+}
+document.querySelectorAll("[data-back]").forEach(b => b.addEventListener("click", () => showScreen(b.dataset.back)));
+
+function openSheet(){
+  document.getElementById("scrim").classList.add("show");
+  document.getElementById("doneSheet").classList.add("show");
+}
+function closeSheet(){
+  document.getElementById("scrim").classList.remove("show");
+  document.getElementById("doneSheet").classList.remove("show");
+}
+document.getElementById("scrim").addEventListener("click", closeSheet);
+document.getElementById("doneOkBtn").addEventListener("click", () => {
+  closeSheet(); showToast(); showScreen("screen-list");
+});
+function showToast(){
+  const t = document.getElementById("toast");
+  t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 2400);
+}
+
+/* ============================================================ TELEGRAM ============================================================ */
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+function haptic(style){
+  if(tg && tg.HapticFeedback){
+    if(["success","error","warning"].includes(style)) tg.HapticFeedback.notificationOccurred(style);
+    else tg.HapticFeedback.impactOccurred(style || "light");
+  }
+}
+function applyTheme(){
+  const scheme = (tg && tg.colorScheme) || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  document.documentElement.setAttribute("data-theme", scheme);
+  if(tg){
+    requestAnimationFrame(() => {
+      const s = getComputedStyle(document.body);
+      try{ tg.setHeaderColor(s.getPropertyValue("--surface").trim()); tg.setBackgroundColor(s.getPropertyValue("--bg").trim()); }catch(e){}
+    });
+  }
+}
+function initTelegram(){
+  if(!tg){ applyTheme(); matchMedia("(prefers-color-scheme: light)").addEventListener("change", applyTheme); return; }
+  tg.ready(); tg.expand();
+  applyTheme();
+  tg.onEvent("themeChanged", applyTheme);
+}
+
+/* ============================================================ PROGRESS ============================================================ */
+function renderProgressTracks(){
+  const total = 4;
+  document.querySelectorAll(".progress-track").forEach(el => {
+    const step = +el.dataset.step;
+    el.innerHTML = Array.from({length: total}, (_, i) => `<div class="seg ${i < step ? "done" : ""}"></div>`).join("");
+    el.setAttribute("role", "img");
+    el.setAttribute("aria-label", `Шаг ${step} из ${total}`);
+  });
+}
+
+/* ============================================================ INIT ============================================================ */
+initTelegram();
+renderBarberList();
+renderProgressTracks();
+</script>
+</body>
+</html>
