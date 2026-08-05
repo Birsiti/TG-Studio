@@ -216,15 +216,16 @@
 
 <script>
 /* ============================================================ CONFIG ============================================================ */
-// Токен бота НИКОГДА не хранится в клиентском коде — он виден любому в исходнике
-// страницы. Заявка уходит на бэкенд (Apps Script / Cloudflare Worker), который сам
-// знает токен и шлёт сообщение в Telegram на сервере. Пока apiUrl не подключён —
-// форма работает в демо-режиме (см. sendLead ниже, имитирует успешную отправку).
+// ВРЕМЕННО (быстрый вариант, пока нет бэкенда): заявка уходит в Telegram
+// напрямую из клиента. Токен виден в исходнике страницы — это тот же риск,
+// что привёл к утечке предыдущего токена, поэтому он: (1) НОВЫЙ, старый уже
+// невалиден, (2) должен быть переведён на бэкенд (Apps Script / Cloudflare
+// Worker, см. carwash-miniapp/BACKEND-README.md), как только он появится —
+// тогда просто удалить botToken отсюда и подставить apiUrl.
 const CONFIG = {
-  apiUrl: "PASTE_BACKEND_URL_HERE",
+  botToken: "8826586712:AAEAAj4wz_-xk2figKE2vZMjQ3gYO590EUY",
+  chatId: "6204739474",
 };
-// Следующий этап: тот же бэкенд поведёт живой диалог через Anthropic API
-// по инструкции консультанта вместо статичной формы.
 
 /* ============================================================ TELEGRAM ============================================================ */
 const tg = window.Telegram ? window.Telegram.WebApp : null;
@@ -330,19 +331,31 @@ function collectPayload() {
   };
 }
 
+function buildMessage(p) {
+  return [
+    "🆕 Новая заявка (order-bot)",
+    `Имя: ${p.name}`,
+    `Телефон: ${p.phone}`,
+    `Сфера: ${p.business || "не указано"}`,
+    `Задача: ${p.task}`,
+    `Бюджет: ${p.budget}`,
+  ].join("\n");
+}
+
 async function sendLead(payload) {
-  if (!CONFIG.apiUrl || CONFIG.apiUrl.startsWith("PASTE_")) {
-    // демо-режим: бэкенд ещё не подключён — просто имитируем отправку
+  if (!CONFIG.botToken || CONFIG.botToken.startsWith("PASTE_")) {
+    // токен ещё не вставлен — форма работает в демо-режиме, ничего не уходит
     await new Promise(r => setTimeout(r, 500));
     return;
   }
-  const res = await fetch(CONFIG.apiUrl, {
+  const url = `https://api.telegram.org/bot${CONFIG.botToken}/sendMessage`;
+  const res = await fetch(url, {
     method: "POST",
-    headers: { "Content-Type": "text/plain" }, // без CORS preflight, как в остальных мини-аппах студии
-    body: JSON.stringify({ action: "submitLead", payload }),
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: CONFIG.chatId, text: buildMessage(payload) }),
   });
   const data = await res.json();
-  if (!data.ok) throw new Error(data.error || "send_failed");
+  if (!res.ok || !data.ok) throw new Error(data.description || "send_failed");
 }
 
 function setLoading(loading) {
