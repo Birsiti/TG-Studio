@@ -4,13 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Оставить заявку — Студия Ботов</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
   :root{
     --bg:#111417; --surface:#1A1E22; --surface-2:#20252A; --surface-3:#262B31;
     --ink:#EDEFF0; --ink-soft:#8C949C; --ink-faint:#565D64;
-    --accent:#2AABEE; --accent-dark:#1B8FCB; --accent-soft:rgba(42,171,238,.14);
+    --accent:#7C5CFC; --accent-dark:#6144D9; --accent-soft:rgba(124,92,252,.16);
     --ok:#38A89D; --ok-soft:rgba(56,168,157,.14);
     --danger:#E5626A; --danger-soft:rgba(229,98,106,.12);
     --line:#2A2F35; --line-strong:#3A414A;
@@ -66,6 +67,15 @@
   .field.invalid input,.field.invalid textarea{border-color:var(--danger);}
   .field-error{display:none;color:var(--danger);font-size:12.5px;margin-top:6px;line-height:1.4;}
   .field.invalid .field-error{display:block;}
+
+  .phone-row{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--radius-sm);padding:0 14px;transition:border-color .15s;}
+  .phone-row:focus-within{border-color:var(--accent);}
+  .field.invalid .phone-row{border-color:var(--danger);}
+  .phone-prefix{color:var(--ink-soft);font-weight:600;flex-shrink:0;}
+  .phone-row input{flex:1;min-width:0;background:transparent;border:none;padding:13px 0;color:var(--ink);
+    font-family:'JetBrains Mono',monospace;font-size:16px;outline:none;}
+  .phone-row input::placeholder{color:var(--ink-faint);}
 
   .chip-group{display:flex;flex-wrap:wrap;gap:8px;}
   .chip{position:relative;display:flex;align-items:center;justify-content:center;min-height:44px;
@@ -131,10 +141,13 @@
       <div class="field-error" id="errName" role="alert"></div>
     </div>
 
-    <div class="field" id="fieldContact">
-      <label for="fldContact">Контакт <span class="req">*</span></label>
-      <input type="text" id="fldContact" name="contact" autocomplete="tel" placeholder="@username или +7 999 000-00-00">
-      <div class="field-error" id="errContact" role="alert"></div>
+    <div class="field" id="fieldPhone">
+      <label for="fldPhone">Телефон <span class="req">*</span></label>
+      <div class="phone-row">
+        <span class="phone-prefix mono">+375</span>
+        <input type="tel" id="fldPhone" name="phone" autocomplete="tel" inputmode="numeric" placeholder="29-123-45-67" maxlength="12">
+      </div>
+      <div class="field-error" id="errPhone" role="alert"></div>
     </div>
 
     <div class="field" id="fieldBusiness">
@@ -151,9 +164,9 @@
     <div class="field">
       <label>Бюджет</label>
       <div class="chip-group" id="budgetGroup" role="radiogroup" aria-label="Бюджет">
-        <label class="chip"><input type="radio" name="budget" value="До 50 000 ₽"><span>До 50 000 ₽</span></label>
-        <label class="chip"><input type="radio" name="budget" value="50 000–150 000 ₽"><span>50–150 тыс ₽</span></label>
-        <label class="chip"><input type="radio" name="budget" value="150 000+ ₽"><span>150 000+ ₽</span></label>
+        <label class="chip"><input type="radio" name="budget" value="До 500 BYN"><span class="mono">До 500 BYN</span></label>
+        <label class="chip"><input type="radio" name="budget" value="500–1500 BYN"><span class="mono">500–1500 BYN</span></label>
+        <label class="chip"><input type="radio" name="budget" value="1500+ BYN"><span class="mono">1500+ BYN</span></label>
         <label class="chip"><input type="radio" name="budget" value="Обсудим"><span>Обсудим</span></label>
       </div>
     </div>
@@ -179,16 +192,15 @@
 
 <script>
 /* ============================================================ CONFIG ============================================================ */
-// Временная схема: заявка уходит напрямую в Telegram через Bot API из клиентского кода.
-// Токен бота при этом виден в исходнике страницы — приемлемо для быстрого старта,
-// но при переходе на ИИ-консультанта (см. план ниже) стоит перенести отправку на бэкенд
-// (например Cloudflare Worker), чтобы токен не был доступен напрямую в WebApp.
+// Токен бота НИКОГДА не хранится в клиентском коде — он виден любому в исходнике
+// страницы. Заявка уходит на бэкенд (Apps Script / Cloudflare Worker), который сам
+// знает токен и шлёт сообщение в Telegram на сервере. Пока apiUrl не подключён —
+// форма работает в демо-режиме (см. sendLead ниже, имитирует успешную отправку).
 const CONFIG = {
-  botToken: "8826586712:AAEAAj4wz_-xk2figKE2vZMjQ3gYO590EUY",
-  chatId: "6204739474",
+  apiUrl: "PASTE_BACKEND_URL_HERE",
 };
-// Следующий этап: сюда встанет apiUrl бэкенда, который вместо статичной формы
-// поведёт живой диалог через Anthropic API по инструкции консультанта.
+// Следующий этап: тот же бэкенд поведёт живой диалог через Anthropic API
+// по инструкции консультанта вместо статичной формы.
 
 /* ============================================================ TELEGRAM ============================================================ */
 const tg = window.Telegram ? window.Telegram.WebApp : null;
@@ -216,11 +228,25 @@ const submitBtnLabel = document.getElementById("submitBtnLabel");
 const submitError = document.getElementById("submitError");
 const budgetGroup = document.getElementById("budgetGroup");
 
+const PHONE_PREFIX = "+375";
+function fullPhone(v) { return PHONE_PREFIX + v.replace(/\D/g, ""); }
+function bindPhoneMask(el) {
+  el.addEventListener("input", () => {
+    const digits = el.value.replace(/\D/g, "").slice(0, 9);
+    let out = digits;
+    if (digits.length > 2) out = digits.slice(0, 2) + "-" + digits.slice(2);
+    if (digits.length > 5) out = digits.slice(0, 2) + "-" + digits.slice(2, 5) + "-" + digits.slice(5);
+    if (digits.length > 7) out = digits.slice(0, 2) + "-" + digits.slice(2, 5) + "-" + digits.slice(5, 7) + "-" + digits.slice(7);
+    el.value = out;
+  });
+}
+bindPhoneMask(document.getElementById("fldPhone"));
+
 const FIELDS = [
   { key: "name", label: "Имя", fieldId: "fieldName", errId: "errName", inputId: "fldName",
     validate: v => v.trim().length >= 2 ? "" : "Укажите имя" },
-  { key: "contact", label: "Контакт", fieldId: "fieldContact", errId: "errContact", inputId: "fldContact",
-    validate: v => v.trim().length >= 4 ? "" : "Укажите телеграм или телефон" },
+  { key: "phone", label: "Телефон", fieldId: "fieldPhone", errId: "errPhone", inputId: "fldPhone",
+    validate: v => v.replace(/\D/g, "").length === 9 ? "" : "Укажите номер полностью — 9 цифр после +375" },
   { key: "task", label: "Задача", fieldId: "fieldTask", errId: "errTask", inputId: "fldTask",
     validate: v => v.trim().length >= 5 ? "" : "Расскажите, что нужно" },
 ];
@@ -264,33 +290,26 @@ function collectPayload() {
   const budget = budgetGroup.querySelector("input[type=radio]:checked");
   return {
     name: document.getElementById("fldName").value.trim(),
-    contact: document.getElementById("fldContact").value.trim(),
+    phone: fullPhone(document.getElementById("fldPhone").value),
     business: document.getElementById("fldBusiness").value.trim(),
     task: document.getElementById("fldTask").value.trim(),
     budget: budget ? budget.value : "не выбран",
   };
 }
 
-function buildMessage(p) {
-  return [
-    "🆕 Новая заявка (order-bot)",
-    `Имя: ${p.name}`,
-    `Контакт: ${p.contact}`,
-    `Сфера: ${p.business || "не указано"}`,
-    `Задача: ${p.task}`,
-    `Бюджет: ${p.budget}`,
-  ].join("\n");
-}
-
-async function sendToTelegram(text) {
-  const url = `https://api.telegram.org/bot${CONFIG.botToken}/sendMessage`;
-  const res = await fetch(url, {
+async function sendLead(payload) {
+  if (!CONFIG.apiUrl || CONFIG.apiUrl.startsWith("PASTE_")) {
+    // демо-режим: бэкенд ещё не подключён — просто имитируем отправку
+    await new Promise(r => setTimeout(r, 500));
+    return;
+  }
+  const res = await fetch(CONFIG.apiUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: CONFIG.chatId, text }),
+    headers: { "Content-Type": "text/plain" }, // без CORS preflight, как в остальных мини-аппах студии
+    body: JSON.stringify({ action: "submitLead", payload }),
   });
   const data = await res.json();
-  if (!res.ok || !data.ok) throw new Error(data.description || "send_failed");
+  if (!data.ok) throw new Error(data.error || "send_failed");
 }
 
 function setLoading(loading) {
@@ -337,7 +356,7 @@ submitBtn.addEventListener("click", async () => {
   setLoading(true);
   try {
     const payload = collectPayload();
-    await sendToTelegram(buildMessage(payload));
+    await sendLead(payload);
     showSuccess();
   } catch (e) {
     submitError.classList.add("show");
