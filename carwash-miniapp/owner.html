@@ -6,6 +6,7 @@
 <title>Панель владельца</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="palettes.css">
 <link rel="stylesheet" href="theme.css">
@@ -207,6 +208,12 @@
 
   const STATUS_TXT = {free:'Свободен', busy:'Занят', maintenance:'На обслуживании'};
 
+  // Прогрев запросов к Apps Script в фоне сразу после старта — к моменту,
+  // когда владелец реально откроет вкладку, round-trip (несколько секунд на
+  // мобильной сети) уже может быть завершён. Промис потребляется один раз и
+  // обнуляется, чтобы повторное открытие вкладки показывало свежие данные.
+  let baysPrefetch = null, staffPrefetch = null, inventoryPrefetch = null, shopPrefetch = null;
+
   /* ============ API WRAPPER ============ */
   async function api(action, payload){
     payload = payload || {};
@@ -351,7 +358,8 @@
 
   /* ============ TAB: БОКСЫ ============ */
   async function renderBays(){
-    const res = await api('getBays');
+    const res = await (baysPrefetch || api('getBays'));
+    baysPrefetch = null;
     if(res.ok) BAYS = res.bays; else showToast('Не удалось загрузить боксы', true);
     const wrap = $('bayList'); wrap.innerHTML='';
     if(!BAYS.length){ wrap.innerHTML = `<div class="empty-state"><div class="drop-big"></div>Боксы ещё не добавлены</div>`; return; }
@@ -408,7 +416,8 @@
   /* ============ TAB: ПЕРСОНАЛ ============ */
   function initials(name){ return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
   async function renderStaff(){
-    const res = await api('getStaff');
+    const res = await (staffPrefetch || api('getStaff'));
+    staffPrefetch = null;
     if(res.ok) STAFF = res.staff; else showToast('Не удалось загрузить персонал', true);
     $('payrollFund').textContent = STAFF.reduce((s,x)=>s+x.accruedMonth,0)+' BYN';
     const wrap = $('staffList'); wrap.innerHTML='';
@@ -469,7 +478,8 @@
 
   /* ============ TAB: СКЛАД ============ */
   async function renderInventory(){
-    const res = await api('getInventory');
+    const res = await (inventoryPrefetch || api('getInventory'));
+    inventoryPrefetch = null;
     if(res.ok) INVENTORY = res.items; else showToast('Не удалось загрузить склад', true);
     $('inventoryValue').textContent = INVENTORY.reduce((s,x)=>s+x.qty*x.price,0).toFixed(0)+' BYN';
     const wrap = $('invList'); wrap.innerHTML='';
@@ -530,7 +540,8 @@
 
   /* ============ TAB: МАГАЗИН ============ */
   async function renderShop(){
-    const res = await api('getShop');
+    const res = await (shopPrefetch || api('getShop'));
+    shopPrefetch = null;
     if(res.ok) SHOP = res.items; else showToast('Не удалось загрузить магазин', true);
     const wrap = $('shopList'); wrap.innerHTML='';
     if(!SHOP.length){ wrap.innerHTML = `<div class="empty-state"><div class="drop-big"></div>Товаров пока нет</div>`; return; }
@@ -655,6 +666,10 @@
 
     if(isAllowed){
       renderOverview();
+      baysPrefetch = api('getBays').catch(()=>({ok:false}));
+      staffPrefetch = api('getStaff').catch(()=>({ok:false}));
+      inventoryPrefetch = api('getInventory').catch(()=>({ok:false}));
+      shopPrefetch = api('getShop').catch(()=>({ok:false}));
       requestAnimationFrame(()=>{ const a=document.querySelector('.tab-btn.active'); if(a) positionIndicator(a); });
     }
 

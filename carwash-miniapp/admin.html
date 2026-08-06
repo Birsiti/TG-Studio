@@ -6,6 +6,7 @@
 <title>Панель администратора</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="palettes.css">
 <link rel="stylesheet" href="theme.css">
@@ -255,6 +256,13 @@
     sun:{open:false, from:'10:00', to:'18:00'}
   };
   let CLOSED_DATES = [ shiftDate(5) ];
+
+  // Прогрев запросов к Apps Script в фоне сразу после старта — к моменту,
+  // когда админ реально откроет вкладку «Расписание»/«Услуги», round-trip
+  // (несколько секунд на мобильной сети) уже может быть завершён. Промис
+  // потребляется один раз и обнуляется, чтобы повторное открытие вкладки
+  // всегда показывало свежие данные (после правок в этой же сессии).
+  let schedulePrefetch = null, servicesPrefetch = null;
 
   const WEEKDAY_LABELS = [['mon','Понедельник'],['tue','Вторник'],['wed','Среда'],['thu','Четверг'],['fri','Пятница'],['sat','Суббота'],['sun','Воскресенье']];
   const STATUS_LABELS = {pending:'Ожидает', confirmed:'Подтверждена', done:'Выполнена', cancelled:'Отменена'};
@@ -607,7 +615,8 @@
   async function renderSchedule(){
     renderScheduleDayScroller();
     renderDaySlots();
-    const res = await api('getSchedule');
+    const res = await (schedulePrefetch || api('getSchedule'));
+    schedulePrefetch = null;
     if(res.ok){ SCHEDULE = res.schedule; CLOSED_DATES = res.closedDates; }
     else showToast('Не удалось загрузить расписание', true);
     const wrap = $('weekdayList'); wrap.innerHTML='';
@@ -668,7 +677,8 @@
 
   /* ============ TAB: УСЛУГИ ============ */
   async function renderServices(){
-    const res = await api('getServices');
+    const res = await (servicesPrefetch || api('getServices'));
+    servicesPrefetch = null;
     if(res.ok) MOCK_SERVICES = res.categories || [];
     else showToast('Не удалось загрузить услуги', true);
     const wrap = $('categories'); wrap.innerHTML='';
@@ -793,6 +803,8 @@
 
     if(isAllowed){
       renderToday();
+      schedulePrefetch = api('getSchedule').catch(()=>({ok:false}));
+      servicesPrefetch = api('getServices').catch(()=>({ok:false}));
       requestAnimationFrame(()=>{ const active = document.querySelector('.tab-btn.active'); if(active) positionIndicator(active); });
     }
 

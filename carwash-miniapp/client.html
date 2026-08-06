@@ -6,6 +6,7 @@
 <title>Запись на мойку</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="palettes.css">
 <link rel="stylesheet" href="theme.css">
@@ -550,6 +551,7 @@
   }
 
   async function loadSchedule(){
+    if(Object.keys(STATE.schedule).length) return;
     const res = await api('getSchedule');
     STATE.schedule = res.schedule || {};
     STATE.closedDates = res.closedDates || [];
@@ -803,6 +805,11 @@
     showScreen(1);
     validateStep1();
     loadMyCars();
+    // Запускаем заранее, пока клиент заполняет шаг 1 (машина) — к моменту
+    // перехода на шаги 2/3 данные уже в кэше STATE, и Apps Script round-trip
+    // (несколько секунд на мобильной сети) не блокирует переход между экранами.
+    loadServices().catch(()=>{});
+    loadSchedule().catch(()=>{});
 
     $('bootLoading').style.display='none';
   }
