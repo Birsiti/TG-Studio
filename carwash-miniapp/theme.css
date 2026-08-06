@@ -235,8 +235,8 @@ input, select, textarea{font-family:inherit;}
 .lock-icon{width:56px; height:56px; border-radius:50%; background:var(--danger-soft); display:flex; align-items:center; justify-content:center; margin:0 auto 18px;}
 .lock-icon svg{width:24px;height:24px; stroke:var(--danger);}
 
-/* ============ STAT CARDS (floating over hero) ============ */
-.stat-row{display:flex; gap:10px; padding:0 18px 14px; margin-top:-30px; position:relative; z-index:2;}
+/* ============ STAT CARDS ============ */
+.stat-row{display:flex; gap:10px; padding:0 18px 14px; margin-top:14px;}
 .stat-card{flex:1; min-width:0; background:var(--surface); border-radius:var(--radius-md); padding:13px 12px; box-shadow:var(--shadow);}
 .stat-card .icon{width:26px; height:26px; border-radius:8px; display:flex; align-items:center; justify-content:center; margin-bottom:8px;}
 .stat-card .icon svg{width:14px;height:14px;}
