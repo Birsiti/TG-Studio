@@ -458,7 +458,7 @@
       row.innerHTML = `
         <div class="avatar">${initials(s.name)}</div>
         <div class="staff-main"><div class="staff-name">${s.name}</div><div class="staff-role">${s.role} · ${s.shiftsMonth} смен</div></div>
-        <div class="staff-pay"><div class="v">${s.accruedMonth} BYN</div><div class="l">за месяц</div></div>
+        <div class="staff-pay"><div class="v" style="${s.accruedMonth<0?'color:var(--accent);':''}">${s.accruedMonth} BYN</div><div class="l">${s.accruedMonth<0?'аванс':'за месяц'}</div></div>
       `;
       row.addEventListener('click', ()=>openStaffSheet(s));
       wrap.appendChild(row);
@@ -480,9 +480,14 @@
         <div class="field"><label>Ставка</label><input type="number" id="sRate" value="${s.rate}"></div>
       </div>
       <div class="field"><label>Телефон</label><input type="tel" id="sPhone" value="${s.phone}"></div>
-      <div class="ticket-row"><span class="k">Начислено за месяц</span><span class="v">${s.accruedMonth} BYN</span></div>
+      <div class="ticket-row"><span class="k">${s.accruedMonth<0?'Аванс (переплата)':'Начислено за месяц'}</span><span class="v" style="${s.accruedMonth<0?'color:var(--accent);':''}">${s.accruedMonth} BYN</span></div>
       ${isNew?'':`
-      <button class="btn btn-outline btn-block" id="payStaffBtn" ${s.accruedMonth<=0?'disabled':''} style="margin-top:10px;">Выплатить ${s.accruedMonth} BYN</button>
+      <div class="field-row" style="align-items:flex-end; margin-top:10px;">
+        <div class="field" style="margin-bottom:0; flex:1;"><label>Сумма к выплате</label>
+          <input type="number" id="payAmount" value="${Math.max(s.accruedMonth,0)}" min="1">
+        </div>
+        <button class="btn btn-primary" id="payStaffBtn" style="flex:none; height:47px; padding:0 18px;">Выплатить</button>
+      </div>
       <div class="section-title" style="margin:16px 0 8px;">История выплат</div>
       <div id="payoutHistory" style="font-size:12.5px; color:var(--ink-faint);">Загрузка…</div>
       `}
@@ -500,9 +505,15 @@
         haptic('success'); closeSheet(); renderStaff();
       });
       $('payStaffBtn').addEventListener('click', async ()=>{
-        if(!await App.confirmAsync('Выплатить '+s.accruedMonth+' BYN сотруднику «'+s.name+'»?')) return;
-        const res = await api('payStaff', {staffId:s.id});
-        if(!res.ok){ showToast(res.error==='nothing to pay' ? 'Нечего выплачивать' : 'Не удалось провести выплату', true); return; }
+        const amount = Number($('payAmount').value);
+        if(!amount || amount<=0){ showToast('Введите сумму выплаты', true); return; }
+        const isAdvance = amount > s.accruedMonth;
+        const msg = isAdvance
+          ? 'Выплатить '+amount+' BYN сотруднику «'+s.name+'»? Это больше начисленного — остаток уйдёт в аванс.'
+          : 'Выплатить '+amount+' BYN сотруднику «'+s.name+'»?';
+        if(!await App.confirmAsync(msg)) return;
+        const res = await api('payStaff', {staffId:s.id, amount});
+        if(!res.ok){ showToast('Не удалось провести выплату', true); return; }
         haptic('success'); showToast('Выплата проведена'); closeSheet(); renderStaff();
       });
       loadPayoutHistory(s.id);

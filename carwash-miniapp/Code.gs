@@ -523,14 +523,18 @@ function deleteStaff(p){
 function payStaff(p){
   const staff = readAll(SHEET_NAMES.STAFF).find(s=>s.id===p.staffId);
   if(!staff) return {ok:false, error:'staff not found'};
-  const amount = Number(staff.accrued_month)||0;
-  if(amount <= 0) return {ok:false, error:'nothing to pay'};
+  const accrued = Number(staff.accrued_month)||0;
+  const amount = Number(p.amount);
+  if(!amount || amount <= 0) return {ok:false, error:'invalid amount'};
   const id = genId('pay');
   appendRow(SHEET_NAMES.PAYOUTS, {
     id, staff_id:p.staffId, amount, date:todayKey(), created_at:new Date().toISOString()
   });
-  updateById(SHEET_NAMES.STAFF, 'id', p.staffId, {accrued_month:0});
-  return {ok:true, payout:{id, staffId:p.staffId, amount, date:todayKey()}};
+  // Выплата уменьшает начисленное на сумму выплаты, а не обнуляет — если
+  // сумма больше остатка, начисленное уходит в минус (это аванс: столько
+  // сотрудник уже получил вперёд, будущие начисления сначала его покроют).
+  updateById(SHEET_NAMES.STAFF, 'id', p.staffId, {accrued_month: accrued - amount});
+  return {ok:true, payout:{id, staffId:p.staffId, amount, date:todayKey()}, remainingAccrued: accrued - amount};
 }
 
 function getPayouts(p){
