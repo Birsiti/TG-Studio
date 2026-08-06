@@ -108,6 +108,27 @@ function sh(name){
   return s;
 }
 
+// Sheets сама конвертирует строки вида "2026-08-10" / "9:00" в тип Дата/Время
+// при записи — из-за этого потом ломается строковое сравнение (b.date===date,
+// b.time===time при поиске занятых слотов) и JSON отдаёт "2026-08-10T07:00:00.000Z"
+// вместо чистой строки. looksLikeDateOrTime()+forcePlainText() защищают ячейку
+// ДО записи; normalizeCell() приводит обратно в строку то, что уже успело
+// конвертироваться раньше (старые строки, ручной ввод в UI таблицы).
+function looksLikeDateOrTime(v){
+  return typeof v === 'string' && (/^\d{4}-\d{1,2}-\d{1,2}$/.test(v) || /^\d{1,2}:\d{2}$/.test(v));
+}
+
+function forcePlainText(range){
+  range.setNumberFormat('@');
+}
+
+function normalizeCell(v){
+  if(!(v instanceof Date)) return v;
+  const tz = Session.getScriptTimeZone();
+  const isMidnight = v.getHours()===0 && v.getMinutes()===0 && v.getSeconds()===0;
+  return isMidnight ? Utilities.formatDate(v, tz, 'yyyy-MM-dd') : Utilities.formatDate(v, tz, 'H:mm');
+}
+
 function readAll(name){
   const sheet = sh(name);
   const data = sheet.getDataRange().getValues();
@@ -117,7 +138,7 @@ function readAll(name){
     .filter(row => row.some(c => c !== '' && c !== null))
     .map(row => {
       const obj = {};
-      headers.forEach((h,i)=>{ obj[h] = row[i]; });
+      headers.forEach((h,i)=>{ obj[h] = normalizeCell(row[i]); });
       return obj;
     });
 }
@@ -125,7 +146,10 @@ function readAll(name){
 function appendRow(name, obj){
   const sheet = sh(name);
   const headers = sheet.getRange(1,1,1,sheet.getLastColumn()).getValues()[0];
-  sheet.appendRow(headers.map(h => obj[h] !== undefined ? obj[h] : ''));
+  const values = headers.map(h => obj[h] !== undefined ? obj[h] : '');
+  const range = sheet.getRange(sheet.getLastRow()+1, 1, 1, headers.length);
+  values.forEach((v,i)=>{ if(looksLikeDateOrTime(v)) forcePlainText(range.getCell(1, i+1)); });
+  range.setValues([values]);
 }
 
 function updateById(name, idField, idValue, updates){
@@ -137,7 +161,11 @@ function updateById(name, idField, idValue, updates){
     if(String(data[i][idCol]) === String(idValue)){
       Object.keys(updates).forEach(key=>{
         const col = headers.indexOf(key);
-        if(col > -1) sheet.getRange(i+1, col+1).setValue(updates[key]);
+        if(col > -1){
+          const cell = sheet.getRange(i+1, col+1);
+          if(looksLikeDateOrTime(updates[key])) forcePlainText(cell);
+          cell.setValue(updates[key]);
+        }
       });
       return true;
     }
