@@ -66,6 +66,11 @@
       <div class="stat-row" id="overviewStats"></div>
       <div class="section" style="padding-top:0;">
         <div class="chip-group" id="periodChips" style="margin-bottom:14px;"></div>
+        <div id="customRangeForm" class="field-row" style="display:none; align-items:flex-end; margin-bottom:14px;">
+          <div class="field" style="margin-bottom:0;"><label>С</label><input type="date" id="customFrom"></div>
+          <div class="field" style="margin-bottom:0;"><label>По</label><input type="date" id="customTo"></div>
+          <button class="btn btn-primary" id="applyRangeBtn" style="flex:none; padding:0 16px; height:47px;">Применить</button>
+        </div>
         <div class="card">
           <div class="section-title" style="margin-top:0;">Выручка по дням</div>
           <div class="chart-row" id="chartRow"></div>
@@ -207,6 +212,10 @@
   ];
 
   const STATUS_TXT = {free:'Свободен', busy:'Занят', maintenance:'На обслуживании'};
+  function fmtDate(key){
+    const [y,m,d] = key.split('-').map(Number);
+    return new Date(y,m-1,d).toLocaleDateString('ru-RU',{day:'numeric', month:'long'});
+  }
 
   // Прогрев запросов к Apps Script в фоне сразу после старта — к моменту,
   // когда владелец реально откроет вкладку, round-trip (несколько секунд на
@@ -301,8 +310,15 @@
   }
 
   /* ============ TAB: ОБЗОР ============ */
-  const periods = [{id:'today', label:'Сегодня'},{id:'week', label:'Неделя'},{id:'month', label:'Месяц'}];
+  const periods = [{id:'today', label:'Сегодня'},{id:'week', label:'Неделя'},{id:'month', label:'Месяц'},{id:'custom', label:'Период'}];
   let activePeriod = 'week';
+  let customFrom = null, customTo = null;
+
+  function isoDate(d){ return d.toISOString().slice(0,10); }
+  function defaultCustomRange(){
+    const to = new Date(); const from = new Date(); from.setDate(to.getDate()-6);
+    return {from: isoDate(from), to: isoDate(to)};
+  }
 
   function renderPeriodChips(){
     const wrap = $('periodChips'); wrap.innerHTML='';
@@ -310,17 +326,32 @@
       const chip = document.createElement('div');
       chip.className='chip'+(activePeriod===p.id?' active':'');
       chip.textContent=p.label;
-      chip.addEventListener('click', ()=>{ activePeriod=p.id; haptic(); renderOverview(); });
+      chip.addEventListener('click', ()=>{
+        activePeriod=p.id; haptic();
+        if(p.id==='custom' && !customFrom){ const d=defaultCustomRange(); customFrom=d.from; customTo=d.to; }
+        renderOverview();
+      });
       wrap.appendChild(chip);
     });
+    $('customRangeForm').style.display = activePeriod==='custom' ? 'flex' : 'none';
+    if(activePeriod==='custom'){ $('customFrom').value = customFrom; $('customTo').value = customTo; }
   }
+
+  $('applyRangeBtn').addEventListener('click', ()=>{
+    const from = $('customFrom').value, to = $('customTo').value;
+    if(!from || !to || from>to){ showToast('Проверьте даты диапазона', true); return; }
+    customFrom = from; customTo = to;
+    haptic(); renderOverview();
+  });
 
   async function renderOverview(){
     renderPeriodChips();
-    const res = await api('getOverview');
-    if(res.ok){ OVERVIEW = res.overview; WEEK_CHART = res.chart; TOP_SERVICES = res.topServices; }
+    const res = activePeriod==='custom'
+      ? await api('getOverviewRange', {from:customFrom, to:customTo})
+      : await api('getOverview');
+    if(res.ok){ Object.assign(OVERVIEW, res.overview); WEEK_CHART = res.chart; TOP_SERVICES = res.topServices; }
     else showToast('Не удалось загрузить аналитику', true);
-    const o = OVERVIEW[activePeriod];
+    const o = OVERVIEW[activePeriod] || {revenue:0, bookings:0, avgCheck:0, payroll:0};
     const statsWrap = $('overviewStats');
     statsWrap.innerHTML = `
       <div class="stat-card"><div class="l">Выручка</div><div class="v up">${o.revenue} BYN</div></div>
@@ -450,6 +481,11 @@
       </div>
       <div class="field"><label>Телефон</label><input type="tel" id="sPhone" value="${s.phone}"></div>
       <div class="ticket-row"><span class="k">Начислено за месяц</span><span class="v">${s.accruedMonth} BYN</span></div>
+      ${isNew?'':`
+      <button class="btn btn-outline btn-block" id="payStaffBtn" ${s.accruedMonth<=0?'disabled':''} style="margin-top:10px;">Выплатить ${s.accruedMonth} BYN</button>
+      <div class="section-title" style="margin:16px 0 8px;">История выплат</div>
+      <div id="payoutHistory" style="font-size:12.5px; color:var(--ink-faint);">Загрузка…</div>
+      `}
       <div class="sheet-footer-row">
         ${isNew?'':`<a class="btn btn-outline btn-block" href="tel:${s.phone}">Позвонить</a>`}
         <button class="btn btn-primary btn-block" id="saveStaffBtn">Сохранить</button>
@@ -463,6 +499,13 @@
         if(!res.ok){ showToast('Не удалось удалить сотрудника', true); return; }
         haptic('success'); closeSheet(); renderStaff();
       });
+      $('payStaffBtn').addEventListener('click', async ()=>{
+        if(!await App.confirmAsync('Выплатить '+s.accruedMonth+' BYN сотруднику «'+s.name+'»?')) return;
+        const res = await api('payStaff', {staffId:s.id});
+        if(!res.ok){ showToast(res.error==='nothing to pay' ? 'Нечего выплачивать' : 'Не удалось провести выплату', true); return; }
+        haptic('success'); showToast('Выплата проведена'); closeSheet(); renderStaff();
+      });
+      loadPayoutHistory(s.id);
     }
     $('saveStaffBtn').addEventListener('click', async ()=>{
       const updated = Object.assign({}, s, {
@@ -475,6 +518,16 @@
     });
   }
   $('addStaffBtn').addEventListener('click', ()=>openStaffSheet(null));
+
+  async function loadPayoutHistory(staffId){
+    const res = await api('getPayouts', {staffId});
+    const el = $('payoutHistory');
+    if(!el) return; // шторка уже закрыта к моменту ответа
+    if(!res.ok || !res.payouts.length){ el.textContent = 'Выплат ещё не было.'; return; }
+    el.innerHTML = res.payouts.map(p=>
+      `<div style="display:flex; justify-content:space-between; padding:4px 0;"><span>${fmtDate(p.date)}</span><span class="mono">${p.amount} BYN</span></div>`
+    ).join('');
+  }
 
   /* ============ TAB: СКЛАД ============ */
   async function renderInventory(){

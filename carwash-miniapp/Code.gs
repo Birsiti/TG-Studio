@@ -23,7 +23,8 @@ const SHEET_NAMES = {
   BLOCKED_SLOTS: 'СЛОТЫ_БЛОК',
   BAYS: 'БОКСЫ',
   INVENTORY: 'СКЛАД',
-  SHOP: 'МАГАЗИН'
+  SHOP: 'МАГАЗИН',
+  PAYOUTS: 'ВЫПЛАТЫ'
 };
 
 const CAR_CLASSES = ['legkovoy', 'krossover', 'vnedorozhnik', 'minivan'];
@@ -84,6 +85,9 @@ function routeAction(action, p){
     case 'removeClosedDate':     return removeClosedDate(p);
     // ---- владелец ----
     case 'getOverview':          return getOverview();
+    case 'getOverviewRange':     return getOverviewRange(p);
+    case 'payStaff':              return payStaff(p);
+    case 'getPayouts':            return getPayouts(p);
     case 'getBays':               return getBays();
     case 'saveBay':                return saveBay(p);
     case 'deleteBay':              return deleteBay(p);
@@ -511,6 +515,33 @@ function deleteStaff(p){
   return {ok:true};
 }
 
+/* ============================================================
+   ВЫПЛАТЫ — история выплат персоналу
+   "ВЫПЛАТЫ": id | staff_id | amount | date | created_at
+   ============================================================ */
+
+function payStaff(p){
+  const staff = readAll(SHEET_NAMES.STAFF).find(s=>s.id===p.staffId);
+  if(!staff) return {ok:false, error:'staff not found'};
+  const amount = Number(staff.accrued_month)||0;
+  if(amount <= 0) return {ok:false, error:'nothing to pay'};
+  const id = genId('pay');
+  appendRow(SHEET_NAMES.PAYOUTS, {
+    id, staff_id:p.staffId, amount, date:todayKey(), created_at:new Date().toISOString()
+  });
+  updateById(SHEET_NAMES.STAFF, 'id', p.staffId, {accrued_month:0});
+  return {ok:true, payout:{id, staffId:p.staffId, amount, date:todayKey()}};
+}
+
+function getPayouts(p){
+  let rows = readAll(SHEET_NAMES.PAYOUTS);
+  if(p && p.staffId) rows = rows.filter(r=>r.staff_id===p.staffId);
+  rows.sort((a,b)=> (b.date||'').localeCompare(a.date||''));
+  return {ok:true, payouts: rows.map(r=>({
+    id:r.id, staffId:r.staff_id, amount:Number(r.amount)||0, date:r.date
+  }))};
+}
+
 function getShift(p){
   const row = readAll(SHEET_NAMES.SHIFTS).find(r=>r.date===p.date);
   const staffIds = row ? String(row.staff_ids||'').split(',').filter(Boolean) : [];
@@ -585,6 +616,40 @@ function deleteShopItem(p){
    ОБЗОР / АНАЛИТИКА (владелец) — считается на лету из ЗАПИСИ
    ============================================================ */
 
+function summarizeRows(rows){
+  const revenue = rows.reduce((s,r)=> s + (Number(r.price_min)||0), 0);
+  const bookingsCount = rows.length;
+  const avgCheck = bookingsCount ? Math.round(revenue / bookingsCount) : 0;
+  return {revenue, bookings: bookingsCount, avgCheck, payroll: estimatePayroll(rows)};
+}
+
+// График по дням внутри диапазона [fromDate, toDate] (включительно) + топ-5
+// услуг по выручке за этот же диапазон. Общая логика для getOverview() и
+// getOverviewRange() — так «сегодня/неделя/месяц» и произвольный период
+// считаются одинаково, без дублирования кода.
+function buildChartAndTop(active, fromDate, toDate){
+  const from = new Date(fromDate+'T00:00:00'), to = new Date(toDate+'T00:00:00');
+  const dayLabels = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  const chart = [];
+  for(let d = new Date(from); d <= to; d.setDate(d.getDate()+1)){
+    const key = dateKey(d);
+    const revenue = active.filter(r=>r.date===key).reduce((s,r)=>s+(Number(r.price_min)||0),0);
+    chart.push({d: dayLabels[d.getDay()], v: revenue});
+  }
+  const inRange = active.filter(r=>r.date>=fromDate && r.date<=toDate);
+  const byService = {};
+  inRange.forEach(r=>{
+    String(r.services||'').split('|').filter(Boolean).forEach(name=>{
+      byService[name] = (byService[name]||0) + (Number(r.price_min)||0);
+    });
+  });
+  const topServices = Object.keys(byService)
+    .map(name=>({name, revenue:byService[name]}))
+    .sort((a,b)=>b.revenue-a.revenue)
+    .slice(0,5);
+  return {chart, topServices};
+}
+
 function getOverview(){
   const bookings = readAll(SHEET_NAMES.BOOKINGS);
   const active = bookings.filter(b => b.status !== 'cancelled');
@@ -594,41 +659,24 @@ function getOverview(){
   const now = new Date();
   const monthStart = dateKey(new Date(now.getFullYear(), now.getMonth(), 1));
 
-  function summarize(rows){
-    const revenue = rows.reduce((s,r)=> s + (Number(r.price_min)||0), 0);
-    const bookingsCount = rows.length;
-    const avgCheck = bookingsCount ? Math.round(revenue / bookingsCount) : 0;
-    return {revenue, bookings: bookingsCount, avgCheck, payroll: estimatePayroll(rows)};
-  }
-
   const overview = {
-    today: summarize(active.filter(r=>r.date===today)),
-    week: summarize(active.filter(r=>r.date>=weekStart && r.date<=today)),
-    month: summarize(active.filter(r=>r.date>=monthStart && r.date<=today))
+    today: summarizeRows(active.filter(r=>r.date===today)),
+    week: summarizeRows(active.filter(r=>r.date>=weekStart && r.date<=today)),
+    month: summarizeRows(active.filter(r=>r.date>=monthStart && r.date<=today))
   };
 
-  // график за последние 7 дней
-  const chart = [];
-  const dayLabels = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
-  for(let i=6;i>=0;i--){
-    const d = new Date(Date.now() - i*86400000);
-    const key = dateKey(d);
-    const revenue = active.filter(r=>r.date===key).reduce((s,r)=>s+(Number(r.price_min)||0),0);
-    chart.push({d: dayLabels[d.getDay()], v: revenue});
-  }
+  const {chart, topServices} = buildChartAndTop(active, weekStart, today);
 
-  // топ услуг по выручке (по всем записям)
-  const byService = {};
-  active.forEach(r=>{
-    String(r.services||'').split('|').filter(Boolean).forEach(name=>{
-      byService[name] = (byService[name]||0) + (Number(r.price_min)||0);
-    });
-  });
-  const topServices = Object.keys(byService)
-    .map(name=>({name, revenue:byService[name]}))
-    .sort((a,b)=>b.revenue-a.revenue)
-    .slice(0,5);
+  return {ok:true, overview, chart, topServices};
+}
 
+function getOverviewRange(p){
+  const bookings = readAll(SHEET_NAMES.BOOKINGS);
+  const active = bookings.filter(b => b.status !== 'cancelled');
+  const from = p.from, to = p.to;
+  const rows = active.filter(r=>r.date>=from && r.date<=to);
+  const overview = {custom: summarizeRows(rows)};
+  const {chart, topServices} = buildChartAndTop(active, from, to);
   return {ok:true, overview, chart, topServices};
 }
 
