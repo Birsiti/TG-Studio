@@ -2,11 +2,12 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Запись на мойку</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="palettes.css">
 <link rel="stylesheet" href="theme.css">
 </head>
 <body data-theme="avtohimiya">
@@ -40,6 +41,9 @@
     <div class="hero-top">
       <div class="hero-brand display"><span class="drop"></span><span id="brandName"></span></div>
       <div class="hero-icons">
+        <button class="glass-btn" id="modeToggleBtn" title="Светлая/тёмная тема">
+          <svg id="modeIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+        </button>
         <button class="glass-btn" id="myBookingsBtn" title="Мои записи">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
         </button>
@@ -427,7 +431,7 @@
       });
       chip.querySelector('.del').addEventListener('click', async (e)=>{
         e.stopPropagation();
-        if(!confirm('Удалить машину «'+car.number+'» из сохранённых?')) return;
+        if(!await App.confirmAsync('Удалить машину «'+car.number+'» из сохранённых?')) return;
         await api('deleteCar', {userId: tgUser.id, id:car.id});
         STATE.myCars = STATE.myCars.filter(c=>c.id!==car.id);
         if(STATE.car.selectedCarId===car.id) clearCarFields();
@@ -678,7 +682,7 @@
     if(!res.ok){
       haptic('error');
       nextBtn.disabled = false; nextBtn.textContent='Записаться';
-      alert('Это время уже занято. Пожалуйста, выберите другое.');
+      await App.alertAsync('Это время уже занято. Пожалуйста, выберите другое.');
       STATE.time = null;
       showScreen(3);
       await renderSlots();
@@ -717,7 +721,7 @@
 
   $('cancelBookingBtn').addEventListener('click', async ()=>{
     if(!STATE.currentTicket) return;
-    if(!confirm('Отменить эту запись?')) return;
+    if(!await App.confirmAsync('Отменить эту запись?')) return;
     await api('cancelBooking', {id: STATE.currentTicket.id});
     STATE.currentTicket.status='Отменена';
     renderTicket(STATE.currentTicket, true);
@@ -770,11 +774,20 @@
     });
   }
 
+  /* ============ ПЕРЕКЛЮЧЕНИЕ СВЕТЛАЯ/ТЁМНАЯ ============ */
+  const MODE_ICONS = {
+    light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+    dark: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+  };
+  function renderModeIcon(){ $('modeIcon').innerHTML = MODE_ICONS[App.getMode()] || MODE_ICONS.light; }
+  $('modeToggleBtn').addEventListener('click', ()=>{ haptic(); App.toggleMode(); renderModeIcon(); });
+  renderModeIcon();
+
   /* ============ BOOTSTRAP ============ */
   async function bootstrapApp(){
     CONFIG = await App.loadConfig();
 
-    document.body.dataset.theme = CONFIG.theme || 'avtohimiya';
+    document.body.dataset.theme = App.resolveBrand(CONFIG.theme);
     const cs = getComputedStyle(document.body);
     App.setChrome(cs.getPropertyValue('--bg').trim(), cs.getPropertyValue('--surface').trim());
 

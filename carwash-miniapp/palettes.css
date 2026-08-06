@@ -1,0 +1,357 @@
+/* ============================================================
+   palettes.css — цветовые схемы (design tokens) для Mini App мойки
+   (client.html / admin.html / owner.html подключают этот файл
+   ПЕРЕД theme.css)
+
+   Как это работает — две независимые оси:
+   - [data-theme="..."] — БРЕНД мойки (avtohimiya | voda | chrome |
+     mercedes). Выбирает владелец мойки через CONFIG.theme в
+     реестре — одинаков для всех посетителей конкретной мойки.
+     JS выставляет: document.body.dataset.theme = CONFIG.theme.
+   - [data-mode="light"|"dark"] — светлая/тёмная версия ТОГО ЖЕ
+     бренда. Выбирает каждый пользователь лично (тумблер в шапке),
+     по умолчанию берётся из tg.colorScheme / prefers-color-scheme.
+     JS выставляет: document.body.dataset.mode = 'light'|'dark'
+     (см. App.applyMode()/App.toggleMode() в bootstrap.js).
+   - Компоненты в theme.css используют ТОЛЬКО нейтральные переменные
+     (--accent, --accent2, --ink и т.д.), никогда не «свои» имена.
+   - Чтобы добавить новый бренд — скопировать пару блоков light+dark
+     снизу, поменять значения. Компоненты трогать не нужно.
+   ============================================================ */
+
+:root{
+  /* ---- Автохимия с полки (тема по умолчанию) ---- */
+  --bg:#FAFBF6;
+  --surface:#FFFFFF;
+  --surface-2:#F5F8EF;
+  --surface-3:#EFF3E5;
+  --ink:#20281F;
+  --ink-soft:#69735F;
+  --ink-faint:#A0AA93;
+  --border:#E3EAD8;
+
+  --accent:#63B33A;        /* роль: выбор / интерактив */
+  --accent-dark:#4C9129;
+  --accent-soft:#E7F5DE;
+
+  --accent2:#F2624A;       /* роль: действие / сумма / CTA */
+  --accent2-dark:#C94530;
+  --accent2-soft:#FDE7E1;
+
+  --warn:#B9812A;
+  --warn-dark:#8A5B0C;
+  --warn-soft:#F5E9D6;
+  --danger:#D9403C;
+  --danger-soft:#FBE2E0;
+  --success:#4C9129;
+  --success-soft:#E7F5DE;
+
+  --on-light:#1C2128;      /* текст на номерном знаке (он всегда белый) */
+  --on-light-soft:#69707C;
+
+  --radius-lg:22px;
+  --radius-md:15px;
+  --radius-sm:11px;
+  --shadow:0 10px 28px rgba(32,40,31,0.09);
+  --shadow-sm:0 4px 14px rgba(32,40,31,0.07);
+  --font-display:'Unbounded';
+
+  /* декоративные, необязательные — см. .bg-texture / .plate-wrap::before ниже */
+  --texture:
+    radial-gradient(circle at 18% 28%, rgba(99,179,58,0.05) 0, rgba(99,179,58,0.05) 2.5px, transparent 2.5px),
+    radial-gradient(circle at 72% 62%, rgba(242,98,74,0.045) 0, rgba(242,98,74,0.045) 2.5px, transparent 2.5px),
+    radial-gradient(circle at 45% 85%, rgba(99,179,58,0.035) 0, rgba(99,179,58,0.035) 2px, transparent 2px);
+  --texture-size:56px 56px, 72px 72px, 64px 64px;
+  --plate-glow:none;
+}
+
+/* ---- Автохимия с полки (тёмный режим) ---- */
+[data-theme="avtohimiya"][data-mode="dark"]{
+  --bg:#10150D;
+  --surface:#171D12;
+  --surface-2:#1E2617;
+  --surface-3:#26301C;
+  --ink:#E8EEDF;
+  --ink-soft:#9CAA8A;
+  --ink-faint:#5C6B4C;
+  --border:#2A331E;
+
+  --accent:#7BC950;
+  --accent-dark:#5FA23A;
+  --accent-soft:rgba(123,201,80,0.16);
+
+  --accent2:#F2624A;
+  --accent2-dark:#C94530;
+  --accent2-soft:rgba(242,98,74,0.16);
+
+  --warn:#D9A24A;
+  --warn-dark:#B9812A;
+  --warn-soft:rgba(217,162,74,0.16);
+  --danger:#E1615D;
+  --danger-soft:rgba(225,97,93,0.14);
+  --success:#6FC24A;
+  --success-soft:rgba(111,194,74,0.14);
+
+  --on-light:#1C2128;
+  --on-light-soft:#69707C;
+
+  --radius-lg:22px; --radius-md:15px; --radius-sm:11px;
+  --shadow:0 10px 28px rgba(0,0,0,.45);
+  --shadow-sm:0 4px 14px rgba(0,0,0,.32);
+  --font-display:'Unbounded';
+
+  --texture:
+    repeating-linear-gradient(115deg, rgba(255,255,255,0.012) 0px, rgba(255,255,255,0.012) 1px, transparent 1px, transparent 8px);
+  --texture-size:auto;
+  --plate-glow:radial-gradient(ellipse, rgba(255,255,255,.10), transparent 70%);
+}
+
+/* ---- Вода и пена ---- */
+[data-theme="voda"]{
+  --bg:#EEF4F5;
+  --surface:#FFFFFF;
+  --surface-2:#F7FBFB;
+  --surface-3:#EAF4F4;
+  --ink:#12232E;
+  --ink-soft:#5B6E77;
+  --ink-faint:#93A5AC;
+  --border:#DCE6E8;
+
+  --accent:#0C8599;
+  --accent-dark:#0A6E7F;
+  --accent-soft:#DEF0F0;
+
+  --accent2:#E8A33D;
+  --accent2-dark:#B57A1F;
+  --accent2-soft:#FBEDD6;
+
+  --warn:#B9812A;
+  --warn-dark:#8A5B0C;
+  --warn-soft:#F5E9D6;
+  --danger:#D64545;
+  --danger-soft:#FBE4E4;
+  --success:#1F9D63;
+  --success-soft:#E1F5EA;
+
+  --on-light:#12232E;
+  --on-light-soft:#5B6E77;
+
+  --radius-lg:22px; --radius-md:15px; --radius-sm:11px;
+  --shadow:0 10px 28px rgba(8,52,65,0.10);
+  --shadow-sm:0 4px 12px rgba(8,52,65,0.06);
+  --font-display:'Unbounded';
+
+  --texture:
+    repeating-linear-gradient(115deg, rgba(8,52,65,0.014) 0px, rgba(8,52,65,0.014) 1px, transparent 1px, transparent 8px);
+  --texture-size:auto;
+  --plate-glow:none;
+}
+
+/* ---- Вода и пена (тёмный режим) ---- */
+[data-theme="voda"][data-mode="dark"]{
+  --bg:#0A1418;
+  --surface:#0F1B20;
+  --surface-2:#152329;
+  --surface-3:#1C2C33;
+  --ink:#E4F1F3;
+  --ink-soft:#8FA6AD;
+  --ink-faint:#546970;
+  --border:#1F2E34;
+
+  --accent:#26AFC7;
+  --accent-dark:#0C8599;
+  --accent-soft:rgba(38,175,199,0.16);
+
+  --accent2:#F0B24E;
+  --accent2-dark:#B57A1F;
+  --accent2-soft:rgba(240,178,78,0.16);
+
+  --warn:#D9A24A;
+  --warn-dark:#B9812A;
+  --warn-soft:rgba(217,162,74,0.16);
+  --danger:#DD6161;
+  --danger-soft:rgba(221,97,97,0.14);
+  --success:#31B579;
+  --success-soft:rgba(49,181,121,0.14);
+
+  --on-light:#12232E;
+  --on-light-soft:#5B6E77;
+
+  --radius-lg:22px; --radius-md:15px; --radius-sm:11px;
+  --shadow:0 10px 28px rgba(0,0,0,.45);
+  --shadow-sm:0 4px 12px rgba(0,0,0,.32);
+  --font-display:'Unbounded';
+
+  --texture:
+    repeating-linear-gradient(115deg, rgba(255,255,255,0.014) 0px, rgba(255,255,255,0.014) 1px, transparent 1px, transparent 8px);
+  --texture-size:auto;
+  --plate-glow:none;
+}
+
+/* ---- Хром и перламутр ---- */
+[data-theme="chrome"]{
+  --bg:#F4F5F8;
+  --surface:#FFFFFF;
+  --surface-2:#F7F8FA;
+  --surface-3:#EEF0F4;
+  --ink:#1C2128;
+  --ink-soft:#69707C;
+  --ink-faint:#9DA5B0;
+  --border:#CDD3DB;
+
+  --accent:#2E5EFF;
+  --accent-dark:#1E44CC;
+  --accent-soft:#E8EDFF;
+
+  --accent2:#2E5EFF;       /* один сигнальный цвет — CTA использует тот же accent */
+  --accent2-dark:#1E44CC;
+  --accent2-soft:#E8EDFF;
+
+  --warn:#B9812A;
+  --warn-dark:#8A5B0C;
+  --warn-soft:#F5E9D6;
+  --danger:#E1504F;
+  --danger-soft:#FBE4E4;
+  --success:#1FA971;
+  --success-soft:#DFF5EA;
+
+  --on-light:#1C2128;
+  --on-light-soft:#69707C;
+
+  --radius-lg:22px; --radius-md:15px; --radius-sm:11px;
+  --shadow:0 10px 28px rgba(28,33,40,0.08);
+  --shadow-sm:0 4px 14px rgba(28,33,40,0.06);
+  --font-display:'Unbounded';
+
+  --texture:
+    repeating-linear-gradient(115deg, rgba(28,33,40,0.016) 0px, rgba(28,33,40,0.016) 1px, transparent 1px, transparent 8px);
+  --texture-size:auto;
+  --plate-glow:none;
+}
+
+/* ---- Хром и перламутр (тёмный режим) ---- */
+[data-theme="chrome"][data-mode="dark"]{
+  --bg:#0D0F14;
+  --surface:#15171E;
+  --surface-2:#1C1F27;
+  --surface-3:#242830;
+  --ink:#EDEEF2;
+  --ink-soft:#8D95A3;
+  --ink-faint:#565C68;
+  --border:#252A34;
+
+  --accent:#5B82FF;
+  --accent-dark:#2E5EFF;
+  --accent-soft:rgba(91,130,255,0.16);
+
+  --accent2:#5B82FF;
+  --accent2-dark:#2E5EFF;
+  --accent2-soft:rgba(91,130,255,0.16);
+
+  --warn:#D9A24A;
+  --warn-dark:#B9812A;
+  --warn-soft:rgba(217,162,74,0.16);
+  --danger:#E8615F;
+  --danger-soft:rgba(232,97,95,0.14);
+  --success:#2FBE85;
+  --success-soft:rgba(47,190,133,0.14);
+
+  --on-light:#1C2128;
+  --on-light-soft:#69707C;
+
+  --radius-lg:22px; --radius-md:15px; --radius-sm:11px;
+  --shadow:0 10px 28px rgba(0,0,0,.5);
+  --shadow-sm:0 4px 14px rgba(0,0,0,.35);
+  --font-display:'Unbounded';
+
+  --texture:
+    repeating-linear-gradient(115deg, rgba(255,255,255,0.016) 0px, rgba(255,255,255,0.016) 1px, transparent 1px, transparent 8px);
+  --texture-size:auto;
+  --plate-glow:none;
+}
+
+/* ---- Mercedes (премиальная светлая — база) ---- */
+[data-theme="mercedes"]{
+  --bg:#F2F2F3;
+  --surface:#FFFFFF;
+  --surface-2:#F7F7F8;
+  --surface-3:#ECECEE;
+  --ink:#17181B;
+  --ink-soft:#5F636A;
+  --ink-faint:#9CA0A6;
+  --border:#E1E2E5;
+
+  --accent:#7D828A;        /* «хром» — роль выбора */
+  --accent-dark:#575B62;
+  --accent-soft:rgba(125,130,138,0.12);
+
+  --accent2:#B3122E;       /* фирменный красный — роль CTA/суммы */
+  --accent2-dark:#8C0E24;
+  --accent2-soft:rgba(179,18,46,0.10);
+
+  --warn:#B9812A;
+  --warn-dark:#8A5B0C;
+  --warn-soft:rgba(185,129,42,0.12);
+  --danger:#D1495B;
+  --danger-soft:rgba(209,73,91,0.10);
+  --success:#3C7A6B;
+  --success-soft:rgba(60,122,107,0.10);
+
+  --on-light:#17181B;      /* номерной знак всегда белый — текст на нём тёмный, а не светлый ink темы */
+  --on-light-soft:#6B7280;
+
+  --radius-lg:18px; --radius-md:13px; --radius-sm:10px;
+  --shadow:0 14px 34px rgba(23,24,27,.12);
+  --shadow-sm:0 6px 16px rgba(23,24,27,.08);
+  --font-display:'Manrope';
+
+  --texture:
+    radial-gradient(ellipse 90% 45% at 50% -8%, rgba(23,24,27,.035), transparent 60%),
+    radial-gradient(ellipse 65% 40% at 105% 0%, rgba(179,18,46,.05), transparent 55%);
+  --texture-size:auto;
+  --plate-glow:none;
+}
+
+/* ---- Mercedes (премиальная тёмная) ---- */
+[data-theme="mercedes"][data-mode="dark"]{
+  --bg:#0A0B0D;
+  --surface:#151619;
+  --surface-2:#1C1E22;
+  --surface-3:#25272C;
+  --ink:#F2F3F4;
+  --ink-soft:#9BA1A9;
+  --ink-faint:#5A5F67;
+  --border:#2A2C31;
+
+  --accent:#C6CBD1;        /* «хром» — роль выбора */
+  --accent-dark:#7D828A;
+  --accent-soft:rgba(198,203,209,0.14);
+
+  --accent2:#B3122E;       /* фирменный красный — роль CTA/суммы */
+  --accent2-dark:#8C0E24;
+  --accent2-soft:rgba(179,18,46,0.14);
+
+  --warn:#C9973B;
+  --warn-dark:#C9973B;
+  --warn-soft:rgba(201,151,59,0.14);
+  --danger:#D1495B;
+  --danger-soft:rgba(209,73,91,0.14);
+  --success:#6A6F76;
+  --success-soft:rgba(106,111,118,0.14);
+
+  --on-light:#17181B;      /* номерной знак всегда белый — текст на нём тёмный, а не светлый ink темы */
+  --on-light-soft:#6B7280;
+
+  --radius-lg:18px; --radius-md:13px; --radius-sm:10px;
+  --shadow:0 24px 50px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.04) inset;
+  --shadow-sm:0 10px 22px rgba(0,0,0,.4);
+  --font-display:'Manrope';
+
+  --texture:
+    radial-gradient(ellipse 90% 45% at 50% -8%, rgba(255,255,255,.05), transparent 60%),
+    radial-gradient(ellipse 65% 40% at 105% 0%, rgba(179,18,46,.08), transparent 55%),
+    repeating-linear-gradient(120deg, rgba(255,255,255,.014) 0px, rgba(255,255,255,.014) 1px, transparent 1px, transparent 4px);
+  --texture-size:auto;
+  --plate-glow:radial-gradient(ellipse, rgba(255,255,255,.12), transparent 70%);
+}
+

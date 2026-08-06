@@ -18,11 +18,35 @@ const App = (function(){
   "use strict";
 
   const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : null;
-  if(tg){
+
+  function initTelegram(){
+    if(!tg) return;
     try{
       tg.ready(); tg.expand();
       tg.MainButton && tg.MainButton.hide();
     }catch(e){}
+  }
+  initTelegram();
+
+  // Промис-обёртка над confirm — showConfirm внутри Telegram, window.confirm
+  // ТОЛЬКО как фолбэк вне Telegram. Использовать вместо голого confirm()/alert().
+  function confirmAsync(message){
+    return new Promise((resolve)=>{
+      if(tg && tg.showConfirm && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')){
+        try{ tg.showConfirm(message, resolve); return; }catch(e){}
+      }
+      resolve(window.confirm(message));
+    });
+  }
+
+  function alertAsync(message){
+    return new Promise((resolve)=>{
+      if(tg && tg.showAlert && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')){
+        try{ tg.showAlert(message, resolve); return; }catch(e){}
+      }
+      window.alert(message);
+      resolve();
+    });
   }
 
   function haptic(type){
@@ -42,6 +66,68 @@ const App = (function(){
       tg.setHeaderColor && tg.setHeaderColor(headerHex);
     }catch(e){}
   }
+
+  /* ============ MODE (светлая/тёмная версия текущего бренда) ============
+     Независимо от data-theme (бренд мойки, задаётся владельцем через
+     CONFIG) — data-mode выбирает каждый пользователь лично. Приоритет:
+     сохранённый личный выбор > tg.colorScheme > prefers-color-scheme > light. */
+  const MODE_KEY = 'cw_mode_override';
+
+  function resolveMode(){
+    try{
+      const saved = localStorage.getItem(MODE_KEY);
+      if(saved === 'light' || saved === 'dark') return saved;
+    }catch(e){}
+    if(tg && tg.colorScheme) return tg.colorScheme;
+    try{ if(window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches) return 'dark'; }catch(e){}
+    return 'light';
+  }
+
+  function applyMode(mode){
+    document.body.dataset.mode = mode;
+    try{ localStorage.setItem(MODE_KEY, mode); }catch(e){}
+    const cs = getComputedStyle(document.body);
+    setChrome(cs.getPropertyValue('--bg').trim(), cs.getPropertyValue('--surface').trim());
+  }
+
+  function toggleMode(){
+    const next = document.body.dataset.mode === 'dark' ? 'light' : 'dark';
+    applyMode(next);
+    return next;
+  }
+
+  function getMode(){ return document.body.dataset.mode || 'light'; }
+
+  // Выставляется сразу при загрузке скрипта — до отрисовки экрана
+  // (тег <body> уже распарсен на этот момент, .app и её содержимое — ещё нет).
+  document.body.dataset.mode = resolveMode();
+
+  /* ============ BRAND (цветовая схема мойки: avtohimiya/voda/chrome/mercedes) ============
+     Владелец выбирает бренд для своей мойки (см. openBrandSheet в owner.html).
+     Без подключённого бэкенда (apiUrl/registryUrl всё ещё PASTE_...) выбор
+     сохраняется только в localStorage ЭТОГО браузера — как только бэкенд
+     подключён, тот же выбор нужно сохранять через api('saveSettings', {theme})
+     в реестр, тогда он реально применится ко всем посетителям мойки. */
+  const BRAND_KEY = 'cw_theme_override';
+  const BRAND_LIST = ['avtohimiya', 'voda', 'chrome', 'mercedes'];
+
+  function resolveBrand(configTheme){
+    try{
+      const saved = localStorage.getItem(BRAND_KEY);
+      if(saved && BRAND_LIST.includes(saved)) return saved;
+    }catch(e){}
+    return (configTheme && BRAND_LIST.includes(configTheme)) ? configTheme : 'avtohimiya';
+  }
+
+  function applyBrand(theme){
+    if(!BRAND_LIST.includes(theme)) return;
+    document.body.dataset.theme = theme;
+    try{ localStorage.setItem(BRAND_KEY, theme); }catch(e){}
+    const cs = getComputedStyle(document.body);
+    setChrome(cs.getPropertyValue('--bg').trim(), cs.getPropertyValue('--surface').trim());
+  }
+
+  function getBrand(){ return document.body.dataset.theme || 'avtohimiya'; }
 
   const tgUser = (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user : {id:'demo-user'};
 
@@ -70,5 +156,5 @@ const App = (function(){
     }
   }
 
-  return { tg, tgUser, haptic, setChrome, resolveTenantId, loadConfig };
+  return { tg, tgUser, haptic, setChrome, resolveTenantId, loadConfig, applyMode, toggleMode, getMode, confirmAsync, alertAsync, resolveBrand, applyBrand, getBrand, BRAND_LIST };
 })();

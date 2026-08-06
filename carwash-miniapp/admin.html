@@ -2,11 +2,12 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Панель администратора</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="palettes.css">
 <link rel="stylesheet" href="theme.css">
 </head>
 <body data-theme="avtohimiya">
@@ -38,7 +39,12 @@
   <div class="hero">
     <div class="hero-top">
       <div class="hero-brand display"><span class="drop"></span><span id="brandName"></span></div>
-      <span class="badge-role" id="roleBadge">Админ</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button class="glass-btn" id="modeToggleBtn" title="Светлая/тёмная тема" style="width:32px; height:32px;">
+          <svg id="modeIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px; height:15px;"></svg>
+        </button>
+        <span class="badge-role" id="roleBadge">Админ</span>
+      </div>
     </div>
     <div class="hero-glow"></div>
   </div>
@@ -728,7 +734,7 @@
 
     if(!isNew){
       $('deleteSvcBtn').addEventListener('click', async ()=>{
-        if(!confirm('Удалить услугу «'+it.name+'»?')) return;
+        if(!await App.confirmAsync('Удалить услугу «'+it.name+'»?')) return;
         const res = await api('deleteService', {id: it.id});
         if(!res.ok){ showToast('Не удалось удалить услугу', true); return; }
         haptic('success');
@@ -753,11 +759,20 @@
   }
   $('addServiceBtn').addEventListener('click', ()=> openServiceSheet(null, MOCK_SERVICES[0] && MOCK_SERVICES[0].category));
 
+  /* ============ ПЕРЕКЛЮЧЕНИЕ СВЕТЛАЯ/ТЁМНАЯ ============ */
+  const MODE_ICONS = {
+    light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+    dark: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+  };
+  function renderModeIcon(){ $('modeIcon').innerHTML = MODE_ICONS[App.getMode()] || MODE_ICONS.light; }
+  $('modeToggleBtn').addEventListener('click', ()=>{ haptic(); App.toggleMode(); renderModeIcon(); });
+  renderModeIcon();
+
   /* ============ BOOTSTRAP ============ */
   async function bootstrapApp(){
     CONFIG = await App.loadConfig();
 
-    document.body.dataset.theme = CONFIG.theme || 'avtohimiya';
+    document.body.dataset.theme = App.resolveBrand(CONFIG.theme);
     const cs = getComputedStyle(document.body);
     App.setChrome(cs.getPropertyValue('--bg').trim(), cs.getPropertyValue('--surface').trim());
 

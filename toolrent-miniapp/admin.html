@@ -5,6 +5,16 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Прокат — админ</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+(function(){
+  try{
+    var tg = window.Telegram && window.Telegram.WebApp;
+    var scheme = (tg && tg.colorScheme) ? tg.colorScheme
+      : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    document.documentElement.dataset.theme = scheme;
+  }catch(e){}
+})();
+</script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
@@ -73,7 +83,7 @@
   .section-label .count{color:var(--ink-soft);font-weight:700;}
 
   /* tabbar */
-  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--surface);border-top:1px solid var(--line);padding:8px 10px calc(8px + var(--safe-bottom));display:flex;gap:4px;}
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--surface);border-top:1px solid var(--line);padding:8px 10px max(34px, calc(8px + var(--safe-bottom)));display:flex;gap:4px;}
   .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:7px 4px;border-radius:10px;color:var(--ink-faint);}
   .tab svg{width:20px;height:20px;}
   .tab span{font-family:'JetBrains Mono',monospace;font-size:12px;text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
@@ -147,7 +157,7 @@
   .sheet-handle{width:36px;height:4px;border-radius:3px;background:var(--line-strong);margin:10px auto 4px;}
   .sheet-head{padding:6px 18px 12px;display:flex;align-items:center;justify-content:space-between;}
   .sheet-head h3{font-family:'Chakra Petch',sans-serif;text-transform:uppercase;letter-spacing:.02em;font-size:15px;margin:0;}
-  .sheet-body{overflow-y:auto;padding:0 18px calc(20px + var(--safe-bottom));}
+  .sheet-body{overflow-y:auto;padding:0 18px max(54px, calc(20px + var(--safe-bottom)));}
 
   /* forms */
   .field{margin-bottom:14px;}
@@ -201,7 +211,7 @@
   .spinner{width:24px;height:24px;border-radius:4px;border:3px solid var(--line-strong);border-top-color:var(--accent);animation:spin .7s linear infinite;}
   @keyframes spin{to{transform:rotate(360deg);}}
   .loading-screen span{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.06em;}
-  .toast{position:fixed;left:16px;right:16px;bottom:calc(84px + var(--safe-bottom));background:var(--surface-3);border:1px solid var(--line-strong);color:var(--ink);padding:13px 16px;border-radius:10px;font-size:13.5px;font-weight:600;z-index:200;transform:translateY(120%);transition:transform .25s ease;display:flex;align-items:center;gap:8px;}
+  .toast{position:fixed;left:16px;right:16px;bottom:max(118px, calc(84px + var(--safe-bottom)));background:var(--surface-3);border:1px solid var(--line-strong);color:var(--ink);padding:13px 16px;border-radius:10px;font-size:13.5px;font-weight:600;z-index:200;transform:translateY(120%);transition:transform .25s ease;display:flex;align-items:center;gap:8px;}
   .toast.show{transform:translateY(0);}
 </style>
 </head>
@@ -487,8 +497,14 @@ function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg
 function escHtml(s){ return(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
 
 /* ============================================================ SHEET HELPERS ============================================================ */
-function openSheet(scrimId, sheetId){ document.getElementById(scrimId).classList.add("open"); document.getElementById(sheetId).classList.add("open"); }
-function closeSheet(scrimId, sheetId){ document.getElementById(scrimId).classList.remove("open"); document.getElementById(sheetId).classList.remove("open"); }
+function openSheet(scrimId, sheetId){
+  document.getElementById(scrimId).classList.add("open"); document.getElementById(sheetId).classList.add("open");
+  if (tg?.BackButton) { try { tg.BackButton.show(); tg.BackButton.onClick(() => closeSheet(scrimId, sheetId)); } catch(e) {} }
+}
+function closeSheet(scrimId, sheetId){
+  document.getElementById(scrimId).classList.remove("open"); document.getElementById(sheetId).classList.remove("open");
+  if (tg?.BackButton) { try { tg.BackButton.hide(); } catch(e) {} }
+}
 
 /* ============================================================ TABS ============================================================ */
 document.querySelectorAll(".tab").forEach(el => el.addEventListener("click", () => {

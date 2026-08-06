@@ -2,11 +2,12 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Панель владельца</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="palettes.css">
 <link rel="stylesheet" href="theme.css">
 </head>
 <body data-theme="avtohimiya">
@@ -38,7 +39,15 @@
   <div class="hero">
     <div class="hero-top">
       <div class="hero-brand display"><span class="drop"></span><span id="brandName"></span></div>
-      <span class="badge-role" id="roleBadge">Владелец</span>
+      <div style="display:flex; align-items:center; gap:8px;">
+        <button class="glass-btn" id="brandSettingsBtn" title="Цветовая схема мойки" style="width:32px; height:32px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px; height:15px;"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-4-4 3 3 0 0 1 3-3 10 10 0 0 0-9-3z"/></svg>
+        </button>
+        <button class="glass-btn" id="modeToggleBtn" title="Светлая/тёмная тема" style="width:32px; height:32px;">
+          <svg id="modeIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:15px; height:15px;"></svg>
+        </button>
+        <span class="badge-role" id="roleBadge">Владелец</span>
+      </div>
     </div>
     <div class="hero-glow"></div>
   </div>
@@ -381,7 +390,7 @@
     `);
     if(!isNew){
       $('delBayBtn').addEventListener('click', async ()=>{
-        if(!confirm('Удалить «'+b.name+'»?')) return;
+        if(!await App.confirmAsync('Удалить «'+b.name+'»?')) return;
         const res = await api('deleteBay', {id:b.id});
         if(!res.ok){ showToast('Не удалось удалить бокс', true); return; }
         haptic('success'); closeSheet(); renderBays();
@@ -440,7 +449,7 @@
     `);
     if(!isNew){
       $('delStaffBtn').addEventListener('click', async ()=>{
-        if(!confirm('Удалить «'+s.name+'»?')) return;
+        if(!await App.confirmAsync('Удалить «'+s.name+'»?')) return;
         const res = await api('deleteStaff', {id:s.id});
         if(!res.ok){ showToast('Не удалось удалить сотрудника', true); return; }
         haptic('success'); closeSheet(); renderStaff();
@@ -501,7 +510,7 @@
     `);
     if(!isNew){
       $('delInvBtn').addEventListener('click', async ()=>{
-        if(!confirm('Удалить «'+it.name+'»?')) return;
+        if(!await App.confirmAsync('Удалить «'+it.name+'»?')) return;
         const res = await api('deleteInventoryItem', {id:it.id});
         if(!res.ok){ showToast('Не удалось удалить позицию', true); return; }
         haptic('success'); closeSheet(); renderInventory();
@@ -556,7 +565,7 @@
     $('shVisSwitch').addEventListener('click', ()=>{ visibleState=!visibleState; $('shVisSwitch').classList.toggle('on', visibleState); });
     if(!isNew){
       $('delShopBtn').addEventListener('click', async ()=>{
-        if(!confirm('Удалить «'+it.name+'»?')) return;
+        if(!await App.confirmAsync('Удалить «'+it.name+'»?')) return;
         const res = await api('deleteShopItem', {id:it.id});
         if(!res.ok){ showToast('Не удалось удалить товар', true); return; }
         haptic('success'); closeSheet(); renderShop();
@@ -574,11 +583,61 @@
   }
   $('addShopBtn').addEventListener('click', ()=>openShopSheet(null));
 
+  /* ============ ПЕРЕКЛЮЧЕНИЕ СВЕТЛАЯ/ТЁМНАЯ ============ */
+  const MODE_ICONS = {
+    light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+    dark: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+  };
+  function renderModeIcon(){ $('modeIcon').innerHTML = MODE_ICONS[App.getMode()] || MODE_ICONS.light; }
+  $('modeToggleBtn').addEventListener('click', ()=>{ haptic(); App.toggleMode(); renderModeIcon(); });
+  renderModeIcon();
+
+  /* ============ ЦВЕТОВАЯ СХЕМА МОЙКИ (бренд) ============ */
+  const BRAND_META = {
+    avtohimiya: { label: 'Автохимия с полки', sub: 'Зелёный/оранжевый, дружелюбный', swatch: 'linear-gradient(135deg,#63B33A,#F2624A)' },
+    voda:       { label: 'Вода и пена', sub: 'Бирюзовый/янтарный, свежий', swatch: 'linear-gradient(135deg,#0C8599,#E8A33D)' },
+    chrome:     { label: 'Хром и перламутр', sub: 'Синий, технологичный', swatch: 'linear-gradient(135deg,#2E5EFF,#1E44CC)' },
+    mercedes:   { label: 'Mercedes', sub: 'Премиальный, хром + красный', swatch: 'linear-gradient(135deg,#C6CBD1,#B3122E)' },
+  };
+  function openBrandSheet(){
+    const current = App.getBrand();
+    const demoNote = (CONFIG && CONFIG._demo) ? ' Без подключённого бэкенда выбор сохраняется только в этом браузере.' : '';
+    openSheet(`
+      <div class="sheet-title">Цветовая схема мойки</div>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin:-6px 0 14px;">Ваш выбор определяет стиль для всех посетителей мойки.${demoNote}</div>
+      <div id="brandOptions"></div>
+    `);
+    const wrap = $('brandOptions');
+    App.BRAND_LIST.forEach(id=>{
+      const meta = BRAND_META[id];
+      const active = id === current;
+      const row = document.createElement('div');
+      row.className = 'staff-row';
+      row.innerHTML = `
+        <div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:${meta.swatch};${active?'box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent);':''}"></div>
+        <div class="staff-main">
+          <div class="staff-name">${meta.label}</div>
+          <div class="staff-role">${meta.sub}</div>
+        </div>
+        ${active ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;color:var(--accent);flex-shrink:0;"><path d="M20 6L9 17l-5-5"/></svg>' : ''}
+      `;
+      row.addEventListener('click', ()=>{
+        closeSheet();
+        if(active) return;
+        App.applyBrand(id);
+        haptic('success');
+        showToast('Схема «' + meta.label + '» применена' + ((CONFIG && CONFIG._demo) ? ' (локально)' : ''));
+      });
+      wrap.appendChild(row);
+    });
+  }
+  $('brandSettingsBtn').addEventListener('click', openBrandSheet);
+
   /* ============ BOOTSTRAP ============ */
   async function bootstrapApp(){
     CONFIG = await App.loadConfig();
 
-    document.body.dataset.theme = CONFIG.theme || 'avtohimiya';
+    document.body.dataset.theme = App.resolveBrand(CONFIG.theme);
     const cs = getComputedStyle(document.body);
     App.setChrome(cs.getPropertyValue('--bg').trim(), cs.getPropertyValue('--surface').trim());
 
