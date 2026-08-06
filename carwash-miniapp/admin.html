@@ -213,6 +213,10 @@
     {id:'BLK-2010', date:shiftDate(1), time:'10:00', car:{number:'6650 FF-2', brand:'Hyundai', model:'Tucson'}, services:['VIP+','Химчистка ковриков'], priceMin:105, priceMax:135, contact:{name:'Елена Жук', phone:'+375291119922'}, status:'confirmed', assignedStaffId:null},
     {id:'BLK-2011', date:shiftDate(2), time:'13:00', car:{number:'1010 GG-5', brand:'Audi', model:'Q7'}, services:['Полная химчистка салона'], priceMin:500, priceMax:1100, contact:{name:'Виктор Шило', phone:'+375291238800'}, status:'pending', assignedStaffId:null}
   ];
+  // Помечаем витринные записи один раз — объекты мутируются на месте (не
+  // клонируются при каждой перезагрузке списка), иначе смена статуса/исполнителя
+  // у демо-записи откатывалась бы на исходное значение при следующем рендере.
+  MOCK_BOOKINGS.forEach(b=>{ b.isDemo = true; });
 
   let MOCK_SERVICES = [
     {category:'Мойка', items:[
@@ -423,11 +427,22 @@
     });
   }
 
-  async function renderToday(){
-    renderShiftChips();
+  // Реальные записи из таблицы + витринные демо-записи (MOCK_BOOKINGS) —
+  // показываются вместе, демо помечаются флагом isDemo и бейджем в строке,
+  // чтобы не путать с настоящими бронями. ALL_BOOKINGS кэшируется и переиспользуется
+  // в поиске слотов на вкладке «Расписание» (клик по занятому слоту).
+  let ALL_BOOKINGS = [];
+  async function fetchAllBookings(){
     const res = await api('getBookings');
     if(!res.ok) showToast('Не удалось загрузить записи', true);
-    const all = res.bookings || [];
+    const real = (res.bookings || []).map(b=>Object.assign({}, b, {isDemo:false}));
+    ALL_BOOKINGS = [...real, ...MOCK_BOOKINGS];
+    return ALL_BOOKINGS;
+  }
+
+  async function renderToday(){
+    renderShiftChips();
+    const all = await fetchAllBookings();
     const today = all.filter(b=>b.date===TODAY).sort((a,b)=>a.time.localeCompare(b.time));
     $('statCount').textContent = today.length;
     $('statRevenue').textContent = today.filter(b=>b.status!=='cancelled').reduce((s,b)=>s+b.priceMin,0);
@@ -448,7 +463,7 @@
     row.innerHTML = `
       <div class="booking-time">${b.time}${showDate? `<span class="d">${fmtDate(b.date)}</span>`:''}</div>
       <div class="booking-main">
-        <div class="booking-plate">${b.car.number}${assignee? ` <span class="assignee-badge" title="${assignee.name}">${staffInitials(assignee.name)}</span>`:''}</div>
+        <div class="booking-plate">${b.car.number}${assignee? ` <span class="assignee-badge" title="${assignee.name}">${staffInitials(assignee.name)}</span>`:''}${b.isDemo? ' <span class="demo-tag">демо</span>':''}</div>
         <div class="booking-meta">${b.services.join(', ')}</div>
       </div>
       <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
@@ -492,8 +507,12 @@
       el.addEventListener('click', async ()=>{
         const prevStatus = b.status;
         b.status = el.dataset.status;
-        const res = await api('updateBookingStatus', {id:b.id, status:b.status});
-        if(!res.ok){ b.status = prevStatus; showToast('Не удалось изменить статус', true); return; }
+        // Демо-запись не существует в реальной таблице — правим только локально,
+        // не дёргая настоящий бэкенд фейковым id.
+        if(!b.isDemo){
+          const res = await api('updateBookingStatus', {id:b.id, status:b.status});
+          if(!res.ok){ b.status = prevStatus; showToast('Не удалось изменить статус', true); return; }
+        }
         haptic('success');
         document.querySelectorAll('#statusActions .status-btn').forEach(x=>x.classList.toggle('active', x===el));
         renderToday(); renderSearch();
@@ -504,8 +523,10 @@
         const prevAssignee = b.assignedStaffId;
         const staffId = el.dataset.staff || null;
         b.assignedStaffId = staffId;
-        const res = await api('assignBookingStaff', {id:b.id, staffId});
-        if(!res.ok){ b.assignedStaffId = prevAssignee; showToast('Не удалось назначить исполнителя', true); return; }
+        if(!b.isDemo){
+          const res = await api('assignBookingStaff', {id:b.id, staffId});
+          if(!res.ok){ b.assignedStaffId = prevAssignee; showToast('Не удалось назначить исполнителя', true); return; }
+        }
         haptic('success');
         openBookingSheet(b);
         renderToday(); renderSearch();
@@ -537,9 +558,7 @@
 
   async function renderSearch(){
     renderDateFilterChips();
-    const res = await api('getBookings');
-    if(!res.ok) showToast('Не удалось загрузить записи', true);
-    let list = res.bookings || [];
+    let list = await fetchAllBookings();
     if(activeDateFilter==='today') list = list.filter(b=>b.date===TODAY);
     else if(activeDateFilter==='tomorrow') list = list.filter(b=>b.date===shiftDate(1));
     else if(activeDateFilter==='week'){
@@ -598,7 +617,7 @@
       el.textContent = s.time;
       el.addEventListener('click', async ()=>{
         if(s.state==='booked'){
-          const b = MOCK_BOOKINGS.find(x=>x.id===s.bookingId);
+          const b = ALL_BOOKINGS.find(x=>x.id===s.bookingId);
           if(b) openBookingSheet(b);
           return;
         }

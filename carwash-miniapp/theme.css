@@ -229,6 +229,7 @@ input, select, textarea{font-family:inherit;}
 /* ============ ROLE BADGE (шапка админа/владельца) ============ */
 .badge-role{font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; background:var(--surface-2); border:1px solid var(--border); color:var(--ink-soft); padding:4px 9px; border-radius:999px;}
 .badge-demo{background:var(--warn); border-color:var(--warn); color:var(--warn-dark);}
+.demo-tag{display:inline-block; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; background:var(--warn-soft, var(--warn)); color:var(--warn-dark); padding:1px 6px; border-radius:999px; vertical-align:middle; margin-left:6px;}
 
 /* ============ LOCK SCREEN ============ */
 .lock-screen{padding:100px 30px; text-align:center;}
