@@ -419,8 +419,23 @@ let MOCK_MY_BOOKINGS = [
   { id: "ЗК-1051", modelId: "m5", model: "Триммер бензиновый",          from: "2026-07-17", to: "2026-07-20", status: "overdue",  method: "Доставка" }
 ];
 
-/* ============================================================ api(action, payload) ============================================================ */
-function api(action, payload) {
+/* ============================================================ API WRAPPER (реальный бэкенд — Apps Script) ============================================================ */
+async function api(action, payload) {
+  payload = payload || {};
+  try {
+    if (CONFIG.apiUrl.indexOf('PASTE_') === 0) throw new Error('demo mode');
+    const res = await fetch(CONFIG.apiUrl, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action }, payload))
+    });
+    if (!res.ok) throw new Error('bad response');
+    return await res.json();
+  } catch (e) {
+    return mockApi(action, payload);
+  }
+}
+
+function mockApi(action, payload) {
   return new Promise((resolve) => {
     setTimeout(() => {
       switch (action) {
@@ -894,7 +909,18 @@ document.getElementById("wizardNext").addEventListener("click", async () => {
     const btn = document.getElementById("wizardNext");
     btn.disabled = true; btn.textContent = "Оформляем…";
     try {
-      const res = await api("createBooking", { modelId: w.model.id, modelName: w.model.name, from: w.from, to: w.to, method: w.method });
+      const tgUser = getTgUser();
+      const payload = {
+        modelId: w.model.id, modelName: w.model.name, from: w.from, to: w.to, method: w.method,
+        userId: tgUser?.id || "", name: w.name, phone: w.phone, idDoc: w.idDoc
+      };
+      if (w.method === "delivery") {
+        payload.address = w.address;
+        payload.deliverySlotId = w.deliverySlotId;
+        payload.returnMethod = w.returnMethod;
+        payload.deliveryFee = CONFIG.deliveryZones[0]?.fee || 0;
+      }
+      const res = await api("createBooking", payload);
       if (!res.ok) throw new Error(res.error || "booking failed");
       lastOrderId = res.orderId; haptic("success"); w.step = 5; renderWizard();
     } catch (e) {
@@ -959,7 +985,7 @@ function closeBookingsSheet() {
 async function loadBookings() {
   const list = document.getElementById("bookingsList");
   list.innerHTML = `<div class="empty-state"><div class="spinner" style="margin:0 auto 10px;"></div></div>`;
-  const res = await api("getMyBookings", {});
+  const res = await api("getMyBookings", { userId: getTgUser()?.id || "" });
   if (!res.bookings.length) {
     list.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><div>Пока нет броней</div></div>`;
     return;

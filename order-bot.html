@@ -2,13 +2,18 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>Оставить заявку — Студия Ботов</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script>
 (function(){
   var tg = window.Telegram && window.Telegram.WebApp;
-  var scheme = (tg && tg.colorScheme) ? tg.colorScheme
+  var saved;
+  try { saved = localStorage.getItem('ob_mode_override'); } catch(e) {}
+  var scheme = (saved === 'light' || saved === 'dark') ? saved
+    : (tg && tg.colorScheme) ? tg.colorScheme
     : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
   document.documentElement.setAttribute('data-theme', scheme);
 })();
@@ -50,11 +55,15 @@
   /* header */
   header{flex-shrink:0;padding:calc(12px + var(--safe-top)) 16px 12px;background:var(--surface);
     border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;}
-  .back-btn{width:44px;height:44px;border-radius:10px;background:var(--surface-2);display:flex;
-    align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-soft);}
-  .back-btn svg{width:18px;height:18px;}
-  .hdr-title{font-size:16px;letter-spacing:.01em;}
-  .hdr-sub{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+  .back-btn,.icon-btn{width:44px;height:44px;border-radius:10px;background:var(--surface-2);display:flex;
+    align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-soft);transition:background .15s,color .15s;}
+  .back-btn svg,.icon-btn svg{width:18px;height:18px;}
+  .icon-btn:active{background:var(--surface-3);}
+  .hdr-info{flex:1;min-width:0;}
+  .hdr-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .hdr-title{font-size:16px;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hdr-sub{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);margin-top:2px;font-family:'JetBrains Mono',monospace;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .dot-live{width:6px;height:6px;border-radius:50%;background:var(--ok);flex-shrink:0;
     box-shadow:0 0 0 0 rgba(56,168,157,.6);animation:pulse 2s infinite;}
   @keyframes pulse{
@@ -145,9 +154,17 @@
   <div class="back-btn" id="backBtn">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
   </div>
-  <div>
+  <div class="hdr-info">
     <div class="hdr-title">Оставить заявку</div>
     <div class="hdr-sub"><span class="dot-live"></span>Студия Ботов · ответим быстро</div>
+  </div>
+  <div class="hdr-actions">
+    <button class="icon-btn" id="accentBtn" title="Сменить цвет" aria-label="Сменить цвет акцента">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c-5.5 0-10-4-10-9a10 10 0 0 1 10-10c5 0 9 3.5 9 8a5 5 0 0 1-5 5h-1.5a1.5 1.5 0 0 0-1.06 2.56c.44.44.56 1 .56 1.44a2 2 0 0 1-2 2z"/><circle cx="7" cy="10" r="1" fill="currentColor"/><circle cx="10" cy="6.5" r="1" fill="currentColor"/><circle cx="14.5" cy="6.5" r="1" fill="currentColor"/><circle cx="17" cy="10.5" r="1" fill="currentColor"/></svg>
+    </button>
+    <button class="icon-btn" id="modeBtn" title="Светлая/тёмная тема" aria-label="Переключить тему">
+      <svg id="modeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+    </button>
   </div>
 </header>
 
@@ -235,24 +252,81 @@ function haptic(style) {
     else tg.HapticFeedback.impactOccurred(style || "light");
   }
 }
-function applyTelegramTheme() {
-  const scheme = (tg && tg.colorScheme) ? tg.colorScheme
+
+/* ---- светлая/тёмная тема: выбор пользователя приоритетнее темы Telegram ---- */
+const MODE_KEY = "ob_mode_override";
+const MODE_ICONS = {
+  light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  dark: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+};
+function resolveMode() {
+  let saved;
+  try { saved = localStorage.getItem(MODE_KEY); } catch(e) {}
+  if (saved === "light" || saved === "dark") return saved;
+  return (tg && tg.colorScheme) ? tg.colorScheme
     : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
-  document.documentElement.setAttribute("data-theme", scheme);
+}
+function updateModeIcon() {
+  const mode = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  document.getElementById("modeIcon").innerHTML = MODE_ICONS[mode];
+}
+
+/* ---- цвет акцента: несколько готовых палитр на выбор (демо для клиента) ---- */
+const ACCENT_KEY = "ob_accent_override";
+const ACCENT_PALETTES = [
+  { dark: { accent:"#7C5CFC", accentDark:"#6144D9", accentSoft:"rgba(124,92,252,.16)" }, light: { accent:"#7C5CFC", accentDark:"#6144D9", accentSoft:"rgba(124,92,252,.12)" } },
+  { dark: { accent:"#2AABEE", accentDark:"#1B8FCB", accentSoft:"rgba(42,171,238,.16)" }, light: { accent:"#2AABEE", accentDark:"#1B8FCB", accentSoft:"rgba(42,171,238,.12)" } },
+  { dark: { accent:"#2FC7B0", accentDark:"#1FA491", accentSoft:"rgba(47,199,176,.16)" }, light: { accent:"#209985", accentDark:"#187C6C", accentSoft:"rgba(32,153,133,.12)" } },
+  { dark: { accent:"#F2A93B", accentDark:"#D68C1F", accentSoft:"rgba(242,169,59,.16)" }, light: { accent:"#DB8F1F", accentDark:"#B87515", accentSoft:"rgba(219,143,31,.12)" } },
+  { dark: { accent:"#F0578E", accentDark:"#D13E74", accentSoft:"rgba(240,87,142,.16)" }, light: { accent:"#DB3E77", accentDark:"#B92E62", accentSoft:"rgba(219,62,119,.12)" } },
+];
+function currentAccentIndex() {
+  let saved;
+  try { saved = parseInt(localStorage.getItem(ACCENT_KEY), 10); } catch(e) {}
+  return (Number.isInteger(saved) && ACCENT_PALETTES[saved]) ? saved : 0;
+}
+function applyAccent(index) {
+  const mode = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  const c = ACCENT_PALETTES[index][mode];
+  const root = document.documentElement.style;
+  root.setProperty("--accent", c.accent);
+  root.setProperty("--accent-dark", c.accentDark);
+  root.setProperty("--accent-soft", c.accentSoft);
+  try { localStorage.setItem(ACCENT_KEY, index); } catch(e) {}
+}
+
+function applyThemeUI() {
+  document.documentElement.setAttribute("data-theme", resolveMode());
+  updateModeIcon();
+  applyAccent(currentAccentIndex());
+}
+function applyTelegramTheme() {
+  applyThemeUI();
   if (tg) {
     const s = getComputedStyle(document.documentElement);
     try { tg.setHeaderColor(s.getPropertyValue("--surface").trim()); tg.setBackgroundColor(s.getPropertyValue("--bg").trim()); } catch(e) {}
   }
 }
 function initTelegram() {
+  applyTelegramTheme();
   if (!tg) return;
   tg.ready(); tg.expand();
-  applyTelegramTheme();
   tg.onEvent && tg.onEvent("themeChanged", applyTelegramTheme);
+  if (tg.isVersionAtLeast && tg.isVersionAtLeast("7.7")) { try { tg.disableVerticalSwipes(); } catch(e) {} }
 }
 document.getElementById("backBtn").addEventListener("click", () => {
   haptic("light");
   if (tg && tg.close) tg.close(); else history.back();
+});
+document.getElementById("modeBtn").addEventListener("click", () => {
+  haptic("light");
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  try { localStorage.setItem(MODE_KEY, next); } catch(e) {}
+  applyTelegramTheme();
+});
+document.getElementById("accentBtn").addEventListener("click", () => {
+  haptic("light");
+  applyAccent((currentAccentIndex() + 1) % ACCENT_PALETTES.length);
 });
 
 /* ============================================================ FORM ============================================================ */

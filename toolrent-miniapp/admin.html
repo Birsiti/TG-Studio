@@ -362,7 +362,22 @@ MOCK_UNITS.find(u => u.id === "m1-1").bookingId = "ЗК-1039";
 MOCK_UNITS.find(u => u.id === "m2-1").bookingId = "ЗК-1046";
 
 /* ============================================================ api(action, payload) ============================================================ */
-function api(action, payload) {
+async function api(action, payload) {
+  payload = payload || {};
+  try {
+    if (CONFIG.apiUrl.indexOf('PASTE_') === 0) throw new Error('demo mode');
+    const res = await fetch(CONFIG.apiUrl, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action }, payload))
+    });
+    if (!res.ok) throw new Error('bad response');
+    return await res.json();
+  } catch (e) {
+    return mockApi(action, payload);
+  }
+}
+
+function mockApi(action, payload) {
   return new Promise((resolve) => {
     setTimeout(() => {
       switch (action) {
@@ -784,15 +799,18 @@ async function addUnit(modelId) {
 }
 
 /* ============================================================ РУЧНОЕ СОЗДАНИЕ БРОНИ ============================================================ */
-function openNewBookingSheet() {
+let nbModels = [];
+async function openNewBookingSheet() {
   const body = document.getElementById("newBookingBody");
   const today = new Date().toISOString().slice(0,10);
+  const modelsRes = await api("getUnits", {});
+  nbModels = modelsRes.models || [];
   body.innerHTML = `
     <div class="field">
       <label>Инструмент</label>
       <select id="nbModel">
         <option value="">— Выберите —</option>
-        ${MOCK_MODELS.map(m=>`<option value="${m.id}">${escHtml(m.name)}</option>`).join("")}
+        ${nbModels.map(m=>`<option value="${m.id}">${escHtml(m.name)}</option>`).join("")}
       </select>
     </div>
     <div class="field-row">
