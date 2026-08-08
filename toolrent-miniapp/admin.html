@@ -8,16 +8,21 @@
 <script>
 (function(){
   try{
-    var tg = window.Telegram && window.Telegram.WebApp;
-    var scheme = (tg && tg.colorScheme) ? tg.colorScheme
-      : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    var saved = localStorage.getItem('theme_override');
+    var scheme = saved;
+    if(!scheme){
+      var tg = window.Telegram && window.Telegram.WebApp;
+      scheme = (tg && tg.colorScheme) ? tg.colorScheme
+        : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    }
     document.documentElement.dataset.theme = scheme;
   }catch(e){}
 })();
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
-
   :root{
     --bg:#111417; --surface:#1A1E22; --surface-2:#20252A; --surface-3:#262B31;
     --ink:#EDEFF0; --ink-soft:#8C949C; --ink-faint:#565D64;
@@ -73,6 +78,9 @@
   .icon-btn{width:44px;height:44px;border-radius:9px;background:var(--surface-3);border:1px solid var(--line-strong);display:flex;align-items:center;justify-content:center;color:var(--ink);}
   .icon-btn svg{width:16px;height:16px;}
   .icon-btn.accent{background:var(--accent);color:#15130A;border-color:var(--accent);}
+  #themeToggleBtn .icon-moon{display:none;}
+  :root[data-theme="light"] #themeToggleBtn .icon-moon{display:block;}
+  :root[data-theme="light"] #themeToggleBtn .icon-sun{display:none;}
 
   /* screens */
   .screen{padding:16px 16px 8px;display:none;}
@@ -226,8 +234,12 @@
       <div><div class="brand-name" id="brandName">Прокат-Инструмент</div><div class="brand-sub">СМЕНА · <span id="todayDate"></span></div></div>
     </div>
     <div class="topbar-right">
+      <button class="icon-btn" id="themeToggleBtn" aria-label="Переключить тему">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
       <!-- Создать бронь вручную — всегда доступна из шапки -->
-      <button class="icon-btn accent" id="newBookingBtn" title="Создать бронь вручную">
+      <button class="icon-btn accent" id="newBookingBtn" aria-label="Создать бронь вручную">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12h14"/></svg>
       </button>
       <div class="role-badge">АДМИН</div>
@@ -284,7 +296,7 @@
   <div class="sheet-handle"></div>
   <div class="sheet-head">
     <h3 id="opSheetTitle">Выдача</h3>
-    <button class="icon-btn" id="opSheetClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <button class="icon-btn" id="opSheetClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="sheet-body" id="opSheetBody"></div>
 </div>
@@ -295,7 +307,7 @@
   <div class="sheet-handle"></div>
   <div class="sheet-head">
     <h3 id="unitSheetTitle">Единица в аренде</h3>
-    <button class="icon-btn" id="unitSheetClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <button class="icon-btn" id="unitSheetClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="sheet-body" id="unitSheetBody"></div>
 </div>
@@ -306,7 +318,7 @@
   <div class="sheet-handle"></div>
   <div class="sheet-head">
     <h3>Новая бронь</h3>
-    <button class="icon-btn" id="newBookingClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <button class="icon-btn" id="newBookingClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="sheet-body" id="newBookingBody"></div>
 </div>
@@ -317,7 +329,7 @@
   <div class="sheet-handle"></div>
   <div class="sheet-head">
     <h3 id="editSheetTitle">Редактировать</h3>
-    <button class="icon-btn" id="editSheetClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <button class="icon-btn" id="editSheetClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="sheet-body" id="editSheetBody"></div>
 </div>
@@ -493,10 +505,24 @@ function confirmDialog(message){
   });
 }
 function setChrome(){ if(!tg)return; const s=getComputedStyle(document.body); try{tg.setHeaderColor(s.getPropertyValue("--surface").trim());tg.setBackgroundColor(s.getPropertyValue("--bg").trim());}catch(e){} }
+function getThemeOverride(){ try{ return localStorage.getItem("theme_override"); }catch(e){ return null; } }
+function autoScheme(){ return tg?.colorScheme || (window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark"); }
 function applyTheme(){
-  const scheme = tg?.colorScheme || (window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  const scheme = getThemeOverride() || autoScheme();
   document.documentElement.dataset.theme = scheme;
   setChrome();
+  updateThemeToggleLabel(scheme);
+}
+function toggleTheme(){
+  const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  try{ localStorage.setItem("theme_override", next); }catch(e){}
+  haptic("light");
+  applyTheme();
+}
+function updateThemeToggleLabel(scheme){
+  const btn = document.getElementById("themeToggleBtn");
+  if(!btn) return;
+  btn.setAttribute("aria-label", scheme === "light" ? "Включить тёмную тему" : "Включить светлую тему");
 }
 function initTelegram(){
   if(!tg){ applyTheme(); return; }
@@ -761,7 +787,7 @@ async function loadInventory() {
         <div class="name">${escHtml(m.name)}</div>
         <div class="right">
           <div class="ratio">${free}/${units.length} своб.</div>
-          <button class="icon-btn" style="width:30px;height:30px;border-radius:7px;" data-edit="${m.id}" title="Описание и фото">
+          <button class="icon-btn" style="width:30px;height:30px;border-radius:7px;" data-edit="${m.id}" aria-label="Описание и фото">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:13px;height:13px;"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
           </button>
         </div>
@@ -896,6 +922,7 @@ async function closeNewBookingSheetGuarded(){
   if(hasNewBookingData() && !(await confirmDialog("Закрыть? Введённые данные будут потеряны."))) return;
   closeSheet("newBookingScrim","newBookingSheet");
 }
+document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
 document.getElementById("newBookingBtn").addEventListener("click", openNewBookingSheet);
 document.getElementById("newBookingClose").addEventListener("click", closeNewBookingSheetGuarded);
 document.getElementById("newBookingScrim").addEventListener("click", closeNewBookingSheetGuarded);

@@ -8,13 +8,35 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+(function(){
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var saved = null;
+  try { saved = localStorage.getItem('versta_theme_override'); } catch(e){}
+  var scheme = saved || ((tg && tg.colorScheme) ? tg.colorScheme
+    : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+  document.documentElement.setAttribute('data-theme', scheme);
+})();
+</script>
 <style>
-  :root{
+  :root[data-theme="dark"]{
     --bg:#10131A; --surface:#1A1F29; --surface2:#232936;
     --ink:#F1F3F7; --ink-soft:#8891A3; --ink-faint:#5B6373;
     --line:rgba(255,255,255,0.09);
     --accent:#FF9640; --accent-ink:#241300;
     --accent2:#2FD9B9; --warn:#FFC53D; --danger:#FF5C6C;
+    --accent-text:#FF9640; --accent2-text:#2FD9B9;
+    --warn-text:#FFC53D; --danger-text:#FF5C6C;
+  }
+  :root[data-theme="light"]{
+    --bg:#EEF1F6; --surface:#FFFFFF; --surface2:#E7EBF1;
+    --ink:#12151C; --ink-soft:#5B6373; --ink-faint:#8891A3;
+    --line:rgba(10,14,22,0.1);
+    --accent:#FF9640; --accent-ink:#241300;
+    --accent2:#2FD9B9; --warn:#FFC53D; --danger:#FF5C6C;
+    --accent-text:#A05000; --accent2-text:#0E7A64;
+    --warn-text:#8A5D00; --danger-text:#C7202F;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
@@ -42,7 +64,16 @@
   .wordmark{font-family:'Oswald'; font-weight:700; font-size:15px; letter-spacing:.12em;}
   .role-tag{font-family:'Manrope'; font-weight:700; font-size:9px; letter-spacing:0; text-transform:none;
     color:var(--accent-ink); background:var(--accent); padding:2px 6px; border-radius:6px; margin-left:4px;}
-  .switch-link{margin-left:auto; font-size:12.5px; font-weight:700; color:var(--ink-soft); background:none; border:none;}
+  .switch-link{font-size:12.5px; font-weight:700; color:var(--ink-soft); background:none; border:none;}
+  .theme-toggle{
+    width:44px; height:44px; border-radius:50%;
+    background:var(--surface); border:none; color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    flex:0 0 auto; margin-left:auto;
+  }
+  .theme-toggle .icon-moon{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-sun{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-moon{display:block;}
 
   .screens{position:absolute; top:54px; bottom:0; left:0; right:0;}
   .screen{display:none; flex-direction:column; height:100%; padding:8px 20px 24px; overflow-y:auto;}
@@ -61,7 +92,7 @@
   .avatar{
     width:48px; height:48px; border-radius:50%; background:var(--surface2); border:1.5px solid var(--accent);
     display:flex; align-items:center; justify-content:center; font-family:'Oswald'; font-weight:700; font-size:16px;
-    color:var(--accent); flex:0 0 auto;
+    color:var(--accent-text); flex:0 0 auto;
   }
   .driver-info{flex:1;}
   .driver-name{font-size:16.5px; font-weight:700;}
@@ -81,8 +112,8 @@
   .trip-route-sub{font-size:12.5px; color:var(--ink-soft);}
   .status-tag{font-size:11.5px; font-weight:700; padding:5px 10px; border-radius:9px; white-space:nowrap;}
   .tag-wait{background:var(--surface2); color:var(--ink-soft);}
-  .tag-live{background:rgba(255,150,64,.16); color:var(--accent);}
-  .tag-done{background:rgba(47,217,185,.16); color:var(--accent2);}
+  .tag-live{background:rgba(255,150,64,.16); color:var(--accent-text);}
+  .tag-done{background:rgba(47,217,185,.16); color:var(--accent2-text);}
   .empty-state{text-align:center; color:var(--ink-soft); padding:60px 16px; font-size:15px; line-height:1.5;}
 
   /* trip detail */
@@ -117,12 +148,12 @@
   .pax-actions{display:flex; gap:8px; margin-top:11px;}
   .pax-btn{flex:1; border:none; border-radius:11px; padding:12px 8px; font-weight:700; font-size:13.5px;
     display:flex; align-items:center; justify-content:center; gap:6px;}
-  .pax-btn.call{background:rgba(47,217,185,.14); color:var(--accent2);}
+  .pax-btn.call{background:rgba(47,217,185,.14); color:var(--accent2-text);}
   .pax-btn.board{background:var(--surface2); color:var(--ink);}
-  .pax-btn.miss{background:rgba(255,92,108,.12); color:var(--danger);}
+  .pax-btn.miss{background:rgba(255,92,108,.12); color:var(--danger-text);}
   .pax-status{font-size:12px; font-weight:700; padding:8px; text-align:center; border-radius:10px; margin-top:11px;}
-  .pax-status.st-board{background:rgba(47,217,185,.14); color:var(--accent2);}
-  .pax-status.st-miss{background:rgba(255,92,108,.12); color:var(--danger);}
+  .pax-status.st-board{background:rgba(47,217,185,.14); color:var(--accent2-text);}
+  .pax-status.st-miss{background:rgba(255,92,108,.12); color:var(--danger-text);}
 
   .dropoff-card{
     display:flex; align-items:center; gap:10px; background:var(--surface); border:1px dashed var(--line);
@@ -144,8 +175,8 @@
   .dispatch-alert.late{background:rgba(255,197,61,.13); border:1px solid rgba(255,197,61,.3);}
   .dispatch-alert.break{background:rgba(255,92,108,.12); border:1px solid rgba(255,92,108,.3);}
   .dispatch-alert-icon{width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
-  .dispatch-alert.late .dispatch-alert-icon{background:rgba(255,197,61,.2); color:var(--warn);}
-  .dispatch-alert.break .dispatch-alert-icon{background:rgba(255,92,108,.2); color:var(--danger);}
+  .dispatch-alert.late .dispatch-alert-icon{background:rgba(255,197,61,.2); color:var(--warn-text);}
+  .dispatch-alert.break .dispatch-alert-icon{background:rgba(255,92,108,.2); color:var(--danger-text);}
   .dispatch-alert-body{flex:1;}
   .dispatch-alert-title{font-size:13px; font-weight:700;}
   .dispatch-alert-sub{font-size:11px; color:var(--ink-soft); margin-top:2px;}
@@ -159,6 +190,10 @@
   <div class="topbar">
     <button class="back-btn" id="backBtn" aria-label="Назад">‹</button>
     <span class="wordmark">ВЕРСТА</span><span class="role-tag">водитель · демо</span>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Переключить тему">
+      <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12h2.5M19 12h2.5M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>
+      <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+    </button>
     <button class="switch-link" id="switchDriverBtn" style="display:none;">сменить</button>
   </div>
 
@@ -199,7 +234,51 @@
 <script>
 (function(){
   "use strict";
-  try{ if(window.Telegram && window.Telegram.WebApp){ window.Telegram.WebApp.ready(); window.Telegram.WebApp.expand(); } }catch(e){}
+  var tg = window.Telegram ? window.Telegram.WebApp : null;
+  var THEME_KEY = 'versta_theme_override';
+
+  function resolveMode(){
+    var saved = null;
+    try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+    if (saved) return saved;
+    return (tg && tg.colorScheme) ? tg.colorScheme
+      : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  }
+
+  function applyMode(mode, persist){
+    document.documentElement.setAttribute('data-theme', mode);
+    if (persist) { try { localStorage.setItem(THEME_KEY, mode); } catch(e){} }
+    var s = getComputedStyle(document.documentElement);
+    var surface = s.getPropertyValue('--surface').trim();
+    var bg = s.getPropertyValue('--bg').trim();
+    var metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', bg);
+    if (tg) { try { tg.setHeaderColor(surface); tg.setBackgroundColor(bg); } catch(e){} }
+  }
+
+  function toggleTheme(){
+    var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyMode(next, true);
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  }
+
+  function initTelegram(){
+    applyMode(resolveMode(), false);
+    if (tg) {
+      try {
+        tg.ready(); tg.expand();
+        tg.onEvent && tg.onEvent('themeChanged', function(){
+          var saved = null;
+          try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+          if (!saved) applyMode(resolveMode(), false);
+        });
+      } catch(e){}
+    }
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', toggleTheme);
+  }
+
+  try{ initTelegram(); }catch(e){}
 
   /* ---------------- data (mirrors dispatcher's mock generation) ---------------- */
   var CORRIDORS = [

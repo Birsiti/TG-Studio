@@ -8,16 +8,21 @@
 <script>
 (function(){
   try{
-    var tg = window.Telegram && window.Telegram.WebApp;
-    var scheme = (tg && tg.colorScheme) ? tg.colorScheme
-      : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    var saved = localStorage.getItem('theme_override');
+    var scheme = saved;
+    if(!scheme){
+      var tg = window.Telegram && window.Telegram.WebApp;
+      scheme = (tg && tg.colorScheme) ? tg.colorScheme
+        : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    }
     document.documentElement.dataset.theme = scheme;
   }catch(e){}
 })();
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
-
   :root{
     --bg:#111417; --surface:#1A1E22; --surface-2:#20252A; --surface-3:#262B31;
     --ink:#EDEFF0; --ink-soft:#8C949C; --ink-faint:#565D64;
@@ -73,6 +78,9 @@
   .icon-btn svg{width:17px;height:17px;}
   .icon-btn.has-dot{position:relative;}
   .icon-btn.has-dot::after{content:'';position:absolute;top:5px;right:5px;width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 2px var(--surface);}
+  #themeToggleBtn .icon-moon{display:none;}
+  :root[data-theme="light"] #themeToggleBtn .icon-moon{display:block;}
+  :root[data-theme="light"] #themeToggleBtn .icon-sun{display:none;}
 
   /* layout */
   .screen{padding:16px 16px 8px;}
@@ -268,6 +276,10 @@
       </div>
     </div>
     <div class="topbar-actions">
+      <button class="icon-btn" id="themeToggleBtn" aria-label="Переключить тему">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
       <button class="icon-btn" id="callBtn" aria-label="Позвонить">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
       </button>
@@ -313,7 +325,7 @@
   <div class="wizard-head">
     <button class="icon-btn" id="wizardBack"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg></button>
     <div class="wizard-title" id="wizardModelName">Бронирование</div>
-    <button class="icon-btn" id="wizardClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <button class="icon-btn" id="wizardClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="steps-leds" id="stepsLeds"></div>
   <div class="wizard-body" id="wizardBody"></div>
@@ -326,7 +338,7 @@
   <div class="sheet-handle"></div>
   <div class="sheet-head">
     <h3>Мои брони</h3>
-    <button class="icon-btn" id="sheetClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <button class="icon-btn" id="sheetClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="sheet-body" id="bookingsList"></div>
 </div>
@@ -337,7 +349,7 @@
   <div class="sheet-handle"></div>
   <div class="sheet-head">
     <h3>Продлить аренду</h3>
-    <button class="icon-btn" id="extendClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <button class="icon-btn" id="extendClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="sheet-body" id="extendBody"></div>
 </div>
@@ -494,13 +506,27 @@ function haptic(style) {
 function getTgUser() {
   try { return tg?.initDataUnsafe?.user || null; } catch(e) { return null; }
 }
+function getThemeOverride() { try { return localStorage.getItem("theme_override"); } catch(e) { return null; } }
+function autoScheme() { return tg?.colorScheme || (window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark"); }
 function applyTheme() {
-  const scheme = tg?.colorScheme || (window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  const scheme = getThemeOverride() || autoScheme();
   document.documentElement.dataset.theme = scheme;
   if (tg) {
     const s = getComputedStyle(document.body);
     try { tg.setHeaderColor(s.getPropertyValue("--surface").trim()); tg.setBackgroundColor(s.getPropertyValue("--bg").trim()); } catch(e) {}
   }
+  updateThemeToggleLabel(scheme);
+}
+function toggleTheme() {
+  const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  try { localStorage.setItem("theme_override", next); } catch(e) {}
+  haptic("light");
+  applyTheme();
+}
+function updateThemeToggleLabel(scheme) {
+  const btn = document.getElementById("themeToggleBtn");
+  if (!btn) return;
+  btn.setAttribute("aria-label", scheme === "light" ? "Включить тёмную тему" : "Включить светлую тему");
 }
 function initTelegram() {
   if (!tg) { applyTheme(); return; }
@@ -1095,6 +1121,7 @@ function closeExtendSheet() {
 document.getElementById("extendClose").addEventListener("click", closeExtendSheet);
 document.getElementById("extendScrim").addEventListener("click", closeExtendSheet);
 
+document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
 document.getElementById("myBookingsBtn").addEventListener("click", openBookingsSheet);
 document.getElementById("sheetClose").addEventListener("click", closeBookingsSheet);
 document.getElementById("sheetScrim").addEventListener("click", closeBookingsSheet);

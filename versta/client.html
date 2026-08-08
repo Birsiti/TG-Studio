@@ -8,8 +8,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+(function(){
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var saved = null;
+  try { saved = localStorage.getItem('versta_theme_override'); } catch(e){}
+  var scheme = saved || ((tg && tg.colorScheme) ? tg.colorScheme
+    : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+  document.documentElement.setAttribute('data-theme', scheme);
+})();
+</script>
 <style>
   :root{
+    --radius:16px;
+  }
+  :root[data-theme="dark"]{
     --bg:#10131A;
     --surface:#1A1F29;
     --surface2:#232936;
@@ -22,7 +36,28 @@
     --accent2:#2FD9B9;
     --warn:#FFC53D;
     --danger:#FF5C6C;
-    --radius:16px;
+    --accent-text:#FF9640;
+    --accent2-text:#2FD9B9;
+    --warn-text:#FFC53D;
+    --danger-text:#FF5C6C;
+  }
+  :root[data-theme="light"]{
+    --bg:#EEF1F6;
+    --surface:#FFFFFF;
+    --surface2:#E7EBF1;
+    --ink:#12151C;
+    --ink-soft:#5B6373;
+    --ink-faint:#8891A3;
+    --line:rgba(10,14,22,0.09);
+    --accent:#FF9640;
+    --accent-ink:#241300;
+    --accent2:#2FD9B9;
+    --warn:#FFC53D;
+    --danger:#FF5C6C;
+    --accent-text:#A05000;
+    --accent2-text:#0E7A64;
+    --warn-text:#8A5D00;
+    --danger-text:#C7202F;
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
@@ -88,6 +123,15 @@
     letter-spacing:0; font-size:9px; color:var(--accent-ink);
     background:var(--accent); padding:2px 6px; border-radius:6px;
   }
+  .theme-toggle{
+    position:absolute; right:16px; top:50%; transform:translateY(-50%);
+    width:44px; height:44px; border-radius:50%;
+    background:var(--surface); border:none; color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .theme-toggle .icon-moon{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-sun{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-moon{display:block;}
 
   .progress{
     display:flex; align-items:center; justify-content:center; gap:6px;
@@ -138,7 +182,7 @@
   .swap-btn{
     position:absolute; right:14px; top:50%; transform:translateY(-50%);
     width:34px; height:34px; border-radius:50%; background:var(--surface2);
-    border:1px solid var(--line); color:var(--accent2); font-size:16px;
+    border:1px solid var(--line); color:var(--accent2-text); font-size:16px;
   }
 
   .section-label{font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.06em; margin:4px 0 10px;}
@@ -182,7 +226,7 @@
   }
   .date-btn .dow{font-size:11px; color:var(--ink-soft); text-transform:uppercase;}
   .date-btn .num{font-family:'Oswald'; font-size:20px; font-weight:600; margin-top:2px;}
-  .date-btn.today .dow{color:var(--accent2);}
+  .date-btn.today .dow{color:var(--accent2-text);}
   .date-btn.active{background:var(--accent); border-color:var(--accent);}
   .date-btn.active .dow,.date-btn.active .num{color:var(--accent-ink);}
 
@@ -201,9 +245,9 @@
   .trip-right{text-align:right;}
   .trip-price{font-family:'JetBrains Mono'; font-weight:700; font-size:15px;}
   .trip-seats{font-size:11px; margin-top:3px; font-weight:600;}
-  .seats-ok{color:var(--accent2);}
-  .seats-low{color:var(--warn);}
-  .seats-none{color:var(--danger);}
+  .seats-ok{color:var(--accent2-text);}
+  .seats-low{color:var(--warn-text);}
+  .seats-none{color:var(--danger-text);}
   .empty-state{text-align:center; color:var(--ink-soft); padding:40px 10px; font-size:14px;}
 
   /* ---------- points screen ---------- */
@@ -217,7 +261,7 @@
   .point-row:last-child .rail-line{display:none;}
   .point-row.selected .rail-dot{background:var(--accent); box-shadow:0 0 0 4px rgba(255,150,64,.18);}
   .point-name{font-size:14px; font-weight:600;}
-  .point-row.selected .point-name{color:var(--accent);}
+  .point-row.selected .point-name{color:var(--accent-text);}
   .point-offset{font-size:11px; color:var(--ink-soft); margin-top:1px;}
 
   /* ---------- checkout screen ---------- */
@@ -243,7 +287,7 @@
   .field input::placeholder{color:var(--ink-faint);}
   .total-line{display:flex; justify-content:space-between; align-items:baseline; margin:16px 0 6px;}
   .total-line .label{color:var(--ink-soft); font-size:14px;}
-  .total-line .value{font-family:'JetBrains Mono'; font-size:26px; font-weight:700; color:var(--accent);}
+  .total-line .value{font-family:'JetBrains Mono'; font-size:26px; font-weight:700; color:var(--accent-text);}
 
   /* hold timer */
   .hold-banner{display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--line);
@@ -253,16 +297,16 @@
   @keyframes holdPulse{0%,100%{opacity:1} 50%{opacity:.35}}
   @media (prefers-reduced-motion: reduce){ .hold-dot{animation:none;} }
   .hold-time{margin-left:auto; font-weight:700; color:var(--ink);}
-  .hold-banner.warn .hold-time{color:var(--warn);}
+  .hold-banner.warn .hold-time{color:var(--warn-text);}
   .hold-banner.warn .hold-dot{background:var(--warn); box-shadow:0 0 0 3px rgba(255,197,61,.18);}
   .hold-banner.expired{background:rgba(255,92,108,.1); border-color:rgba(255,92,108,.3);
     flex-direction:column; align-items:stretch; gap:10px;}
-  .hold-expired-text{color:var(--danger); font-weight:700; font-size:13.5px;}
+  .hold-expired-text{color:var(--danger-text); font-weight:700; font-size:13.5px;}
 
   /* payment */
   .payment-tag{display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--line);
     border-radius:12px; padding:11px 14px; font-size:12.5px; color:var(--ink-soft); margin:6px 0 16px;}
-  .payment-tag svg{flex:0 0 auto; color:var(--accent2);}
+  .payment-tag svg{flex:0 0 auto; color:var(--accent2-text);}
   .pay-chip{display:inline-block; background:var(--surface2); color:var(--ink-soft); font-size:11px; font-weight:600;
     padding:5px 10px; border-radius:8px; margin-top:9px;}
 
@@ -274,14 +318,14 @@
   .field .phone-input-group .phone-prefix{padding:13px 2px 13px 14px; color:var(--ink-soft); font-weight:700; font-size:14.5px; font-family:'JetBrains Mono',monospace;}
   .field .phone-input-group input{border:none; background:transparent; flex:1; width:auto; padding:13px 14px 13px 4px; font-family:'JetBrains Mono',monospace; letter-spacing:0.02em;}
 
-  .btn-danger{background:rgba(255,92,108,.12); color:var(--danger); border:1px solid rgba(255,92,108,.3);}
+  .btn-danger{background:rgba(255,92,108,.12); color:var(--danger-text); border:1px solid rgba(255,92,108,.3);}
   .link-btn{width:100%; background:none; border:none; color:var(--ink-soft); font-size:13px; font-weight:700;
     padding:12px; text-decoration:underline; text-underline-offset:3px;}
 
   .ticket{position:relative;}
   .ticket-stamp{
     position:absolute; top:34%; left:50%; transform:translate(-50%,-50%) rotate(-13deg);
-    border:3px solid var(--danger); color:var(--danger); font-family:'Oswald',sans-serif; font-weight:700;
+    border:3px solid var(--danger); color:var(--danger-text); font-family:'Oswald',sans-serif; font-weight:700;
     font-size:21px; letter-spacing:0.08em; padding:5px 16px; border-radius:8px; text-transform:uppercase;
     background:rgba(16,19,26,.6); pointer-events:none;
   }
@@ -290,7 +334,7 @@
   .ticket-wrap{display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:6px;}
   .ticket-icon{
     width:56px; height:56px; border-radius:50%; background:rgba(47,217,185,.12);
-    display:flex; align-items:center; justify-content:center; font-size:26px; color:var(--accent2);
+    display:flex; align-items:center; justify-content:center; font-size:26px; color:var(--accent2-text);
     margin-bottom:14px;
   }
   .ticket{
@@ -321,13 +365,13 @@
   .notif-item{display:flex; gap:10px; align-items:flex-start; padding:11px 0; border-bottom:1px solid var(--line);}
   .notif-item:last-child{border-bottom:none;}
   .notif-icon{width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
-  .notif-icon.sent{background:rgba(47,217,185,.14); color:var(--accent2);}
+  .notif-icon.sent{background:rgba(47,217,185,.14); color:var(--accent2-text);}
   .notif-icon.pending{background:var(--surface2); color:var(--ink-faint);}
-  .notif-icon.cancel{background:rgba(255,92,108,.14); color:var(--danger);}
+  .notif-icon.cancel{background:rgba(255,92,108,.14); color:var(--danger-text);}
   .notif-body{flex:1; min-width:0;}
   .notif-title{font-size:12.5px; font-weight:700;}
   .notif-sub{font-size:11px; color:var(--ink-soft); margin-top:2px;}
-  .notif-call{font-family:'JetBrains Mono'; font-size:11.5px; font-weight:700; color:var(--accent2); margin-top:5px; display:inline-block;}
+  .notif-call{font-family:'JetBrains Mono'; font-size:11.5px; font-weight:700; color:var(--accent2-text); margin-top:5px; display:inline-block;}
 
   /* ---------- home screen ---------- */
   .home-cta{margin:4px 0 26px;}
@@ -335,7 +379,7 @@
   .mytrip-top{display:flex; align-items:center; gap:8px; margin-bottom:5px;}
   .mytrip-route{flex:1; font-size:13.5px; font-weight:700;}
   .mytrip-status{font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:8px;}
-  .mytrip-status.st-ok{background:rgba(47,217,185,.14); color:var(--accent2);}
+  .mytrip-status.st-ok{background:rgba(47,217,185,.14); color:var(--accent2-text);}
   .mytrip-status.st-cancel{background:var(--surface2); color:var(--ink-faint);}
   .mytrip-sub{font-size:11.5px; color:var(--ink-soft);}
 </style>
@@ -346,6 +390,10 @@
   <div class="topbar">
     <button class="back-btn" id="backBtn" aria-label="Назад">‹</button>
     <div class="wordmark">ВЕРСТА <span class="demo-tag">демо</span></div>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Переключить тему">
+      <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12h2.5M19 12h2.5M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>
+      <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+    </button>
   </div>
 
   <div class="progress" id="progressBar">
@@ -511,12 +559,51 @@
 (function(){
   "use strict";
 
-  try{
-    if(window.Telegram && window.Telegram.WebApp){
-      var tg = window.Telegram.WebApp;
-      tg.ready(); tg.expand();
+  var tg = window.Telegram ? window.Telegram.WebApp : null;
+  var THEME_KEY = 'versta_theme_override';
+
+  function resolveMode(){
+    var saved = null;
+    try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+    if (saved) return saved;
+    return (tg && tg.colorScheme) ? tg.colorScheme
+      : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  }
+
+  function applyMode(mode, persist){
+    document.documentElement.setAttribute('data-theme', mode);
+    if (persist) { try { localStorage.setItem(THEME_KEY, mode); } catch(e){} }
+    var s = getComputedStyle(document.documentElement);
+    var surface = s.getPropertyValue('--surface').trim();
+    var bg = s.getPropertyValue('--bg').trim();
+    var metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', bg);
+    if (tg) { try { tg.setHeaderColor(surface); tg.setBackgroundColor(bg); } catch(e){} }
+  }
+
+  function toggleTheme(){
+    var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyMode(next, true);
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  }
+
+  function initTelegram(){
+    applyMode(resolveMode(), false);
+    if (tg) {
+      try {
+        tg.ready(); tg.expand();
+        tg.onEvent && tg.onEvent('themeChanged', function(){
+          var saved = null;
+          try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+          if (!saved) applyMode(resolveMode(), false);
+        });
+      } catch(e){}
     }
-  }catch(e){}
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', toggleTheme);
+  }
+
+  try{ initTelegram(); }catch(e){}
 
   /* ---------------- mock data ---------------- */
   var CORRIDORS = [
@@ -1005,7 +1092,7 @@
         '<div class="tk-row"><span>Пассажир</span><b>'+escapeHtml(entry.name)+'</b></div>'+
         '<div class="tk-row"><span>Мест</span><b>'+entry.seats+'</b></div>'+
         '<div class="tk-row"><span>Код брони</span><b>'+entry.ticketCode+'</b></div>'+
-        '<div class="tk-row" style="border-top:1px solid var(--line); margin-top:6px; padding-top:12px;"><span>К оплате водителю</span><b style="color:var(--accent); font-size:16px;">'+entry.price+' BYN</b></div>'+
+        '<div class="tk-row" style="border-top:1px solid var(--line); margin-top:6px; padding-top:12px;"><span>К оплате водителю</span><b style="color:var(--accent-text); font-size:16px;">'+entry.price+' BYN</b></div>'+
       '</div>';
   }
 

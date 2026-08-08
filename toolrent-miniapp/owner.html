@@ -8,16 +8,21 @@
 <script>
 (function(){
   try{
-    var tg = window.Telegram && window.Telegram.WebApp;
-    var scheme = (tg && tg.colorScheme) ? tg.colorScheme
-      : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    var saved = localStorage.getItem('theme_override');
+    var scheme = saved;
+    if(!scheme){
+      var tg = window.Telegram && window.Telegram.WebApp;
+      scheme = (tg && tg.colorScheme) ? tg.colorScheme
+        : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    }
     document.documentElement.dataset.theme = scheme;
   }catch(e){}
 })();
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
-
   :root{
     --bg:#111417; --surface:#1A1E22; --surface-2:#20252A; --surface-3:#262B31;
     --ink:#EDEFF0; --ink-soft:#8C949C; --ink-faint:#565D64;
@@ -71,6 +76,9 @@
   .role-badge{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:700;padding:5px 10px;border-radius:6px;background:var(--accent-2-soft);color:var(--accent-2);text-transform:uppercase;letter-spacing:.04em;}
   .icon-btn{width:44px;height:44px;border-radius:9px;background:var(--surface-3);border:1px solid var(--line-strong);display:flex;align-items:center;justify-content:center;color:var(--ink-soft);}
   .icon-btn svg{width:16px;height:16px;}
+  #themeToggleBtn .icon-moon{display:none;}
+  :root[data-theme="light"] #themeToggleBtn .icon-moon{display:block;}
+  :root[data-theme="light"] #themeToggleBtn .icon-sun{display:none;}
 
   /* screens */
   .screen{padding:16px 16px 8px;display:none;}
@@ -241,7 +249,11 @@
       <div><div class="brand-name" id="brandName">Прокат-Инструмент</div><div class="brand-sub">ОБЗОР БИЗНЕСА</div></div>
     </div>
     <div class="topbar-right">
-      <button class="icon-btn" id="exportBtn" title="Выгрузить CSV">
+      <button class="icon-btn" id="themeToggleBtn" aria-label="Переключить тему">
+        <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+        <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      </button>
+      <button class="icon-btn" id="exportBtn" aria-label="Выгрузить CSV">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
       </button>
       <div class="role-badge">ВЛАДЕЛЕЦ</div>
@@ -330,7 +342,7 @@
   <div class="sheet-handle"></div>
   <div class="sheet-head">
     <h3 id="editSheetTitle">Редактировать</h3>
-    <button class="icon-btn-close" id="editSheetClose"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+    <button class="icon-btn-close" id="editSheetClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="sheet-body" id="editSheetBody"></div>
 </div>
@@ -419,7 +431,22 @@ const MOCK_BOOKINGS_CSV = [
 ];
 
 /* ============================================================ api(action, payload) ============================================================ */
-function api(action, payload) {
+async function api(action, payload) {
+  payload = payload || {};
+  try {
+    if (CONFIG.apiUrl.indexOf('PASTE_') === 0) throw new Error('demo mode');
+    const res = await fetch(CONFIG.apiUrl, {
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(Object.assign({ action }, payload))
+    });
+    if (!res.ok) throw new Error('bad response');
+    return await res.json();
+  } catch (e) {
+    return mockApi(action, payload);
+  }
+}
+
+function mockApi(action, payload) {
   return new Promise((resolve) => {
     setTimeout(() => {
       switch(action) {
@@ -445,10 +472,24 @@ function api(action, payload) {
 const tg = window.Telegram ? window.Telegram.WebApp : null;
 function haptic(style){ if(tg?.HapticFeedback){ if(["success","error","warning"].includes(style)) tg.HapticFeedback.notificationOccurred(style); else tg.HapticFeedback.impactOccurred(style||"light"); } }
 function setChrome(){ if(!tg)return; const s=getComputedStyle(document.body); try{tg.setHeaderColor(s.getPropertyValue("--surface").trim());tg.setBackgroundColor(s.getPropertyValue("--bg").trim());}catch(e){} }
+function getThemeOverride(){ try{ return localStorage.getItem("theme_override"); }catch(e){ return null; } }
+function autoScheme(){ return tg?.colorScheme || (window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark"); }
 function applyTheme(){
-  const scheme = tg?.colorScheme || (window.matchMedia?.("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  const scheme = getThemeOverride() || autoScheme();
   document.documentElement.dataset.theme = scheme;
   setChrome();
+  updateThemeToggleLabel(scheme);
+}
+function toggleTheme(){
+  const next = document.documentElement.dataset.theme === "light" ? "dark" : "light";
+  try{ localStorage.setItem("theme_override", next); }catch(e){}
+  haptic("light");
+  applyTheme();
+}
+function updateThemeToggleLabel(scheme){
+  const btn = document.getElementById("themeToggleBtn");
+  if(!btn) return;
+  btn.setAttribute("aria-label", scheme === "light" ? "Включить тёмную тему" : "Включить светлую тему");
 }
 function initTelegram(){
   if(!tg){ applyTheme(); return; }
@@ -732,6 +773,8 @@ async function closeEditSheetGuarded(){
 }
 document.getElementById("editSheetClose").addEventListener("click",closeEditSheetGuarded);
 document.getElementById("editScrim").addEventListener("click",closeEditSheetGuarded);
+
+document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
 
 /* ============================================================ CSV ЭКСПОРТ ============================================================ */
 document.getElementById("exportBtn").addEventListener("click", async()=>{
