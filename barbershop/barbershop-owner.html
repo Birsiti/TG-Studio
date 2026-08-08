@@ -4,8 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>БРИТВА — владелец</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+(function(){
+  try{
+    var saved = localStorage.getItem('theme_override');
+    var scheme = saved;
+    if(!scheme){
+      var tg = window.Telegram && window.Telegram.WebApp;
+      scheme = (tg && tg.colorScheme) ? tg.colorScheme
+        : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    }
+    document.documentElement.dataset.theme = scheme;
+    var brand = localStorage.getItem('color_scheme_override');
+    if (brand) document.documentElement.dataset.brand = brand;
+  }catch(e){}
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="palettes.css">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@500;600;700&display=swap');
   :root{
     --bg:#161D18; --surface:#1E2820; --surface-2:#253227; --surface-3:#2C3B2E;
     --ink:#F3E9D6; --ink-soft:#B9AD94; --ink-faint:#8A9686;
@@ -33,9 +53,14 @@
   button{font-family:inherit;border:none;cursor:pointer;background:none;color:inherit;}
 
   .pole-rail{height:6px;background:repeating-linear-gradient(115deg,var(--red) 0 14px,var(--ink) 14px 28px,var(--accent) 28px 42px);}
-  header{padding:calc(14px + var(--safe-top)) 18px 12px;border-bottom:1px solid var(--line);background:var(--surface);}
+  header{padding:calc(14px + var(--safe-top)) 18px 12px;border-bottom:1px solid var(--line);background:var(--surface);
+    display:flex;align-items:center;justify-content:space-between;gap:10px;}
   .hdr-title{font-family:'Alfa Slab One',cursive;font-size:19px;color:var(--accent);}
   .hdr-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint);margin-top:2px;letter-spacing:.06em;}
+  .hdr-actions{display:flex;gap:8px;flex-shrink:0;}
+  #themeToggleBtn .icon-moon{display:none;}
+  :root[data-theme="light"] #themeToggleBtn .icon-moon{display:block;}
+  :root[data-theme="light"] #themeToggleBtn .icon-sun{display:none;}
 
   main{padding:16px;max-width:520px;margin:0 auto;}
   .screen{display:none;} .screen.active{display:block;}
@@ -98,6 +123,14 @@
   .field label{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:6px;}
   .field input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 13px;color:var(--ink);font-family:'Lora',serif;font-size:16px;outline:none;}
   .cta-btn{width:100%;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:15px;padding:14px;border-radius:var(--radius-sm);margin-top:4px;text-align:center;}
+  .scheme-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px 4px;border-bottom:1px solid var(--line);text-align:left;min-height:44px;}
+  .scheme-row:last-child{border-bottom:none;}
+  .scheme-swatch{width:38px;height:38px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 1px var(--line-strong);}
+  .scheme-row.active .scheme-swatch{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent);}
+  .scheme-name{font-size:14.5px;font-weight:600;color:var(--ink);}
+  .scheme-sub{font-size:12px;color:var(--ink-soft);margin-top:2px;font-style:italic;}
+  .scheme-check{margin-left:auto;color:var(--accent);flex:0 0 auto;visibility:hidden;}
+  .scheme-row.active .scheme-check{visibility:visible;}
   .toast{position:fixed;left:50%;bottom:calc(90px + var(--safe-bottom));transform:translateX(-50%) translateY(20px);background:var(--ok);
     color:#fff;padding:11px 20px;border-radius:24px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;
     transition:all .35s cubic-bezier(.34,1.56,.64,1);z-index:70;box-shadow:0 8px 24px rgba(0,0,0,.35);}
@@ -107,8 +140,19 @@
 <body>
 <div class="pole-rail"></div>
 <header>
-  <div class="hdr-title">БРИТВА · владелец</div>
-  <div class="hdr-sub">МИНСК · ОБЗОР БИЗНЕСА</div>
+  <div>
+    <div class="hdr-title">БРИТВА · владелец</div>
+    <div class="hdr-sub">МИНСК · ОБЗОР БИЗНЕСА</div>
+  </div>
+  <div class="hdr-actions">
+    <button class="icon-btn" id="colorSchemeBtn" aria-label="Цветовая схема">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+    </button>
+    <button class="icon-btn" id="themeToggleBtn" aria-label="Переключить тему">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
 </header>
 
 <main>
@@ -158,6 +202,12 @@
   <button class="tab" data-screen="services">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg><span>Услуги</span>
   </button>
+</div>
+
+<div class="sheet-scrim" id="schemeScrim"></div>
+<div class="sheet" id="schemeSheet">
+  <div class="sheet-head"><h3>Цветовая схема</h3><button class="icon-btn" id="schemeSheetClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+  <div id="schemeList"></div>
 </div>
 
 <div class="sheet-scrim" id="scrim"></div>
@@ -258,20 +308,83 @@ document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () =>
   document.getElementById("screen-"+t.dataset.screen).classList.add("active");
   haptic("light");
 }));
-function showToast(){ const t=document.getElementById("toast"); t.classList.add("show"); haptic("success"); setTimeout(()=>t.classList.remove("show"),2200); }
+function showToast(msg){ const t=document.getElementById("toast"); t.textContent = msg || "Сохранено ✓"; t.classList.add("show"); haptic("success"); setTimeout(()=>t.classList.remove("show"),2200); }
 
 /* ============================================================ TELEGRAM ============================================================ */
 const tg = window.Telegram ? window.Telegram.WebApp : null;
 function haptic(style){ if(tg && tg.HapticFeedback){ if(["success","error","warning"].includes(style)) tg.HapticFeedback.notificationOccurred(style); else tg.HapticFeedback.impactOccurred(style||"light"); } }
+function getThemeOverride(){ try{ return localStorage.getItem("theme_override"); }catch(e){ return null; } }
+function autoScheme(){ return (tg && tg.colorScheme) || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"); }
 function applyTheme(){
-  const scheme = (tg && tg.colorScheme) || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  const scheme = getThemeOverride() || autoScheme();
   document.documentElement.setAttribute("data-theme", scheme);
   if(tg){ requestAnimationFrame(() => { const s=getComputedStyle(document.body); try{tg.setHeaderColor(s.getPropertyValue("--surface").trim());tg.setBackgroundColor(s.getPropertyValue("--bg").trim());}catch(e){} }); }
+  updateThemeToggleLabel(scheme);
+}
+function toggleTheme(){
+  const next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+  try{ localStorage.setItem("theme_override", next); }catch(e){}
+  haptic("light");
+  applyTheme();
+}
+function updateThemeToggleLabel(scheme){
+  const btn = document.getElementById("themeToggleBtn");
+  if(!btn) return;
+  btn.setAttribute("aria-label", scheme === "light" ? "Включить тёмную тему" : "Включить светлую тему");
 }
 function initTelegram(){
   if(!tg){ applyTheme(); matchMedia("(prefers-color-scheme: light)").addEventListener("change", applyTheme); return; }
   tg.ready(); tg.expand(); applyTheme(); tg.onEvent("themeChanged", applyTheme);
 }
+
+/* ============================================================ COLOR SCHEME ============================================================ */
+const SCHEME_META = {
+  klassika: { label: "Классика", sub: "Тёплое золото — как есть",     swatch: "linear-gradient(135deg,#C89B3C,#7A2632)" },
+  indigo:   { label: "Индиго",   sub: "Глубокий сине-фиолетовый",     swatch: "linear-gradient(135deg,#6C6FC4,#4F52A0)" },
+  tabak:    { label: "Табак",    sub: "Медь и выдержанный табак",     swatch: "linear-gradient(135deg,#B5652E,#8F4E22)" },
+  myata:    { label: "Мята",     sub: "Приглушённый мятный",          swatch: "linear-gradient(135deg,#4E9C8C,#3B7A6D)" },
+};
+const BRAND_LIST = Object.keys(SCHEME_META);
+function getBrand(){ return document.documentElement.dataset.brand || "klassika"; }
+function applyBrand(brand){
+  if(!SCHEME_META[brand]) return;
+  document.documentElement.dataset.brand = brand;
+  try{ localStorage.setItem("color_scheme_override", brand); }catch(e){}
+  if(tg){ const s=getComputedStyle(document.body); try{tg.setHeaderColor(s.getPropertyValue("--surface").trim());tg.setBackgroundColor(s.getPropertyValue("--bg").trim());}catch(e){} }
+}
+function renderSchemeList(){
+  const active = getBrand();
+  document.getElementById("schemeList").innerHTML = BRAND_LIST.map(id => {
+    const m = SCHEME_META[id];
+    return `<button class="scheme-row${id === active ? " active" : ""}" data-scheme="${id}">
+      <div class="scheme-swatch" style="background:${m.swatch};"></div>
+      <div><div class="scheme-name">${m.label}</div><div class="scheme-sub">${m.sub}</div></div>
+      <svg class="scheme-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M20 6L9 17l-5-5"/></svg>
+    </button>`;
+  }).join("");
+  document.getElementById("schemeList").querySelectorAll(".scheme-row").forEach(row => {
+    row.addEventListener("click", () => {
+      applyBrand(row.dataset.scheme);
+      haptic("light");
+      renderSchemeList();
+      showToast(`Схема «${SCHEME_META[row.dataset.scheme].label}» применена`);
+    });
+  });
+}
+function openSchemeSheet(){
+  renderSchemeList();
+  document.getElementById("schemeScrim").classList.add("show");
+  document.getElementById("schemeSheet").classList.add("show");
+  haptic("light");
+}
+function closeSchemeSheet(){
+  document.getElementById("schemeScrim").classList.remove("show");
+  document.getElementById("schemeSheet").classList.remove("show");
+}
+document.getElementById("colorSchemeBtn").addEventListener("click", openSchemeSheet);
+document.getElementById("schemeSheetClose").addEventListener("click", closeSchemeSheet);
+document.getElementById("schemeScrim").addEventListener("click", closeSchemeSheet);
+document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
 
 /* ============================================================ INIT ============================================================ */
 initTelegram();

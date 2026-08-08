@@ -6,52 +6,19 @@
 <title>МОСТ — панель управления</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@600;700;800;900&family=Work+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="palettes.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
 (function(){
-  try{
-    var tg = window.Telegram && window.Telegram.WebApp;
-    var scheme = (tg && tg.colorScheme) ? tg.colorScheme : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-theme', scheme);
-  }catch(e){}
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var saved = null;
+  try { saved = localStorage.getItem('mostcafe_theme_override'); } catch(e){}
+  var scheme = saved || ((tg && tg.colorScheme) ? tg.colorScheme
+    : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  document.documentElement.setAttribute('data-theme', scheme);
 })();
 </script>
 <style>
-  :root{
-    --bg:#f1e8d6;
-    --surface:#fbf7ee;
-    --surface-2:#e6dac0;
-    --ink:#2b241d;
-    --ink-soft:#7a6e58;
-    --jade:#2f6f5e;
-    --jade-deep:#1f4e42;
-    --jade-tint:#dfe9e0;
-    --honey:#a66f22;
-    --honey-light:#d9a54b;
-    --honey-tint:#f0e2c4;
-    --seal:#c1432b;
-    --seal-tint:#f3ddd6;
-    --line:rgba(43,36,29,0.14);
-    --font-display:'Golos Text', sans-serif;
-    --font-body:'Work Sans', sans-serif;
-    --font-cn:'Noto Sans SC', sans-serif;
-  }
-  :root[data-theme="dark"]{
-    --bg:#1b1712;
-    --surface:#26211a;
-    --surface-2:#332b20;
-    --ink:#f3ead9;
-    --ink-soft:#b9ab8f;
-    --jade:#4f9c86;
-    --jade-deep:#8fd0ba;
-    --jade-tint:#243830;
-    --honey:#e2a94f;
-    --honey-light:#f0c98a;
-    --honey-tint:#3a2e1a;
-    --seal:#e2604a;
-    --seal-tint:#3a231e;
-    --line:rgba(255,255,255,0.14);
-  }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
   body{ background:var(--bg); color:var(--ink); font-family:var(--font-body); min-height:100vh; display:flex; justify-content:center; }
@@ -75,6 +42,14 @@
   }
   h1.brand-name{ font-family:var(--font-display); font-weight:800; font-size:19px; letter-spacing:0.02em; margin:0; line-height:1.08; text-transform:uppercase; }
   .tagline{margin:3px 0 0; font-size:12px; color:rgba(255,255,255,0.85); font-weight:500;}
+  .header-actions{display:flex; align-items:center; gap:8px; flex:none;}
+  .icon-btn{
+    width:40px; height:40px; border-radius:50%; flex:none;
+    background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.4);
+    color:#fff; font-size:16px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:active{background:rgba(255,255,255,0.3);}
   .lang-toggle{
     background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.4); color:#fff;
     font-family:var(--font-body); font-weight:700; font-size:12.5px; padding:0 13px; height:40px; border-radius:20px; cursor:pointer; flex:none;
@@ -112,8 +87,8 @@
   .order-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
   .order-id{font-family:var(--font-display); font-weight:700; font-size:14px;}
   .status-chip{ font-size:10.5px; font-weight:800; text-transform:uppercase; padding:3px 8px; border-radius:20px; letter-spacing:0.03em; }
-  .status-chip.status-new{background:var(--seal-tint); color:var(--seal);}
-  .status-chip.status-preparing{background:var(--honey-tint); color:var(--honey);}
+  .status-chip.status-new{background:var(--seal-tint); color:var(--seal-deep);}
+  .status-chip.status-preparing{background:var(--honey-tint); color:var(--honey-deep);}
   .status-chip.status-ready{background:var(--jade-tint); color:var(--jade-deep);}
   .status-chip.status-done{background:var(--surface-2); color:var(--ink-soft);}
   .order-type-tag{font-size:12px; color:var(--ink-soft); font-weight:600; margin-bottom:4px;}
@@ -242,7 +217,10 @@
           <p class="tagline i18n" data-i18n="subtitle">для персонала и владельца</p>
         </div>
       </div>
-      <button class="lang-toggle" id="langToggle">中文</button>
+      <div class="header-actions">
+        <button class="icon-btn" id="themeToggle" aria-label="Переключить тему">🌙</button>
+        <button class="lang-toggle" id="langToggle">中文</button>
+      </div>
     </div>
     <div class="accept-row" id="acceptRow">
       <span class="accept-label"><span class="accept-dot"></span><span class="i18n" data-i18n="acceptingLabel">Приём заказов</span></span>
@@ -390,9 +368,21 @@ function confirmAsync(message){
   });
 }
 
-function applyTelegramTheme(){
-  const scheme = (tg && tg.colorScheme) ? tg.colorScheme : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const THEME_KEY = 'mostcafe_theme_override';
+
+function resolveTheme(){
+  let saved = null;
+  try{ saved = localStorage.getItem(THEME_KEY); }catch(e){}
+  if(saved) return saved;
+  return (tg && tg.colorScheme) ? tg.colorScheme
+    : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+}
+
+function applyTheme(scheme, persist){
   document.documentElement.setAttribute('data-theme', scheme);
+  if(persist){ try{ localStorage.setItem(THEME_KEY, scheme); }catch(e){} }
+  const btn = document.getElementById('themeToggle');
+  if(btn) btn.textContent = scheme === 'dark' ? '☀️' : '🌙';
   if(tg){
     try{
       const s = getComputedStyle(document.documentElement);
@@ -402,12 +392,27 @@ function applyTelegramTheme(){
   }
 }
 
+function applyTelegramTheme(){ applyTheme(resolveTheme(), false); }
+
+function toggleTheme(){
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(next, true);
+  haptic('light');
+}
+
 function initTelegram(){
+  applyTheme(resolveTheme(), false);
+  const themeBtn = document.getElementById('themeToggle');
+  if(themeBtn) themeBtn.onclick = toggleTheme;
   if(!tg) return;
   try{
     tg.ready(); tg.expand();
     applyTelegramTheme();
-    tg.onEvent && tg.onEvent('themeChanged', applyTelegramTheme);
+    tg.onEvent && tg.onEvent('themeChanged', ()=>{
+      let saved = null;
+      try{ saved = localStorage.getItem(THEME_KEY); }catch(e){}
+      if(!saved) applyTelegramTheme();
+    });
     if(tg.isVersionAtLeast && tg.isVersionAtLeast('7.7')){ try{ tg.disableVerticalSwipes(); }catch(e){} }
     tg.BackButton && tg.BackButton.onClick(closeSheets);
   }catch(e){}

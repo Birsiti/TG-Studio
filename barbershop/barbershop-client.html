@@ -4,9 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>БРИТВА — запись</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+(function(){
+  try{
+    var saved = localStorage.getItem('theme_override');
+    var scheme = saved;
+    if(!scheme){
+      var tg = window.Telegram && window.Telegram.WebApp;
+      scheme = (tg && tg.colorScheme) ? tg.colorScheme
+        : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    }
+    document.documentElement.dataset.theme = scheme;
+    var brand = localStorage.getItem('color_scheme_override');
+    if (brand) document.documentElement.dataset.brand = brand;
+  }catch(e){}
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="palettes.css">
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@500;600;700&display=swap');
-
   :root{
     --bg:#161D18; --surface:#1E2820; --surface-2:#253227; --surface-3:#2C3B2E;
     --ink:#F3E9D6; --ink-soft:#B9AD94; --ink-faint:#8A9686;
@@ -29,7 +48,7 @@
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
   body{background:var(--bg);color:var(--ink);font-family:'Lora',serif;font-size:15px;line-height:1.5;
-    min-height:100vh;padding-bottom:40px;transition:background-color .25s,color .25s;}
+    min-height:100vh;padding-bottom:max(40px, calc(20px + var(--safe-bottom)));transition:background-color .25s,color .25s;}
   .mono{font-family:'JetBrains Mono',monospace;}
   .display{font-family:'Alfa Slab One',cursive;}
   button{font-family:inherit;border:none;cursor:pointer;background:none;color:inherit;}
@@ -43,9 +62,13 @@
 
   header{padding:calc(18px + var(--safe-top)) 20px 16px;text-align:center;border-bottom:1px solid var(--line);
     background:radial-gradient(circle at 50% -20%, var(--surface-2), var(--bg) 70%);position:relative;}
-  .hdr-icon-btn{position:absolute;top:calc(16px + var(--safe-top));right:16px;width:44px;height:44px;
+  .hdr-actions{position:absolute;top:calc(16px + var(--safe-top));right:16px;display:flex;gap:8px;}
+  .hdr-icon-btn{width:44px;height:44px;
     border-radius:50%;background:var(--surface-2);border:1px solid var(--line-strong);display:flex;
     align-items:center;justify-content:center;color:var(--accent);}
+  #themeToggleBtn .icon-moon{display:none;}
+  :root[data-theme="light"] #themeToggleBtn .icon-moon{display:block;}
+  :root[data-theme="light"] #themeToggleBtn .icon-sun{display:none;}
   .hdr-icon-btn svg{width:18px;height:18px;}
   .brand{font-size:30px;letter-spacing:.03em;color:var(--accent);text-shadow:0 2px 0 rgba(0,0,0,.35);}
   .brand-sub{margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.18em;
@@ -174,6 +197,35 @@
   .sheet-title{font-family:'Alfa Slab One',cursive;font-size:19px;margin-bottom:8px;}
   .sheet-text{color:var(--ink-soft);font-size:13.5px;margin-bottom:18px;}
 
+  .sheet-head-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;text-align:left;}
+  .sheet-head-row .sheet-title{margin-bottom:0;}
+  .scheme-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px 4px;border-bottom:1px solid var(--line);text-align:left;min-height:44px;}
+  .scheme-row:last-child{border-bottom:none;}
+  .scheme-swatch{width:38px;height:38px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 1px var(--line-strong);}
+  .scheme-row.active .scheme-swatch{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent);}
+  .scheme-name{font-size:14.5px;font-weight:600;color:var(--ink);}
+  .scheme-sub{font-size:12px;color:var(--ink-soft);margin-top:2px;font-style:italic;}
+  .scheme-check{margin-left:auto;color:var(--accent);flex:0 0 auto;visibility:hidden;}
+  .scheme-row.active .scheme-check{visibility:visible;}
+
+  .status-toggle{display:flex;align-items:center;gap:6px;width:100%;padding:10px 0 2px;font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-faint);font-weight:700;min-height:32px;text-align:left;}
+  .status-toggle .chevron{width:14px;height:14px;margin-left:auto;transition:transform .2s;flex:0 0 auto;}
+  .status-toggle.open .chevron{transform:rotate(180deg);}
+  .status-timeline{max-height:0;overflow:hidden;transition:max-height .25s ease;}
+  .status-timeline.open{max-height:220px;}
+  .status-timeline-inner{padding:8px 2px 4px;text-align:left;}
+  .status-step{position:relative;display:flex;gap:10px;padding-bottom:14px;}
+  .status-step:last-child{padding-bottom:0;}
+  .status-step::before{content:'';position:absolute;left:5px;top:14px;bottom:-2px;width:1px;background:var(--line-strong);}
+  .status-step:last-child::before{display:none;}
+  .status-dot{width:11px;height:11px;border-radius:50%;background:var(--line-strong);flex:0 0 auto;margin-top:2px;position:relative;z-index:1;box-shadow:0 0 0 3px var(--surface);}
+  .status-step.done .status-dot{background:var(--ok);}
+  .status-step.done::before{background:var(--ok);}
+  .status-step.current .status-dot{background:var(--accent);box-shadow:0 0 0 3px var(--surface), 0 0 0 5px var(--accent-soft);}
+  .status-label{font-size:13px;font-weight:600;color:var(--ink-faint);}
+  .status-step.done .status-label,.status-step.current .status-label{color:var(--ink);}
+  .status-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint);margin-top:1px;}
+
   .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--accent);
     color:var(--on-accent);padding:11px 20px;border-radius:24px;font-size:13.5px;font-weight:700;opacity:0;pointer-events:none;
     transition:all .35s cubic-bezier(.34,1.56,.64,1);z-index:70;box-shadow:0 8px 24px rgba(0,0,0,.4);}
@@ -184,9 +236,18 @@
 
 <div class="pole-rail"></div>
 <header>
-  <button class="hdr-icon-btn" id="myBookingsBtn" title="Мои записи" aria-label="Мои записи">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
-  </button>
+  <div class="hdr-actions">
+    <button class="hdr-icon-btn" id="colorSchemeBtn" aria-label="Цветовая схема">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+    </button>
+    <button class="hdr-icon-btn" id="themeToggleBtn" aria-label="Переключить тему">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+    <button class="hdr-icon-btn" id="myBookingsBtn" title="Мои записи" aria-label="Мои записи">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+    </button>
+  </div>
   <div class="brand display">БРИТВА</div>
   <div class="brand-sub">барбершоп · минск</div>
 </header>
@@ -274,6 +335,17 @@
   </div>
 
 </main>
+
+<div class="sheet-scrim" id="schemeScrim"></div>
+<div class="sheet" id="schemeSheet" style="text-align:left;">
+  <div class="sheet-head-row">
+    <div class="sheet-title display">Цветовая схема</div>
+    <button class="hdr-icon-btn" id="schemeSheetClose" aria-label="Закрыть" style="width:36px;height:36px;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+  </div>
+  <div id="schemeList"></div>
+</div>
 
 <div class="sheet-scrim" id="scrim"></div>
 <div class="sheet" id="doneSheet">
@@ -473,6 +545,24 @@ document.getElementById("confirmBtn").addEventListener("click", () => {
 
 /* ============================================================ MY BOOKINGS ============================================================ */
 document.getElementById("myBookingsBtn").addEventListener("click", () => { renderMy(); showScreen("screen-my"); });
+const STATUS_STEP_INDEX = { upcoming: 1, done: 3 };
+function renderStatusTimeline(b){
+  const steps = [
+    { label: "Запись создана" },
+    { label: "День приёма", time: `${b.date}, ${b.time}` },
+    { label: "Услуга оказана" },
+  ];
+  const curIdx = STATUS_STEP_INDEX[b.status];
+  return steps.map((s,i) => {
+    let cls = "pending";
+    if(i < curIdx) cls = "done";
+    else if(i === curIdx) cls = "current";
+    return `<div class="status-step ${cls}">
+      <div class="status-dot"></div>
+      <div><div class="status-label">${s.label}</div>${s.time ? `<div class="status-time">${s.time}</div>` : ""}</div>
+    </div>`;
+  }).join("");
+}
 function renderMy(){
   const el = document.getElementById("myList");
   if(!MOCK_MY_BOOKINGS.length){ el.innerHTML = `<div class="empty-note">Пока нет записей — выберите мастера и запишитесь</div>`; return; }
@@ -485,12 +575,24 @@ function renderMy(){
         <div class="bk-top"><div class="bk-service">${b.service}</div>
           <div class="bk-badge ${b.status}">${b.status==="upcoming"?"предстоит":"завершено"}</div></div>
         <div class="bk-meta">${b.barber} · <span class="mono">${b.date}, ${b.time}</span></div>
+        <button class="status-toggle" data-status-toggle="${i}">
+          <span>Статус записи</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="status-timeline" id="status-timeline-${i}">
+          <div class="status-timeline-inner">${renderStatusTimeline(b)}</div>
+        </div>
         ${b.status==="done" ? `<button class="bk-rebook" data-i="${i}">↻ Записаться снова</button>` : ""}
       </div>
     </div>
   `;
   }).join("");
   el.querySelectorAll(".bk-rebook").forEach(btn => btn.addEventListener("click", () => rebook(MOCK_MY_BOOKINGS[+btn.dataset.i])));
+  el.querySelectorAll("[data-status-toggle]").forEach(btn => btn.addEventListener("click", () => {
+    btn.classList.toggle("open");
+    document.getElementById(`status-timeline-${btn.dataset.statusToggle}`).classList.toggle("open");
+    haptic("light");
+  }));
 }
 function rebook(b){
   const barber = MOCK_BARBERS.find(x => x.name === b.barber);
@@ -521,8 +623,9 @@ document.getElementById("scrim").addEventListener("click", closeSheet);
 document.getElementById("doneOkBtn").addEventListener("click", () => {
   closeSheet(); showToast(); showScreen("screen-list");
 });
-function showToast(){
+function showToast(msg){
   const t = document.getElementById("toast");
+  t.textContent = msg || "Запись сохранена ✓";
   t.classList.add("show"); setTimeout(()=>t.classList.remove("show"), 2400);
 }
 
@@ -534,8 +637,10 @@ function haptic(style){
     else tg.HapticFeedback.impactOccurred(style || "light");
   }
 }
+function getThemeOverride(){ try{ return localStorage.getItem("theme_override"); }catch(e){ return null; } }
+function autoScheme(){ return (tg && tg.colorScheme) || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"); }
 function applyTheme(){
-  const scheme = (tg && tg.colorScheme) || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+  const scheme = getThemeOverride() || autoScheme();
   document.documentElement.setAttribute("data-theme", scheme);
   if(tg){
     requestAnimationFrame(() => {
@@ -543,6 +648,18 @@ function applyTheme(){
       try{ tg.setHeaderColor(s.getPropertyValue("--surface").trim()); tg.setBackgroundColor(s.getPropertyValue("--bg").trim()); }catch(e){}
     });
   }
+  updateThemeToggleLabel(scheme);
+}
+function toggleTheme(){
+  const next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+  try{ localStorage.setItem("theme_override", next); }catch(e){}
+  haptic("light");
+  applyTheme();
+}
+function updateThemeToggleLabel(scheme){
+  const btn = document.getElementById("themeToggleBtn");
+  if(!btn) return;
+  btn.setAttribute("aria-label", scheme === "light" ? "Включить тёмную тему" : "Включить светлую тему");
 }
 function initTelegram(){
   if(!tg){ applyTheme(); matchMedia("(prefers-color-scheme: light)").addEventListener("change", applyTheme); return; }
@@ -550,6 +667,58 @@ function initTelegram(){
   applyTheme();
   tg.onEvent("themeChanged", applyTheme);
 }
+
+/* ============================================================ COLOR SCHEME ============================================================ */
+const SCHEME_META = {
+  klassika: { label: "Классика", sub: "Тёплое золото — как есть",     swatch: "linear-gradient(135deg,#C89B3C,#7A2632)" },
+  indigo:   { label: "Индиго",   sub: "Глубокий сине-фиолетовый",     swatch: "linear-gradient(135deg,#6C6FC4,#4F52A0)" },
+  tabak:    { label: "Табак",    sub: "Медь и выдержанный табак",     swatch: "linear-gradient(135deg,#B5652E,#8F4E22)" },
+  myata:    { label: "Мята",     sub: "Приглушённый мятный",          swatch: "linear-gradient(135deg,#4E9C8C,#3B7A6D)" },
+};
+const BRAND_LIST = Object.keys(SCHEME_META);
+function getBrand(){ return document.documentElement.dataset.brand || "klassika"; }
+function applyBrand(brand){
+  if(!SCHEME_META[brand]) return;
+  document.documentElement.dataset.brand = brand;
+  try{ localStorage.setItem("color_scheme_override", brand); }catch(e){}
+  if(tg){
+    const s = getComputedStyle(document.body);
+    try{ tg.setHeaderColor(s.getPropertyValue("--surface").trim()); tg.setBackgroundColor(s.getPropertyValue("--bg").trim()); }catch(e){}
+  }
+}
+function renderSchemeList(){
+  const active = getBrand();
+  document.getElementById("schemeList").innerHTML = BRAND_LIST.map(id => {
+    const m = SCHEME_META[id];
+    return `<button class="scheme-row${id === active ? " active" : ""}" data-scheme="${id}">
+      <div class="scheme-swatch" style="background:${m.swatch};"></div>
+      <div><div class="scheme-name">${m.label}</div><div class="scheme-sub">${m.sub}</div></div>
+      <svg class="scheme-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M20 6L9 17l-5-5"/></svg>
+    </button>`;
+  }).join("");
+  document.getElementById("schemeList").querySelectorAll(".scheme-row").forEach(row => {
+    row.addEventListener("click", () => {
+      applyBrand(row.dataset.scheme);
+      haptic("light");
+      renderSchemeList();
+      showToast(`Схема «${SCHEME_META[row.dataset.scheme].label}» применена`);
+    });
+  });
+}
+function openSchemeSheet(){
+  renderSchemeList();
+  document.getElementById("schemeScrim").classList.add("show");
+  document.getElementById("schemeSheet").classList.add("show");
+  haptic("light");
+}
+function closeSchemeSheet(){
+  document.getElementById("schemeScrim").classList.remove("show");
+  document.getElementById("schemeSheet").classList.remove("show");
+}
+document.getElementById("colorSchemeBtn").addEventListener("click", openSchemeSheet);
+document.getElementById("schemeSheetClose").addEventListener("click", closeSchemeSheet);
+document.getElementById("schemeScrim").addEventListener("click", closeSchemeSheet);
+document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
 
 /* ============================================================ PROGRESS ============================================================ */
 function renderProgressTracks(){

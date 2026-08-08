@@ -6,46 +6,19 @@
 <title>МОСТ — демо бот кафе</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@600;700;800;900&family=Work+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="palettes.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
 (function(){
-  try{
-    var tg = window.Telegram && window.Telegram.WebApp;
-    var scheme = (tg && tg.colorScheme) ? tg.colorScheme : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    document.documentElement.setAttribute('data-theme', scheme);
-  }catch(e){}
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var saved = null;
+  try { saved = localStorage.getItem('mostcafe_theme_override'); } catch(e){}
+  var scheme = saved || ((tg && tg.colorScheme) ? tg.colorScheme
+    : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  document.documentElement.setAttribute('data-theme', scheme);
 })();
 </script>
 <style>
-  :root{
-    --bg:#f1e8d6;
-    --surface:#fbf7ee;
-    --surface-2:#e6dac0;
-    --ink:#2b241d;
-    --ink-soft:#7a6e58;
-    --jade:#2f6f5e;
-    --jade-deep:#1f4e42;
-    --honey:#a66f22;
-    --honey-light:#d9a54b;
-    --seal:#c1432b;
-    --line:rgba(43,36,29,0.14);
-    --font-display:'Golos Text', sans-serif;
-    --font-body:'Work Sans', sans-serif;
-    --font-cn:'Noto Sans SC', sans-serif;
-  }
-  :root[data-theme="dark"]{
-    --bg:#1b1712;
-    --surface:#26211a;
-    --surface-2:#332b20;
-    --ink:#f3ead9;
-    --ink-soft:#b9ab8f;
-    --jade:#4f9c86;
-    --jade-deep:#8fd0ba;
-    --honey:#e2a94f;
-    --honey-light:#f0c98a;
-    --seal:#e2604a;
-    --line:rgba(255,255,255,0.14);
-  }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
   body{
@@ -261,6 +234,30 @@
   .success-order{ text-align:center; font-family:var(--font-display); font-weight:800; font-size:24px; letter-spacing:0.02em; margin-bottom:6px; }
   .success-sub{text-align:center; color:var(--ink-soft); font-size:13.5px; margin-bottom:2px;}
 
+  /* ---------- Order status timeline (success sheet) ---------- */
+  .status-timeline{
+    background:var(--surface-2); border-radius:16px; padding:16px 16px 2px; margin:18px 0 4px; text-align:left;
+  }
+  .status-block{display:flex; gap:12px;}
+  .status-rail{width:14px; display:flex; flex-direction:column; align-items:center; flex:none;}
+  .status-dot{
+    width:11px; height:11px; border-radius:50%; background:var(--surface); border:2px solid var(--ink-soft);
+    margin-top:2px; flex:none; position:relative;
+  }
+  .status-dot.done{border-color:var(--jade); background:var(--jade);}
+  .status-dot.current{border-color:var(--honey); background:var(--honey);}
+  .status-dot.current::after{
+    content:''; position:absolute; inset:-4px; border-radius:50%; background:var(--honey-tint);
+    animation:statusPulse 1.4s ease-in-out infinite; z-index:-1;
+  }
+  @keyframes statusPulse{0%,100%{opacity:.2} 50%{opacity:.65}}
+  .status-line{width:2px; flex:1; background:var(--line); margin-top:2px; min-height:16px;}
+  .status-block.done .status-line{background:var(--jade);}
+  .status-block:last-child .status-line{display:none;}
+  .status-content{flex:1; padding-bottom:14px; min-width:0;}
+  .status-title{font-size:13px; font-weight:700; color:var(--ink-soft);}
+  .status-block.done .status-title, .status-block.current .status-title{color:var(--ink);}
+
   /* ---------- Item detail sheet ---------- */
   .detail-header{display:flex; gap:14px; align-items:flex-start; margin-bottom:6px;}
   .detail-thumb{ width:64px; height:64px; border-radius:16px; flex:none; background:var(--surface-2); display:flex; align-items:center; justify-content:center; font-size:28px; }
@@ -303,6 +300,7 @@
       </div>
       <div class="header-actions">
         <button class="icon-btn" id="historyBtn" aria-label="История заказов">🧾</button>
+        <button class="icon-btn" id="themeToggle" aria-label="Переключить тему">🌙</button>
         <button class="lang-toggle" id="langToggle">中文</button>
       </div>
     </div>
@@ -408,6 +406,7 @@
   <div class="success-order" id="orderNumber">М-014</div>
   <p class="success-sub" id="successReady">Заказ будет готов к 12:47</p>
   <p class="success-sub" id="successWhere">Заберите на стойке «Мост», 1 этаж</p>
+  <div class="status-timeline" id="orderStatusTimeline"></div>
   <button class="btn-primary i18n" id="newOrderBtn" data-i18n="newOrderBtn">Новый заказ</button>
 </div>
 
@@ -451,9 +450,21 @@ function confirmAsync(message){
   });
 }
 
-function applyTelegramTheme(){
-  const scheme = (tg && tg.colorScheme) ? tg.colorScheme : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const THEME_KEY = 'mostcafe_theme_override';
+
+function resolveTheme(){
+  let saved = null;
+  try{ saved = localStorage.getItem(THEME_KEY); }catch(e){}
+  if(saved) return saved;
+  return (tg && tg.colorScheme) ? tg.colorScheme
+    : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+}
+
+function applyTheme(scheme, persist){
   document.documentElement.setAttribute('data-theme', scheme);
+  if(persist){ try{ localStorage.setItem(THEME_KEY, scheme); }catch(e){} }
+  const btn = document.getElementById('themeToggle');
+  if(btn) btn.textContent = scheme === 'dark' ? '☀️' : '🌙';
   if(tg){
     try{
       const s = getComputedStyle(document.documentElement);
@@ -463,12 +474,27 @@ function applyTelegramTheme(){
   }
 }
 
+function applyTelegramTheme(){ applyTheme(resolveTheme(), false); }
+
+function toggleTheme(){
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(next, true);
+  haptic('light');
+}
+
 function initTelegram(){
+  applyTheme(resolveTheme(), false);
+  const themeBtn = document.getElementById('themeToggle');
+  if(themeBtn) themeBtn.onclick = toggleTheme;
   if(!tg) return;
   try{
     tg.ready(); tg.expand();
     applyTelegramTheme();
-    tg.onEvent && tg.onEvent('themeChanged', applyTelegramTheme);
+    tg.onEvent && tg.onEvent('themeChanged', ()=>{
+      let saved = null;
+      try{ saved = localStorage.getItem(THEME_KEY); }catch(e){}
+      if(!saved) applyTelegramTheme();
+    });
     if(tg.isVersionAtLeast && tg.isVersionAtLeast('7.7')){ try{ tg.disableVerticalSwipes(); }catch(e){} }
     tg.BackButton && tg.BackButton.onClick(closeSheets);
   }catch(e){}
@@ -560,6 +586,9 @@ const I18N = {
     successWherePickup:'Заберите на стойке «Мост», 1 этаж',
     successWhereGeo:'Курьер едет по вашей геопозиции',
     successWhereManual:'Адрес доставки: ',
+    statusNewText:'Заказ принят', statusPreparingText:'Готовится',
+    statusReadyPickupText:'Готов к выдаче', statusReadyDeliveryText:'Курьер выехал',
+    statusDonePickupText:'Заказ выдан', statusDoneDeliveryText:'Доставлено',
     searchPlaceholder:'Найти блюдо…', searchResultsTitle:'Результаты поиска', searchEmptyText:'Ничего не найдено',
     noteLabel:'Комментарий к заказу', notePlaceholder:'Например: без сахара, позвонить у входа',
     phoneLabel:'Телефон для курьера', phonePlaceholder:'+375 29 000-00-00',
@@ -587,6 +616,9 @@ const I18N = {
     successWherePickup:'请到「Мост」前台取餐，1楼',
     successWhereGeo:'骑手正根据您的定位配送',
     successWhereManual:'配送地址：',
+    statusNewText:'订单已接受', statusPreparingText:'制作中',
+    statusReadyPickupText:'可以取餐', statusReadyDeliveryText:'骑手已出发',
+    statusDonePickupText:'已取餐', statusDoneDeliveryText:'已送达',
     searchPlaceholder:'搜索菜品…', searchResultsTitle:'搜索结果', searchEmptyText:'未找到相关菜品',
     noteLabel:'订单备注', notePlaceholder:'例如：不要糖，到店请致电',
     phoneLabel:'配送联系电话', phonePlaceholder:'+375 29 000-00-00',
@@ -1144,6 +1176,54 @@ function closeSheets(){
   overlay.classList.remove('show');
   ALL_SHEETS.forEach(s=>s.classList.remove('show'));
   syncBackButton(false);
+  clearOrderStatusTimer();
+}
+
+/* ---------------- Order status timeline (success sheet) ---------------- */
+const ORDER_STATUS_STEPS = [
+  { delay:0,  key:'statusNewText' },
+  { delay:12, key:'statusPreparingText' },
+  { delay:35, key:function(type){ return type === 'pickup' ? 'statusReadyPickupText' : 'statusReadyDeliveryText'; } },
+  { delay:60, key:function(type){ return type === 'pickup' ? 'statusDonePickupText' : 'statusDoneDeliveryText'; } },
+];
+let orderStatusInterval = null;
+let activeOrderStartedAt = null;
+let activeOrderType = 'pickup';
+
+function clearOrderStatusTimer(){
+  if(orderStatusInterval){ clearInterval(orderStatusInterval); orderStatusInterval = null; }
+}
+function currentOrderStatusIndex(){
+  const elapsed = Math.floor((Date.now() - activeOrderStartedAt) / 1000);
+  let idx = 0;
+  for(let i=0;i<ORDER_STATUS_STEPS.length;i++){ if(elapsed >= ORDER_STATUS_STEPS[i].delay) idx = i; }
+  return idx;
+}
+function stepLabel(step){
+  const key = typeof step.key === 'function' ? step.key(activeOrderType) : step.key;
+  return t(key);
+}
+function renderOrderStatusTimeline(){
+  const wrap = document.getElementById('orderStatusTimeline');
+  if(!wrap) return;
+  const curIdx = currentOrderStatusIndex();
+  wrap.innerHTML = ORDER_STATUS_STEPS.map((step,i)=>{
+    const blockCls = i<curIdx ? 'done' : (i===curIdx ? 'current' : '');
+    const dotCls = i<curIdx ? 'done' : (i===curIdx ? 'current' : '');
+    return `<div class="status-block ${blockCls}"><div class="status-rail"><div class="status-dot ${dotCls}"></div><div class="status-line"></div></div>`+
+      `<div class="status-content"><div class="status-title">${stepLabel(step)}</div></div></div>`;
+  }).join('');
+}
+function startOrderStatusTimer(orderTypeArg, startedAt){
+  clearOrderStatusTimer();
+  activeOrderType = orderTypeArg;
+  activeOrderStartedAt = startedAt;
+  renderOrderStatusTimeline();
+  if(currentOrderStatusIndex() >= ORDER_STATUS_STEPS.length-1) return;
+  orderStatusInterval = setInterval(()=>{
+    renderOrderStatusTimeline();
+    if(currentOrderStatusIndex() >= ORDER_STATUS_STEPS.length-1) clearOrderStatusTimer();
+  }, 2000);
 }
 
 document.getElementById('cartPill').onclick = ()=>{ renderCartSheet(); openSheet(document.getElementById('cartSheet')); };
@@ -1189,6 +1269,7 @@ document.getElementById('checkoutBtn').onclick = async ()=>{
     whereText = t('successWhereManual') + manualAddress;
   }
   document.getElementById('successWhere').textContent = whereText;
+  startOrderStatusTimer(orderType, Date.now());
 
   haptic('success');
   cart = [];
@@ -1224,6 +1305,7 @@ document.getElementById('langToggle').onclick = ()=>{
   renderOrderTypeOpts();
   updateCartPill();
   renderCartSheet();
+  if(activeOrderStartedAt !== null) renderOrderStatusTimeline();
 };
 
 /* ---------------- Init ---------------- */
