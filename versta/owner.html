@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="palettes.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
 (function(){
@@ -20,24 +21,6 @@
 })();
 </script>
 <style>
-  :root[data-theme="dark"]{
-    --bg:#10131A; --surface:#1A1F29; --surface2:#232936;
-    --ink:#F1F3F7; --ink-soft:#8891A3; --ink-faint:#5B6373;
-    --line:rgba(255,255,255,0.08);
-    --accent:#FF9640; --accent-ink:#241300;
-    --accent2:#2FD9B9; --warn:#FFC53D; --danger:#FF5C6C;
-    --accent-text:#FF9640; --accent2-text:#2FD9B9;
-    --warn-text:#FFC53D; --danger-text:#FF5C6C;
-  }
-  :root[data-theme="light"]{
-    --bg:#EEF1F6; --surface:#FFFFFF; --surface2:#E7EBF1;
-    --ink:#12151C; --ink-soft:#5B6373; --ink-faint:#8891A3;
-    --line:rgba(10,14,22,0.09);
-    --accent:#FF9640; --accent-ink:#241300;
-    --accent2:#2FD9B9; --warn:#FFC53D; --danger:#FF5C6C;
-    --accent-text:#A05000; --accent2-text:#0E7A64;
-    --warn-text:#8A5D00; --danger-text:#C7202F;
-  }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
   body{
@@ -65,6 +48,7 @@
     width:44px; height:44px; border-radius:50%;
     background:var(--surface); border:none; color:var(--ink);
     display:flex; align-items:center; justify-content:center;
+    box-shadow:var(--shadow-sm);
   }
   .theme-toggle .icon-moon{display:none;}
   :root[data-theme="light"] .theme-toggle .icon-sun{display:none;}
@@ -73,10 +57,10 @@
   .tab-content{position:absolute; top:52px; bottom:70px; left:0; right:0; overflow-y:auto; padding:6px 18px 24px;}
 
   .tabbar{position:absolute; left:0; right:0; bottom:0; display:flex; background:var(--surface);
-    border-top:1px solid var(--line); padding:8px 0 max(20px, calc(8px + env(safe-area-inset-bottom))); z-index:4;}
+    border-top:1px solid var(--border); padding:8px 0 max(20px, calc(8px + env(safe-area-inset-bottom))); z-index:4;}
   .tab-btn{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none;
     color:var(--ink-faint); font-size:10.5px; font-weight:700;}
-  .tab-btn.active{color:var(--accent-text);}
+  .tab-btn.active{color:var(--accent-dark);}
 
   .title{font-size:24px; margin:0 0 2px;}
   .eyebrow{color:var(--ink-soft); font-size:12.5px; margin:0 0 16px;}
@@ -87,12 +71,12 @@
 
   /* KPI grid */
   .kpi-grid{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
-  .kpi-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px;}
+  .kpi-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px;}
   .kpi-value{font-family:'JetBrains Mono'; font-weight:700; font-size:21px;}
   .kpi-label{font-size:11px; color:var(--ink-soft); margin-top:4px; line-height:1.3;}
 
   /* chart */
-  .chart-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px 14px 12px; margin-top:20px;}
+  .chart-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 14px 12px; margin-top:20px;}
   .chart-title{font-size:13px; font-weight:700; margin-bottom:14px;}
   .chart-bars{display:flex; align-items:flex-end; gap:8px; height:78px;}
   .chart-col{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
@@ -102,29 +86,29 @@
   .chart-day{font-size:10px; color:var(--ink-faint); margin-top:6px;}
 
   /* rank rows (top routes) */
-  .rank-row{display:flex; align-items:center; gap:11px; background:var(--surface); border:1px solid var(--line);
-    border-radius:14px; padding:12px; margin-bottom:8px;}
+  .rank-row{display:flex; align-items:center; gap:11px; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-md); padding:12px; margin-bottom:8px;}
   .rank-num{font-family:'JetBrains Mono'; font-weight:700; color:var(--ink-faint); font-size:14px; width:16px;}
   .rank-mid{flex:1; min-width:0;}
   .rank-cities{font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:6px; margin-bottom:6px;}
-  .rank-bar{height:4px; border-radius:2px; background:var(--surface2); overflow:hidden;}
+  .rank-bar{height:4px; border-radius:2px; background:var(--surface-2); overflow:hidden;}
   .rank-bar-fill{height:100%; background:var(--accent); border-radius:2px;}
   .rank-value{font-family:'JetBrains Mono'; font-weight:700; font-size:13.5px; white-space:nowrap;}
 
   /* route cards (Маршруты tab) */
-  .route-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:10px;}
+  .route-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px; margin-bottom:10px;}
   .route-top{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
   .route-cities{font-size:15px; font-weight:700; flex:1;}
-  .occ-bar{height:6px; border-radius:3px; background:var(--surface2); overflow:hidden; margin-bottom:8px;}
+  .occ-bar{height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; margin-bottom:8px;}
   .occ-bar-fill{height:100%; border-radius:3px;}
   .route-stats{display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft);}
   .route-stats b{color:var(--ink); font-family:'JetBrains Mono'; font-weight:700;}
 
   /* driver cards (Водители tab) */
-  .drv-card{display:flex; gap:13px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:10px;}
-  .avatar{width:44px; height:44px; border-radius:50%; background:var(--surface2); border:1.5px solid var(--accent);
+  .drv-card{display:flex; gap:13px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px; margin-bottom:10px;}
+  .avatar{width:44px; height:44px; border-radius:50%; background:var(--surface-2); border:1.5px solid var(--accent);
     display:flex; align-items:center; justify-content:center; font-family:'Oswald'; font-weight:700; font-size:14px;
-    color:var(--accent-text); flex:0 0 auto;}
+    color:var(--accent-dark); flex:0 0 auto;}
   .drv-info{flex:1;}
   .drv-name{font-size:14.5px; font-weight:700; margin-bottom:7px;}
   .drv-stats{display:flex; gap:14px; flex-wrap:wrap;}

@@ -16,12 +16,15 @@
         : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
     }
     document.documentElement.dataset.theme = scheme;
+    var brand = localStorage.getItem('color_scheme_override');
+    if (brand) document.documentElement.dataset.brand = brand;
   }catch(e){}
 })();
 </script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="palettes.css">
 <style>
   :root{
     --bg:#111417; --surface:#1A1E22; --surface-2:#20252A; --surface-3:#262B31;
@@ -81,6 +84,14 @@
   #themeToggleBtn .icon-moon{display:none;}
   :root[data-theme="light"] #themeToggleBtn .icon-moon{display:block;}
   :root[data-theme="light"] #themeToggleBtn .icon-sun{display:none;}
+  .scheme-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px 4px;border-bottom:1px solid var(--line);text-align:left;min-height:44px;}
+  .scheme-row:last-child{border-bottom:none;}
+  .scheme-swatch{width:38px;height:38px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 1px var(--line-strong);}
+  .scheme-row.active .scheme-swatch{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent);}
+  .scheme-name{font-family:'Chakra Petch',sans-serif;font-weight:600;font-size:14.5px;}
+  .scheme-sub{font-size:12.5px;color:var(--ink-soft);margin-top:2px;}
+  .scheme-check{margin-left:auto;color:var(--accent);flex:0 0 auto;visibility:hidden;}
+  .scheme-row.active .scheme-check{visibility:visible;}
 
   /* layout */
   .screen{padding:16px 16px 8px;}
@@ -231,6 +242,25 @@
   .status-chip.active{background:var(--accent-2-soft);color:var(--accent-2);}
   .status-chip.overdue{background:var(--danger-soft);color:var(--danger);}
   .status-chip.returned{background:var(--surface-3);color:var(--ink-faint);}
+  .status-toggle{display:flex;align-items:center;gap:6px;width:100%;padding:10px 0 2px;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);font-weight:700;min-height:32px;}
+  .status-toggle .chevron{width:14px;height:14px;margin-left:auto;transition:transform .2s;flex:0 0 auto;}
+  .status-toggle.open .chevron{transform:rotate(180deg);}
+  .status-timeline{max-height:0;overflow:hidden;transition:max-height .25s ease;}
+  .status-timeline.open{max-height:220px;}
+  .status-timeline-inner{padding:8px 2px 4px;}
+  .status-step{position:relative;display:flex;gap:10px;padding-bottom:14px;}
+  .status-step:last-child{padding-bottom:0;}
+  .status-step::before{content:'';position:absolute;left:5px;top:14px;bottom:-2px;width:1px;background:var(--line-strong);}
+  .status-step:last-child::before{display:none;}
+  .status-dot{width:11px;height:11px;border-radius:50%;background:var(--line-strong);flex:0 0 auto;margin-top:2px;position:relative;z-index:1;box-shadow:0 0 0 3px var(--surface);}
+  .status-step.done .status-dot{background:var(--accent-2);}
+  .status-step.done::before{background:var(--accent-2);}
+  .status-step.current .status-dot{background:var(--accent);box-shadow:0 0 0 3px var(--surface), 0 0 0 5px var(--accent-soft);}
+  .status-step.warn .status-dot{background:var(--danger);box-shadow:0 0 0 3px var(--surface), 0 0 0 5px var(--danger-soft);}
+  .status-label{font-size:13px;font-weight:600;color:var(--ink-faint);}
+  .status-step.done .status-label,.status-step.current .status-label{color:var(--ink);}
+  .status-step.warn .status-label{color:var(--danger);}
+  .status-time{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-faint);margin-top:1px;}
   .empty-state{text-align:center;padding:50px 20px;color:var(--ink-faint);}
   .empty-state svg{width:38px;height:38px;margin-bottom:10px;opacity:.5;}
 
@@ -276,6 +306,9 @@
       </div>
     </div>
     <div class="topbar-actions">
+      <button class="icon-btn" id="colorSchemeBtn" aria-label="Цветовая схема">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+      </button>
       <button class="icon-btn" id="themeToggleBtn" aria-label="Переключить тему">
         <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
         <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
@@ -341,6 +374,17 @@
     <button class="icon-btn" id="sheetClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
   </div>
   <div class="sheet-body" id="bookingsList"></div>
+</div>
+
+<!-- ЦВЕТОВАЯ СХЕМА -->
+<div class="sheet-scrim" id="schemeScrim"></div>
+<div class="sheet" id="schemeSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <h3>Цветовая схема</h3>
+    <button class="icon-btn" id="schemeSheetClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button>
+  </div>
+  <div class="sheet-body" id="schemeList"></div>
 </div>
 
 <!-- ПРОДЛИТЬ АРЕНДУ -->
@@ -527,6 +571,54 @@ function updateThemeToggleLabel(scheme) {
   const btn = document.getElementById("themeToggleBtn");
   if (!btn) return;
   btn.setAttribute("aria-label", scheme === "light" ? "Включить тёмную тему" : "Включить светлую тему");
+}
+const SCHEME_META = {
+  amber:      { label: "Янтарь",     sub: "По умолчанию",              swatch: "linear-gradient(135deg,#F5A300,#38A89D)" },
+  industrial: { label: "Индастриал", sub: "Стальной синий + оранжевый", swatch: "linear-gradient(135deg,#3E8FD9,#E8792F)" },
+  forest:     { label: "Лесник",     sub: "Зелёный + амбер",            swatch: "linear-gradient(135deg,#4FAE62,#D9A441)" },
+  crimson:    { label: "Стройка",    sub: "Красный + графит",           swatch: "linear-gradient(135deg,#E15252,#8A93A6)" },
+};
+const BRAND_LIST = Object.keys(SCHEME_META);
+function getBrand() { return document.documentElement.dataset.brand || "amber"; }
+function applyBrand(brand) {
+  if (!SCHEME_META[brand]) return;
+  document.documentElement.dataset.brand = brand;
+  try { localStorage.setItem("color_scheme_override", brand); } catch(e) {}
+  if (tg) {
+    const s = getComputedStyle(document.body);
+    try { tg.setHeaderColor(s.getPropertyValue("--surface").trim()); tg.setBackgroundColor(s.getPropertyValue("--bg").trim()); } catch(e) {}
+  }
+}
+function renderSchemeList() {
+  const active = getBrand();
+  document.getElementById("schemeList").innerHTML = BRAND_LIST.map(id => {
+    const m = SCHEME_META[id];
+    return `<button class="scheme-row${id === active ? " active" : ""}" data-scheme="${id}">
+      <div class="scheme-swatch" style="background:${m.swatch};"></div>
+      <div><div class="scheme-name">${m.label}</div><div class="scheme-sub">${m.sub}</div></div>
+      <svg class="scheme-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M20 6L9 17l-5-5"/></svg>
+    </button>`;
+  }).join("");
+  document.getElementById("schemeList").querySelectorAll(".scheme-row").forEach(row => {
+    row.addEventListener("click", () => {
+      applyBrand(row.dataset.scheme);
+      haptic("light");
+      renderSchemeList();
+      showToast(`Схема «${SCHEME_META[row.dataset.scheme].label}» применена`);
+    });
+  });
+}
+function openSchemeSheet() {
+  renderSchemeList();
+  document.getElementById("schemeScrim").classList.add("open");
+  document.getElementById("schemeSheet").classList.add("open");
+  haptic("light");
+  if (tg?.BackButton) { try { tg.BackButton.show(); tg.BackButton.onClick(closeSchemeSheet); } catch(e) {} }
+}
+function closeSchemeSheet() {
+  document.getElementById("schemeScrim").classList.remove("open");
+  document.getElementById("schemeSheet").classList.remove("open");
+  if (tg?.BackButton) { try { tg.BackButton.hide(); } catch(e) {} }
 }
 function initTelegram() {
   if (!tg) { applyTheme(); return; }
@@ -995,6 +1087,25 @@ function renderTicket() {
 
 /* ============================================================ МОИ БРОНИ ============================================================ */
 const STATUS_LABEL = { pending: "Ожидает выдачи", active: "В аренде", overdue: "Просрочено", returned: "Возвращено" };
+const STATUS_STEP_INDEX = { pending: 1, active: 2, overdue: 2, returned: 4 };
+function renderStatusTimeline(b) {
+  const steps = [
+    { label: "Бронь оформлена" },
+    { label: "Выдача", time: fmtDate(b.from) },
+    { label: b.status === "overdue" ? "Просрочено" : "В аренде", time: `до ${fmtDate(b.to)}`, warnKey: true },
+    { label: "Возврат", time: b.status === "returned" ? fmtDate(b.to) : "" },
+  ];
+  const curIdx = STATUS_STEP_INDEX[b.status];
+  return steps.map((s, i) => {
+    let cls = "pending";
+    if (i < curIdx) cls = "done";
+    else if (i === curIdx) cls = (b.status === "overdue" && s.warnKey) ? "warn" : "current";
+    return `<div class="status-step ${cls}">
+      <div class="status-dot"></div>
+      <div><div class="status-label">${s.label}</div>${s.time ? `<div class="status-time">${s.time}</div>` : ""}</div>
+    </div>`;
+  }).join("");
+}
 
 function openBookingsSheet() {
   document.getElementById("sheetScrim").classList.add("open");
@@ -1025,6 +1136,13 @@ async function loadBookings() {
         </div>
         <span class="status-chip ${b.status}">${STATUS_LABEL[b.status]}</span>
       </div>
+      <button class="status-toggle" data-status-toggle="${b.id}">
+        <span>Статус аренды</span>
+        <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+      </button>
+      <div class="status-timeline" id="status-timeline-${b.id}">
+        <div class="status-timeline-inner">${renderStatusTimeline(b)}</div>
+      </div>
       ${b.status === "pending" ? `
         <div class="booking-actions">
           <button class="btn btn-danger" data-cancel="${b.id}">Отменить бронь</button>
@@ -1034,6 +1152,12 @@ async function loadBookings() {
           <button class="btn btn-ghost" data-extend="${b.id}">Продлить аренду</button>
         </div>` : ""}
     </div>`).join("");
+
+  list.querySelectorAll("[data-status-toggle]").forEach(el => el.addEventListener("click", () => {
+    el.classList.toggle("open");
+    document.getElementById(`status-timeline-${el.dataset.statusToggle}`).classList.toggle("open");
+    haptic("light");
+  }));
 
   // Кнопки отмены — только для статуса pending (инструмент ещё не выдан)
   list.querySelectorAll("[data-cancel]").forEach(el => el.addEventListener("click", async () => {
@@ -1122,6 +1246,9 @@ document.getElementById("extendClose").addEventListener("click", closeExtendShee
 document.getElementById("extendScrim").addEventListener("click", closeExtendSheet);
 
 document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
+document.getElementById("colorSchemeBtn").addEventListener("click", openSchemeSheet);
+document.getElementById("schemeSheetClose").addEventListener("click", closeSchemeSheet);
+document.getElementById("schemeScrim").addEventListener("click", closeSchemeSheet);
 document.getElementById("myBookingsBtn").addEventListener("click", openBookingsSheet);
 document.getElementById("sheetClose").addEventListener("click", closeBookingsSheet);
 document.getElementById("sheetScrim").addEventListener("click", closeBookingsSheet);

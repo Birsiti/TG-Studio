@@ -8,6 +8,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="palettes.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
 (function(){
@@ -20,45 +21,6 @@
 })();
 </script>
 <style>
-  :root{
-    --radius:16px;
-  }
-  :root[data-theme="dark"]{
-    --bg:#10131A;
-    --surface:#1A1F29;
-    --surface2:#232936;
-    --ink:#F1F3F7;
-    --ink-soft:#8891A3;
-    --ink-faint:#5B6373;
-    --line:rgba(255,255,255,0.08);
-    --accent:#FF9640;
-    --accent-ink:#241300;
-    --accent2:#2FD9B9;
-    --warn:#FFC53D;
-    --danger:#FF5C6C;
-    --accent-text:#FF9640;
-    --accent2-text:#2FD9B9;
-    --warn-text:#FFC53D;
-    --danger-text:#FF5C6C;
-  }
-  :root[data-theme="light"]{
-    --bg:#EEF1F6;
-    --surface:#FFFFFF;
-    --surface2:#E7EBF1;
-    --ink:#12151C;
-    --ink-soft:#5B6373;
-    --ink-faint:#8891A3;
-    --line:rgba(10,14,22,0.09);
-    --accent:#FF9640;
-    --accent-ink:#241300;
-    --accent2:#2FD9B9;
-    --warn:#FFC53D;
-    --danger:#FF5C6C;
-    --accent-text:#A05000;
-    --accent2-text:#0E7A64;
-    --warn-text:#8A5D00;
-    --danger-text:#C7202F;
-  }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
   html,body{margin:0; padding:0;}
   body{
@@ -108,7 +70,7 @@
     width:44px;height:44px;border-radius:50%;
     background:var(--surface); border:none; color:var(--ink);
     font-size:20px; display:flex; align-items:center; justify-content:center;
-    visibility:hidden;
+    visibility:hidden; box-shadow:var(--shadow-sm);
   }
   .back-btn.show{visibility:visible;}
   .wordmark{
@@ -128,6 +90,7 @@
     width:44px; height:44px; border-radius:50%;
     background:var(--surface); border:none; color:var(--ink);
     display:flex; align-items:center; justify-content:center;
+    box-shadow:var(--shadow-sm);
   }
   .theme-toggle .icon-moon{display:none;}
   :root[data-theme="light"] .theme-toggle .icon-sun{display:none;}
@@ -139,7 +102,7 @@
   }
   .progress .dot{
     height:3px; flex:1; max-width:38px; border-radius:2px;
-    background:var(--line); position:relative; overflow:hidden;
+    background:var(--border); position:relative; overflow:hidden;
   }
   .progress .dot.done, .progress .dot.active{background:var(--accent);}
   .progress .dot.active::after{
@@ -163,17 +126,17 @@
 
   /* ---------- buttons ---------- */
   .btn{
-    width:100%; border:none; border-radius:14px; padding:16px;
+    width:100%; border:none; border-radius:var(--radius-md); padding:16px;
     font-weight:700; font-size:15px; text-align:center;
   }
   .btn-primary{background:var(--accent); color:var(--accent-ink);}
-  .btn-primary:disabled{background:var(--surface2); color:var(--ink-faint);}
-  .btn-secondary{background:var(--surface); color:var(--ink); border:1px solid var(--line);}
+  .btn-primary:disabled{background:var(--surface-2); color:var(--ink-faint);}
+  .btn-secondary{background:var(--surface); color:var(--ink); border:1px solid var(--border);}
 
   /* ---------- direction screen ---------- */
   .route-fields{position:relative; display:flex; flex-direction:column; gap:10px; margin-bottom:18px;}
   .pill{
-    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
     padding:12px 16px; display:flex; flex-direction:column; gap:2px;
   }
   .pill-label{font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.06em;}
@@ -181,15 +144,15 @@
   .pill-value.placeholder{color:var(--ink-faint); font-weight:500;}
   .swap-btn{
     position:absolute; right:14px; top:50%; transform:translateY(-50%);
-    width:34px; height:34px; border-radius:50%; background:var(--surface2);
-    border:1px solid var(--line); color:var(--accent2-text); font-size:16px;
+    width:34px; height:34px; border-radius:50%; background:var(--surface-2);
+    border:1px solid var(--border); color:var(--accent2-dark); font-size:16px;
   }
 
   .section-label{font-size:12px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.06em; margin:4px 0 10px;}
   .chips{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;}
   .chip{
     display:flex; align-items:center; gap:7px; background:var(--surface);
-    border:1px solid var(--line); border-radius:12px; padding:9px 12px;
+    border:1px solid var(--border); border-radius:var(--radius-sm); padding:9px 12px;
     font-size:13px; font-weight:600;
   }
   .badge{
@@ -211,22 +174,22 @@
     max-height:70%; overflow-y:auto;
   }
   .sheet.open{transform:translateY(0);}
-  .sheet-handle{width:36px; height:4px; background:var(--line); border-radius:2px; margin:4px auto 14px;}
+  .sheet-handle{width:36px; height:4px; background:var(--border); border-radius:2px; margin:4px auto 14px;}
   .sheet-title{font-size:18px; margin-bottom:12px;}
   .sheet-item{
-    padding:14px 4px; border-bottom:1px solid var(--line); font-size:15px; font-weight:600;
+    padding:14px 4px; border-bottom:1px solid var(--border); font-size:15px; font-weight:600;
   }
   .sheet-item:last-child{border-bottom:none;}
 
   /* ---------- date screen ---------- */
   .date-strip{display:flex; flex-shrink:0; gap:8px; overflow-x:auto; padding-bottom:6px; margin:0 -20px; padding-left:20px; padding-right:20px;}
   .date-btn{
-    flex:0 0 auto; width:58px; background:var(--surface); border:1px solid var(--line);
-    border-radius:14px; padding:12px 0; text-align:center;
+    flex:0 0 auto; width:58px; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-md); padding:12px 0; text-align:center;
   }
   .date-btn .dow{font-size:11px; color:var(--ink-soft); text-transform:uppercase;}
   .date-btn .num{font-family:'Oswald'; font-size:20px; font-weight:600; margin-top:2px;}
-  .date-btn.today .dow{color:var(--accent2-text);}
+  .date-btn.today .dow{color:var(--accent2-dark);}
   .date-btn.active{background:var(--accent); border-color:var(--accent);}
   .date-btn.active .dow,.date-btn.active .num{color:var(--accent-ink);}
 
@@ -235,7 +198,7 @@
     display:flex; align-items:center; gap:8px; color:var(--ink-soft); font-size:13px; margin-bottom:16px;
   }
   .trip-card{
-    background:var(--surface); border:1px solid var(--line); border-radius:16px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg);
     padding:14px; margin-bottom:10px; display:flex; gap:12px; align-items:center;
   }
   .trip-card.sold{opacity:.45;}
@@ -245,9 +208,9 @@
   .trip-right{text-align:right;}
   .trip-price{font-family:'JetBrains Mono'; font-weight:700; font-size:15px;}
   .trip-seats{font-size:11px; margin-top:3px; font-weight:600;}
-  .seats-ok{color:var(--accent2-text);}
-  .seats-low{color:var(--warn-text);}
-  .seats-none{color:var(--danger-text);}
+  .seats-ok{color:var(--success-dark);}
+  .seats-low{color:var(--warn-dark);}
+  .seats-none{color:var(--danger-dark);}
   .empty-state{text-align:center; color:var(--ink-soft); padding:40px 10px; font-size:14px;}
 
   /* ---------- points screen ---------- */
@@ -257,16 +220,16 @@
   .point-row{display:flex; gap:12px; padding:9px 0; cursor:pointer;}
   .rail{width:16px; display:flex; flex-direction:column; align-items:center;}
   .rail-dot{width:10px; height:10px; border-radius:50%; background:var(--ink-faint); margin-top:4px; flex:0 0 auto;}
-  .rail-line{width:2px; flex:1; background:var(--line); margin-top:2px;}
+  .rail-line{width:2px; flex:1; background:var(--border); margin-top:2px;}
   .point-row:last-child .rail-line{display:none;}
   .point-row.selected .rail-dot{background:var(--accent); box-shadow:0 0 0 4px rgba(255,150,64,.18);}
   .point-name{font-size:14px; font-weight:600;}
-  .point-row.selected .point-name{color:var(--accent-text);}
+  .point-row.selected .point-name{color:var(--accent-dark);}
   .point-offset{font-size:11px; color:var(--ink-soft); margin-top:1px;}
 
   /* ---------- checkout screen ---------- */
   .summary-card{
-    background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:16px; margin-bottom:16px;
+    background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px; margin-bottom:16px;
   }
   .summary-row{display:flex; justify-content:space-between; font-size:13px; padding:5px 0; color:var(--ink-soft);}
   .summary-row b{color:var(--ink); font-weight:600;}
@@ -274,58 +237,58 @@
     display:flex; align-items:center; justify-content:center; gap:22px; margin:6px 0 18px;
   }
   .step-btn{
-    width:44px; height:44px; border-radius:50%; background:var(--surface2);
-    border:1px solid var(--line); color:var(--ink); font-size:20px; font-weight:700;
+    width:44px; height:44px; border-radius:50%; background:var(--surface-2);
+    border:1px solid var(--border); color:var(--ink); font-size:20px; font-weight:700;
   }
   .step-val{font-family:'JetBrains Mono'; font-size:26px; font-weight:700; min-width:34px; text-align:center;}
   .field{margin-bottom:12px;}
   .field label{font-size:12px; color:var(--ink-soft); display:block; margin-bottom:6px;}
   .field input{
-    width:100%; background:var(--surface); border:1px solid var(--line); color:var(--ink);
-    border-radius:12px; padding:13px 14px; font-size:15px; font-family:inherit;
+    width:100%; background:var(--surface); border:1px solid var(--border); color:var(--ink);
+    border-radius:var(--radius-sm); padding:13px 14px; font-size:15px; font-family:inherit;
   }
   .field input::placeholder{color:var(--ink-faint);}
   .total-line{display:flex; justify-content:space-between; align-items:baseline; margin:16px 0 6px;}
   .total-line .label{color:var(--ink-soft); font-size:14px;}
-  .total-line .value{font-family:'JetBrains Mono'; font-size:26px; font-weight:700; color:var(--accent-text);}
+  .total-line .value{font-family:'JetBrains Mono'; font-size:26px; font-weight:700; color:var(--accent-dark);}
 
   /* hold timer */
-  .hold-banner{display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--line);
-    border-radius:12px; padding:11px 14px; margin-bottom:16px; font-size:13px; color:var(--ink-soft);}
+  .hold-banner{display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-sm); padding:11px 14px; margin-bottom:16px; font-size:13px; color:var(--ink-soft);}
   .hold-dot{width:7px; height:7px; border-radius:50%; background:var(--accent2); box-shadow:0 0 0 3px rgba(47,217,185,.18);
     flex:0 0 auto; animation:holdPulse 1.6s ease-in-out infinite;}
   @keyframes holdPulse{0%,100%{opacity:1} 50%{opacity:.35}}
   @media (prefers-reduced-motion: reduce){ .hold-dot{animation:none;} }
   .hold-time{margin-left:auto; font-weight:700; color:var(--ink);}
-  .hold-banner.warn .hold-time{color:var(--warn-text);}
+  .hold-banner.warn .hold-time{color:var(--warn-dark);}
   .hold-banner.warn .hold-dot{background:var(--warn); box-shadow:0 0 0 3px rgba(255,197,61,.18);}
   .hold-banner.expired{background:rgba(255,92,108,.1); border-color:rgba(255,92,108,.3);
     flex-direction:column; align-items:stretch; gap:10px;}
-  .hold-expired-text{color:var(--danger-text); font-weight:700; font-size:13.5px;}
+  .hold-expired-text{color:var(--danger-dark); font-weight:700; font-size:13.5px;}
 
   /* payment */
-  .payment-tag{display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--line);
-    border-radius:12px; padding:11px 14px; font-size:12.5px; color:var(--ink-soft); margin:6px 0 16px;}
-  .payment-tag svg{flex:0 0 auto; color:var(--accent2-text);}
-  .pay-chip{display:inline-block; background:var(--surface2); color:var(--ink-soft); font-size:11px; font-weight:600;
+  .payment-tag{display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-sm); padding:11px 14px; font-size:12.5px; color:var(--ink-soft); margin:6px 0 16px;}
+  .payment-tag svg{flex:0 0 auto; color:var(--accent2-dark);}
+  .pay-chip{display:inline-block; background:var(--surface-2); color:var(--ink-soft); font-size:11px; font-weight:600;
     padding:5px 10px; border-radius:8px; margin-top:9px;}
 
   .step-btn:disabled{opacity:.4;}
   .field input:disabled{opacity:.5;}
 
-  .field .phone-input-group{display:flex; align-items:center; background:var(--surface); border:1px solid var(--line); border-radius:12px; overflow:hidden;}
+  .field .phone-input-group{display:flex; align-items:center; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); overflow:hidden;}
   .field .phone-input-group.error{border-color:var(--danger);}
   .field .phone-input-group .phone-prefix{padding:13px 2px 13px 14px; color:var(--ink-soft); font-weight:700; font-size:14.5px; font-family:'JetBrains Mono',monospace;}
   .field .phone-input-group input{border:none; background:transparent; flex:1; width:auto; padding:13px 14px 13px 4px; font-family:'JetBrains Mono',monospace; letter-spacing:0.02em;}
 
-  .btn-danger{background:rgba(255,92,108,.12); color:var(--danger-text); border:1px solid rgba(255,92,108,.3);}
+  .btn-danger{background:var(--danger-soft); color:var(--danger-dark); border:1px solid rgba(255,92,108,.3);}
   .link-btn{width:100%; background:none; border:none; color:var(--ink-soft); font-size:13px; font-weight:700;
     padding:12px; text-decoration:underline; text-underline-offset:3px;}
 
   .ticket{position:relative;}
   .ticket-stamp{
     position:absolute; top:34%; left:50%; transform:translate(-50%,-50%) rotate(-13deg);
-    border:3px solid var(--danger); color:var(--danger-text); font-family:'Oswald',sans-serif; font-weight:700;
+    border:3px solid var(--danger); color:var(--danger-dark); font-family:'Oswald',sans-serif; font-weight:700;
     font-size:21px; letter-spacing:0.08em; padding:5px 16px; border-radius:8px; text-transform:uppercase;
     background:rgba(16,19,26,.6); pointer-events:none;
   }
@@ -334,12 +297,12 @@
   .ticket-wrap{display:flex; flex-direction:column; align-items:center; text-align:center; padding-top:6px;}
   .ticket-icon{
     width:56px; height:56px; border-radius:50%; background:rgba(47,217,185,.12);
-    display:flex; align-items:center; justify-content:center; font-size:26px; color:var(--accent2-text);
+    display:flex; align-items:center; justify-content:center; font-size:26px; color:var(--accent2-dark);
     margin-bottom:14px;
   }
   .ticket{
     width:100%; background:var(--surface); border-radius:20px; overflow:hidden;
-    border:1px solid var(--line); margin-bottom:18px; text-align:left;
+    border:1px solid var(--border); margin-bottom:18px; text-align:left;
   }
   .ticket-top{padding:18px 18px 14px; border-top:4px solid var(--accent);}
   .ticket-route{display:flex; align-items:center; gap:10px; margin:10px 0 4px;}
@@ -360,27 +323,46 @@
   .ticket-note{color:var(--ink-faint); font-size:11.5px; line-height:1.5; margin-bottom:18px;}
   .ticket-actions{display:flex; flex-direction:column; gap:10px; width:100%;}
 
-  .notif-list{width:100%; background:var(--surface); border:1px solid var(--line); border-radius:14px;
+  .status-timeline{width:100%; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
+    padding:14px 16px 2px; margin-bottom:18px; text-align:left;}
+  .status-block{display:flex; gap:12px;}
+  .status-rail{width:14px; display:flex; flex-direction:column; align-items:center; flex:0 0 auto;}
+  .status-dot{width:11px; height:11px; border-radius:50%; background:var(--surface-2); border:2px solid var(--ink-faint);
+    margin-top:2px; flex:0 0 auto; position:relative;}
+  .status-dot.done{border-color:var(--success); background:var(--success);}
+  .status-dot.current{border-color:var(--accent); background:var(--accent);}
+  .status-dot.current::after{content:''; position:absolute; inset:-4px; border-radius:50%;
+    background:var(--accent-soft); animation:pulse 1.4s ease-in-out infinite; z-index:-1;}
+  .status-dot.cancelled{border-color:var(--danger); background:var(--danger);}
+  .status-line{width:2px; flex:1; background:var(--border); margin-top:2px; min-height:16px;}
+  .status-block.done .status-line{background:var(--success);}
+  .status-block:last-child .status-line{display:none;}
+  .status-content{flex:1; padding-bottom:14px; min-width:0;}
+  .status-title{font-size:12.5px; font-weight:700; color:var(--ink-faint);}
+  .status-block.done .status-title, .status-block.current .status-title{color:var(--ink);}
+  .status-time{font-size:11px; color:var(--ink-soft); margin-top:2px; font-family:'JetBrains Mono',monospace;}
+
+  .notif-list{width:100%; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md);
     padding:4px 14px; margin-bottom:18px; text-align:left;}
-  .notif-item{display:flex; gap:10px; align-items:flex-start; padding:11px 0; border-bottom:1px solid var(--line);}
+  .notif-item{display:flex; gap:10px; align-items:flex-start; padding:11px 0; border-bottom:1px solid var(--border);}
   .notif-item:last-child{border-bottom:none;}
   .notif-icon{width:28px; height:28px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
-  .notif-icon.sent{background:rgba(47,217,185,.14); color:var(--accent2-text);}
-  .notif-icon.pending{background:var(--surface2); color:var(--ink-faint);}
-  .notif-icon.cancel{background:rgba(255,92,108,.14); color:var(--danger-text);}
+  .notif-icon.sent{background:var(--success-soft); color:var(--success-dark);}
+  .notif-icon.pending{background:var(--surface-2); color:var(--ink-faint);}
+  .notif-icon.cancel{background:rgba(255,92,108,.14); color:var(--danger-dark);}
   .notif-body{flex:1; min-width:0;}
   .notif-title{font-size:12.5px; font-weight:700;}
   .notif-sub{font-size:11px; color:var(--ink-soft); margin-top:2px;}
-  .notif-call{font-family:'JetBrains Mono'; font-size:11.5px; font-weight:700; color:var(--accent2-text); margin-top:5px; display:inline-block;}
+  .notif-call{font-family:'JetBrains Mono'; font-size:11.5px; font-weight:700; color:var(--accent2-dark); margin-top:5px; display:inline-block;}
 
   /* ---------- home screen ---------- */
   .home-cta{margin:4px 0 26px;}
-  .mytrip-row{background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:13px; margin-bottom:9px;}
+  .mytrip-row{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:13px; margin-bottom:9px;}
   .mytrip-top{display:flex; align-items:center; gap:8px; margin-bottom:5px;}
   .mytrip-route{flex:1; font-size:13.5px; font-weight:700;}
   .mytrip-status{font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:8px;}
-  .mytrip-status.st-ok{background:rgba(47,217,185,.14); color:var(--accent2-text);}
-  .mytrip-status.st-cancel{background:var(--surface2); color:var(--ink-faint);}
+  .mytrip-status.st-ok{background:var(--success-soft); color:var(--success-dark);}
+  .mytrip-status.st-cancel{background:var(--surface-2); color:var(--ink-faint);}
   .mytrip-sub{font-size:11.5px; color:var(--ink-soft);}
 </style>
 </head>
@@ -521,6 +503,9 @@
         <p class="eyebrow" style="margin-bottom:20px;">Билет и водитель придут в чат бота</p>
 
         <div class="ticket" id="ticketCard"></div>
+
+        <p class="section-label" style="width:100%; text-align:left;">Статус поездки</p>
+        <div class="status-timeline" id="statusTimeline"></div>
 
         <p class="section-label" style="width:100%; text-align:left;">Уведомления</p>
         <div class="notif-list" id="notifList"></div>
@@ -768,6 +753,7 @@
 
   /* ---------------- navigation ---------------- */
   function goTo(name){
+    if(name!=='ticket') clearStatusTimer();
     document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
     var target = document.querySelector('.screen[data-screen="'+name+'"]');
     target.classList.add('active');
@@ -1053,7 +1039,7 @@
     var phoneDigits = document.getElementById('phoneInput').value.replace(/\D/g,'');
     var nameField = document.getElementById('nameInput');
     var phoneGroup = document.getElementById('phoneGroup');
-    nameField.style.borderColor = name ? 'var(--line)' : 'var(--danger)';
+    nameField.style.borderColor = name ? 'var(--border)' : 'var(--danger)';
     phoneGroup.classList.toggle('error', phoneDigits.length!==9);
     if(!name || phoneDigits.length!==9) return;
     state.name = name; state.phone = '+375 '+document.getElementById('phoneInput').value.trim();
@@ -1092,8 +1078,55 @@
         '<div class="tk-row"><span>Пассажир</span><b>'+escapeHtml(entry.name)+'</b></div>'+
         '<div class="tk-row"><span>Мест</span><b>'+entry.seats+'</b></div>'+
         '<div class="tk-row"><span>Код брони</span><b>'+entry.ticketCode+'</b></div>'+
-        '<div class="tk-row" style="border-top:1px solid var(--line); margin-top:6px; padding-top:12px;"><span>К оплате водителю</span><b style="color:var(--accent-text); font-size:16px;">'+entry.price+' BYN</b></div>'+
+        '<div class="tk-row" style="border-top:1px solid var(--border); margin-top:6px; padding-top:12px;"><span>К оплате водителю</span><b style="color:var(--accent-dark); font-size:16px;">'+entry.price+' BYN</b></div>'+
       '</div>';
+  }
+
+  /* ---------------- статус поездки (живой таймлайн) ---------------- */
+  var STATUS_STEPS = [
+    { delay:0, label:function(){ return 'Ожидание отправления'; } },
+    { delay:20, label:function(){ return 'Маршрутка выехала'; } },
+    { delay:45, label:function(entry){ return 'Подъезжает к «'+entry.pickupName+'»'; } },
+    { delay:70, label:function(){ return 'Посадка на месте'; } }
+  ];
+  var statusInterval = null;
+  function clearStatusTimer(){
+    if(statusInterval){ clearInterval(statusInterval); statusInterval = null; }
+  }
+  function currentStatusIndex(entry){
+    var elapsed = Math.floor((Date.now()-entry.id)/1000);
+    var idx = 0;
+    for(var i=0;i<STATUS_STEPS.length;i++){ if(elapsed >= STATUS_STEPS[i].delay) idx = i; }
+    return idx;
+  }
+  function buildStatusTimelineHTML(entry){
+    if(entry.cancelled){
+      return '<div class="status-block done"><div class="status-rail"><div class="status-dot done"></div><div class="status-line"></div></div>'+
+          '<div class="status-content"><div class="status-title">'+STATUS_STEPS[0].label(entry)+'</div></div></div>'+
+        '<div class="status-block"><div class="status-rail"><div class="status-dot cancelled"></div></div>'+
+          '<div class="status-content"><div class="status-title" style="color:var(--danger-dark);">Рейс отменён</div></div></div>';
+    }
+    var curIdx = currentStatusIndex(entry);
+    return STATUS_STEPS.map(function(step,i){
+      var blockCls = i<curIdx ? 'done' : (i===curIdx ? 'current' : 'pending');
+      var dotCls = i<curIdx ? 'done' : (i===curIdx ? 'current' : '');
+      return '<div class="status-block '+blockCls+'"><div class="status-rail"><div class="status-dot '+dotCls+'"></div><div class="status-line"></div></div>'+
+        '<div class="status-content"><div class="status-title">'+step.label(entry)+'</div></div></div>';
+    }).join('');
+  }
+  function renderStatusTimeline(entry){
+    var wrap = document.getElementById('statusTimeline');
+    if(!wrap) return;
+    wrap.innerHTML = buildStatusTimelineHTML(entry);
+  }
+  function startStatusTimer(entry){
+    clearStatusTimer();
+    renderStatusTimeline(entry);
+    if(entry.cancelled || currentStatusIndex(entry) >= STATUS_STEPS.length-1) return;
+    statusInterval = setInterval(function(){
+      renderStatusTimeline(entry);
+      if(currentStatusIndex(entry) >= STATUS_STEPS.length-1) clearStatusTimer();
+    }, 2000);
   }
 
   var NOTIF_ICONS = {
@@ -1139,6 +1172,7 @@
     }
     document.getElementById('cancelBtn').style.display = entry.cancelled ? 'none' : '';
     document.getElementById('notifList').innerHTML = buildNotificationsHTML(entry);
+    startStatusTimer(entry);
   }
 
   var cancelOverlay = document.getElementById('cancelOverlay');
