@@ -207,7 +207,7 @@ let currentPaused = false;
 
 async function loadAll() {
   try {
-    const stats = await callApi('getStats');
+    const { stats, log } = await callApi('getDashboard', { log_limit: 15 });
     document.getElementById('sentToday').textContent = stats.sent_today;
     document.getElementById('dailyLimit').textContent = stats.daily_limit;
     document.getElementById('sentTotal').textContent = stats.sent_total;
@@ -226,8 +226,6 @@ async function loadAll() {
 
     renderBars(stats.daily_sends_14d);
     renderNiches(stats.by_niche);
-
-    const log = await callApi('getLog', { limit: 15 });
     renderLog(log);
   } catch (e) {
     document.getElementById('statusBadge').textContent = 'ошибка загрузки';
