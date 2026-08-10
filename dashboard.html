@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>SB · Аутрич</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+(function(){
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var scheme = (tg && tg.colorScheme) ? tg.colorScheme
+    : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  document.documentElement.setAttribute('data-theme', scheme);
+})();
+</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+:root{
+  --radius:14px; --radius-sm:10px;
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+:root[data-theme="dark"]{
+  --bg:#111417; --surface:#1A1E22; --surface-2:#20252A; --surface-3:#262B31;
+  --ink:#EDEFF0; --ink-soft:#8C949C; --ink-faint:#565D64;
+  --accent:#2AABEE; --accent-dark:#1B8FCB; --accent-soft:rgba(42,171,238,.14);
+  --ok:#38A89D; --ok-soft:rgba(56,168,157,.14);
+  --danger:#E5626A; --danger-soft:rgba(229,98,106,.12);
+  --line:#2A2F35; --line-strong:#3A414A;
+}
+:root[data-theme="light"]{
+  --bg:#F4F6F8; --surface:#FFFFFF; --surface-2:#EEF1F4; --surface-3:#E4E8EC;
+  --ink:#171A1D; --ink-soft:#5B6570; --ink-faint:#98A1AA;
+  --accent:#2AABEE; --accent-dark:#1B8FCB; --accent-soft:rgba(42,171,238,.12);
+  --ok:#2E9B8F; --ok-soft:rgba(46,155,143,.12);
+  --danger:#D6505A; --danger-soft:rgba(214,80,90,.10);
+  --line:#E2E6EA; --line-strong:#CDD3D9;
+}
+*{box-sizing:border-box;}
+body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; padding-top:calc(16px + var(--safe-top)); padding-bottom:max(80px, calc(40px + var(--safe-bottom))); padding-left:16px; padding-right:16px;}
+h1{font-family:'Chakra Petch',sans-serif; font-size:20px; font-weight:700; margin:0 0 4px;}
+.sub{color:var(--ink-soft); font-size:13px; margin:0 0 20px;}
+.mono{font-family:'JetBrains Mono',monospace;}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px; margin-bottom:12px;}
+.today-row{display:flex; align-items:center; justify-content:space-between;}
+.today-big{font-family:'JetBrains Mono',monospace; font-size:32px; font-weight:700;}
+.today-label{color:var(--ink-soft); font-size:12px; text-transform:uppercase; letter-spacing:.04em;}
+.badge{display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; padding:4px 10px; border-radius:999px;}
+.badge.ok{background:var(--ok-soft); color:var(--ok);}
+.badge.paused{background:var(--danger-soft); color:var(--danger);}
+.grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+.stat-num{font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700;}
+.stat-label{color:var(--ink-soft); font-size:12px; margin-top:2px;}
+.bars{display:flex; align-items:flex-end; gap:3px; height:60px; margin-top:8px;}
+.bar{flex:1; background:var(--accent-soft); border-radius:3px 3px 0 0; position:relative; min-height:2px;}
+.bar.today{background:var(--accent);}
+.niche-row{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line);}
+.niche-row:last-child{border-bottom:none;}
+.niche-name{font-weight:600; font-size:14px;}
+.niche-count{font-family:'JetBrains Mono',monospace; color:var(--ink-soft); font-size:13px;}
+.log-row{display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); gap:8px;}
+.log-row:last-child{border-bottom:none;}
+.log-company{font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.log-status{font-family:'JetBrains Mono',monospace; font-size:11px; padding:2px 8px; border-radius:999px; flex:none;}
+.log-status.sent{background:var(--ok-soft); color:var(--ok);}
+.log-status.bounced{background:var(--danger-soft); color:var(--danger);}
+.log-status.failed{background:var(--danger-soft); color:var(--danger);}
+.pause-btn{width:100%; min-height:44px; border-radius:var(--radius-sm); border:1px solid var(--line-strong); background:var(--surface-2); color:var(--ink); font-family:'Inter',sans-serif; font-weight:600; font-size:14px;}
+.pause-btn.is-paused{background:var(--ok-soft); border-color:var(--ok); color:var(--ok);}
+.section-title{font-size:13px; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin:0 0 10px;}
+.empty{color:var(--ink-faint); font-size:13px; text-align:center; padding:20px 0;}
+.skeleton{opacity:.4;}
+</style>
+</head>
+<body>
+
+<h1>SB · Аутрич</h1>
+<p class="sub">Дашборд рассылки Студии ботов</p>
+
+<div class="card" id="todayCard">
+  <div class="today-row">
+    <div>
+      <div class="today-label">Сегодня</div>
+      <div class="today-big mono"><span id="sentToday">—</span>/<span id="dailyLimit">—</span></div>
+    </div>
+    <span class="badge ok" id="statusBadge">загрузка…</span>
+  </div>
+</div>
+
+<div class="card">
+  <div class="grid">
+    <div><div class="stat-num" id="sentTotal">—</div><div class="stat-label">Всего отправлено</div></div>
+    <div><div class="stat-num" id="leadsTotal">—</div><div class="stat-label">Лидов в базе</div></div>
+    <div><div class="stat-num" id="bounceRate">—</div><div class="stat-label">Bounce rate</div></div>
+    <div><div class="stat-num" id="repliedCount">—</div><div class="stat-label">Ответили</div></div>
+  </div>
+</div>
+
+<div class="card">
+  <div class="section-title">Отправки за 14 дней</div>
+  <div class="bars" id="bars14"></div>
+</div>
+
+<div class="card">
+  <div class="section-title">По нишам</div>
+  <div id="nicheList"><div class="empty">нет данных</div></div>
+</div>
+
+<div class="card">
+  <div class="section-title">Последние отправки</div>
+  <div id="logList"><div class="empty">нет данных</div></div>
+</div>
+
+<div class="card">
+  <button class="pause-btn" id="pauseBtn">Пауза кампании</button>
+</div>
+
+<script>
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+
+const API_URL = 'https://script.google.com/macros/s/AKfycbyT7ySv44TkI5Oh4DmnfbY8sRoFf6KvU7RDOB6Na2yOLvQ58Qby3bCmF_NinVNEWaoQTw/exec';
+
+function haptic(style) {
+  if (tg && tg.HapticFeedback) {
+    if (["success","error","warning"].includes(style)) tg.HapticFeedback.notificationOccurred(style);
+    else tg.HapticFeedback.impactOccurred(style || "light");
+  }
+}
+
+function applyTelegramTheme(){
+  const scheme = (tg && tg.colorScheme) ? tg.colorScheme
+    : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  document.documentElement.setAttribute('data-theme', scheme);
+  if (tg) {
+    const s = getComputedStyle(document.documentElement);
+    try { tg.setHeaderColor(s.getPropertyValue("--surface").trim()); tg.setBackgroundColor(s.getPropertyValue("--bg").trim()); } catch(e) {}
+  }
+}
+
+function confirmAsync(message){
+  return new Promise((resolve)=>{
+    if (tg && tg.showConfirm && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
+      try { tg.showConfirm(message, resolve); return; } catch(e) {}
+    }
+    resolve(window.confirm(message));
+  });
+}
+
+function initTelegram() {
+  if (!tg) return;
+  tg.ready(); tg.expand();
+  applyTelegramTheme();
+  tg.onEvent && tg.onEvent('themeChanged', applyTelegramTheme);
+  if (tg.isVersionAtLeast && tg.isVersionAtLeast('7.7')) { try { tg.disableVerticalSwipes(); } catch(e) {} }
+}
+
+async function callApi(action, payload) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain' },
+    body: JSON.stringify({ action, payload: payload || {} })
+  });
+  const json = await res.json();
+  if (!json.ok) throw new Error(json.error || 'API error');
+  return json.data;
+}
+
+function renderBars(daily) {
+  const wrap = document.getElementById('bars14');
+  wrap.innerHTML = '';
+  const entries = Object.entries(daily);
+  const max = Math.max(1, ...entries.map(e => e[1]));
+  const todayKey = entries[entries.length - 1][0];
+  entries.forEach(([date, count]) => {
+    const bar = document.createElement('div');
+    bar.className = 'bar' + (date === todayKey ? ' today' : '');
+    bar.style.height = Math.max(2, (count / max) * 60) + 'px';
+    bar.title = date + ': ' + count;
+    wrap.appendChild(bar);
+  });
+}
+
+function renderNiches(byNiche) {
+  const wrap = document.getElementById('nicheList');
+  const keys = Object.keys(byNiche || {});
+  if (!keys.length) { wrap.innerHTML = '<div class="empty">нет данных</div>'; return; }
+  wrap.innerHTML = keys.map(k => {
+    const v = byNiche[k];
+    return '<div class="niche-row"><span class="niche-name">' + k + '</span>' +
+      '<span class="niche-count">' + v.sent + ' / ' + v.total + '</span></div>';
+  }).join('');
+}
+
+function renderLog(items) {
+  const wrap = document.getElementById('logList');
+  if (!items || !items.length) { wrap.innerHTML = '<div class="empty">пока пусто</div>'; return; }
+  wrap.innerHTML = items.map(l => {
+    const status = (l.status || 'sent');
+    const label = status === 'sent' ? 'sent' : status === 'bounced' ? 'bounce' : status;
+    return '<div class="log-row"><span class="log-company">' + (l.email || l.lead_id || '—') + '</span>' +
+      '<span class="log-status ' + status + '">' + label + '</span></div>';
+  }).join('');
+}
+
+let currentPaused = false;
+
+async function loadAll() {
+  try {
+    const stats = await callApi('getStats');
+    document.getElementById('sentToday').textContent = stats.sent_today;
+    document.getElementById('dailyLimit').textContent = stats.daily_limit;
+    document.getElementById('sentTotal').textContent = stats.sent_total;
+    document.getElementById('leadsTotal').textContent = stats.leads_total;
+    document.getElementById('bounceRate').textContent = stats.bounce_rate_pct + '%';
+    document.getElementById('repliedCount').textContent = (stats.by_status && stats.by_status.replied) || 0;
+
+    currentPaused = String(stats.config.paused).toUpperCase() === 'TRUE';
+    const badge = document.getElementById('statusBadge');
+    badge.textContent = currentPaused ? 'на паузе' : 'активна';
+    badge.className = 'badge ' + (currentPaused ? 'paused' : 'ok');
+
+    const pauseBtn = document.getElementById('pauseBtn');
+    pauseBtn.textContent = currentPaused ? 'Возобновить кампанию' : 'Пауза кампании';
+    pauseBtn.classList.toggle('is-paused', currentPaused);
+
+    renderBars(stats.daily_sends_14d);
+    renderNiches(stats.by_niche);
+
+    const log = await callApi('getLog', { limit: 15 });
+    renderLog(log);
+  } catch (e) {
+    document.getElementById('statusBadge').textContent = 'ошибка загрузки';
+    document.getElementById('statusBadge').className = 'badge paused';
+  }
+}
+
+document.getElementById('pauseBtn').addEventListener('click', async () => {
+  const ok = await confirmAsync(currentPaused ? 'Возобновить рассылку?' : 'Поставить рассылку на паузу?');
+  if (!ok) return;
+  try {
+    await callApi('updateConfig', { paused: currentPaused ? 'FALSE' : 'TRUE' });
+    haptic('success');
+    loadAll();
+  } catch (e) {
+    haptic('error');
+  }
+});
+
+initTelegram();
+loadAll();
+</script>
+</body>
+</html>
