@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <title>SB · Аутрич</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
 (function(){
@@ -38,7 +40,7 @@
   --line:#E2E6EA; --line-strong:#CDD3D9;
 }
 *{box-sizing:border-box;}
-body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; padding-top:calc(16px + var(--safe-top)); padding-bottom:max(80px, calc(40px + var(--safe-bottom))); padding-left:16px; padding-right:16px;}
+body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; padding-top:calc(16px + var(--safe-top)); padding-bottom:max(100px, calc(40px + var(--safe-bottom))); padding-left:16px; padding-right:16px;}
 h1{font-family:'Chakra Petch',sans-serif; font-size:20px; font-weight:700; margin:0 0 4px;}
 .sub{color:var(--ink-soft); font-size:13px; margin:0 0 20px;}
 .mono{font-family:'JetBrains Mono',monospace;}
@@ -68,6 +70,8 @@ h1{font-family:'Chakra Petch',sans-serif; font-size:20px; font-weight:700; margi
 .log-status.failed{background:var(--danger-soft); color:var(--danger);}
 .pause-btn{width:100%; min-height:44px; border-radius:var(--radius-sm); border:1px solid var(--line-strong); background:var(--surface-2); color:var(--ink); font-family:'Inter',sans-serif; font-weight:600; font-size:14px;}
 .pause-btn.is-paused{background:var(--ok-soft); border-color:var(--ok); color:var(--ok);}
+.pause-btn:disabled{opacity:.5;}
+.badge{cursor:pointer;}
 .section-title{font-size:13px; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin:0 0 10px;}
 .empty{color:var(--ink-faint); font-size:13px; text-align:center; padding:20px 0;}
 .skeleton{opacity:.4;}
@@ -159,11 +163,17 @@ async function callApi(action, payload) {
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action, payload: payload || {} })
+    body: JSON.stringify({ action, payload: payload || {}, init_data: tg ? tg.initData : '' })
   });
   const json = await res.json();
   if (!json.ok) throw new Error(json.error || 'API error');
   return json.data;
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
 function renderBars(daily) {
@@ -187,8 +197,8 @@ function renderNiches(byNiche) {
   if (!keys.length) { wrap.innerHTML = '<div class="empty">нет данных</div>'; return; }
   wrap.innerHTML = keys.map(k => {
     const v = byNiche[k];
-    return '<div class="niche-row"><span class="niche-name">' + k + '</span>' +
-      '<span class="niche-count">' + v.sent + ' / ' + v.total + '</span></div>';
+    return '<div class="niche-row"><span class="niche-name">' + escapeHtml(k) + '</span>' +
+      '<span class="niche-count">' + escapeHtml(v.sent) + ' / ' + escapeHtml(v.total) + '</span></div>';
   }).join('');
 }
 
@@ -198,8 +208,8 @@ function renderLog(items) {
   wrap.innerHTML = items.map(l => {
     const status = (l.status || 'sent');
     const label = status === 'sent' ? 'sent' : status === 'bounced' ? 'bounce' : status;
-    return '<div class="log-row"><span class="log-company">' + (l.email || l.lead_id || '—') + '</span>' +
-      '<span class="log-status ' + status + '">' + label + '</span></div>';
+    return '<div class="log-row"><span class="log-company">' + escapeHtml(l.email || l.lead_id || '—') + '</span>' +
+      '<span class="log-status ' + escapeHtml(status) + '">' + escapeHtml(label) + '</span></div>';
   }).join('');
 }
 
@@ -228,20 +238,26 @@ async function loadAll() {
     renderNiches(stats.by_niche);
     renderLog(log);
   } catch (e) {
-    document.getElementById('statusBadge').textContent = 'ошибка загрузки';
+    document.getElementById('statusBadge').textContent = 'ошибка загрузки · тап для повтора';
     document.getElementById('statusBadge').className = 'badge paused';
   }
 }
 
+document.getElementById('statusBadge').addEventListener('click', () => loadAll());
+
 document.getElementById('pauseBtn').addEventListener('click', async () => {
   const ok = await confirmAsync(currentPaused ? 'Возобновить рассылку?' : 'Поставить рассылку на паузу?');
   if (!ok) return;
+  const btn = document.getElementById('pauseBtn');
+  btn.disabled = true;
   try {
     await callApi('updateConfig', { paused: currentPaused ? 'FALSE' : 'TRUE' });
     haptic('success');
-    loadAll();
+    await loadAll();
   } catch (e) {
     haptic('error');
+  } finally {
+    btn.disabled = false;
   }
 });
 
