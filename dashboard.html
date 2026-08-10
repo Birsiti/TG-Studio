@@ -166,7 +166,10 @@ async function callApi(action, payload) {
     body: JSON.stringify({ action, payload: payload || {}, init_data: tg ? tg.initData : '' })
   });
   const json = await res.json();
-  if (!json.ok) throw new Error(json.error || 'API error');
+  if (!json.ok) {
+    const debugText = json.debug ? ' :: ' + JSON.stringify(json.debug) : '';
+    throw new Error((json.error || 'API error') + debugText);
+  }
   return json.data;
 }
 
@@ -238,12 +241,16 @@ async function loadAll() {
     renderNiches(stats.by_niche);
     renderLog(log);
   } catch (e) {
-    document.getElementById('statusBadge').textContent = 'ошибка загрузки · тап для повтора';
+    window.__lastError = e.message;
+    document.getElementById('statusBadge').textContent = 'ошибка · тап для деталей';
     document.getElementById('statusBadge').className = 'badge paused';
   }
 }
 
-document.getElementById('statusBadge').addEventListener('click', () => loadAll());
+document.getElementById('statusBadge').addEventListener('click', () => {
+  if (window.__lastError) { alert(window.__lastError); window.__lastError = null; return; }
+  loadAll();
+});
 
 document.getElementById('pauseBtn').addEventListener('click', async () => {
   const ok = await confirmAsync(currentPaused ? 'Возобновить рассылку?' : 'Поставить рассылку на паузу?');
