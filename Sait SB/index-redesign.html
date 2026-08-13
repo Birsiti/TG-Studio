@@ -1,0 +1,1155 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TG-Studio — боты и приложения для Telegram, которые окупаются</title>
+<meta name="description" content="Разрабатываем Telegram-ботов и Mini Apps под задачи бизнеса: приём заявок, продажи, оплата и интеграция с CRM. Считаем результат, а не количество функций.">
+<meta name="theme-color" content="#070c16">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Cpath d='M24 4 L40 13 V33 L24 42 L8 33 V13 Z' fill='%230e1a2f' stroke='%23d4a94b' stroke-width='2'/%3E%3Cpath d='M24 12 L33 17.5 V28.5 L24 34 L15 28.5 V17.5 Z' fill='none' stroke='%23e8c574' stroke-width='1.6'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy-950:#070c16;
+    --navy-900:#0b1526;
+    --navy-850:#0e1a2f;
+    --navy-800:#12203a;
+    --navy-700:#1c2f4d;
+    --navy-600:#2a3f61;
+    --gold-300:#f2d99a;
+    --gold-400:#e8c574;
+    --gold-500:#d4a94b;
+    --gold-600:#b8892e;
+    --blue-400:#2aabee;
+    --blue-300:#5cc4f5;
+    --ink-50:#f6f3ea;
+    --ink-200:#d9deea;
+    --ink-300:#b9c2d4;
+    --ink-500:#8e9ab1;
+    --danger:#ef6a6a;
+    --radius:12px;
+    --maxw:1180px;
+    --ease:cubic-bezier(.16,.8,.28,1);
+    --gutter:32px;
+  }
+  @media(max-width:640px){ :root{ --gutter:24px; } }
+
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--navy-950);
+    color:var(--ink-50);
+    font-family:'Manrope', sans-serif;
+    font-size:16px;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  img,svg{display:block; max-width:100%;}
+  a{color:inherit; text-decoration:none;}
+  ul{list-style:none;}
+  button{font-family:inherit; cursor:pointer; touch-action:manipulation;}
+  :focus-visible{outline:2px solid var(--gold-300); outline-offset:3px;}
+
+  .skip-link{
+    position:fixed; top:-100px; left:12px; z-index:200;
+    background:var(--gold-400); color:#1a1305; font-weight:700;
+    padding:12px 18px; border-radius:8px; transition:top .25s var(--ease);
+  }
+  .skip-link:focus{top:12px;}
+
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 var(--gutter);}
+
+  h1,h2,h3,.font-display{
+    font-family:'Chakra Petch', sans-serif;
+    letter-spacing:.01em;
+  }
+  .mono{
+    font-family:'JetBrains Mono', monospace;
+    letter-spacing:.08em;
+  }
+  p{color:var(--ink-300); line-height:1.6;}
+
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:12.5px;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--gold-400);
+    margin-bottom:16px;
+  }
+  .eyebrow::before{
+    content:"";
+    width:7px; height:7px;
+    background:var(--gold-500);
+    transform:rotate(45deg);
+    flex:none;
+  }
+
+  /* background texture */
+  .grain{
+    position:fixed; inset:0; z-index:0; pointer-events:none;
+    background-image:
+      radial-gradient(circle at 1px 1px, rgba(212,169,75,.10) 1px, transparent 1px);
+    background-size:34px 34px;
+    mask-image:radial-gradient(ellipse 80% 60% at 50% 0%, black 10%, transparent 70%);
+  }
+
+  /* ---------- HEADER ---------- */
+  header{
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    background:rgba(7,12,22,.7);
+    backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(255,255,255,.06);
+    transition:background .3s var(--ease), border-color .3s var(--ease);
+  }
+  header.is-scrolled{background:rgba(7,12,22,.92); border-color:rgba(255,255,255,.1);}
+  .nav{
+    display:flex; align-items:center; justify-content:space-between;
+    height:72px; gap:16px;
+  }
+  .brand{display:flex; align-items:center; gap:8px; min-height:44px;}
+  .brand-mark{width:32px; height:32px; flex:none;}
+  .brand-name{
+    font-family:'Chakra Petch', sans-serif;
+    font-weight:600;
+    font-size:16.5px;
+    line-height:1.15;
+    letter-spacing:.01em;
+  }
+  .brand-name span{display:block; color:var(--gold-400); font-size:11px; font-family:'JetBrains Mono',monospace; letter-spacing:.14em; font-weight:400; margin-top:4px;}
+
+  .nav-links{display:none; align-items:center; gap:6px;}
+  .nav-links a{
+    padding:10px 14px; border-radius:999px; font-size:14px; font-weight:500;
+    color:var(--ink-300); transition:color .25s var(--ease), background .25s var(--ease);
+  }
+  .nav-links a:hover{color:var(--ink-50); background:rgba(255,255,255,.06);}
+  @media(min-width:960px){ .nav-links{display:flex;} }
+
+  .nav-right{display:flex; align-items:center; gap:10px;}
+
+  .burger{
+    display:flex; align-items:center; justify-content:center;
+    width:44px; height:44px; flex:none;
+    background:transparent; border:1px solid rgba(255,255,255,.16); border-radius:10px;
+    transition:border-color .25s var(--ease);
+  }
+  .burger:hover{border-color:var(--gold-500);}
+  .burger span{position:relative; width:18px; height:1px; background:var(--ink-50); display:block;}
+  .burger span::before,.burger span::after{
+    content:""; position:absolute; left:0; width:18px; height:1px; background:var(--ink-50);
+    transition:transform .3s var(--ease), opacity .3s var(--ease);
+  }
+  .burger span::before{top:-6px;}
+  .burger span::after{top:6px;}
+  .burger[aria-expanded="true"] span{background:transparent;}
+  .burger[aria-expanded="true"] span::before{transform:translateY(6px) rotate(45deg);}
+  .burger[aria-expanded="true"] span::after{transform:translateY(-6px) rotate(-45deg);}
+  @media(min-width:960px){ .burger{display:none;} }
+
+  .mobile-menu{
+    display:grid; grid-template-rows:0fr; overflow:hidden;
+    background:rgba(7,12,22,.97); backdrop-filter:blur(10px);
+    border-bottom:1px solid rgba(255,255,255,.06);
+    transition:grid-template-rows .35s var(--ease);
+  }
+  .mobile-menu.is-open{grid-template-rows:1fr;}
+  .mobile-menu-inner{min-height:0; overflow:hidden;}
+  .mobile-menu ul{display:flex; flex-direction:column; padding:8px var(--gutter) 24px;}
+  .mobile-menu a{
+    padding:16px 8px; font-size:16px; font-weight:500; color:var(--ink-200);
+    border-bottom:1px solid rgba(255,255,255,.06); min-height:44px; display:flex; align-items:center;
+  }
+  .mobile-menu li:last-child a{border-bottom:none;}
+  @media(min-width:960px){ .mobile-menu{display:none;} }
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    padding:16px 24px; min-height:44px;
+    border-radius:999px;
+    font-weight:700;
+    font-size:14.5px;
+    letter-spacing:.02em;
+    border:1px solid transparent;
+    transition:transform .35s var(--ease), box-shadow .35s var(--ease), background .35s var(--ease), border-color .35s var(--ease);
+    white-space:nowrap;
+  }
+  .btn-primary{
+    background:linear-gradient(135deg, var(--gold-300), var(--gold-500) 60%, var(--gold-600));
+    color:#1a1305;
+    box-shadow:0 8px 24px -8px rgba(212,169,75,.55);
+  }
+  .btn-primary:hover{transform:translateY(-2px); box-shadow:0 14px 30px -8px rgba(212,169,75,.65);}
+  .btn-primary:disabled{opacity:.7; cursor:default; transform:none;}
+  .btn-ghost{
+    background:transparent;
+    border-color:rgba(255,255,255,.16);
+    color:var(--ink-50);
+  }
+  .btn-ghost:hover{border-color:var(--gold-500); color:var(--gold-300);}
+  .btn-sm{padding:8px 16px; font-size:13px; min-height:44px;}
+
+  .spinner{
+    width:15px; height:15px; border-radius:50%;
+    border:2px solid rgba(26,19,5,.35); border-top-color:#1a1305;
+    animation:spin .7s linear infinite; flex:none;
+  }
+  @keyframes spin{to{transform:rotate(360deg);}}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    padding:152px 0 96px;
+    overflow:hidden;
+    box-shadow:inset 0 0 140px 20px rgba(0,0,0,.4);
+  }
+  @media(min-width:720px){ .hero{padding:176px 0 112px;} }
+  .hero::before{
+    content:"";
+    position:absolute; top:-224px; left:50%; transform:translateX(-38%);
+    width:900px; height:900px;
+    background:radial-gradient(circle, rgba(212,169,75,.20), rgba(212,169,75,0) 60%);
+    z-index:0; pointer-events:none;
+  }
+  .hero::after{
+    content:"";
+    position:absolute; top:120px; right:-176px;
+    width:600px; height:600px;
+    background:radial-gradient(circle, rgba(42,171,238,.14), rgba(42,171,238,0) 65%);
+    z-index:0; pointer-events:none;
+  }
+  .hero-grid{
+    position:relative; z-index:1;
+    display:grid; grid-template-columns:1fr; gap:48px;
+    align-items:center;
+  }
+  @media(min-width:960px){ .hero-grid{grid-template-columns:1.05fr .95fr; gap:56px;} }
+
+  @keyframes heroReveal{from{opacity:0; transform:translateY(18px);} to{opacity:1; transform:translateY(0);}}
+  .hero-copy > *{animation:heroReveal .8s var(--ease) both;}
+  .hero-copy > *:nth-child(1){animation-delay:.05s;}
+  .hero-copy > *:nth-child(2){animation-delay:.16s;}
+  .hero-copy > *:nth-child(3){animation-delay:.28s;}
+  .hero-copy > *:nth-child(4){animation-delay:.4s;}
+  .hero-copy > *:nth-child(5){animation-delay:.5s;}
+
+  .hero h1{
+    font-size:clamp(32px, 5.6vw, 58px);
+    line-height:1.1;
+    font-weight:700;
+    color:var(--ink-50);
+  }
+  .hero h1 em{
+    font-style:normal;
+    background:linear-gradient(100deg, var(--gold-300), var(--gold-500));
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .hero p.lead{
+    margin-top:24px;
+    font-size:17.5px;
+    line-height:1.65;
+    color:var(--ink-300);
+    max-width:520px;
+  }
+  .hero-cta{display:flex; flex-wrap:wrap; gap:16px; margin-top:32px;}
+
+  .hero-stats{
+    display:flex; gap:32px; margin-top:48px; flex-wrap:wrap;
+  }
+  .hero-stats div strong{
+    display:block; font-family:'Chakra Petch',sans-serif; font-size:26px; color:var(--gold-300); font-weight:700;
+  }
+  .hero-stats div span{font-size:12.5px; color:var(--ink-500); letter-spacing:.03em;}
+
+  /* signature illustration */
+  .hero-art{position:relative; z-index:1; display:flex; justify-content:center; transition:transform .3s var(--ease);}
+  .hero-art svg{width:100%; max-width:420px; height:auto; animation:heroArtReveal 1s var(--ease) .32s both;}
+  @keyframes heroArtReveal{from{opacity:0; transform:scale(.92);} to{opacity:1; transform:scale(1);}}
+  @keyframes floatY{0%,100%{transform:translateY(0);} 50%{transform:translateY(-14px);}}
+  @keyframes floatPlane{
+    0%{transform:translate(0,0) rotate(-6deg);}
+    50%{transform:translate(10px,-16px) rotate(-2deg);}
+    100%{transform:translate(0,0) rotate(-6deg);}
+  }
+  .cube-float{animation:floatY 6s ease-in-out infinite;}
+  .cube-float.d2{animation-delay:.5s;}
+  .cube-float.d3{animation-delay:1s;}
+  .plane-float{animation:floatPlane 4.5s ease-in-out infinite; transform-origin:center;}
+
+  /* ---------- SECTION SHELL ---------- */
+  section{position:relative; z-index:1; padding:80px 0;}
+  @media(min-width:720px){ section{padding:112px 0;} }
+  .section-head{max-width:640px; margin-bottom:48px;}
+  @media(min-width:720px){ .section-head{margin-bottom:56px;} }
+  .section-head h2{font-size:clamp(26px,3.4vw,36px); font-weight:600; line-height:1.2;}
+  .section-head p{margin-top:16px; color:var(--ink-300); font-size:15.5px; line-height:1.6;}
+
+  .reveal{opacity:0; transform:translateY(22px); transition:opacity .7s var(--ease), transform .7s var(--ease);}
+  .reveal.in{opacity:1; transform:translateY(0);}
+  .reveal-stagger.in > *{opacity:1; transform:none;}
+  .reveal-stagger > *{opacity:0; transform:translateY(18px); transition:opacity .6s var(--ease), transform .6s var(--ease);}
+  .reveal-stagger.in > *:nth-child(1){transition-delay:0ms;}
+  .reveal-stagger.in > *:nth-child(2){transition-delay:60ms;}
+  .reveal-stagger.in > *:nth-child(3){transition-delay:120ms;}
+  .reveal-stagger.in > *:nth-child(4){transition-delay:180ms;}
+  .reveal-stagger.in > *:nth-child(5){transition-delay:240ms;}
+  .reveal-stagger.in > *:nth-child(6){transition-delay:300ms;}
+
+  /* ---------- SERVICES ---------- */
+  .services{background:var(--navy-900); border-top:1px solid rgba(255,255,255,.05); border-bottom:1px solid rgba(255,255,255,.05);}
+  .service-grid{
+    display:grid; grid-template-columns:1fr; gap:16px;
+  }
+  @media(min-width:520px){ .service-grid{grid-template-columns:repeat(2,1fr); gap:24px;} }
+  @media(min-width:960px){ .service-grid{grid-template-columns:repeat(4,1fr);} }
+  .card{
+    background:var(--navy-800);
+    border:1px solid var(--navy-700);
+    border-radius:var(--radius);
+    padding:24px;
+    transition:transform .4s var(--ease), border-color .4s var(--ease), background .4s var(--ease), box-shadow .4s var(--ease);
+  }
+  .card:hover{transform:translateY(-6px); border-color:var(--gold-500); background:var(--navy-850); box-shadow:0 20px 40px -24px rgba(0,0,0,.6);}
+  .card-icon{
+    width:44px; height:44px;
+    display:flex; align-items:center; justify-content:center;
+    border-radius:8px;
+    background:linear-gradient(145deg, rgba(212,169,75,.16), rgba(212,169,75,.03));
+    border:1px solid rgba(212,169,75,.3);
+    margin-bottom:16px;
+  }
+  .card h3{font-size:16px; font-weight:600; margin-bottom:8px; letter-spacing:.01em;}
+  .card p{font-size:14.5px; color:var(--ink-500); line-height:1.55;}
+
+  /* ---------- SHOWCASE (fan carousel) ---------- */
+  .showcase{background:var(--navy-900); border-top:1px solid rgba(255,255,255,.05); border-bottom:1px solid rgba(255,255,255,.05); overflow:hidden;}
+  .fan-carousel{position:relative;}
+  .fan-carousel::before{
+    content:""; position:absolute; left:50%; top:10%; transform:translateX(-50%);
+    width:520px; height:520px; max-width:120vw;
+    background:radial-gradient(circle, rgba(212,169,75,.16), rgba(212,169,75,0) 65%);
+    pointer-events:none; z-index:0;
+  }
+  .fan-track{
+    position:relative; z-index:1;
+    height:340px; margin-bottom:32px;
+  }
+  @media(min-width:640px){ .fan-track{height:400px;} }
+  .phone-card{
+    position:absolute; left:50%; top:50%;
+    width:clamp(132px, 34vw, 188px);
+    aspect-ratio:9/19;
+    background:var(--navy-950);
+    border:5px solid var(--navy-700);
+    border-radius:26px;
+    padding:14px 10px;
+    display:flex; flex-direction:column; gap:8px;
+    transition:transform .55s var(--ease), opacity .45s var(--ease), filter .45s var(--ease), border-color .3s var(--ease), box-shadow .45s var(--ease);
+    box-shadow:0 24px 48px -20px rgba(0,0,0,.6);
+  }
+  .phone-card:focus-visible{outline:2px solid var(--gold-300); outline-offset:4px;}
+  .phone-card.is-active{border-color:var(--gold-500); box-shadow:0 28px 60px -16px rgba(212,169,75,.35);}
+  .phone-notch{
+    display:block; width:36px; height:5px; border-radius:999px;
+    background:var(--navy-700); margin:0 auto 4px;
+  }
+  .phone-screen{flex:1; display:flex; flex-direction:column; gap:6px; overflow:hidden;}
+  .ph-row{height:8px; border-radius:4px; background:var(--navy-700);}
+  .ph-row.w60{width:60%;} .ph-row.w80{width:80%;} .ph-row.w40{width:40%;} .ph-row.w100{width:100%;}
+  .ph-bubble{
+    align-self:flex-start; max-width:76%; padding:6px 8px; border-radius:8px 8px 8px 2px;
+    background:var(--navy-700); font-size:7px; color:var(--ink-300); line-height:1.3;
+  }
+  .ph-bubble.me{align-self:flex-end; border-radius:8px 8px 2px 8px; background:linear-gradient(135deg, var(--gold-400), var(--gold-600)); color:#1a1305;}
+  .ph-card{background:var(--navy-800); border:1px solid var(--navy-700); border-radius:8px; padding:8px; display:flex; flex-direction:column; gap:5px;}
+  .ph-pill{align-self:flex-start; padding:3px 7px; border-radius:999px; background:rgba(212,169,75,.16); color:var(--gold-300); font-size:6px; letter-spacing:.06em;}
+  .ph-btn{margin-top:auto; height:22px; border-radius:999px; background:linear-gradient(135deg, var(--gold-300), var(--gold-600)); display:flex; align-items:center; justify-content:center; font-size:7px; font-weight:700; color:#1a1305;}
+  .ph-avatar{width:20px; height:20px; border-radius:50%; background:linear-gradient(135deg, var(--blue-400), var(--blue-300));}
+  .ph-grid2{display:grid; grid-template-columns:1fr 1fr; gap:5px;}
+  .ph-tile{aspect-ratio:1; border-radius:6px; background:var(--navy-700);}
+
+  .fan-controls{
+    position:relative; z-index:1;
+    display:flex; align-items:center; justify-content:center; gap:16px;
+  }
+  .fan-nav{
+    width:44px; height:44px; flex:none;
+    border-radius:50%; border:1px solid var(--navy-700); background:var(--navy-800);
+    display:flex; align-items:center; justify-content:center; color:var(--gold-300);
+    transition:border-color .25s var(--ease), transform .25s var(--ease);
+  }
+  .fan-nav:hover{border-color:var(--gold-500); transform:translateY(-2px);}
+  .fan-dots{display:flex; gap:8px;}
+  .fan-dot{padding:0; min-width:44px; min-height:44px; display:flex; align-items:center; justify-content:center; background:transparent; border:none;}
+  .fan-dot span{width:8px; height:8px; border-radius:50%; background:var(--navy-600); display:block; transition:background .25s var(--ease), transform .25s var(--ease);}
+  .fan-dot[aria-current="true"] span{background:var(--gold-500); transform:scale(1.3);}
+  .fan-caption{position:relative; z-index:1; text-align:center; margin-top:16px; font-size:14.5px; color:var(--ink-300); font-weight:600;}
+
+  /* ---------- WHY ---------- */
+  .why-grid{
+    display:grid; grid-template-columns:1fr; gap:0;
+    border-top:1px solid var(--navy-700);
+  }
+  @media(min-width:820px){ .why-grid{grid-template-columns:repeat(3,1fr);} }
+  .why-item{
+    padding:32px 0;
+    border-bottom:1px solid var(--navy-700);
+  }
+  @media(min-width:820px){
+    .why-item{border-right:1px solid var(--navy-700); padding:32px 32px 32px 0;}
+    .why-item:last-child{border-right:none;}
+  }
+  .why-item .num{
+    font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--gold-500); letter-spacing:.12em; margin-bottom:16px; display:block;
+  }
+  .why-item h3{font-size:19px; font-weight:600; margin-bottom:8px;}
+  .why-item p{color:var(--ink-500); font-size:14.5px; line-height:1.6;}
+
+  /* ---------- PROCESS ---------- */
+  .process{background:var(--navy-900); border-top:1px solid rgba(255,255,255,.05); border-bottom:1px solid rgba(255,255,255,.05);}
+  .timeline{
+    display:flex; flex-direction:column; gap:0;
+  }
+  @media(min-width:900px){ .timeline{flex-direction:row; align-items:stretch;} }
+  .step{
+    position:relative;
+    flex:1;
+    display:flex; flex-direction:row; align-items:flex-start; gap:16px;
+    padding:20px 0;
+  }
+  @media(min-width:900px){
+    .step{flex-direction:column; align-items:flex-start; padding:0 24px 0 0;}
+  }
+  .step-dot{
+    flex:none;
+    width:40px; height:40px; border-radius:50%;
+    background:var(--navy-800);
+    border:1px solid var(--gold-500);
+    color:var(--gold-300);
+    font-family:'JetBrains Mono',monospace; font-size:13px; font-weight:600;
+    display:flex; align-items:center; justify-content:center;
+    position:relative; z-index:2;
+  }
+  .step:not(:last-child)::before{
+    content:"";
+    position:absolute; left:20px; top:64px; bottom:-24px;
+    width:1px; background:var(--navy-600);
+  }
+  @media(min-width:900px){
+    .step:not(:last-child)::before{
+      left:40px; right:auto; top:20px; bottom:auto;
+      width:calc(100% - 24px); height:1px;
+    }
+  }
+  .step-body{padding-top:2px;}
+  @media(min-width:900px){ .step-body{margin-top:16px;} }
+  .step h3{font-size:14.5px; font-weight:600;}
+  .step p{font-size:13px; color:var(--ink-500); margin-top:8px; line-height:1.5; max-width:200px;}
+
+  /* ---------- CONTACT ---------- */
+  .contact-grid{
+    display:grid; grid-template-columns:1fr; gap:48px;
+  }
+  @media(min-width:920px){ .contact-grid{grid-template-columns:.85fr 1fr; gap:56px;} }
+
+  .trust-list{margin-top:32px; display:flex; flex-direction:column; gap:24px;}
+  .trust-item{display:flex; gap:16px; align-items:flex-start;}
+  .trust-item .dot{
+    flex:none; width:26px; height:26px; margin-top:2px;
+    background:linear-gradient(145deg, var(--gold-300), var(--gold-600));
+    clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+  .trust-item p{color:var(--ink-300); font-size:14.5px; line-height:1.6;}
+  .trust-item strong{display:block; color:var(--ink-50); font-size:15px; margin-bottom:3px; font-weight:600;}
+
+  .contact-links{display:flex; gap:16px; margin-top:32px; flex-wrap:wrap;}
+  .contact-link{
+    display:inline-flex; align-items:center; gap:8px; min-height:44px;
+    padding:0 16px; border-radius:999px; border:1px solid var(--navy-700);
+    font-size:13.5px; color:var(--ink-300); transition:border-color .25s var(--ease), color .25s var(--ease);
+  }
+  .contact-link:hover{border-color:var(--gold-500); color:var(--gold-300);}
+
+  .form-card{
+    background:var(--navy-800);
+    border:1px solid var(--navy-700);
+    border-radius:16px;
+    padding:24px;
+  }
+  @media(min-width:520px){ .form-card{padding:40px;} }
+  .form-card h3{font-size:20px; font-weight:600; margin-bottom:8px;}
+  .form-card > p{color:var(--ink-500); font-size:13.8px; margin-bottom:24px;}
+  .field{margin-bottom:16px;}
+  .field-label-row{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:8px;}
+  .field label{
+    display:block; font-family:'JetBrains Mono',monospace; font-size:11.5px;
+    letter-spacing:.1em; text-transform:uppercase; color:var(--ink-500);
+  }
+  .field .req{color:var(--gold-500);}
+  .field input{
+    width:100%; min-height:44px;
+    background:var(--navy-900);
+    border:1px solid var(--navy-600);
+    border-radius:8px;
+    padding:16px;
+    color:var(--ink-50);
+    font-size:16px;
+    font-family:inherit;
+    transition:border-color .25s, box-shadow .25s;
+  }
+  .field input::placeholder{color:var(--ink-500);}
+  .field input:focus{
+    outline:none; border-color:var(--gold-500);
+    box-shadow:0 0 0 3px rgba(212,169,75,.15);
+  }
+  .field input[aria-invalid="true"]{border-color:var(--danger);}
+  .field input[aria-invalid="true"]:focus{box-shadow:0 0 0 3px rgba(239,106,106,.18);}
+  .field-error{
+    display:none; color:var(--danger); font-size:12.5px; margin-top:8px; line-height:1.4;
+  }
+  .field-error.is-visible{display:block;}
+  .form-card .btn-primary{width:100%; margin-top:8px; padding:16px;}
+  .form-note{font-size:11.5px; color:var(--ink-500); margin-top:16px; text-align:center; line-height:1.5;}
+  .success-box{
+    display:none;
+    text-align:center; padding:24px 16px;
+  }
+  .success-box .dot{
+    width:44px; height:44px; margin:0 auto 16px;
+    background:linear-gradient(145deg, var(--gold-300), var(--gold-600));
+    clip-path:polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  }
+  .success-box h4{font-size:17px; margin-bottom:8px;}
+  .success-box p{color:var(--ink-500); font-size:13.8px;}
+  .success-box .btn-ghost{margin-top:24px; padding:8px 16px;}
+
+  /* ---------- FAQ ---------- */
+  .faq-list{display:flex; flex-direction:column; gap:16px; max-width:760px;}
+  .faq-item{
+    background:var(--navy-800); border:1px solid var(--navy-700); border-radius:12px; overflow:hidden;
+  }
+  .faq-q{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:16px;
+    padding:16px 24px; min-height:44px;
+    background:transparent; border:none; color:var(--ink-50); font-size:15px; font-weight:600; text-align:left;
+  }
+  .faq-q .chev{flex:none; transition:transform .3s var(--ease); color:var(--gold-400);}
+  .faq-item[data-open="true"] .chev{transform:rotate(180deg);}
+  .faq-a{
+    display:grid; grid-template-rows:0fr; transition:grid-template-rows .3s var(--ease);
+  }
+  .faq-item[data-open="true"] .faq-a{grid-template-rows:1fr;}
+  .faq-a-inner{overflow:hidden;}
+  .faq-a p{padding:0 24px 24px; font-size:14px; color:var(--ink-500); line-height:1.6;}
+
+  /* ---------- FOOTER ---------- */
+  footer{
+    border-top:1px solid rgba(255,255,255,.06);
+    padding:40px 0 max(24px, env(safe-area-inset-bottom));
+  }
+  .foot-row{
+    display:flex; flex-wrap:wrap; gap:20px;
+    align-items:center; justify-content:space-between;
+  }
+  .foot-brand{display:flex; align-items:center; gap:8px;}
+  .foot-brand .brand-mark{width:24px; height:24px;}
+  .foot-brand span{font-size:13px; color:var(--ink-500);}
+  .foot-links{display:flex; gap:16px; flex-wrap:wrap;}
+  .foot-links a{font-size:13px; color:var(--ink-500); transition:color .25s var(--ease);}
+  .foot-links a:hover{color:var(--gold-400);}
+  footer .copy{font-size:12.5px; color:var(--ink-500); font-family:'JetBrains Mono',monospace;}
+
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:.001ms !important; animation-iteration-count:1 !important; transition-duration:.001ms !important; scroll-behavior:auto !important;}
+  }
+</style>
+</head>
+<body>
+
+<a href="#main-content" class="skip-link">Перейти к содержимому</a>
+<div class="grain"></div>
+
+<header id="siteHeader">
+  <div class="wrap nav">
+    <a href="#" class="brand" aria-label="TG-Studio — на главную">
+      <svg class="brand-mark" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
+        <path d="M24 4 L40 13 V33 L24 42 L8 33 V13 Z" fill="#0e1a2f" stroke="#d4a94b" stroke-width="1.4"/>
+        <path d="M24 12 L33 17.5 V28.5 L24 34 L15 28.5 V17.5 Z" fill="none" stroke="#e8c574" stroke-width="1.2"/>
+        <path d="M17 27 L31 20 L26 24 L31 24Z" fill="#2aabee"/>
+      </svg>
+      <span class="brand-name">TG-STUDIO<span>TELEGRAM AUTOMATION</span></span>
+    </a>
+
+    <nav class="nav-links" aria-label="Основная навигация">
+      <a href="#services">Услуги</a>
+      <a href="#showcase">Витрина</a>
+      <a href="#why">Результат</a>
+      <a href="#process">Процесс</a>
+      <a href="#faq">Вопросы</a>
+      <a href="#contact">Контакты</a>
+    </nav>
+
+    <div class="nav-right">
+      <a href="#contact" class="btn btn-primary btn-sm">Обсудить проект</a>
+      <button type="button" class="burger" id="menuToggle" aria-expanded="false" aria-controls="mobileMenu" aria-label="Открыть меню">
+        <span></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="mobile-menu" id="mobileMenu">
+    <div class="mobile-menu-inner">
+      <ul>
+        <li><a href="#services">Услуги</a></li>
+        <li><a href="#showcase">Витрина</a></li>
+        <li><a href="#why">Результат</a></li>
+        <li><a href="#process">Процесс</a></li>
+        <li><a href="#faq">Вопросы</a></li>
+        <li><a href="#contact">Контакты</a></li>
+      </ul>
+    </div>
+  </div>
+</header>
+
+<main id="main-content">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <div class="eyebrow">Боты и приложения · Telegram</div>
+        <h1>Боты и приложения для Telegram, <em>которые приносят результат</em></h1>
+        <p class="lead">Автоматизация бизнеса под ключ — от ботов для приёма заявок до Mini Apps с оплатой, личным кабинетом и интеграцией в CRM.</p>
+        <div class="hero-cta">
+          <a href="#contact" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M3 12L21 3L14 21L11 13L3 12Z" stroke="#1a1305" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            Обсудить проект
+          </a>
+          <a href="#process" class="btn btn-ghost">Как мы работаем</a>
+        </div>
+        <div class="hero-stats">
+          <div><strong>6</strong><span>этапов запуска</span></div>
+          <div><strong>24/7</strong><span>работа бота</span></div>
+          <div><strong>100%</strong><span>под ваш процесс</span></div>
+        </div>
+      </div>
+
+      <div class="hero-art">
+        <svg viewBox="0 0 420 380" fill="none" aria-hidden="true" focusable="false">
+          <g class="cube-float">
+            <path d="M90 190 L160 152 L230 190 L160 228 Z" fill="#1c2f4d" stroke="#d4a94b" stroke-width="1.3"/>
+            <path d="M90 190 L160 228 L160 300 L90 262 Z" fill="#12203a" stroke="#d4a94b" stroke-width="1.3"/>
+            <path d="M230 190 L160 228 L160 300 L230 262 Z" fill="#0e1a2f" stroke="#b8892e" stroke-width="1.3"/>
+          </g>
+          <g class="cube-float d2">
+            <path d="M210 110 L280 72 L350 110 L280 148 Z" fill="#1c2f4d" stroke="#e8c574" stroke-width="1.3"/>
+            <path d="M210 110 L280 148 L280 220 L210 182 Z" fill="#12203a" stroke="#e8c574" stroke-width="1.3"/>
+            <path d="M350 110 L280 148 L280 220 L350 182 Z" fill="#0e1a2f" stroke="#b8892e" stroke-width="1.3"/>
+          </g>
+          <g class="cube-float d3">
+            <path d="M150 50 L210 18 L270 50 L210 82 Z" fill="#243e63" stroke="#f2d99a" stroke-width="1.3"/>
+            <path d="M150 50 L210 82 L210 138 L150 106 Z" fill="#182a48" stroke="#f2d99a" stroke-width="1.3"/>
+            <path d="M270 50 L210 82 L210 138 L270 106 Z" fill="#0e1a2f" stroke="#d4a94b" stroke-width="1.3"/>
+          </g>
+          <g class="plane-float">
+            <path d="M60 260 L340 130 L230 190 L215 260 L185 210 Z" fill="#2aabee"/>
+            <path d="M340 130 L230 190 L215 260 Z" fill="#1c8dc9"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVICES -->
+  <section class="services" id="services">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">Услуги</div>
+        <h2>Что мы строим</h2>
+        <p>Каждое решение считаем с точки зрения результата — заявок, продаж и времени, которое оно экономит, а не количества функций.</p>
+      </div>
+
+      <div class="service-grid reveal-stagger reveal">
+        <div class="card">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M4 4H20L14 12.5V19L10 21V12.5L4 4Z" stroke="#d4a94b" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          </div>
+          <h3>Чат-боты для продаж</h3>
+          <p>Приём заявок, квалификация клиента и передача в отдел продаж без потери лидов на всей воронке.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3" stroke="#d4a94b" stroke-width="1.6"/><path d="M12 3V6M12 18V21M3 12H6M18 12H21M5.6 5.6L7.8 7.8M16.2 16.2L18.4 18.4M18.4 5.6L16.2 7.8M7.8 16.2L5.6 18.4" stroke="#d4a94b" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </div>
+          <h3>CRM-интеграции</h3>
+          <p>Синхронизация заявок, статусов и клиентской базы с amoCRM, Bitrix24 и Google Таблицами.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><rect x="7" y="7" width="10" height="10" rx="2" stroke="#d4a94b" stroke-width="1.6"/><path d="M12 3V7M12 17V21M3 12H7M17 12H21" stroke="#d4a94b" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </div>
+          <h3>ИИ и GPT</h3>
+          <p>Диалоговые ассистенты, обработка обращений и генерация ответов на базе языковых моделей.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><rect x="4" y="3" width="16" height="18" rx="2.5" stroke="#d4a94b" stroke-width="1.6"/><path d="M9 7H15M9 11H15M9 15H12" stroke="#d4a94b" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Mini Apps</h3>
+          <p>Веб-интерфейсы внутри Telegram: каталог, личный кабинет, оплата и запись — без установки стороннего приложения.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SHOWCASE -->
+  <section class="showcase" id="showcase">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">Витрина</div>
+        <h2>Так это выглядит у клиента</h2>
+        <p>Пять экранов одного бота — от первого сообщения в чате до личного кабинета в Mini App. Листайте стрелками или нажмите на карточку.</p>
+      </div>
+
+      <div class="fan-carousel reveal" id="fanCarousel">
+        <div class="fan-track" id="fanTrack" role="group" tabindex="0" aria-roledescription="карусель" aria-label="Примеры экранов бота, используйте стрелки влево-вправо">
+          <button type="button" class="phone-card" data-index="0" aria-label="Экран 1 из 5: приём заявки. Показать в центре">
+            <span class="phone-notch" aria-hidden="true"></span>
+            <div class="phone-screen" aria-hidden="true">
+              <div class="ph-bubble">Здравствуйте! Помогу подобрать услугу 👋</div>
+              <div class="ph-bubble me">Хочу заказать бота для приёма заявок</div>
+              <div class="ph-bubble">Отлично, пара вопросов — и посчитаю смету</div>
+            </div>
+          </button>
+          <button type="button" class="phone-card" data-index="1" aria-label="Экран 2 из 5: каталог и оплата. Показать в центре">
+            <span class="phone-notch" aria-hidden="true"></span>
+            <div class="phone-screen" aria-hidden="true">
+              <div class="ph-row w60"></div>
+              <div class="ph-grid2">
+                <div class="ph-tile"></div><div class="ph-tile"></div>
+                <div class="ph-tile"></div><div class="ph-tile"></div>
+              </div>
+              <div class="ph-btn">Оплатить</div>
+            </div>
+          </button>
+          <button type="button" class="phone-card" data-index="2" aria-label="Экран 3 из 5: личный кабинет. Показать в центре">
+            <span class="phone-notch" aria-hidden="true"></span>
+            <div class="phone-screen" aria-hidden="true">
+              <div style="display:flex; align-items:center; gap:6px;">
+                <div class="ph-avatar"></div>
+                <div style="flex:1; display:flex; flex-direction:column; gap:4px;">
+                  <div class="ph-row w60"></div><div class="ph-row w40"></div>
+                </div>
+              </div>
+              <div class="ph-card"><div class="ph-pill">Заказ №128</div><div class="ph-row w80"></div></div>
+              <div class="ph-card"><div class="ph-pill">Заказ №127</div><div class="ph-row w60"></div></div>
+            </div>
+          </button>
+          <button type="button" class="phone-card" data-index="3" aria-label="Экран 4 из 5: уведомление из CRM. Показать в центре">
+            <span class="phone-notch" aria-hidden="true"></span>
+            <div class="phone-screen" aria-hidden="true">
+              <div class="ph-card">
+                <div class="ph-pill">Новая заявка</div>
+                <div class="ph-row w100"></div><div class="ph-row w80"></div>
+                <div class="ph-btn">Открыть в CRM</div>
+              </div>
+              <div class="ph-row w40"></div>
+            </div>
+          </button>
+          <button type="button" class="phone-card" data-index="4" aria-label="Экран 5 из 5: админ-панель. Показать в центре">
+            <span class="phone-notch" aria-hidden="true"></span>
+            <div class="phone-screen" aria-hidden="true">
+              <div class="ph-row w40"></div>
+              <div class="ph-card"><div class="ph-row w80"></div><div class="ph-row w60"></div></div>
+              <div class="ph-card"><div class="ph-row w60"></div><div class="ph-row w40"></div></div>
+              <div class="ph-card"><div class="ph-row w80"></div><div class="ph-row w40"></div></div>
+            </div>
+          </button>
+        </div>
+
+        <div class="fan-controls">
+          <button type="button" class="fan-nav" id="fanPrev" aria-label="Предыдущий экран">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="fan-dots" id="fanDots"></div>
+          <button type="button" class="fan-nav" id="fanNext" aria-label="Следующий экран">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <p class="fan-caption" id="fanCaption" aria-live="polite">Приём заявок</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY -->
+  <section id="why">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">Результат</div>
+        <h2>Что это даёт бизнесу</h2>
+      </div>
+      <div class="why-grid reveal">
+        <div class="why-item">
+          <span class="num mono">01</span>
+          <h3>Ни одна заявка не теряется</h3>
+          <p>Проектируем архитектуру так, чтобы бот выдерживал рост нагрузки и не терял обращения клиентов даже в пиковые дни.</p>
+        </div>
+        <div class="why-item">
+          <span class="num mono">02</span>
+          <h3>Быстрый запуск без сдвига сроков</h3>
+          <p>Называем реалистичную дату старта и укладываемся в неё — бот начинает приносить заявки, а не месяцами висит в разработке.</p>
+        </div>
+        <div class="why-item">
+          <span class="num mono">03</span>
+          <h3>Интерфейс, которому доверяют</h3>
+          <p>Понятный сценарий и аккуратный дизайн повышают конверсию из диалога в заявку уже с первого сообщения.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROCESS -->
+  <section class="process" id="process">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">Как мы работаем</div>
+        <h2>Шесть шагов от заявки до запуска</h2>
+      </div>
+      <div class="timeline reveal">
+        <div class="step"><div class="step-dot">01</div><div class="step-body"><h3>Заявка</h3><p>Оставляете контакты и коротко описываете задачу.</p></div></div>
+        <div class="step"><div class="step-dot">02</div><div class="step-body"><h3>Анализ</h3><p>Разбираем процесс бизнеса и точки автоматизации.</p></div></div>
+        <div class="step"><div class="step-dot">03</div><div class="step-body"><h3>Проектирование</h3><p>Продумываем сценарии, архитектуру и интеграции.</p></div></div>
+        <div class="step"><div class="step-dot">04</div><div class="step-body"><h3>Разработка</h3><p>Пишем и тестируем бота итерациями, показываем прогресс.</p></div></div>
+        <div class="step"><div class="step-dot">05</div><div class="step-body"><h3>Тестирование</h3><p>Проверяем сценарии, нагрузку и крайние случаи.</p></div></div>
+        <div class="step"><div class="step-dot">06</div><div class="step-body"><h3>Запуск</h3><p>Разворачиваем, обучаем команду и остаёмся на связи.</p></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="wrap">
+      <div class="section-head reveal">
+        <div class="eyebrow">Вопросы</div>
+        <h2>Отвечаем до старта проекта</h2>
+      </div>
+      <div class="faq-list reveal">
+        <div class="faq-item" data-open="false">
+          <button class="faq-q" aria-expanded="false">
+            Сколько стоит разработка бота?
+            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner"><p>Зависит от сложности сценариев и интеграций. После бесплатной консультации присылаем смету с фиксированной стоимостью и сроком.</p></div></div>
+        </div>
+        <div class="faq-item" data-open="false">
+          <button class="faq-q" aria-expanded="false">
+            Сколько занимает запуск?
+            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner"><p>Простой бот для заявок — от одной-двух недель. Проекты с CRM-интеграциями и ИИ-логикой обсуждаются индивидуально на этапе анализа.</p></div></div>
+        </div>
+        <div class="faq-item" data-open="false">
+          <button class="faq-q" aria-expanded="false">
+            Что после запуска — поддержка есть?
+            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner"><p>Да, сопровождаем бота после релиза: мониторим работу, вносим доработки и расширяем сценарии по мере роста бизнеса.</p></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTACT -->
+  <section id="contact">
+    <div class="wrap contact-grid">
+      <div class="reveal">
+        <div class="eyebrow">Заявка</div>
+        <h2 style="font-size:clamp(26px,3.4vw,36px); font-weight:600; line-height:1.2;">Готовы автоматизировать бизнес?</h2>
+        <p style="margin-top:14px; font-size:15.5px; max-width:440px;">Оставьте контакты — свяжемся в течение дня, обсудим задачу и предложим решение под ваш бюджет.</p>
+
+        <div class="trust-list">
+          <div class="trust-item">
+            <div class="dot" aria-hidden="true"></div>
+            <p><strong>Бесплатная консультация</strong>Разбираем задачу и прикидываем объём работ без обязательств.</p>
+          </div>
+          <div class="trust-item">
+            <div class="dot" aria-hidden="true"></div>
+            <p><strong>Фикс по срокам</strong>Называем реалистичную дату запуска и держим её.</p>
+          </div>
+          <div class="trust-item">
+            <div class="dot" aria-hidden="true"></div>
+            <p><strong>Поддержка после запуска</strong>Не бросаем бота сразу после релиза — сопровождаем и дорабатываем.</p>
+          </div>
+        </div>
+
+        <div class="contact-links">
+          <a class="contact-link" href="https://t.me/" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M21 4L2.5 11.5L9 13.5M21 4L14.5 21L9 13.5M21 4L9 13.5" stroke="#2aabee" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            Написать в Telegram
+          </a>
+        </div>
+      </div>
+
+      <div class="form-card reveal">
+        <div id="formView">
+          <h3>Получить консультацию</h3>
+          <p>Заполните три поля — этого достаточно для первого звонка.</p>
+          <form id="leadForm" novalidate>
+            <div class="field">
+              <div class="field-label-row"><label for="f-name">Имя <span class="req">*</span></label></div>
+              <input id="f-name" name="name" type="text" placeholder="Как к вам обращаться" autocomplete="name" required>
+              <p class="field-error" id="f-name-error">Укажите, как к вам обращаться.</p>
+            </div>
+            <div class="field">
+              <div class="field-label-row"><label for="f-phone">Телефон <span class="req">*</span></label></div>
+              <input id="f-phone" name="phone" type="tel" placeholder="+375 (__) ___-__-__" autocomplete="tel" inputmode="tel" required>
+              <p class="field-error" id="f-phone-error">Введите номер телефона полностью.</p>
+            </div>
+            <div class="field">
+              <div class="field-label-row"><label for="f-tg">Telegram</label></div>
+              <input id="f-tg" name="telegram" type="text" placeholder="@username" autocomplete="off">
+            </div>
+            <button type="submit" class="btn btn-primary" id="submitBtn">Получить консультацию</button>
+            <p class="form-note">Нажимая кнопку, вы соглашаетесь на обработку данных для связи с вами.</p>
+          </form>
+        </div>
+        <div class="success-box" id="successView" role="status" aria-live="polite" tabindex="-1">
+          <div class="dot" aria-hidden="true"></div>
+          <h4>Заявка принята</h4>
+          <p>Свяжемся с вами в ближайшее время — обычно в течение нескольких часов.</p>
+          <button type="button" class="btn btn-ghost" id="resetFormBtn">Отправить ещё одну заявку</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-row">
+      <div class="foot-brand">
+        <svg class="brand-mark" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
+          <path d="M24 4 L40 13 V33 L24 42 L8 33 V13 Z" fill="#0e1a2f" stroke="#d4a94b" stroke-width="1.4"/>
+          <path d="M24 12 L33 17.5 V28.5 L24 34 L15 28.5 V17.5 Z" fill="none" stroke="#e8c574" stroke-width="1.2"/>
+          <path d="M17 27 L31 20 L26 24 L31 24Z" fill="#2aabee"/>
+        </svg>
+        <span>TG-Studio — разработка Telegram-ботов и Mini Apps</span>
+      </div>
+      <nav class="foot-links" aria-label="Ссылки в подвале">
+        <a href="#services">Услуги</a>
+        <a href="#process">Процесс</a>
+        <a href="#faq">Вопросы</a>
+        <a href="#contact">Контакты</a>
+      </nav>
+    </div>
+    <div class="copy" style="margin-top:24px;">© 2026 STUDIO BOTOV</div>
+  </div>
+</footer>
+
+<script>
+  // scroll reveal
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, {threshold:.15});
+  revealEls.forEach(el=>io.observe(el));
+
+  // header scroll state
+  const header = document.getElementById('siteHeader');
+  const onScroll = () => header.classList.toggle('is-scrolled', window.scrollY > 8);
+  onScroll();
+  window.addEventListener('scroll', onScroll, {passive:true});
+
+  // mobile menu
+  const menuToggle = document.getElementById('menuToggle');
+  const mobileMenu = document.getElementById('mobileMenu');
+  const closeMenu = () => {
+    mobileMenu.classList.remove('is-open');
+    menuToggle.setAttribute('aria-expanded','false');
+    menuToggle.setAttribute('aria-label','Открыть меню');
+  };
+  const openMenu = () => {
+    mobileMenu.classList.add('is-open');
+    menuToggle.setAttribute('aria-expanded','true');
+    menuToggle.setAttribute('aria-label','Закрыть меню');
+  };
+  menuToggle.addEventListener('click', ()=>{
+    mobileMenu.classList.contains('is-open') ? closeMenu() : openMenu();
+  });
+  mobileMenu.querySelectorAll('a').forEach(a=>a.addEventListener('click', closeMenu));
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeMenu(); });
+
+  // FAQ accordion
+  document.querySelectorAll('.faq-item').forEach(item=>{
+    const btn = item.querySelector('.faq-q');
+    btn.addEventListener('click', ()=>{
+      const isOpen = item.getAttribute('data-open') === 'true';
+      item.setAttribute('data-open', String(!isOpen));
+      btn.setAttribute('aria-expanded', String(!isOpen));
+    });
+  });
+
+  // phone mask +375
+  const phone = document.getElementById('f-phone');
+  phone.addEventListener('input', ()=>{
+    let d = phone.value.replace(/\D/g,'');
+    if(d.startsWith('375')) d = d.slice(3);
+    d = d.slice(0,9);
+    let out = '+375';
+    if(d.length>0) out += ' (' + d.slice(0,2);
+    if(d.length>=2) out += ') ' + d.slice(2,5);
+    if(d.length>=5) out += '-' + d.slice(5,7);
+    if(d.length>=7) out += '-' + d.slice(7,9);
+    phone.value = out;
+  });
+  phone.addEventListener('focus', ()=>{ if(!phone.value) phone.value = '+375 ('; });
+
+  // inline validation
+  const nameInput = document.getElementById('f-name');
+  const nameError = document.getElementById('f-name-error');
+  const phoneError = document.getElementById('f-phone-error');
+
+  function validateName(){
+    const ok = nameInput.value.trim().length > 0;
+    nameInput.setAttribute('aria-invalid', String(!ok));
+    nameError.classList.toggle('is-visible', !ok);
+    return ok;
+  }
+  function validatePhone(){
+    const digits = phone.value.replace(/\D/g,'');
+    const ok = digits.length >= 11;
+    phone.setAttribute('aria-invalid', String(!ok));
+    phoneError.classList.toggle('is-visible', !ok);
+    return ok;
+  }
+  nameInput.addEventListener('blur', validateName);
+  phone.addEventListener('blur', validatePhone);
+
+  // form submit (demo — no backend wired yet)
+  const form = document.getElementById('leadForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const formView = document.getElementById('formView');
+  const successView = document.getElementById('successView');
+
+  form.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const nameOk = validateName();
+    const phoneOk = validatePhone();
+    if(!nameOk){ nameInput.focus(); return; }
+    if(!phoneOk){ phone.focus(); return; }
+
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Отправляем…';
+
+    setTimeout(()=>{
+      formView.style.display = 'none';
+      successView.style.display = 'block';
+      successView.focus();
+    }, 600);
+  });
+
+  document.getElementById('resetFormBtn').addEventListener('click', ()=>{
+    form.reset();
+    nameInput.removeAttribute('aria-invalid');
+    phone.removeAttribute('aria-invalid');
+    nameError.classList.remove('is-visible');
+    phoneError.classList.remove('is-visible');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Получить консультацию';
+    successView.style.display = 'none';
+    formView.style.display = 'block';
+    nameInput.focus();
+  });
+
+  // hero parallax (desktop, pointer-fine only, respects reduced motion)
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hoverCapable = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const heroSection = document.querySelector('.hero');
+  const heroArt = document.querySelector('.hero-art');
+  if(heroSection && heroArt && hoverCapable && !reducedMotion){
+    heroSection.addEventListener('mousemove', (e)=>{
+      const x = (e.clientX / window.innerWidth - 0.5) * 18;
+      const y = (e.clientY / window.innerHeight - 0.5) * 18;
+      heroArt.style.transform = `translate(${x}px, ${y}px)`;
+    });
+    heroSection.addEventListener('mouseleave', ()=>{ heroArt.style.transform = 'translate(0,0)'; });
+  }
+
+  // fan carousel
+  const fanTrack = document.getElementById('fanTrack');
+  const fanCards = Array.from(fanTrack ? fanTrack.querySelectorAll('.phone-card') : []);
+  if(fanCards.length){
+    const captions = ['Приём заявок', 'Каталог и оплата', 'Личный кабинет', 'Уведомление из CRM', 'Админ-панель'];
+    const fanCaption = document.getElementById('fanCaption');
+    const fanDots = document.getElementById('fanDots');
+    const fanPrev = document.getElementById('fanPrev');
+    const fanNext = document.getElementById('fanNext');
+    let active = 0;
+
+    fanCards.forEach((_, i)=>{
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 'fan-dot';
+      dot.setAttribute('aria-label', 'Экран ' + (i+1));
+      dot.innerHTML = '<span></span>';
+      dot.addEventListener('click', ()=> setActive(i));
+      fanDots.appendChild(dot);
+    });
+    const dotEls = Array.from(fanDots.children);
+
+    function spread(){
+      const w = fanTrack.clientWidth;
+      return Math.max(56, Math.min(130, w * 0.22));
+    }
+
+    function render(){
+      const gap = spread();
+      fanCards.forEach((card, i)=>{
+        let offset = i - active;
+        const n = fanCards.length;
+        if(offset > n/2) offset -= n;
+        if(offset < -n/2) offset += n;
+        const abs = Math.abs(offset);
+        const visible = abs <= 2;
+        card.style.transform = `translateX(calc(-50% + ${offset*gap}px)) translateY(calc(-50% + ${abs*14}px)) rotate(${offset*8}deg) scale(${1 - abs*0.08})`;
+        card.style.opacity = visible ? String(1 - abs*0.22) : '0';
+        card.style.filter = abs === 0 ? 'none' : `blur(${Math.min(abs,2)*1.1}px)`;
+        card.style.zIndex = String(10 - abs);
+        card.style.pointerEvents = visible ? 'auto' : 'none';
+        card.classList.toggle('is-active', offset === 0);
+      });
+      dotEls.forEach((d,i)=> d.setAttribute('aria-current', String(i===active)));
+      if(fanCaption) fanCaption.textContent = captions[active] || '';
+    }
+
+    function setActive(i){
+      active = (i + fanCards.length) % fanCards.length;
+      render();
+    }
+
+    fanCards.forEach((card, i)=> card.addEventListener('click', ()=> setActive(i)));
+    fanPrev && fanPrev.addEventListener('click', ()=> setActive(active - 1));
+    fanNext && fanNext.addEventListener('click', ()=> setActive(active + 1));
+    fanTrack.addEventListener('keydown', (e)=>{
+      if(e.key === 'ArrowLeft'){ e.preventDefault(); setActive(active - 1); }
+      if(e.key === 'ArrowRight'){ e.preventDefault(); setActive(active + 1); }
+    });
+
+    let resizeTimer;
+    window.addEventListener('resize', ()=>{
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(render, 120);
+    });
+
+    render();
+  }
+</script>
+
+</body>
+</html>
