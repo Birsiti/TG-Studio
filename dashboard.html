@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<title>SB · Аутрич</title>
+<title>TG-Studio · Аутрич</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
@@ -75,10 +75,11 @@ h1{font-family:'Chakra Petch',sans-serif; font-size:20px; font-weight:700; margi
 .made-by-badge{
   display:flex; align-items:center; justify-content:center;
   margin:24px auto 8px; padding:8px 16px;
-  background:var(--accent-soft); border-radius:999px; width:fit-content;
+  background:var(--accent); border-radius:999px; width:fit-content;
 }
-.made-by-badge a{ font-size:13px; font-weight:600; color:var(--accent); text-decoration:none; display:flex; align-items:center; gap:8px; }
-.made-by-year{ font-family:'JetBrains Mono',monospace; opacity:.75; }
+.made-by-badge a{ font-size:13px; font-weight:600; color:#fff; text-decoration:none; display:flex; align-items:center; gap:8px; }
+.made-by-badge svg{ display:block; flex:none; }
+.made-by-year{ font-family:'JetBrains Mono',monospace; opacity:.85; }
 .section-title{font-size:13px; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin:0 0 8px;}
 .empty{color:var(--ink-faint); font-size:13px; text-align:center; padding:24px 0;}
 .skeleton{opacity:.4;}
@@ -86,8 +87,8 @@ h1{font-family:'Chakra Petch',sans-serif; font-size:20px; font-weight:700; margi
 </head>
 <body>
 
-<h1>SB · Аутрич</h1>
-<p class="sub">Дашборд рассылки Студии ботов</p>
+<h1>TG-Studio · Аутрич</h1>
+<p class="sub">Дашборд рассылки TG-Studio</p>
 
 <div class="card" id="todayCard">
   <div class="today-row">
@@ -128,7 +129,10 @@ h1{font-family:'Chakra Petch',sans-serif; font-size:20px; font-weight:700; margi
 </div>
 
 <div class="made-by-badge">
-  <a href="https://t.me/studio_botov_bot" target="_blank">🤖 TG-Studio <span class="made-by-year" id="madeByYear"></span></a>
+  <a href="https://t.me/tg_studio_BY_bot" target="_blank">
+    <svg width="16" height="16" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M100 157l-4 56c6 0 8-3 12-6l27-26 57 42c10 6 18 3 21-9l38-178c4-15-5-21-16-17L14 103c-15 6-15 14-3 18l46 14 106-67c5-3 10-1 6 2z"/></svg>
+    TG-Studio <span class="made-by-year" id="madeByYear"></span>
+  </a>
 </div>
 
 <script>
