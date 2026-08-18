@@ -393,7 +393,17 @@ function validateAll() {
   return allValid;
 }
 
-function collectPayload() {
+ffunction collectPayload() {
+  const budget = budgetGroup.querySelector("input[type=radio]:checked");
+  return {
+    name: document.getElementById("fldName").value.trim(),
+    phone: fullPhone(document.getElementById("fldPhone").value),
+    business: document.getElementById("fldBusiness").value.trim(),
+    task: document.getElementById("fldTask").value.trim(),
+    budget: budget ? budget.value : "не выбран",
+    tg_id: tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : '',
+  };
+}
   const budget = budgetGroup.querySelector("input[type=radio]:checked");
   return {
     name: document.getElementById("fldName").value.trim(),
