@@ -103,16 +103,20 @@ const App = (function(){
   document.body.dataset.mode = resolveMode();
 
   /* ============ BRAND (цветовая схема карточек: avtohimiya/voda/chrome/mercedes/telegram) ============
-     Владелец выбирает схему по умолчанию для своей мойки (см. openBrandSheet
-     в owner.html) — без подключённого бэкенда (apiUrl/registryUrl всё ещё
-     PASTE_...) выбор сохраняется только в localStorage ЭТОГО браузера, как
-     только бэкенд подключён — тот же выбор нужно сохранять через
-     api('saveSettings', {theme}) в реестр, тогда он реально применится ко
-     всем посетителям мойки.
-     Клиент и админ (см. openBrandSheet в client.html/admin.html) могут той
-     же кнопкой переопределить схему ТОЛЬКО для себя — это личный локальный
-     выбор в своём браузере, он всегда живёт в localStorage и никогда не
-     трогает CONFIG/реестр, даже после подключения бэкенда. */
+     Личный выбор каждого пользователя (client/admin/owner — общий механизм
+     на все три роли), applyBrand() применяет его мгновенно из localStorage.
+     Помимо этого client.html/admin.html/owner.html при загрузке вызывают
+     api('getMyTheme', {userId: tgUser.id}) и, если на сервере (лист "ТЕМЫ" в
+     Google Sheets, см. Code.gs) сохранена другая схема — досинхронизируют её
+     через applyBrand(). При выборе схемы через openBrandSheet() каждый файл
+     сам вызывает api('saveTheme', {userId, theme}) после applyBrand(). Это
+     нужно, чтобы личная схема не терялась, когда Telegram WebView чистит
+     localStorage, и не путалась при тестировании разных ролей с одного
+     телефона — раньше все три файла делили один и тот же ключ localStorage.
+     Общий "бренд мойки по умолчанию" для реальных клиентов, которого раньше
+     касался комментарий здесь — отдельная, ещё не реализованная фича на
+     уровне реестра (saveSettings в CONFIG), с личной темой пользователя её
+     путать не нужно. */
   const BRAND_KEY = 'cw_theme_override';
   const BRAND_LIST = ['avtohimiya', 'voda', 'chrome', 'mercedes', 'telegram'];
 

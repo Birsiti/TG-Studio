@@ -210,6 +210,7 @@
     {id:'shop3', name:'Ароматизатор «Новая машина»', price:9, stock:30, visible:true},
     {id:'shop4', name:'Чернитель резины 500мл', price:11, stock:0, visible:false}
   ];
+  let MOCK_THEME = null; // личная цветовая схема демо-пользователя (имитация листа "ТЕМЫ")
 
   const STATUS_TXT = {free:'Свободен', busy:'Занят', maintenance:'На обслуживании'};
   function fmtDate(key){
@@ -263,6 +264,8 @@
       return {ok:true};
     }
     if(action==='deleteShopItem'){ SHOP = SHOP.filter(i=>i.id!==payload.id); return {ok:true}; }
+    if(action==='getMyTheme') return {ok:true, theme: MOCK_THEME};
+    if(action==='saveTheme'){ MOCK_THEME = payload.theme; return {ok:true}; }
     return {ok:false};
   }
 
@@ -667,7 +670,13 @@
   $('modeToggleBtn').addEventListener('click', ()=>{ haptic(); App.toggleMode(); renderModeIcon(); });
   renderModeIcon();
 
-  /* ============ ЦВЕТОВАЯ СХЕМА МОЙКИ (бренд) ============ */
+  /* ============ ЦВЕТОВАЯ СХЕМА (личный выбор владельца, привязан к tg_id) ============
+     Раньше подпись обещала "стиль для всех посетителей мойки", но фактически
+     выбор всегда сохранялся только в localStorage этого браузера — реального
+     влияния на клиентов не было. Общий "бренд мойки по умолчанию" для всех
+     клиентов — отдельная, ещё не реализованная фича на уровне реестра
+     (см. комментарий в bootstrap.js); а этот переключатель — личная тема
+     владельца в его собственной панели, как и у admin/client. */
   const BRAND_META = {
     avtohimiya: { label: 'Автохимия с полки', sub: 'Зелёный/оранжевый, дружелюбный', swatch: 'linear-gradient(135deg,#63B33A,#F2624A)' },
     voda:       { label: 'Вода и пена', sub: 'Бирюзовый/янтарный, свежий', swatch: 'linear-gradient(135deg,#0C8599,#E8A33D)' },
@@ -677,10 +686,9 @@
   };
   function openBrandSheet(){
     const current = App.getBrand();
-    const demoNote = (CONFIG && CONFIG._demo) ? ' Без подключённого бэкенда выбор сохраняется только в этом браузере.' : '';
     openSheet(`
-      <div class="sheet-title">Цветовая схема мойки</div>
-      <div style="font-size:12.5px; color:var(--ink-soft); margin:-6px 0 14px;">Ваш выбор определяет стиль для всех посетителей мойки.${demoNote}</div>
+      <div class="sheet-title">Цветовая схема</div>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin:-6px 0 14px;">Меняет оформление только у вас — привязано к вашему аккаунту, у клиентов и в панели администратора ничего не меняется.</div>
       <div id="brandOptions"></div>
     `);
     const wrap = $('brandOptions');
@@ -701,13 +709,21 @@
         closeSheet();
         if(active) return;
         App.applyBrand(id);
+        api('saveTheme', {userId: tgUser.id, theme:id}).catch(()=>{});
         haptic('success');
-        showToast('Схема «' + meta.label + '» применена' + ((CONFIG && CONFIG._demo) ? ' (локально)' : ''));
+        showToast('Схема «' + meta.label + '» применена');
       });
       wrap.appendChild(row);
     });
   }
   $('brandSettingsBtn').addEventListener('click', openBrandSheet);
+
+  // Догоняем локальный выбор серверным при заходе — если с другого устройства
+  // сохранена другая схема или Telegram WebView успел почистить localStorage.
+  async function loadMyTheme(){
+    const res = await api('getMyTheme', {userId: tgUser.id});
+    if(res.ok && res.theme && res.theme !== App.getBrand()) App.applyBrand(res.theme);
+  }
 
   /* ============ BOOTSTRAP ============ */
   async function bootstrapApp(){
@@ -716,6 +732,7 @@
     document.body.dataset.theme = App.resolveBrand(CONFIG.theme);
     const cs = getComputedStyle(document.body);
     App.setChrome(cs.getPropertyValue('--bg').trim(), cs.getPropertyValue('--surface').trim());
+    loadMyTheme().catch(()=>{});
 
     if(CONFIG.status === 'paused'){
       $('bootLoading').style.display='none';

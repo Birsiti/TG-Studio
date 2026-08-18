@@ -191,6 +191,7 @@
   ];
   // Профиль клиента, если он уже записывался раньше — подставляется на шаге контактов
   let MY_PROFILE = {name:'Денис', phone:'291234567'};
+  let MOCK_THEME = null; // личная цветовая схема демо-пользователя (имитация листа "ТЕМЫ")
 
   const CAR_CLASSES = [
     {id:'legkovoy', label:'Легковой'},
@@ -327,6 +328,8 @@
       const profile = latest ? {name:latest.contact.name, phone:latest.contact.phone} : (MY_PROFILE.phone ? MY_PROFILE : null);
       return {ok:true, profile};
     }
+    if(action === 'getMyTheme') return {ok:true, theme: MOCK_THEME};
+    if(action === 'saveTheme'){ MOCK_THEME = payload.theme; return {ok:true}; }
     if(action === 'getServices') return {ok:true, categories: MOCK_SERVICES};
     if(action === 'getSchedule'){
       const schedule = {};
@@ -984,7 +987,7 @@
     toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 2600);
   }
 
-  /* ============ ЦВЕТОВАЯ СХЕМА (личный выбор, только в этом браузере) ============ */
+  /* ============ ЦВЕТОВАЯ СХЕМА (личный выбор, привязан к tg_id на сервере) ============ */
   const BRAND_META = {
     avtohimiya: { label: 'Автохимия с полки', sub: 'Зелёный/оранжевый, дружелюбный', swatch: 'linear-gradient(135deg,#63B33A,#F2624A)' },
     voda:       { label: 'Вода и пена', sub: 'Бирюзовый/янтарный, свежий', swatch: 'linear-gradient(135deg,#0C8599,#E8A33D)' },
@@ -996,7 +999,7 @@
     const current = App.getBrand();
     openSheet(`
       <div class="sheet-title">Цветовая схема</div>
-      <div style="font-size:12.5px; color:var(--ink-soft); margin:-6px 0 14px;">Меняет оформление только у вас на этом устройстве.</div>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin:-6px 0 14px;">Меняет оформление только у вас — привязано к вашему аккаунту, у других клиентов и в панели администратора/владельца ничего не меняется.</div>
       <div id="brandOptions"></div>
     `);
     const wrap = $('brandOptions');
@@ -1017,6 +1020,7 @@
         closeSheet();
         if(active) return;
         App.applyBrand(id);
+        api('saveTheme', {userId: tgUser.id, theme:id}).catch(()=>{});
         haptic('success');
         showToast('Схема «' + meta.label + '» применена');
       });
@@ -1025,6 +1029,13 @@
   }
   $('brandSettingsBtn').addEventListener('click', openBrandSheet);
 
+  // Догоняем локальный выбор серверным при заходе — если с другого устройства
+  // сохранена другая схема или Telegram WebView успел почистить localStorage.
+  async function loadMyTheme(){
+    const res = await api('getMyTheme', {userId: tgUser.id});
+    if(res.ok && res.theme && res.theme !== App.getBrand()) App.applyBrand(res.theme);
+  }
+
   /* ============ BOOTSTRAP ============ */
   async function bootstrapApp(){
     CONFIG = await App.loadConfig();
@@ -1032,6 +1043,7 @@
     document.body.dataset.theme = App.resolveBrand(CONFIG.theme);
     const cs = getComputedStyle(document.body);
     App.setChrome(cs.getPropertyValue('--bg').trim(), cs.getPropertyValue('--surface').trim());
+    loadMyTheme().catch(()=>{});
 
     if(CONFIG.status === 'paused'){
       $('bootLoading').style.display='none';

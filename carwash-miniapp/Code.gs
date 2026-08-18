@@ -24,7 +24,8 @@ const SHEET_NAMES = {
   BAYS: 'БОКСЫ',
   INVENTORY: 'СКЛАД',
   SHOP: 'МАГАЗИН',
-  PAYOUTS: 'ВЫПЛАТЫ'
+  PAYOUTS: 'ВЫПЛАТЫ',
+  THEMES: 'ТЕМЫ'
 };
 
 const CAR_CLASSES = ['legkovoy', 'krossover', 'vnedorozhnik', 'minivan'];
@@ -69,6 +70,9 @@ function routeAction(action, p){
     case 'saveCar':          return saveCar(p);
     case 'deleteCar':        return deleteCar(p);
     case 'getMyProfile':     return getMyProfile(p);
+    // ---- общее для всех трёх ролей (личная цветовая схема по tg_id) ----
+    case 'getMyTheme':       return getMyTheme(p);
+    case 'saveTheme':        return saveTheme(p);
     // ---- администратор ----
     case 'getBookings':          return getBookings();
     case 'updateBookingStatus':  return updateBookingStatus(p);
@@ -448,6 +452,28 @@ function getMyProfile(p){
   rows.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
   const latest = rows[0];
   return {ok:true, profile:{name:latest.client_name, phone:latest.client_phone}};
+}
+
+/* ============================================================
+   ЛИЧНАЯ ЦВЕТОВАЯ СХЕМА — общая для client.html/admin.html/owner.html.
+   Раньше выбор хранился только в localStorage браузера, из-за чего при
+   тестировании разных ролей с одного телефона (или после того как Telegram
+   WebView чистит хранилище) казалось, будто чужой выбор "перебивает" свой.
+   Теперь схема привязана к tg_id и подтягивается с сервера при заходе.
+   "ТЕМЫ": tg_id | theme | updated_at
+   ============================================================ */
+
+function getMyTheme(p){
+  const row = readAll(SHEET_NAMES.THEMES).find(r => String(r.tg_id) === String(p.userId));
+  return {ok:true, theme: row ? row.theme : null};
+}
+
+function saveTheme(p){
+  const existing = readAll(SHEET_NAMES.THEMES).find(r => String(r.tg_id) === String(p.userId));
+  const row = {tg_id:p.userId, theme:p.theme, updated_at:new Date().toISOString()};
+  if(existing) updateById(SHEET_NAMES.THEMES, 'tg_id', existing.tg_id, row);
+  else appendRow(SHEET_NAMES.THEMES, row);
+  return {ok:true};
 }
 
 function getBookings(){
