@@ -102,14 +102,19 @@ const App = (function(){
   // (тег <body> уже распарсен на этот момент, .app и её содержимое — ещё нет).
   document.body.dataset.mode = resolveMode();
 
-  /* ============ BRAND (цветовая схема мойки: avtohimiya/voda/chrome/mercedes) ============
-     Владелец выбирает бренд для своей мойки (см. openBrandSheet в owner.html).
-     Без подключённого бэкенда (apiUrl/registryUrl всё ещё PASTE_...) выбор
-     сохраняется только в localStorage ЭТОГО браузера — как только бэкенд
-     подключён, тот же выбор нужно сохранять через api('saveSettings', {theme})
-     в реестр, тогда он реально применится ко всем посетителям мойки. */
+  /* ============ BRAND (цветовая схема карточек: avtohimiya/voda/chrome/mercedes/telegram) ============
+     Владелец выбирает схему по умолчанию для своей мойки (см. openBrandSheet
+     в owner.html) — без подключённого бэкенда (apiUrl/registryUrl всё ещё
+     PASTE_...) выбор сохраняется только в localStorage ЭТОГО браузера, как
+     только бэкенд подключён — тот же выбор нужно сохранять через
+     api('saveSettings', {theme}) в реестр, тогда он реально применится ко
+     всем посетителям мойки.
+     Клиент и админ (см. openBrandSheet в client.html/admin.html) могут той
+     же кнопкой переопределить схему ТОЛЬКО для себя — это личный локальный
+     выбор в своём браузере, он всегда живёт в localStorage и никогда не
+     трогает CONFIG/реестр, даже после подключения бэкенда. */
   const BRAND_KEY = 'cw_theme_override';
-  const BRAND_LIST = ['avtohimiya', 'voda', 'chrome', 'mercedes'];
+  const BRAND_LIST = ['avtohimiya', 'voda', 'chrome', 'mercedes', 'telegram'];
 
   function resolveBrand(configTheme){
     try{

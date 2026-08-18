@@ -5,12 +5,86 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TG-Studio — боты и приложения для Telegram, которые окупаются</title>
 <meta name="description" content="Разрабатываем Telegram-ботов и Mini Apps под задачи бизнеса: приём заявок, продажи, оплата и интеграция с CRM. Считаем результат, а не количество функций.">
+<link rel="canonical" href="https://tg-studio.by/">
 <meta name="theme-color" content="#0a1622">
 <link rel="icon" href="logo-badge.png">
 <link rel="apple-touch-icon" href="logo-badge@2x.png">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TG-Studio">
+<meta property="og:locale" content="ru_RU">
+<meta property="og:url" content="https://tg-studio.by/">
+<meta property="og:title" content="TG-Studio — боты и приложения для Telegram, которые окупаются">
+<meta property="og:description" content="Разрабатываем Telegram-ботов и Mini Apps под задачи бизнеса: приём заявок, продажи, оплата и интеграция с CRM. Считаем результат, а не количество функций.">
+<meta property="og:image" content="https://tg-studio.by/assets/og-image.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TG-Studio — боты и Mini Apps для Telegram">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="TG-Studio — боты и приложения для Telegram, которые окупаются">
+<meta name="twitter:description" content="Разрабатываем Telegram-ботов и Mini Apps под задачи бизнеса: приём заявок, продажи, оплата и интеграция с CRM.">
+<meta name="twitter:image" content="https://tg-studio.by/assets/og-image.jpg">
+
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preload" as="image" href="assets/hero-phone-figma.jpg" fetchpriority="high">
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "ProfessionalService",
+  "name": "TG-Studio",
+  "url": "https://tg-studio.by/",
+  "image": "https://tg-studio.by/assets/og-image.jpg",
+  "description": "Разработка Telegram-ботов и Mini Apps под задачи бизнеса: приём заявок, продажи, оплата и интеграция с CRM.",
+  "areaServed": "BY",
+  "sameAs": [
+    "https://t.me/TG_Studio_BY"
+  ]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Клиенту нужно что-то скачивать?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Нет. Клиент пишет боту в обычном чате Telegram и нажимает кнопку — форма записи, каталог или оплата открываются прямо внутри переписки, без App Store и установки."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Сколько стоит разработка бота?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Базовый бот с Mini App — от 800 BYN разово, плюс небольшая ежемесячная поддержка. Точная сумма зависит от сложности сценариев и интеграций — после бесплатной консультации присылаем смету с фиксированной стоимостью и сроком."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Сколько занимает запуск?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Простой бот для заявок — от одной-двух недель. Проекты с CRM-интеграциями и ИИ-логикой обсуждаются индивидуально на этапе анализа."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Что после запуска — поддержка есть?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Да, сопровождаем бота после релиза: мониторим работу, вносим доработки и расширяем сценарии по мере роста бизнеса."
+      }
+    }
+  ]
+}
+</script>
 <style>
   :root{
     --navy-950:#070f18;
@@ -272,10 +346,12 @@
   }
   @keyframes heroArtReveal{from{opacity:0; transform:scale(.92);} to{opacity:1; transform:scale(1);}}
   @keyframes floatY{0%,100%{transform:translateY(0);} 50%{transform:translateY(-14px);}}
-  .hero-badge img{
-    width:100%; height:auto; border-radius:28px;
-    box-shadow:0 30px 70px -20px rgba(42,171,238,.5), 0 0 0 1px rgba(255,255,255,.06);
+  .hero-photo{
+    width:100%; aspect-ratio:9/16;
+    border-radius:28px; overflow:hidden;
+    box-shadow:0 30px 70px -20px rgba(42,171,238,.5), 0 0 0 1px rgba(255,255,255,.08);
   }
+  .hero-photo img{width:100%; height:100%; object-fit:cover; display:block;}
   .hero-float-card{
     position:absolute; z-index:2;
     background:var(--navy-800); border:1px solid var(--navy-700); border-radius:14px;
@@ -367,6 +443,21 @@
   .phone-card:focus-visible{outline:2px solid var(--blue-300); outline-offset:4px;}
   .phone-card.is-active{border-color:var(--blue-500); box-shadow:0 28px 60px -16px rgba(42,171,238,.35);}
   .phone-card img{width:100%; height:100%; object-fit:cover; display:block;}
+  .fan-photo{position:relative; width:100%; height:100%;}
+  .fan-photo::after{
+    content:''; position:absolute; inset:0; pointer-events:none;
+    background:linear-gradient(to bottom, transparent 58%, rgba(7,15,24,.88));
+  }
+  .fan-photo-label{
+    position:absolute; left:16px; right:16px; bottom:14px; z-index:1;
+    font-family:'JetBrains Mono',monospace; font-size:11.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--blue-300); font-weight:700;
+  }
+  .fan-photo-label span{
+    display:block; margin-top:3px; font-family:'Manrope',sans-serif; font-size:11px; letter-spacing:normal;
+    text-transform:none; color:var(--ink-300); font-weight:500;
+  }
+  .case-demo{display:flex; justify-content:center; margin-top:32px;}
 
   .fan-controls{
     position:relative; z-index:1;
@@ -387,23 +478,28 @@
 
   /* ---------- WHY ---------- */
   .why-grid{
-    display:grid; grid-template-columns:1fr; gap:0;
-    border-top:1px solid var(--navy-700);
+    display:grid; grid-template-columns:1fr; gap:16px;
   }
+  @media(min-width:640px){ .why-grid{grid-template-columns:repeat(2,1fr); gap:20px;} }
   @media(min-width:820px){ .why-grid{grid-template-columns:repeat(3,1fr);} }
   .why-item{
-    padding:32px 0;
-    border-bottom:1px solid var(--navy-700);
+    background:var(--navy-800);
+    border:1px solid var(--navy-700);
+    border-radius:var(--radius);
+    padding:26px 24px;
+    transition:transform .4s var(--ease), border-color .4s var(--ease), background .4s var(--ease);
   }
-  @media(min-width:820px){
-    .why-item{border-right:1px solid var(--navy-700); padding:32px 32px 32px 0;}
-    .why-item:last-child{border-right:none;}
-  }
+  .why-item:hover{transform:translateY(-6px); border-color:var(--blue-500); background:var(--navy-850);}
   .why-item .num{
-    font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--blue-500); letter-spacing:.12em; margin-bottom:16px; display:block;
+    width:34px; height:34px; border-radius:9px; flex:none;
+    background:linear-gradient(145deg, rgba(42,171,238,.2), rgba(42,171,238,.04));
+    border:1px solid rgba(42,171,238,.35);
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--blue-300); font-weight:600;
+    margin-bottom:18px;
   }
-  .why-item h3{font-size:19px; font-weight:600; margin-bottom:8px;}
-  .why-item p{color:var(--ink-500); font-size:14.5px; line-height:1.6;}
+  .why-item h3{font-size:17px; font-weight:600; margin-bottom:8px;}
+  .why-item p{color:var(--ink-500); font-size:14px; line-height:1.6;}
 
   /* ---------- PROCESS ---------- */
   .process{background:var(--navy-900); border-top:1px solid rgba(255,255,255,.05); border-bottom:1px solid rgba(255,255,255,.05);}
@@ -572,20 +668,13 @@
 <header id="siteHeader">
   <div class="wrap nav">
     <a href="#" class="brand" aria-label="TG-Studio — на главную">
-      <svg class="brand-mark" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
-        <rect x="4" y="4" width="40" height="40" rx="12" fill="#ffffff"/>
-        <path d="M13 16H24" stroke="#1b8fcb" stroke-width="3.6" stroke-linecap="round"/>
-        <path d="M17.5 16V33" stroke="#1b8fcb" stroke-width="3.6" stroke-linecap="round"/>
-        <path d="M35 24C35 29.5228 30.5228 34 25 34C23.2 34 21.5 33.53 20 32.7" stroke="#1b8fcb" stroke-width="3.6" stroke-linecap="round"/>
-        <path d="M35 24C35 18.4772 30.5228 14 25 14" stroke="#2aabee" stroke-width="3.6" stroke-linecap="round"/>
-        <path d="M20 26L36 18L31 34L27 27L20 26Z" fill="#2aabee"/>
-      </svg>
+      <img class="brand-mark" src="assets/logo-icon.png" alt="" aria-hidden="true" width="32" height="32">
       <span class="brand-name">TG-STUDIO<span>TELEGRAM AUTOMATION</span></span>
     </a>
 
     <nav class="nav-links" aria-label="Основная навигация">
       <a href="#services">Услуги</a>
-      <a href="#advantages">Преимущества</a>
+      <a href="#advantages">Кейсы</a>
       <a href="#why">Результат</a>
       <a href="#process">Процесс</a>
       <a href="#faq">Вопросы</a>
@@ -604,7 +693,7 @@
     <div class="mobile-menu-inner">
       <ul>
         <li><a href="#services">Услуги</a></li>
-        <li><a href="#advantages">Преимущества</a></li>
+        <li><a href="#advantages">Кейсы</a></li>
         <li><a href="#why">Результат</a></li>
         <li><a href="#process">Процесс</a></li>
         <li><a href="#faq">Вопросы</a></li>
@@ -620,9 +709,9 @@
   <section class="hero">
     <div class="wrap hero-grid">
       <div class="hero-copy">
-        <div class="eyebrow">Боты и приложения · Telegram</div>
-        <h1>Боты и приложения для Telegram, <em>которые приносят результат</em></h1>
-        <p class="lead">Автоматизация бизнеса под ключ — от ботов для приёма заявок до Mini Apps с оплатой, личным кабинетом и интеграцией в CRM.</p>
+        <div class="eyebrow">Без скачивания · прямо в Telegram</div>
+        <h1>Приложение для вашего бизнеса, <em>которое живёт в Telegram</em></h1>
+        <p class="lead">Клиент пишет вам в чат, нажимает кнопку — и открывается форма записи, каталог или оплата. Ставить ничего не нужно: это работает как обычная переписка, но с автоматизацией внутри.</p>
         <div class="hero-cta">
           <a href="#contact" class="btn btn-primary">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M3 12L21 3L14 21L11 13L3 12Z" stroke="#070f18" stroke-width="1.8" stroke-linejoin="round"/></svg>
@@ -633,13 +722,15 @@
         <div class="hero-stats">
           <div><strong>6</strong><span>этапов запуска</span></div>
           <div><strong>24/7</strong><span>работа бота</span></div>
-          <div><strong>100%</strong><span>под ваш процесс</span></div>
+          <div><strong>0</strong><span>скачиваний для клиента</span></div>
         </div>
       </div>
 
       <div class="hero-art">
         <div class="hero-badge">
-          <img src="logo-badge@2x.png" srcset="logo-badge.png 320w, logo-badge@2x.png 640w" sizes="(min-width: 960px) 300px, 60vw" width="640" height="640" alt="TG-Studio" loading="eager" decoding="async">
+          <div class="hero-photo">
+            <img src="assets/hero-phone-figma.jpg" alt="Экран подтверждения записи в мини-приложении БЛЕСК — реальный проект TG-Studio" width="620" height="1100" loading="eager" fetchpriority="high" decoding="async">
+          </div>
           <div class="hero-float-card fc1">
             <div class="dot-ico" aria-hidden="true">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 4H20L14 12.5V19L10 21V12.5L4 4Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
@@ -669,6 +760,13 @@
       <div class="service-grid reveal-stagger reveal">
         <div class="card">
           <div class="card-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><rect x="4" y="3" width="16" height="18" rx="2.5" stroke="#2aabee" stroke-width="1.6"/><path d="M9 7H15M9 11H15M9 15H12" stroke="#2aabee" stroke-width="1.6" stroke-linecap="round"/></svg>
+          </div>
+          <h3>Mini Apps</h3>
+          <p>Как отдельное приложение — каталог, запись, личный кабинет, оплата — но открывается кнопкой прямо в Telegram. Устанавливать ничего не нужно.</p>
+        </div>
+        <div class="card">
+          <div class="card-icon">
             <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M4 4H20L14 12.5V19L10 21V12.5L4 4Z" stroke="#2aabee" stroke-width="1.6" stroke-linejoin="round"/></svg>
           </div>
           <h3>Чат-боты для продаж</h3>
@@ -688,42 +786,38 @@
           <h3>ИИ и GPT</h3>
           <p>Диалоговые ассистенты, обработка обращений и генерация ответов на базе языковых моделей.</p>
         </div>
-        <div class="card">
-          <div class="card-icon">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><rect x="4" y="3" width="16" height="18" rx="2.5" stroke="#2aabee" stroke-width="1.6"/><path d="M9 7H15M9 11H15M9 15H12" stroke="#2aabee" stroke-width="1.6" stroke-linecap="round"/></svg>
-          </div>
-          <h3>Mini Apps</h3>
-          <p>Веб-интерфейсы внутри Telegram: каталог, личный кабинет, оплата и запись — без установки стороннего приложения.</p>
-        </div>
       </div>
     </div>
   </section>
 
-  <!-- ADVANTAGES -->
+  <!-- CASES -->
   <section class="showcase" id="advantages">
     <div class="wrap">
       <div class="section-head reveal">
-        <div class="eyebrow">Преимущества</div>
-        <h2>Пять причин выбрать TG-Studio</h2>
-        <p>Скорость запуска, индивидуальная архитектура, интеграция с вашими системами, надёжная инфраструктура и рост продаж — вот что получает бизнес, доверяя автоматизацию нам. Листайте стрелками или нажмите на карточку.</p>
+        <div class="eyebrow">Простыми словами</div>
+        <h2>Один бот — три разных экрана</h2>
+        <p>Клиент видит запись, администратор — смену, владелец — цифры. Всё в одном месте, прямо в Telegram, без скачивания и установки. Это живые скриншоты кейса БЛЕСК — листайте стрелками или нажмите на карточку.</p>
       </div>
 
       <div class="fan-carousel reveal" id="fanCarousel">
-        <div class="fan-track" id="fanTrack" role="group" tabindex="0" aria-roledescription="карусель" aria-label="Преимущества TG-Studio, используйте стрелки влево-вправо">
-          <button type="button" class="phone-card" data-index="0" aria-label="Слайд 1 из 5: Скорость. Показать в центре">
-            <img src="adv-1-speed.jpg" width="768" height="1376" alt="Мгновенный запуск бизнеса в Telegram — ваш бот работает уже через 48 часов после утверждения прототипа" loading="eager" decoding="async">
+        <div class="fan-track" id="fanTrack" role="group" tabindex="0" aria-roledescription="карусель" aria-label="Экраны мини-приложения БЛЕСК, используйте стрелки влево-вправо">
+          <button type="button" class="phone-card" data-index="0" aria-label="Слайд 1 из 3: Клиент — экран подтверждения записи. Показать в центре">
+            <div class="fan-photo">
+              <img src="assets/case-blesk-client.jpg" alt="Экран подтверждения записи клиента в мини-приложении БЛЕСК" width="700" height="1291" loading="lazy" decoding="async">
+              <div class="fan-photo-label">Клиент<span>Подтверждение записи</span></div>
+            </div>
           </button>
-          <button type="button" class="phone-card" data-index="1" aria-label="Слайд 2 из 5: Индивидуальность. Показать в центре">
-            <img src="adv-2-custom.jpg" width="768" height="1376" alt="Персональная архитектура под ваши задачи — никаких шаблонов, проектируем уникальную логику и функционал" loading="lazy" decoding="async">
+          <button type="button" class="phone-card" data-index="1" aria-label="Слайд 2 из 3: Администратор — кто на смене и записи на сегодня. Показать в центре">
+            <div class="fan-photo">
+              <img src="assets/case-blesk-admin.jpg" alt="Экран администратора: кто на смене и записи на сегодня в мини-приложении БЛЕСК" width="700" height="1286" loading="lazy" decoding="async">
+              <div class="fan-photo-label">Администратор<span>Кто на смене сегодня</span></div>
+            </div>
           </button>
-          <button type="button" class="phone-card" data-index="2" aria-label="Слайд 3 из 5: Интеграция. Показать в центре">
-            <img src="adv-3-integration.jpg" width="768" height="1376" alt="Лёгкая интеграция с вашей IT-экосистемой — CRM, платёжные системы, сайты и базы данных объединяем в одно целое" loading="lazy" decoding="async">
-          </button>
-          <button type="button" class="phone-card" data-index="3" aria-label="Слайд 4 из 5: Надёжность. Показать в центре">
-            <img src="adv-4-reliability.jpg" width="768" height="1376" alt="Защищённая и стабильная работа ваших ботов — надёжные сервера, резервное копирование и защита от DDoS-атак" loading="lazy" decoding="async">
-          </button>
-          <button type="button" class="phone-card" data-index="4" aria-label="Слайд 5 из 5: Рост. Показать в центре">
-            <img src="adv-5-growth.jpg" width="768" height="1376" alt="Аналитика и рост ваших продаж — внедрение систем сквозной аналитики и оптимизация воронок в Telegram" loading="lazy" decoding="async">
+          <button type="button" class="phone-card" data-index="2" aria-label="Слайд 3 из 3: Владелец — выручка и топ услуг. Показать в центре">
+            <div class="fan-photo">
+              <img src="assets/case-blesk-owner.jpg" alt="Экран владельца: выручка и топ услуг в мини-приложении БЛЕСК" width="700" height="1283" loading="lazy" decoding="async">
+              <div class="fan-photo-label">Владелец<span>Выручка и статистика</span></div>
+            </div>
           </button>
         </div>
 
@@ -736,7 +830,14 @@
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
         </div>
-        <p class="fan-caption" id="fanCaption" aria-live="polite">Скорость</p>
+        <p class="fan-caption" id="fanCaption" aria-live="polite">Клиент</p>
+      </div>
+
+      <div class="case-demo reveal">
+        <a href="https://t.me/tg_studio_BY_bot" target="_blank" rel="noopener" class="btn btn-ghost">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M21 4L2.5 11.5L9 13.5M21 4L14.5 21L9 13.5M21 4L9 13.5" stroke="#2aabee" stroke-width="1.6" stroke-linejoin="round"/></svg>
+          Попробовать живой пример в Telegram
+        </a>
       </div>
     </div>
   </section>
@@ -796,10 +897,17 @@
       <div class="faq-list reveal">
         <div class="faq-item" data-open="false">
           <button class="faq-q" aria-expanded="false">
+            Клиенту нужно что-то скачивать?
+            <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <div class="faq-a"><div class="faq-a-inner"><p>Нет. Клиент пишет боту в обычном чате Telegram и нажимает кнопку — форма записи, каталог или оплата открываются прямо внутри переписки, без App Store и установки.</p></div></div>
+        </div>
+        <div class="faq-item" data-open="false">
+          <button class="faq-q" aria-expanded="false">
             Сколько стоит разработка бота?
             <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </button>
-          <div class="faq-a"><div class="faq-a-inner"><p>Зависит от сложности сценариев и интеграций. После бесплатной консультации присылаем смету с фиксированной стоимостью и сроком.</p></div></div>
+          <div class="faq-a"><div class="faq-a-inner"><p>Базовый бот с Mini App — от 800 BYN разово, плюс небольшая ежемесячная поддержка. Точная сумма зависит от сложности сценариев и интеграций — после бесплатной консультации присылаем смету с фиксированной стоимостью и сроком.</p></div></div>
         </div>
         <div class="faq-item" data-open="false">
           <button class="faq-q" aria-expanded="false">
@@ -843,7 +951,7 @@
         </div>
 
         <div class="contact-links">
-          <a class="contact-link" href="https://t.me/" target="_blank" rel="noopener">
+          <a class="contact-link" href="https://t.me/TG_Studio_BY" target="_blank" rel="noopener">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M21 4L2.5 11.5L9 13.5M21 4L14.5 21L9 13.5M21 4L9 13.5" stroke="#2aabee" stroke-width="1.6" stroke-linejoin="round"/></svg>
             Написать в Telegram
           </a>
@@ -870,6 +978,7 @@
               <input id="f-tg" name="telegram" type="text" placeholder="@username" autocomplete="off">
             </div>
             <button type="submit" class="btn btn-primary" id="submitBtn">Получить консультацию</button>
+            <p class="field-error" id="formSubmitError">Не получилось отправить заявку. Попробуйте ещё раз или напишите нам в Telegram напрямую.</p>
             <p class="form-note">Нажимая кнопку, вы соглашаетесь на обработку данных для связи с вами.</p>
           </form>
         </div>
@@ -889,17 +998,11 @@
   <div class="wrap">
     <div class="foot-row">
       <div class="foot-brand">
-        <svg class="brand-mark" viewBox="0 0 48 48" fill="none" aria-hidden="true" focusable="false">
-          <rect x="4" y="4" width="40" height="40" rx="12" fill="#ffffff"/>
-          <path d="M13 16H24" stroke="#1b8fcb" stroke-width="3.6" stroke-linecap="round"/>
-          <path d="M17.5 16V33" stroke="#1b8fcb" stroke-width="3.6" stroke-linecap="round"/>
-          <path d="M35 24C35 29.5228 30.5228 34 25 34C23.2 34 21.5 33.53 20 32.7" stroke="#1b8fcb" stroke-width="3.6" stroke-linecap="round"/>
-          <path d="M35 24C35 18.4772 30.5228 14 25 14" stroke="#2aabee" stroke-width="3.6" stroke-linecap="round"/>
-          <path d="M20 26L36 18L31 34L27 27L20 26Z" fill="#2aabee"/>
-        </svg>
+        <img class="brand-mark" src="assets/logo-icon.png" alt="" aria-hidden="true" width="24" height="24">
         <span>TG-Studio — разработка Telegram-ботов и Mini Apps</span>
       </div>
       <nav class="foot-links" aria-label="Ссылки в подвале">
+        <a href="#advantages">Кейсы</a>
         <a href="#services">Услуги</a>
         <a href="#process">Процесс</a>
         <a href="#faq">Вопросы</a>
@@ -991,11 +1094,14 @@
   nameInput.addEventListener('blur', validateName);
   phone.addEventListener('blur', validatePhone);
 
-  // form submit (demo — no backend wired yet)
+  // form submit — sends the lead to Telegram via a Cloudflare Worker proxy
+  // (the bot token must never live in this client-side file — see worker/telegram-lead-worker.js)
+  const LEAD_ENDPOINT = 'https://REPLACE-WITH-YOUR-WORKER.workers.dev';
   const form = document.getElementById('leadForm');
   const submitBtn = document.getElementById('submitBtn');
   const formView = document.getElementById('formView');
   const successView = document.getElementById('successView');
+  const submitError = document.getElementById('formSubmitError');
 
   form.addEventListener('submit', (e)=>{
     e.preventDefault();
@@ -1004,14 +1110,31 @@
     if(!nameOk){ nameInput.focus(); return; }
     if(!phoneOk){ phone.focus(); return; }
 
+    submitError.classList.remove('is-visible');
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Отправляем…';
 
-    setTimeout(()=>{
-      formView.style.display = 'none';
-      successView.style.display = 'block';
-      successView.focus();
-    }, 600);
+    fetch(LEAD_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: nameInput.value.trim(),
+        phone: phone.value.trim(),
+        telegram: document.getElementById('f-tg').value.trim()
+      })
+    })
+      .then(res => { if(!res.ok) throw new Error('bad response'); return res.json(); })
+      .then(data => {
+        if(!data || !data.ok) throw new Error('failed');
+        formView.style.display = 'none';
+        successView.style.display = 'block';
+        successView.focus();
+      })
+      .catch(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Получить консультацию';
+        submitError.classList.add('is-visible');
+      });
   });
 
   document.getElementById('resetFormBtn').addEventListener('click', ()=>{
@@ -1020,6 +1143,7 @@
     phone.removeAttribute('aria-invalid');
     nameError.classList.remove('is-visible');
     phoneError.classList.remove('is-visible');
+    submitError.classList.remove('is-visible');
     submitBtn.disabled = false;
     submitBtn.textContent = 'Получить консультацию';
     successView.style.display = 'none';
@@ -1045,7 +1169,7 @@
   const fanTrack = document.getElementById('fanTrack');
   const fanCards = Array.from(fanTrack ? fanTrack.querySelectorAll('.phone-card') : []);
   if(fanCards.length){
-    const captions = ['Скорость', 'Индивидуальность', 'Интеграция', 'Надёжность', 'Рост'];
+    const captions = ['Клиент', 'Администратор', 'Владелец'];
     const fanCaption = document.getElementById('fanCaption');
     const fanDots = document.getElementById('fanDots');
     const fanPrev = document.getElementById('fanPrev');

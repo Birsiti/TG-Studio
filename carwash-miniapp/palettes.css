@@ -4,13 +4,18 @@
    ПЕРЕД theme.css)
 
    Как это работает — две независимые оси:
-   - [data-theme="..."] — БРЕНД мойки (avtohimiya | voda | chrome |
-     mercedes). Выбирает владелец мойки через CONFIG.theme в
-     реестре — одинаков для всех посетителей конкретной мойки.
-     JS выставляет: document.body.dataset.theme = CONFIG.theme.
-   - [data-mode="light"|"dark"] — светлая/тёмная версия ТОГО ЖЕ
-     бренда. Выбирает каждый пользователь лично (тумблер в шапке),
-     по умолчанию берётся из tg.colorScheme / prefers-color-scheme.
+   - [data-theme="..."] — цветовая схема карточек (avtohimiya | voda |
+     chrome | mercedes | telegram). У владельца (owner.html) выбор
+     через CONFIG.theme в реестре задаёт схему по умолчанию для всех
+     посетителей мойки. Клиент и админ (client.html/admin.html) могут
+     дополнительно переопределить схему лично для себя той же кнопкой
+     «палитра» — выбор живёт в localStorage конкретного браузера и не
+     трогает CONFIG. JS выставляет: document.body.dataset.theme = ...
+     (см. App.resolveBrand()/App.applyBrand() в bootstrap.js).
+   - [data-mode="light"|"dark"] — светлая/тёмная версия ТОЙ ЖЕ
+     схемы («день/ночь», как в самом Telegram). Выбирает каждый
+     пользователь лично (тумблер в шапке), по умолчанию берётся из
+     tg.colorScheme / prefers-color-scheme.
      JS выставляет: document.body.dataset.mode = 'light'|'dark'
      (см. App.applyMode()/App.toggleMode() в bootstrap.js).
    - Компоненты в theme.css используют ТОЛЬКО нейтральные переменные
@@ -353,5 +358,87 @@
     repeating-linear-gradient(120deg, rgba(255,255,255,.014) 0px, rgba(255,255,255,.014) 1px, transparent 1px, transparent 4px);
   --texture-size:auto;
   --plate-glow:radial-gradient(ellipse, rgba(255,255,255,.12), transparent 70%);
+}
+
+/* ---- Telegram (фирменный синий, день) ---- */
+[data-theme="telegram"]{
+  --bg:#EEF2F5;
+  --surface:#FFFFFF;
+  --surface-2:#F5F8FA;
+  --surface-3:#E8EEF3;
+  --ink:#111417;
+  --ink-soft:#707579;
+  --ink-faint:#A8ADB2;
+  --border:#E1E7EB;
+
+  --accent:#2AABEE;
+  --accent-dark:#1B8FCB;
+  --accent-soft:#E3F3FC;
+
+  --accent2:#2AABEE;        /* один фирменный синий — CTA использует тот же accent */
+  --accent2-dark:#1B8FCB;
+  --accent2-soft:#E3F3FC;
+
+  --warn:#B9812A;
+  --warn-dark:#8A5B0C;
+  --warn-soft:#F5E9D6;
+  --danger:#E53935;
+  --danger-soft:#FCE4E3;
+  --success:#4FAE4E;
+  --success-soft:#E5F5E3;
+
+  --on-light:#111417;
+  --on-light-soft:#707579;
+
+  --radius-lg:22px; --radius-md:15px; --radius-sm:11px;
+  --shadow:0 10px 28px rgba(17,20,23,0.09);
+  --shadow-sm:0 4px 14px rgba(17,20,23,0.06);
+  --font-display:'Manrope';
+
+  --texture:
+    repeating-linear-gradient(115deg, rgba(42,171,238,0.03) 0px, rgba(42,171,238,0.03) 1px, transparent 1px, transparent 8px);
+  --texture-size:auto;
+  --plate-glow:none;
+}
+
+/* ---- Telegram (фирменный синий, ночь — как в самом Telegram Desktop) ---- */
+[data-theme="telegram"][data-mode="dark"]{
+  --bg:#0E1621;
+  --surface:#17212B;
+  --surface-2:#1C2733;
+  --surface-3:#242F3D;
+  --ink:#E1E3E6;
+  --ink-soft:#708499;
+  --ink-faint:#4B5D6B;
+  --border:#131C26;
+
+  --accent:#2AABEE;
+  --accent-dark:#5288C1;
+  --accent-soft:rgba(42,171,238,0.16);
+
+  --accent2:#2AABEE;
+  --accent2-dark:#5288C1;
+  --accent2-soft:rgba(42,171,238,0.16);
+
+  --warn:#D9A24A;
+  --warn-dark:#B9812A;
+  --warn-soft:rgba(217,162,74,0.16);
+  --danger:#EB5B56;
+  --danger-soft:rgba(235,91,86,0.14);
+  --success:#6DCB6D;
+  --success-soft:rgba(109,203,109,0.14);
+
+  --on-light:#111417;
+  --on-light-soft:#707579;
+
+  --radius-lg:22px; --radius-md:15px; --radius-sm:11px;
+  --shadow:0 10px 28px rgba(0,0,0,.45);
+  --shadow-sm:0 4px 14px rgba(0,0,0,.32);
+  --font-display:'Manrope';
+
+  --texture:
+    repeating-linear-gradient(115deg, rgba(255,255,255,0.014) 0px, rgba(255,255,255,0.014) 1px, transparent 1px, transparent 8px);
+  --texture-size:auto;
+  --plate-glow:radial-gradient(ellipse, rgba(42,171,238,.10), transparent 70%);
 }
 
