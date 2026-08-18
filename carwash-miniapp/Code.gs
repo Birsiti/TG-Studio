@@ -68,6 +68,7 @@ function routeAction(action, p){
     case 'getMyCars':        return getMyCars(p);
     case 'saveCar':          return saveCar(p);
     case 'deleteCar':        return deleteCar(p);
+    case 'getMyProfile':     return getMyProfile(p);
     // ---- администратор ----
     case 'getBookings':          return getBookings();
     case 'updateBookingStatus':  return updateBookingStatus(p);
@@ -437,6 +438,16 @@ function getMyBookings(p){
   const rows = readAll(SHEET_NAMES.BOOKINGS).filter(r => String(r.client_tg_id) === String(p.userId));
   rows.sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
   return {ok:true, bookings: rows.map(bookingRowToClient)};
+}
+
+// Отдельного листа с профилями нет — имя/телефон берём из последней записи
+// клиента (они уже сохраняются в "ЗАПИСИ" при каждом createBooking).
+function getMyProfile(p){
+  const rows = readAll(SHEET_NAMES.BOOKINGS).filter(r => String(r.client_tg_id) === String(p.userId));
+  if(!rows.length) return {ok:true, profile:null};
+  rows.sort((a,b)=> new Date(b.created_at) - new Date(a.created_at));
+  const latest = rows[0];
+  return {ok:true, profile:{name:latest.client_name, phone:latest.client_phone}};
 }
 
 function getBookings(){

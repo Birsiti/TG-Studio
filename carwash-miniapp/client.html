@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
 <title>Запись на мойку</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -82,8 +82,8 @@
       <input type="text" id="carNumber" placeholder="Например, 1234 AB-7" autocomplete="off">
     </div>
     <div class="field-row">
-      <div class="field"><label>Марка</label><input type="text" id="carBrand" placeholder="Toyota"></div>
-      <div class="field"><label>Модель</label><input type="text" id="carModel" placeholder="Camry"></div>
+      <div class="field"><label>Марка</label><input type="text" id="carBrand" placeholder="Toyota" autocomplete="off"></div>
+      <div class="field"><label>Модель</label><input type="text" id="carModel" placeholder="Camry" autocomplete="off"></div>
     </div>
 
     <div class="field">
@@ -115,13 +115,16 @@
     <div class="screen-title">Ваши контакты</div>
     <div class="screen-sub">Нужны, чтобы подтвердить запись</div>
 
-    <div class="field"><label>Имя</label><input type="text" id="clientName" placeholder="Как к вам обращаться"></div>
+    <div class="field"><label>Имя</label><input type="text" id="clientName" placeholder="Как к вам обращаться" autocomplete="off"></div>
     <div class="field-row">
-      <div class="field" style="flex:0 0 100px;">
+      <div class="field" style="flex:0 0 88px;">
         <label>Код</label>
-        <select id="phoneCode"><option value="+375">+375</option><option value="+7">+7</option><option value="+380">+380</option></select>
+        <div class="select-wrap">
+          <select id="phoneCode"><option value="+375">+375</option><option value="+7">+7</option><option value="+380">+380</option></select>
+          <svg class="select-chev" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
       </div>
-      <div class="field"><label>Телефон</label><input type="tel" id="clientPhone" placeholder="29 123-45-67" inputmode="numeric"></div>
+      <div class="field"><label>Телефон</label><input type="tel" id="clientPhone" placeholder="(29)123-45-67" inputmode="numeric" maxlength="13" autocomplete="off"></div>
     </div>
 
     <label class="consent">
@@ -186,6 +189,8 @@
   let MY_CARS = [
     {id:'car1', number:'7788 MK-4', brand:'Kia', model:'Sportage', carClass:'krossover', lastUsedAt:Date.now()-86400000*6}
   ];
+  // Профиль клиента, если он уже записывался раньше — подставляется на шаге контактов
+  let MY_PROFILE = {name:'Денис', phone:'291234567'};
 
   const CAR_CLASSES = [
     {id:'legkovoy', label:'Легковой'},
@@ -193,6 +198,50 @@
     {id:'vnedorozhnik', label:'Внедорожник'},
     {id:'minivan', label:'Минивэн'}
   ];
+
+  const CAR_MODELS = {
+    'Toyota': ['Camry','Corolla','RAV4','Land Cruiser','Land Cruiser Prado','Hilux','Yaris','C-HR','Highlander'],
+    'Volkswagen': ['Polo','Golf','Passat','Tiguan','Jetta','Touareg','Teramont','Arteon'],
+    'BMW': ['3 серии','5 серии','7 серии','X1','X3','X5','X6','1 серии'],
+    'Mercedes-Benz': ['A-Class','C-Class','E-Class','S-Class','GLA','GLC','GLE','Vito','Sprinter'],
+    'Audi': ['A3','A4','A6','A8','Q3','Q5','Q7','Q8'],
+    'Renault': ['Logan','Sandero','Duster','Kaptur','Megane','Fluence','Arkana'],
+    'Hyundai': ['Solaris','Elantra','Sonata','Tucson','Santa Fe','Creta','ix35'],
+    'Kia': ['Rio','Cerato','K5','Sportage','Sorento','Seltos','Soul'],
+    'Skoda': ['Octavia','Rapid','Superb','Kodiaq','Karoq','Fabia'],
+    'Nissan': ['Almera','Qashqai','X-Trail','Juke','Murano','Teana'],
+    'Ford': ['Focus','Fiesta','Mondeo','Kuga','EcoSport','Explorer'],
+    'Chevrolet': ['Cruze','Aveo','Lacetti','Niva','Captiva','Tahoe'],
+    'Opel': ['Astra','Insignia','Corsa','Mokka','Zafira'],
+    'Peugeot': ['308','408','508','2008','3008','5008'],
+    'Mazda': ['3','6','CX-5','CX-3','CX-9'],
+    'Honda': ['Civic','Accord','CR-V','Pilot','HR-V'],
+    'Lexus': ['ES','RX','NX','LX','GX'],
+    'Volvo': ['S60','S90','XC40','XC60','XC90'],
+    'Mitsubishi': ['Lancer','Outlander','ASX','Pajero','Eclipse Cross'],
+    'Subaru': ['Forester','Outback','Impreza','XV'],
+    'Geely': ['Coolray','Atlas','Emgrand','Tugella','Monjaro'],
+    'Chery': ['Tiggo 4','Tiggo 7','Tiggo 8','Arrizo'],
+    'Haval': ['Jolion','F7','H6','Dargo'],
+    'BYD': ['Song Plus','Han','Tang','Atto 3'],
+    'Lada (ВАЗ)': ['Granta','Vesta','Niva','XRAY','Largus'],
+    'УАЗ': ['Patriot','Хантер','Буханка'],
+    'Fiat': ['Albea','Doblo','Ducato'],
+    'Citroen': ['C4','C5','Berlingo'],
+    'Land Rover': ['Discovery','Range Rover','Defender','Evoque'],
+    'Jeep': ['Grand Cherokee','Cherokee','Compass','Wrangler'],
+    'Porsche': ['Cayenne','Macan','Panamera','911'],
+    'Mini': ['Cooper','Countryman'],
+    'Suzuki': ['Vitara','SX4','Swift','Jimny'],
+    'Infiniti': ['Q50','QX50','QX60'],
+    'Jaguar': ['XE','XF','F-Pace'],
+    'Cadillac': ['Escalade','XT5'],
+    'Great Wall': ['Poer','Wingle'],
+    'JAC': ['S3','S4'],
+    'Changan': ['CS35','CS75'],
+    'Datsun': ['on-DO','mi-DO']
+  };
+  const CAR_BRANDS = Object.keys(CAR_MODELS);
 
   const CATEGORY_ICONS = {
     'Мойка': '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5s6 7 6 11.5a6 6 0 0 1-12 0c0-4.5 6-11.5 6-11.5z"/></svg>',
@@ -269,6 +318,14 @@
     if(action === 'deleteCar'){
       MY_CARS = MY_CARS.filter(c=>c.id!==payload.id);
       return {ok:true};
+    }
+    if(action === 'getMyProfile'){
+      // Как на реальном бэкенде: берём имя/телефон из последней записи клиента,
+      // а до первой записи — из демо-профиля (имитация уже существующего клиента).
+      const sorted = STATE.bookings.slice().sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
+      const latest = sorted[0];
+      const profile = latest ? {name:latest.contact.name, phone:latest.contact.phone} : (MY_PROFILE.phone ? MY_PROFILE : null);
+      return {ok:true, profile};
     }
     if(action === 'getServices') return {ok:true, categories: MOCK_SERVICES};
     if(action === 'getSchedule'){
@@ -468,6 +525,49 @@
   $('carBrand').addEventListener('input', e=>{ STATE.car.brand = e.target.value; });
   $('carModel').addEventListener('input', e=>{ STATE.car.model = e.target.value; });
 
+  /* ---------- ПОДСКАЗКИ: марка/модель по первым буквам ---------- */
+  function attachSuggest(inputEl, getItems){
+    const list = document.createElement('div');
+    list.className = 'suggest-list';
+    inputEl.parentElement.appendChild(list);
+    function hide(){ list.classList.remove('open'); list.innerHTML=''; }
+    function show(){
+      const q = inputEl.value.trim().toLowerCase();
+      if(!q){ hide(); return; }
+      const items = getItems(q).slice(0, 6);
+      if(!items.length){ hide(); return; }
+      list.innerHTML = items.map(v=>`<div class="suggest-item">${v}</div>`).join('');
+      list.classList.add('open');
+    }
+    inputEl.addEventListener('input', show);
+    inputEl.addEventListener('focus', ()=>{
+      show();
+      setTimeout(()=>{ inputEl.scrollIntoView({block:'center', behavior:'smooth'}); }, 300);
+    });
+    inputEl.addEventListener('blur', ()=> setTimeout(hide, 150));
+    list.addEventListener('mousedown', (e)=>{
+      const item = e.target.closest('.suggest-item');
+      if(!item) return;
+      e.preventDefault();
+      inputEl.value = item.textContent;
+      inputEl.dispatchEvent(new Event('input', {bubbles:true}));
+      hide();
+    });
+  }
+  attachSuggest($('carBrand'), (q)=> CAR_BRANDS.filter(b=>b.toLowerCase().startsWith(q)));
+  attachSuggest($('carModel'), (q)=>{
+    const brand = Object.keys(CAR_MODELS).find(b=> b.toLowerCase() === $('carBrand').value.trim().toLowerCase());
+    const models = brand ? CAR_MODELS[brand] : [];
+    return models.filter(m=>m.toLowerCase().startsWith(q));
+  });
+
+  /* ---------- Прокрутка поля к видимой области при появлении клавиатуры ---------- */
+  document.querySelectorAll('.field input, .field select').forEach(el=>{
+    el.addEventListener('focus', ()=>{
+      setTimeout(()=>{ el.scrollIntoView({block:'center', behavior:'smooth'}); }, 300);
+    });
+  });
+
   function validateStep1(){
     const ok = STATE.car.number.trim().length>=4 && !!STATE.car.carClass;
     updateNextButton(ok);
@@ -613,13 +713,44 @@
   }
 
   /* ---------- STEP 4: CONTACT ---------- */
+  // Маска (29)123-45-67 — 2 цифры оператора в скобках + 7 цифр номера, храним STATE.contact.phone только цифрами
+  function formatPhone(digits){
+    digits = (digits || '').replace(/\D/g,'').slice(0,9);
+    if(!digits) return '';
+    let out = '(' + digits.slice(0,2);
+    if(digits.length >= 2) out += ')';
+    if(digits.length > 2) out += digits.slice(2,5);
+    if(digits.length > 5) out += '-' + digits.slice(5,7);
+    if(digits.length > 7) out += '-' + digits.slice(7,9);
+    return out;
+  }
+  const clientPhoneInput = $('clientPhone');
   $('clientName').addEventListener('input', e=>{ STATE.contact.name = e.target.value; validateStep4(); });
-  $('clientPhone').addEventListener('input', e=>{ STATE.contact.phone = e.target.value; validateStep4(); });
+  clientPhoneInput.addEventListener('input', ()=>{
+    const digits = clientPhoneInput.value.replace(/\D/g,'').slice(0,9);
+    clientPhoneInput.value = formatPhone(digits);
+    STATE.contact.phone = digits;
+    validateStep4();
+  });
   $('consent').addEventListener('change', validateStep4);
   function validateStep4(){
-    const ok = STATE.contact.name.trim().length>1 && STATE.contact.phone.replace(/\D/g,'').length>=7 && $('consent').checked;
+    const ok = STATE.contact.name.trim().length>1 && STATE.contact.phone.length===9 && $('consent').checked;
     updateNextButton(ok);
     return ok;
+  }
+
+  /* ---------- Профиль клиента: если уже записывался раньше — подставляем имя и телефон ---------- */
+  async function loadMyProfile(){
+    const res = await api('getMyProfile', {userId: tgUser.id});
+    if(res.ok && res.profile && res.profile.phone){
+      // Телефон в базе может быть с кодом страны (+375...) — берём последние 9 цифр, это локальный номер
+      const localDigits = String(res.profile.phone).replace(/\D/g,'').slice(-9);
+      STATE.contact.name = res.profile.name || '';
+      STATE.contact.phone = localDigits;
+      $('clientName').value = STATE.contact.name;
+      clientPhoneInput.value = formatPhone(localDigits);
+      validateStep4();
+    }
   }
 
   /* ---------- STICKY BAR / NEXT LOGIC ---------- */
@@ -686,9 +817,11 @@
     nextBtn.disabled = true; nextBtn.textContent='Записываем…';
     const t = selectedTotal();
     const items = allServiceItems().filter(it=>STATE.services.includes(it.id));
+    const fullPhone = $('phoneCode').value + STATE.contact.phone;
     const payload = {
       userId: tgUser.id, car: STATE.car, services: items.map(i=>i.name),
-      date: STATE.date, time: STATE.time, priceMin: t.min, priceMax: t.max, contact: STATE.contact
+      date: STATE.date, time: STATE.time, priceMin: t.min, priceMax: t.max,
+      contact: {name: STATE.contact.name, phone: fullPhone}
     };
     const res = await api('createBooking', payload);
     if(!res.ok){
@@ -879,6 +1012,7 @@
     showScreen(1);
     validateStep1();
     loadMyCars();
+    loadMyProfile();
     // Запускаем заранее, пока клиент заполняет шаг 1 (машина) — к моменту
     // перехода на шаги 2/3 данные уже в кэше STATE, и Apps Script round-trip
     // (несколько секунд на мобильной сети) не блокирует переход между экранами.
