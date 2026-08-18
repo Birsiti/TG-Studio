@@ -726,6 +726,39 @@
   }
   const clientPhoneInput = $('clientPhone');
   $('clientName').addEventListener('input', e=>{ STATE.contact.name = e.target.value; validateStep4(); });
+
+  // Сколько цифр стоит в formatted-строке до позиции caret (скобки/дефисы не считаются)
+  function digitsBeforeCaret(formatted, caret){ return (formatted.slice(0, caret).match(/\d/g) || []).length; }
+  // Позиция курсора сразу после того, как в маске набрано digitCount цифр
+  function caretAfterDigitCount(digits, digitCount){ return formatPhone(digits.slice(0, digitCount)).length; }
+  function setPhoneDigits(digits, caret){
+    STATE.contact.phone = digits;
+    clientPhoneInput.value = formatPhone(digits);
+    clientPhoneInput.setSelectionRange(caret, caret);
+    validateStep4();
+  }
+
+  // Backspace/Delete с курс[ором вплотную к «)» или «-» иначе стирают декоративный
+  // символ, а не цифру — маска пересобирается в ТУ ЖЕ строку, и кажется, что
+  // удаление не работает. Поэтому здесь стираем цифру по её позиции сами.
+  clientPhoneInput.addEventListener('keydown', (e)=>{
+    if(e.key !== 'Backspace' && e.key !== 'Delete') return;
+    const start = clientPhoneInput.selectionStart, end = clientPhoneInput.selectionEnd;
+    if(start !== end) return; // есть выделение — пусть браузер удалит диапазон как обычно
+    const digits = STATE.contact.phone;
+    if(e.key === 'Backspace'){
+      if(start === 0) return;
+      const count = digitsBeforeCaret(clientPhoneInput.value, start);
+      if(count === 0) return;
+      e.preventDefault();
+      setPhoneDigits(digits.slice(0, count-1) + digits.slice(count), caretAfterDigitCount(digits, count-1));
+    } else {
+      const count = digitsBeforeCaret(clientPhoneInput.value, start);
+      if(count >= digits.length) return;
+      e.preventDefault();
+      setPhoneDigits(digits.slice(0, count) + digits.slice(count+1), caretAfterDigitCount(digits, count));
+    }
+  });
   clientPhoneInput.addEventListener('input', ()=>{
     const digits = clientPhoneInput.value.replace(/\D/g,'').slice(0,9);
     clientPhoneInput.value = formatPhone(digits);
