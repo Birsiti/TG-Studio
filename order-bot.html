@@ -240,8 +240,7 @@
 // Worker, см. carwash-miniapp/BACKEND-README.md), как только он появится —
 // тогда просто удалить botToken отсюда и подставить apiUrl.
 const CONFIG = {
-  botToken: "8826586712:AAEAAj4wz_-xk2figKE2vZMjQ3gYO590EUY",
-  chatId: "6204739474",
+  workerUrl: 'https://tg-studio-leads.birsiti.workers.dev',
 };
 
 /* ============================================================ TELEGRAM ============================================================ */
@@ -417,19 +416,17 @@ function buildMessage(p) {
 }
 
 async function sendLead(payload) {
-  if (!CONFIG.botToken || CONFIG.botToken.startsWith("PASTE_")) {
-    // токен ещё не вставлен — форма работает в демо-режиме, ничего не уходит
+  if (!CONFIG.workerUrl || CONFIG.workerUrl.startsWith("PASTE_")) {
     await new Promise(r => setTimeout(r, 500));
     return;
   }
-  const url = `https://api.telegram.org/bot${CONFIG.botToken}/sendMessage`;
-  const res = await fetch(url, {
+  const res = await fetch(CONFIG.workerUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ chat_id: CONFIG.chatId, text: buildMessage(payload) }),
+    body: JSON.stringify(payload),
   });
   const data = await res.json();
-  if (!res.ok || !data.ok) throw new Error(data.description || "send_failed");
+  if (!res.ok || !data.ok) throw new Error("send_failed");
 }
 
 function setLoading(loading) {

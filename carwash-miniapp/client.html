@@ -50,6 +50,7 @@
         </button>
         <button class="glass-btn" id="myBookingsBtn" title="Мои записи">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          <span class="btn-badge" id="myBookingsBadge" style="display:none;"></span>
         </button>
         <a class="glass-btn" id="callBtn" title="Позвонить">
           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
@@ -879,6 +880,7 @@
     STATE.currentTicket = res.booking;
     renderTicket(STATE.currentTicket, false);
     showScreen(5);
+    markUnseenBooking();
   }
 
   function renderTicket(b, cancelled){
@@ -918,8 +920,20 @@
 
   /* ---------- МОИ ЗАПИСИ ---------- */
   const overlay = $('myBookingsOverlay');
+
+  // Бейдж на кнопке "Мои записи" — загорается после успешной записи, гаснет,
+  // когда клиент реально открыл список (личный индикатор, только в браузере).
+  const UNSEEN_BOOKING_KEY = 'cw_unseen_booking';
+  function markUnseenBooking(){ try{ localStorage.setItem(UNSEEN_BOOKING_KEY, '1'); }catch(e){} updateBookingsBadge(); }
+  function clearUnseenBooking(){ try{ localStorage.removeItem(UNSEEN_BOOKING_KEY); }catch(e){} updateBookingsBadge(); }
+  function updateBookingsBadge(){
+    let has = false; try{ has = localStorage.getItem(UNSEEN_BOOKING_KEY) === '1'; }catch(e){}
+    $('myBookingsBadge').style.display = has ? 'block' : 'none';
+  }
+
   $('myBookingsBtn').addEventListener('click', async ()=>{
     overlay.classList.add('open');
+    clearUnseenBooking();
     if(tg && tg.BackButton){ try{ tg.BackButton.show(); tg.BackButton.onClick(closeOverlay); }catch(e){} }
     const res = await api('getMyBookings', {userId: tgUser.id});
     renderMyBookings(res.bookings || []);
@@ -930,29 +944,50 @@
   }
   $('closeOverlayBtn').addEventListener('click', closeOverlay);
 
+  const BOOKING_STATUS_CLASS = {
+    'Ожидает':'st-pending', 'Подтверждена':'st-confirmed', 'Выполнена':'st-done', 'Отменена':'st-cancelled'
+  };
+  function renderBookingRow(b){
+    const el = document.createElement('div');
+    el.className='booking-mini';
+    const priceLabel = (b.priceMin===b.priceMax) ? (b.priceMin+' BYN') : (b.priceMin+'–'+b.priceMax+' BYN');
+    el.innerHTML = `
+      <div class="top"><span class="plate-mini">${b.car.number}</span><span class="status-pill ${BOOKING_STATUS_CLASS[b.status]||''}">${b.status}</span></div>
+      <div class="meta">${formatDate(b.date)}, ${b.time} · ${b.services.length} услуг · ${priceLabel}</div>
+    `;
+    el.addEventListener('click', ()=>{
+      closeOverlay();
+      STATE.currentTicket = b;
+      renderTicket(b, b.status==='Отменена');
+      showScreen(5);
+    });
+    return el;
+  }
+
+  // Разделяем по дате: активные — сегодня и позже (ещё предстоят), история —
+  // вчера и раньше. Не по статусу — админ не всегда помечает запись
+  // "выполнена", а дата уже прошла, поэтому это надёжнее.
   function renderMyBookings(list){
     const wrap = $('myBookingsList');
     if(!list.length){
       wrap.innerHTML = `<div class="empty-state"><div class="drop-big"></div>Пока нет записей.<br>Оформите первую запись на мойку.</div>`;
       return;
     }
+    const today = todayKey();
+    const active = list.filter(b => b.date >= today).sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
+    const past = list.filter(b => b.date < today); // уже отсортирован бэкендом от новых к старым
     wrap.innerHTML='';
-    list.forEach(b=>{
-      const el = document.createElement('div');
-      el.className='booking-mini';
-      const priceLabel = (b.priceMin===b.priceMax) ? (b.priceMin+' BYN') : (b.priceMin+'–'+b.priceMax+' BYN');
-      el.innerHTML = `
-        <div class="top"><span class="plate-mini">${b.car.number}</span><span class="status">${b.status}</span></div>
-        <div class="meta">${formatDate(b.date)}, ${b.time} · ${b.services.length} услуг · ${priceLabel}</div>
-      `;
-      el.addEventListener('click', ()=>{
-        closeOverlay();
-        STATE.currentTicket = b;
-        renderTicket(b, b.status==='Отменена');
-        showScreen(5);
-      });
-      wrap.appendChild(el);
-    });
+    function renderGroup(title, items){
+      if(!items.length) return;
+      const label = document.createElement('div');
+      label.className='section-title';
+      label.style.cssText='padding:0 18px; margin:16px 0 8px;';
+      label.textContent = title;
+      wrap.appendChild(label);
+      items.forEach(b=> wrap.appendChild(renderBookingRow(b)));
+    }
+    renderGroup('Активные', active);
+    renderGroup('История', past);
   }
 
   /* ============ ПЕРЕКЛЮЧЕНИЕ СВЕТЛАЯ/ТЁМНАЯ ============ */
@@ -1056,6 +1091,7 @@
 
     showScreen(1);
     validateStep1();
+    updateBookingsBadge();
     loadMyCars();
     loadMyProfile();
     // Запускаем заранее, пока клиент заполняет шаг 1 (машина) — к моменту

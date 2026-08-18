@@ -43,12 +43,13 @@ input, select, textarea{font-family:inherit;}
 .hero-brand .drop{width:10px; height:12px; background:var(--accent); border-radius:0 60% 60% 60%; transform:rotate(45deg); display:inline-block;}
 .hero-icons{display:flex; gap:8px;}
 .glass-btn{
-  width:38px; height:38px; border-radius:50%;
+  position:relative; width:38px; height:38px; border-radius:50%;
   background:var(--surface-2); border:1px solid var(--border);
   display:flex; align-items:center; justify-content:center; cursor:pointer;
   box-shadow:var(--shadow-sm);
 }
 .glass-btn svg{width:17px;height:17px; stroke:var(--accent2-dark);}
+.btn-badge{position:absolute; top:1px; right:1px; width:10px; height:10px; border-radius:50%; background:var(--danger); border:2px solid var(--surface);}
 
 .stepper{display:flex; gap:6px; padding:0 18px 14px;}
 .stepper .dot{flex:1; height:5px; border-radius:3px; background:var(--border); transition:all .25s ease;}
