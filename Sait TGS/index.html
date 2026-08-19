@@ -26,8 +26,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <noscript><div><img src="https://mc.yandex.ru/watch/111729837" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
 
-<title>TG-Studio — боты и приложения для Telegram, которые окупаются</title>
-<meta name="description" content="Разрабатываем Telegram-ботов и Mini Apps под задачи бизнеса: приём заявок, продажи, оплата и интеграция с CRM. Считаем результат, а не количество функций.">
+<title>Разработка Telegram-ботов и Mini Apps для бизнеса | TG-Studio, Минск</title>
+<meta name="description" content="Разработка Telegram-ботов и Mini Apps под задачи бизнеса: запись клиентов, приём заявок, оплата, CRM. Автомойки, прокат, кафе, транспорт. Минск, Беларусь.">
 <link rel="canonical" href="https://tg-studio.by/">
 <meta name="theme-color" content="#0a1622">
 <link rel="icon" href="logo-badge.png">
@@ -1181,6 +1181,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        source: 'site',
         name: nameInput.value.trim(),
         phone: phone.value.trim(),
         business: document.getElementById('f-business').value.trim(),
