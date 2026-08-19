@@ -600,6 +600,25 @@
   }
   .field input[aria-invalid="true"]{border-color:var(--danger);}
   .field input[aria-invalid="true"]:focus{box-shadow:0 0 0 3px rgba(239,106,106,.18);}
+  .field textarea{
+    width:100%; min-height:96px; resize:none;
+    background:var(--navy-900);
+    border:1px solid var(--navy-600);
+    border-radius:8px;
+    padding:16px;
+    color:var(--ink-50);
+    font-size:16px;
+    line-height:1.5;
+    font-family:inherit;
+    transition:border-color .25s, box-shadow .25s;
+  }
+  .field textarea::placeholder{color:var(--ink-500);}
+  .field textarea:focus{
+    outline:none; border-color:var(--blue-500);
+    box-shadow:0 0 0 3px rgba(42,171,238,.18);
+  }
+  .field textarea[aria-invalid="true"]{border-color:var(--danger);}
+  .field textarea[aria-invalid="true"]:focus{box-shadow:0 0 0 3px rgba(239,106,106,.18);}
   .field-error{
     display:none; color:var(--danger); font-size:12.5px; margin-top:8px; line-height:1.4;
   }
@@ -960,7 +979,7 @@
       <div class="form-card reveal">
         <div id="formView">
           <h3>Получить консультацию</h3>
-          <p>Заполните три поля — этого достаточно для первого звонка.</p>
+          <p>Заполните форму — этого достаточно для первого звонка.</p>
           <form id="leadForm" novalidate>
             <div class="field">
               <div class="field-label-row"><label for="f-name">Имя <span class="req">*</span></label></div>
@@ -973,8 +992,13 @@
               <p class="field-error" id="f-phone-error">Введите номер телефона полностью.</p>
             </div>
             <div class="field">
-              <div class="field-label-row"><label for="f-tg">Telegram</label></div>
-              <input id="f-tg" name="telegram" type="text" placeholder="@username" autocomplete="off">
+              <div class="field-label-row"><label for="f-business">Сфера бизнеса</label></div>
+              <input id="f-business" name="business" type="text" placeholder="Например: салон красоты" autocomplete="organization">
+            </div>
+            <div class="field">
+              <div class="field-label-row"><label for="f-task">Что нужно автоматизировать <span class="req">*</span></label></div>
+              <textarea id="f-task" name="task" rows="4" placeholder="Опишите в двух словах: запись, каталог, доставка…" required></textarea>
+              <p class="field-error" id="f-task-error">Расскажите, что нужно автоматизировать.</p>
             </div>
             <button type="submit" class="btn btn-primary" id="submitBtn">Получить консультацию</button>
             <p class="field-error" id="formSubmitError">Не получилось отправить заявку. Попробуйте ещё раз или напишите нам в Telegram напрямую.</p>
@@ -1076,6 +1100,8 @@
   const nameInput = document.getElementById('f-name');
   const nameError = document.getElementById('f-name-error');
   const phoneError = document.getElementById('f-phone-error');
+  const taskInput = document.getElementById('f-task');
+  const taskError = document.getElementById('f-task-error');
 
   function validateName(){
     const ok = nameInput.value.trim().length > 0;
@@ -1090,8 +1116,15 @@
     phoneError.classList.toggle('is-visible', !ok);
     return ok;
   }
+  function validateTask(){
+    const ok = taskInput.value.trim().length >= 5;
+    taskInput.setAttribute('aria-invalid', String(!ok));
+    taskError.classList.toggle('is-visible', !ok);
+    return ok;
+  }
   nameInput.addEventListener('blur', validateName);
   phone.addEventListener('blur', validatePhone);
+  taskInput.addEventListener('blur', validateTask);
 
   // form submit — sends the lead to Telegram via a Cloudflare Worker proxy
   // (the bot token must never live in this client-side file — see worker/telegram-lead-worker.js)
@@ -1106,8 +1139,10 @@
     e.preventDefault();
     const nameOk = validateName();
     const phoneOk = validatePhone();
+    const taskOk = validateTask();
     if(!nameOk){ nameInput.focus(); return; }
     if(!phoneOk){ phone.focus(); return; }
+    if(!taskOk){ taskInput.focus(); return; }
 
     submitError.classList.remove('is-visible');
     submitBtn.disabled = true;
@@ -1119,7 +1154,8 @@
       body: JSON.stringify({
         name: nameInput.value.trim(),
         phone: phone.value.trim(),
-        telegram: document.getElementById('f-tg').value.trim()
+        business: document.getElementById('f-business').value.trim(),
+        task: taskInput.value.trim()
       })
     })
       .then(res => { if(!res.ok) throw new Error('bad response'); return res.json(); })
@@ -1140,8 +1176,10 @@
     form.reset();
     nameInput.removeAttribute('aria-invalid');
     phone.removeAttribute('aria-invalid');
+    taskInput.removeAttribute('aria-invalid');
     nameError.classList.remove('is-visible');
     phoneError.classList.remove('is-visible');
+    taskError.classList.remove('is-visible');
     submitError.classList.remove('is-visible');
     submitBtn.disabled = false;
     submitBtn.textContent = 'Получить консультацию';
