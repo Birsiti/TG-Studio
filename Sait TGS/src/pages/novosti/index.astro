@@ -1,0 +1,70 @@
+---
+import { getCollection } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+
+const title = 'Новости — статьи о Telegram-ботах, Mini Apps и ИИ | TG-Studio';
+const description = 'Статьи TG-Studio о разработке Telegram-ботов, Mini Apps и ИИ-ассистентов: разбор кейсов, сравнение подходов и практические советы для бизнеса.';
+
+const allPosts = (await getCollection('news')).sort(
+  (a, b) => b.data.date.valueOf() - a.data.date.valueOf()
+);
+const categories = ['Боты', 'Telegram-приложения', 'ИИ'];
+---
+<BaseLayout title={title} description={description} path="/novosti">
+  <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: 'Новости' }]} />
+
+  <main id="main-content">
+    <section class="page-hero">
+      <div class="wrap">
+        <div class="eyebrow">Новости</div>
+        <h1>Статьи о ботах, Mini Apps и ИИ</h1>
+        <p class="lead">Разбираем кейсы, сравниваем подходы и делимся практикой из проектов TG-Studio.</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap">
+        <div class="news-filters" id="newsFilters">
+          <button type="button" class="news-filter" data-cat="all" aria-current="true">Все статьи</button>
+          {categories.map(cat => (
+            <button type="button" class="news-filter" data-cat={cat}>{cat}</button>
+          ))}
+        </div>
+
+        {allPosts.length > 0 ? (
+          <div class="news-grid" id="newsGrid">
+            {allPosts.map(post => (
+              <a href={`/novosti/${post.id}`} class="news-card" data-cat={post.data.category}>
+                <span class="cat">{post.data.category}</span>
+                <h3>{post.data.title}</h3>
+                <p>{post.data.description}</p>
+                <time datetime={post.data.date.toISOString()}>
+                  {post.data.date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </time>
+              </a>
+            ))}
+          </div>
+        ) : (
+          <p class="news-empty">Скоро здесь появятся первые статьи.</p>
+        )}
+      </div>
+    </section>
+  </main>
+</BaseLayout>
+
+<script>
+  const filters = document.querySelectorAll('#newsFilters .news-filter');
+  const cards = document.querySelectorAll('#newsGrid .news-card');
+  filters.forEach(btn => {
+    btn.addEventListener('click', () => {
+      filters.forEach(b => b.removeAttribute('aria-current'));
+      btn.setAttribute('aria-current', 'true');
+      const cat = btn.dataset.cat;
+      cards.forEach(card => {
+        const show = cat === 'all' || card.dataset.cat === cat;
+        card.style.display = show ? '' : 'none';
+      });
+    });
+  });
+</script>

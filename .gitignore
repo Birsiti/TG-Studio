@@ -1,2 +1,7 @@
 .DS_Store
 **/.DS_Store
+
+# Astro build output / deps (Sait TGS) — Netlify builds these, don't commit
+node_modules/
+dist/
+.astro/

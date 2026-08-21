@@ -1,0 +1,81 @@
+---
+import { getCollection, render } from 'astro:content';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+
+export async function getStaticPaths() {
+  const posts = await getCollection('news');
+  return posts.map(entry => ({
+    params: { slug: entry.id },
+    props: { entry, allPosts: posts },
+  }));
+}
+
+const { entry, allPosts } = Astro.props;
+const { Content } = await render(entry);
+const path = `/novosti/${entry.id}`;
+
+const related = allPosts
+  .filter(p => p.id !== entry.id && p.data.category === entry.data.category)
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 3);
+
+const SERVICE_LINKS = {
+  'mini-apps': { href: '/mini-apps', label: 'Mini Apps' },
+  'boty': { href: '/boty', label: 'Чат-боты для продаж' },
+  'crm-integracii': { href: '/crm-integracii', label: 'CRM-интеграции' },
+  'ai-gpt': { href: '/ai-gpt', label: 'ИИ и GPT' },
+};
+const relatedService = SERVICE_LINKS[entry.data.relatedService];
+---
+<BaseLayout title={`${entry.data.title} | TG-Studio`} description={entry.data.description} path={path}>
+  <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: 'Новости', href: '/novosti' }, { label: entry.data.title }]} />
+
+  <main id="main-content">
+    <section class="page-hero">
+      <div class="wrap prose">
+        <div class="article-meta">
+          <span class="cat">{entry.data.category}</span>
+          <time datetime={entry.data.date.toISOString()}>
+            {entry.data.date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+          </time>
+        </div>
+        <h1>{entry.data.title}</h1>
+        <p class="lead">{entry.data.description}</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap prose reveal">
+        <Content />
+
+        {relatedService && (
+          <div class="cta-inline">
+            <p>Хотите похожее решение? Подробнее об услуге «{relatedService.label}».</p>
+            <a href={relatedService.href} class="btn btn-primary btn-sm">Перейти</a>
+          </div>
+        )}
+      </div>
+    </section>
+
+    {related.length > 0 && (
+      <section class="related-block">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <div class="eyebrow">Похожие статьи</div>
+            <h2>Ещё по теме «{entry.data.category}»</h2>
+          </div>
+          <div class="news-grid">
+            {related.map(post => (
+              <a href={`/novosti/${post.id}`} class="news-card">
+                <span class="cat">{post.data.category}</span>
+                <h3>{post.data.title}</h3>
+                <p>{post.data.description}</p>
+              </a>
+            ))}
+          </div>
+        </div>
+      </section>
+    )}
+  </main>
+</BaseLayout>

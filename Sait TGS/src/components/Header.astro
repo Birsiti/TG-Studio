@@ -1,0 +1,49 @@
+---
+interface Props {
+  currentPath: string;
+}
+const { currentPath } = Astro.props;
+
+const navItems = [
+  { href: '/#services', label: 'Услуги' },
+  { href: '/#advantages', label: 'Кейсы' },
+  { href: '/#why', label: 'Результат' },
+  { href: '/#process', label: 'Процесс' },
+  { href: '/novosti', label: 'Новости' },
+  { href: '/#faq', label: 'Вопросы' },
+  { href: '/#contact', label: 'Контакты' },
+];
+
+const isCurrent = (href: string) => href.startsWith('/novosti') && currentPath.startsWith('/novosti');
+---
+<header id="siteHeader">
+  <div class="wrap nav">
+    <a href="/" class="brand" aria-label="TG-Studio — на главную">
+      <img class="brand-mark" src="/assets/logo-icon.png" alt="" aria-hidden="true" width="32" height="32">
+      <span class="brand-name">TG-STUDIO<span>TELEGRAM AUTOMATION</span></span>
+    </a>
+
+    <nav class="nav-links" aria-label="Основная навигация">
+      {navItems.map(item => (
+        <a href={item.href} aria-current={isCurrent(item.href) ? 'page' : undefined}>{item.label}</a>
+      ))}
+    </nav>
+
+    <div class="nav-right">
+      <a href="/#contact" class="btn btn-primary btn-sm">Обсудить проект</a>
+      <button type="button" class="burger" id="menuToggle" aria-expanded="false" aria-controls="mobileMenu" aria-label="Открыть меню">
+        <span></span>
+      </button>
+    </div>
+  </div>
+
+  <div class="mobile-menu" id="mobileMenu">
+    <div class="mobile-menu-inner">
+      <ul>
+        {navItems.map(item => (
+          <li><a href={item.href}>{item.label}</a></li>
+        ))}
+      </ul>
+    </div>
+  </div>
+</header>

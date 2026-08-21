@@ -1,0 +1,13 @@
+{
+  "name": "tg-studio-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && node scripts/generate-sitemap.mjs",
+    "preview": "astro preview"
+  },
+  "dependencies": {
+    "astro": "^7.2.4"
+  }
+}
