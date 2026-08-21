@@ -524,15 +524,20 @@ function deleteCar(p){
 
 /* ============================================================
    ПЕРСОНАЛ / СМЕНЫ
-   "ПЕРСОНАЛ": id | name | role | pay_type | rate | phone | shifts_month | accrued_month
+   "ПЕРСОНАЛ": id | name | role | pay_type | rate | phone | shifts_month | accrued_month | active
    "СМЕНЫ": date | staff_ids   (staff_ids — через запятую)
+   active — архивный флаг: FALSE значит сотрудник уволен/в архиве, но строка
+   не удаляется (сохраняется история начислений/выплат). Архивные не
+   попадают в список для назначения на смену, но остаются видны владельцу
+   для расчёта. Пустая ячейка = активен (см. трактовку в getStaffList).
    ============================================================ */
 
 function getStaffList(){
   const rows = readAll(SHEET_NAMES.STAFF);
   return {ok:true, staff: rows.map(r=>({
     id:r.id, name:r.name, role:r.role, payType:r.pay_type, rate:Number(r.rate)||0,
-    phone:r.phone||'', shiftsMonth:Number(r.shifts_month)||0, accruedMonth:Number(r.accrued_month)||0
+    phone:r.phone||'', shiftsMonth:Number(r.shifts_month)||0, accruedMonth:Number(r.accrued_month)||0,
+    active: !(r.active === false || r.active === 'FALSE' || r.active === 'false')
   }))};
 }
 
@@ -540,7 +545,8 @@ function saveStaff(p){
   const s = p.staff;
   const row = {
     id:s.id || genId('st'), name:s.name, role:s.role, pay_type:s.payType, rate:s.rate,
-    phone:s.phone||'', shifts_month:s.shiftsMonth||0, accrued_month:s.accruedMonth||0
+    phone:s.phone||'', shifts_month:s.shiftsMonth||0, accrued_month:s.accruedMonth||0,
+    active: s.active !== false
   };
   const updated = s.id && updateById(SHEET_NAMES.STAFF, 'id', s.id, row);
   if(!updated) appendRow(SHEET_NAMES.STAFF, row);

@@ -25,6 +25,7 @@
   };
 </script>
 <script src="bootstrap.js"></script>
+<script src="staff.js"></script>
 
 <div class="app" id="app">
 
@@ -79,12 +80,30 @@
         </div>
       </div>
       <div class="section">
-        <div class="section-title">На смене сегодня</div>
-        <div class="chip-group" id="shiftChips"></div>
-      </div>
-      <div class="section">
         <div class="section-title">Записи на сегодня</div>
         <div id="todayList"></div>
+      </div>
+    </div>
+
+    <!-- ================= TAB: СМЕНА ================= -->
+    <div class="tab-panel" id="tab-shift">
+      <div class="section" style="padding-top:16px;">
+        <div class="section-title">Сегодня на смене</div>
+        <div id="onShiftList"></div>
+        <button class="add-btn" id="pickShiftBtn">Выбрать, кто на смене</button>
+      </div>
+      <div class="section">
+        <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
+          <div><div class="section-title" style="margin:0;">Фонд оплаты, месяц</div></div>
+          <div class="mono" style="font-size:19px; font-weight:700;" id="payrollFund">0 BYN</div>
+        </div>
+        <div class="section-title">Сотрудники<span id="staffCount"></span></div>
+        <button class="add-btn" id="addStaffBtn">+ Новый сотрудник</button>
+        <div id="staffActiveList"></div>
+      </div>
+      <div class="section" id="archiveSection" style="display:none;">
+        <div class="section-title">Архив</div>
+        <div id="staffArchiveList"></div>
       </div>
     </div>
 
@@ -143,6 +162,10 @@
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M3 9h18M8 3v3M16 3v3"/></svg>
       <span class="lbl">Сегодня</span>
     </button>
+    <button class="tab-btn" data-tab="shift">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16 4.5c1.5.3 2.5 1.6 2.5 3.2 0 1.5-1 2.8-2.5 3.2M19 14.3c1.7.6 2.9 2 3 5.7"/></svg>
+      <span class="lbl">Смена</span>
+    </button>
     <button class="tab-btn" data-tab="search">
       <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
       <span class="lbl">Поиск</span>
@@ -193,18 +216,21 @@
   function iconFor(cat){ return CATEGORY_ICONS[cat] || CATEGORY_ICONS['Мойка']; }
 
   let STAFF = [
-    {id:'st1', name:'Алексей Гриб', role:'Мойщик'},
-    {id:'st2', name:'Сергей Мельник', role:'Мойщик'},
-    {id:'st3', name:'Марина Соколова', role:'Администратор'},
-    {id:'st4', name:'Игорь Быков', role:'Администратор'}
+    {id:'st1', name:'Алексей Гриб', role:'Мойщик', payType:'percent', rate:35, phone:'+375291112233', shiftsMonth:17, accruedMonth:1150, active:true},
+    {id:'st2', name:'Сергей Мельник', role:'Мойщик', payType:'percent', rate:35, phone:'+375291112234', shiftsMonth:15, accruedMonth:960, active:true},
+    {id:'st3', name:'Марина Соколова', role:'Администратор', payType:'fixed', rate:900, phone:'+375291112235', shiftsMonth:19, accruedMonth:855, active:true},
+    {id:'st4', name:'Игорь Быков', role:'Администратор', payType:'fixed', rate:900, phone:'+375291112236', shiftsMonth:17, accruedMonth:765, active:true},
+    {id:'st5', name:'Павел Носов', role:'Мойщик', payType:'percent', rate:35, phone:'+375291112237', shiftsMonth:0, accruedMonth:0, active:false}
+  ];
+  let MOCK_PAYOUTS = [
+    {id:'pay1', staffId:'st1', amount:400, date:shiftDate(-6)},
+    {id:'pay2', staffId:'st2', amount:300, date:shiftDate(-6)}
   ];
   let SHIFT_TODAY = ['st1', 'st3'];
   let MOCK_THEME = null; // личная цветовая схема демо-пользователя (имитация листа "ТЕМЫ")
   let BLOCKED_SLOTS = {};
   BLOCKED_SLOTS[shiftDate(0)] = ['13:00'];
 
-  function staffById(id){ return STAFF.find(s=>s.id===id); }
-  function staffInitials(name){ return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
 
   let MOCK_BOOKINGS = [
     {id:'BLK-2001', date:shiftDate(0), time:'09:00', car:{number:'1234 AB-7', brand:'Toyota', model:'Camry'}, services:['Стандарт','Пылесос салона'], priceMin:40, priceMax:45, contact:{name:'Игорь Петров', phone:'+375291112233'}, status:'confirmed', assignedStaffId:null},
@@ -239,7 +265,7 @@
     {category:'Полировка', items:[
       {id:'polish-chrome', name:'Полировка хрома', visible:true, price:{legkovoy:[15,30],krossover:[15,30],vnedorozhnik:[15,30],minivan:[15,30]}},
       {id:'polish-headlights', name:'Полировка фар (пара)', visible:true, price:{legkovoy:[50,150],krossover:[50,150],vnedorozhnik:[50,150],minivan:[50,150]}},
-      {id:'polish-light', name:'Лёгкая полировка кузова', visible:true, price:{legkovoy:[150,500],krossover:[150,500],vnedorozhnik:[150,500],minivan:[200,800]}},
+      {id:'polish-light', name:'Лёгкая полировка кузова', visible:true, price:{legkovoy:[120,450],krossover:[120,450],vnedorozhnik:[120,450],minivan:[160,700]}},
       {id:'polish-full', name:'Полировка кузова', visible:false, price:{legkovoy:[300,1000],krossover:[300,1000],vnedorozhnik:[300,1000],minivan:[500,1500]}}
     ]},
     {category:'Доп. услуги', items:[
@@ -252,7 +278,7 @@
       {id:'chem-seat', name:'Химчистка переднего сиденья', visible:true, price:{legkovoy:[35,100],krossover:[35,100],vnedorozhnik:[35,100],minivan:[35,100]}},
       {id:'chem-mat', name:'Химчистка коврика', visible:true, price:{legkovoy:[30,50],krossover:[30,50],vnedorozhnik:[30,50],minivan:[30,50]}},
       {id:'chem-trunk', name:'Химчистка багажника', visible:true, price:{legkovoy:[90,200],krossover:[100,250],vnedorozhnik:[100,250],minivan:[100,300]}},
-      {id:'chem-full', name:'Полная химчистка салона', visible:true, price:{legkovoy:[300,900],krossover:[400,1000],vnedorozhnik:[500,1100],minivan:[500,1200]},
+      {id:'chem-full', name:'Полная химчистка салона', visible:true, price:{legkovoy:[180,700],krossover:[220,800],vnedorozhnik:[260,900],minivan:[280,1000]},
         desc:'Пылесос, химчистка пола, потолка, сидений, дверных карт, мойка стёкол изнутри, чистка педалей и воздуховодов.'}
     ]}
   ];
@@ -303,6 +329,27 @@
       return {ok:true};
     }
     if(action==='getStaff') return {ok:true, staff:STAFF};
+    if(action==='saveStaff'){
+      const idx = STAFF.findIndex(s=>s.id===payload.staff.id);
+      if(idx>-1) STAFF[idx]=payload.staff; else STAFF.push(payload.staff);
+      return {ok:true, staff:payload.staff};
+    }
+    if(action==='deleteStaff'){ STAFF = STAFF.filter(s=>s.id!==payload.id); return {ok:true}; }
+    if(action==='payStaff'){
+      const staff = STAFF.find(s=>s.id===payload.staffId);
+      if(!staff) return {ok:false, error:'staff not found'};
+      const amount = Number(payload.amount);
+      if(!amount || amount<=0) return {ok:false, error:'invalid amount'};
+      const id = 'pay-'+Date.now();
+      MOCK_PAYOUTS.unshift({id, staffId:payload.staffId, amount, date:TODAY});
+      staff.accruedMonth = (staff.accruedMonth||0) - amount;
+      return {ok:true, payout:{id, staffId:payload.staffId, amount, date:TODAY}, remainingAccrued:staff.accruedMonth};
+    }
+    if(action==='getPayouts'){
+      let rows = MOCK_PAYOUTS;
+      if(payload && payload.staffId) rows = rows.filter(r=>r.staffId===payload.staffId);
+      return {ok:true, payouts: rows.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))};
+    }
     if(action==='getShift') return {ok:true, date:payload.date, staffIds: payload.date===TODAY ? SHIFT_TODAY : []};
     if(action==='setShift'){
       if(payload.date===TODAY) SHIFT_TODAY = payload.staffIds;
@@ -373,6 +420,7 @@
       if(btn.dataset.tab==='schedule') renderSchedule();
       if(btn.dataset.tab==='services') renderServices();
       if(btn.dataset.tab==='search') renderSearch();
+      if(btn.dataset.tab==='shift') renderShiftTab();
     });
   });
   window.addEventListener('resize', ()=>{
@@ -409,29 +457,10 @@
     return new Date(y,m-1,d).toLocaleDateString('ru-RU',{day:'numeric', month:'long'});
   }
 
-  /* ============ TAB: СЕГОДНЯ ============ */
-  async function renderShiftChips(){
-    const staffRes = await api('getStaff');
-    if(staffRes.ok) STAFF = staffRes.staff; else showToast('Не удалось загрузить персонал', true);
-    const shiftRes = await api('getShift', {date:TODAY});
-    if(shiftRes.ok) SHIFT_TODAY = shiftRes.staffIds; else showToast('Не удалось загрузить смену', true);
-    const wrap = $('shiftChips'); wrap.innerHTML='';
-    STAFF.forEach(s=>{
-      const chip = document.createElement('div');
-      chip.className='chip'+(SHIFT_TODAY.includes(s.id)?' active':'');
-      chip.textContent = s.name+' · '+s.role;
-      chip.addEventListener('click', async ()=>{
-        const prev = SHIFT_TODAY;
-        const next = SHIFT_TODAY.includes(s.id) ? SHIFT_TODAY.filter(id=>id!==s.id) : [...SHIFT_TODAY, s.id];
-        SHIFT_TODAY = next;
-        haptic();
-        const res = await api('setShift', {date:TODAY, staffIds:next});
-        if(!res.ok){ SHIFT_TODAY = prev; showToast('Не удалось сохранить смену', true); }
-        renderShiftChips();
-      });
-      wrap.appendChild(chip);
-    });
-  }
+  /* ============ TAB: СМЕНА / ПЕРСОНАЛ — модуль staff.js ============ */
+  StaffModule.init({api, haptic, showToast, openSheet, closeSheet});
+  StaffModule.bindButtons();
+  function renderShiftTab(){ return StaffModule.renderShiftTab(); }
 
   // Реальные записи из таблицы + витринные демо-записи (MOCK_BOOKINGS) —
   // показываются вместе, демо помечаются флагом isDemo и бейджем в строке,
@@ -447,7 +476,7 @@
   }
 
   async function renderToday(){
-    renderShiftChips();
+    StaffModule.renderShiftTab();
     const all = await fetchAllBookings();
     const today = all.filter(b=>b.date===TODAY).sort((a,b)=>a.time.localeCompare(b.time));
     $('statCount').textContent = today.length;
@@ -465,11 +494,11 @@
   function bookingRow(b, showDate){
     const row = document.createElement('div');
     row.className='booking-row';
-    const assignee = b.assignedStaffId ? staffById(b.assignedStaffId) : null;
+    const assignee = b.assignedStaffId ? StaffModule.staffById(b.assignedStaffId) : null;
     row.innerHTML = `
       <div class="booking-time">${b.time}${showDate? `<span class="d">${fmtDate(b.date)}</span>`:''}</div>
       <div class="booking-main">
-        <div class="booking-plate">${b.car.number}${assignee? ` <span class="assignee-badge" title="${assignee.name}">${staffInitials(assignee.name)}</span>`:''}${b.isDemo? ' <span class="demo-tag">демо</span>':''}</div>
+        <div class="booking-plate">${b.car.number}${assignee? ` <span class="assignee-badge" title="${assignee.name}">${StaffModule.initials(assignee.name)}</span>`:''}${b.isDemo? ' <span class="demo-tag">демо</span>':''}</div>
         <div class="booking-meta">${b.services.join(', ')}</div>
       </div>
       <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
@@ -483,9 +512,9 @@
 
   function openBookingSheet(b){
     const statuses = ['pending','confirmed','done','cancelled'];
-    const onShiftIds = new Set(SHIFT_TODAY);
+    const onShiftIds = new Set(StaffModule.getShiftIds());
     if(b.assignedStaffId) onShiftIds.add(b.assignedStaffId);
-    const assignOptions = STAFF.filter(s=>onShiftIds.has(s.id));
+    const assignOptions = StaffModule.getStaff().filter(s=>onShiftIds.has(s.id) && s.active!==false);
     openSheet(`
       <div class="sheet-title">Запись ${b.id}</div>
       <div class="ticket-row"><span class="k">Автомобиль</span><span class="v">${b.car.number} · ${b.car.brand} ${b.car.model}</span></div>
@@ -498,7 +527,7 @@
       <div class="section-title" style="margin:16px 0 8px;">Кто делал</div>
       <div class="chip-group" id="assigneeChips">
         ${assignOptions.length ? assignOptions.map(s=>`<div class="chip${b.assignedStaffId===s.id?' active':''}" data-staff="${s.id}">${s.name}</div>`).join('')
-          : `<span style="font-size:12.5px; color:var(--ink-faint);">Никого нет на смене — отметьте на вкладке «Сегодня»</span>`}
+          : `<span style="font-size:12.5px; color:var(--ink-faint);">Никого нет на смене — отметьте на вкладке «Смена»</span>`}
         ${b.assignedStaffId ? `<div class="chip" data-staff="">Снять</div>` : ''}
       </div>
       <div class="status-actions" id="statusActions">

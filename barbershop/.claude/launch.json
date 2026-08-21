@@ -1,0 +1,23 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "carwash-miniapp",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8891", "--directory", "/Users/db/Documents/GitHub/TG-Studio/carwash-miniapp", "--bind", "127.0.0.1"],
+      "port": 8891
+    },
+    {
+      "name": "barbershop",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8892", "--directory", "/Users/db/Documents/GitHub/TG-Studio/barbershop", "--bind", "127.0.0.1"],
+      "port": 8892
+    },
+    {
+      "name": "toolrent-miniapp",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8893", "--directory", "/Users/db/Documents/GitHub/TG-Studio/toolrent-miniapp", "--bind", "127.0.0.1"],
+      "port": 8893
+    }
+  ]
+}

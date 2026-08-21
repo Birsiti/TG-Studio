@@ -25,6 +25,7 @@
   };
 </script>
 <script src="bootstrap.js"></script>
+<script src="staff.js"></script>
 
 <div class="app" id="app">
 
@@ -93,12 +94,22 @@
     <!-- ================= TAB: ПЕРСОНАЛ ================= -->
     <div class="tab-panel" id="tab-staff">
       <div class="section" style="padding-top:16px;">
+        <div class="section-title">Сегодня на смене</div>
+        <div id="onShiftList"></div>
+        <button class="add-btn" id="pickShiftBtn">Выбрать, кто на смене</button>
+      </div>
+      <div class="section">
         <div class="card" style="display:flex; justify-content:space-between; align-items:center;">
           <div><div class="section-title" style="margin:0;">Фонд оплаты, месяц</div></div>
           <div class="mono" style="font-size:19px; font-weight:700;" id="payrollFund">0 BYN</div>
         </div>
-        <button class="add-btn" id="addStaffBtn">+ Добавить сотрудника</button>
-        <div id="staffList"></div>
+        <div class="section-title">Сотрудники<span id="staffCount"></span></div>
+        <button class="add-btn" id="addStaffBtn">+ Новый сотрудник</button>
+        <div id="staffActiveList"></div>
+      </div>
+      <div class="section" id="archiveSection" style="display:none;">
+        <div class="section-title">Архив</div>
+        <div id="staffArchiveList"></div>
       </div>
     </div>
 
@@ -191,10 +202,18 @@
     {id:'bay3', name:'Бокс 3', status:'maintenance', note:'Замена насоса высокого давления', todayCount:0, todayRevenue:0}
   ];
   let STAFF = [
-    {id:'st1', name:'Алексей Ковалёв', role:'Мойщик', payType:'percent', rate:35, phone:'+375291112233', shiftsMonth:18, accruedMonth:1240},
-    {id:'st2', name:'Дмитрий Орлов', role:'Мойщик', payType:'percent', rate:35, phone:'+375291112234', shiftsMonth:16, accruedMonth:1080},
-    {id:'st3', name:'Марина Соколова', role:'Администратор', payType:'fixed', rate:900, phone:'+375291112235', shiftsMonth:20, accruedMonth:900},
-    {id:'st4', name:'Игорь Быков', role:'Администратор', payType:'fixed', rate:900, phone:'+375291112236', shiftsMonth:18, accruedMonth:810}
+    {id:'st1', name:'Алексей Ковалёв', role:'Мойщик', payType:'percent', rate:35, phone:'+375291112233', shiftsMonth:18, accruedMonth:1240, active:true},
+    {id:'st2', name:'Дмитрий Орлов', role:'Мойщик', payType:'percent', rate:35, phone:'+375291112234', shiftsMonth:16, accruedMonth:1080, active:true},
+    {id:'st3', name:'Марина Соколова', role:'Администратор', payType:'fixed', rate:900, phone:'+375291112235', shiftsMonth:20, accruedMonth:900, active:true},
+    {id:'st4', name:'Игорь Быков', role:'Администратор', payType:'fixed', rate:900, phone:'+375291112236', shiftsMonth:18, accruedMonth:810, active:true}
+  ];
+  function dateKey(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  function shiftDate(offset){ const d=new Date(); d.setDate(d.getDate()+offset); return dateKey(d); }
+  const TODAY = dateKey(new Date());
+  let SHIFT_TODAY = ['st1', 'st3'];
+  let MOCK_PAYOUTS = [
+    {id:'pay1', staffId:'st1', amount:500, date:shiftDate(-7)},
+    {id:'pay2', staffId:'st3', amount:450, date:shiftDate(-7)}
   ];
   let INVENTORY = [
     {id:'inv1', name:'Шампунь бесконтактный', unit:'л', qty:38, min:15, price:6.5},
@@ -250,6 +269,26 @@
       return {ok:true};
     }
     if(action==='deleteStaff'){ STAFF = STAFF.filter(s=>s.id!==payload.id); return {ok:true}; }
+    if(action==='getShift') return {ok:true, date:payload.date, staffIds: payload.date===TODAY ? SHIFT_TODAY : []};
+    if(action==='setShift'){
+      if(payload.date===TODAY) SHIFT_TODAY = payload.staffIds;
+      return {ok:true};
+    }
+    if(action==='payStaff'){
+      const staff = STAFF.find(s=>s.id===payload.staffId);
+      if(!staff) return {ok:false, error:'staff not found'};
+      const amount = Number(payload.amount);
+      if(!amount || amount<=0) return {ok:false, error:'invalid amount'};
+      const id = 'pay-'+Date.now();
+      MOCK_PAYOUTS.unshift({id, staffId:payload.staffId, amount, date:TODAY});
+      staff.accruedMonth = (staff.accruedMonth||0) - amount;
+      return {ok:true, payout:{id, staffId:payload.staffId, amount, date:TODAY}, remainingAccrued:staff.accruedMonth};
+    }
+    if(action==='getPayouts'){
+      let rows = MOCK_PAYOUTS;
+      if(payload && payload.staffId) rows = rows.filter(r=>r.staffId===payload.staffId);
+      return {ok:true, payouts: rows.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''))};
+    }
     if(action==='getInventory') return {ok:true, items:INVENTORY};
     if(action==='saveInventoryItem'){
       const idx = INVENTORY.findIndex(i=>i.id===payload.item.id);
@@ -447,100 +486,12 @@
   }
   $('addBayBtn').addEventListener('click', ()=>openBaySheet(null));
 
-  /* ============ TAB: ПЕРСОНАЛ ============ */
-  function initials(name){ return name.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase(); }
-  async function renderStaff(){
-    const res = await (staffPrefetch || api('getStaff'));
-    staffPrefetch = null;
-    if(res.ok) STAFF = res.staff; else showToast('Не удалось загрузить персонал', true);
-    $('payrollFund').textContent = STAFF.reduce((s,x)=>s+x.accruedMonth,0)+' BYN';
-    const wrap = $('staffList'); wrap.innerHTML='';
-    if(!STAFF.length){ wrap.innerHTML = `<div class="empty-state"><div class="drop-big"></div>Сотрудники не добавлены</div>`; return; }
-    STAFF.forEach((s,i)=>{
-      const row = document.createElement('div'); row.className='staff-row stagger'; row.style.animationDelay=(i*40)+'ms';
-      row.innerHTML = `
-        <div class="avatar">${initials(s.name)}</div>
-        <div class="staff-main"><div class="staff-name">${s.name}</div><div class="staff-role">${s.role} · ${s.shiftsMonth} смен</div></div>
-        <div class="staff-pay"><div class="v" style="${s.accruedMonth<0?'color:var(--accent);':''}">${s.accruedMonth} BYN</div><div class="l">${s.accruedMonth<0?'аванс':'за месяц'}</div></div>
-      `;
-      row.addEventListener('click', ()=>openStaffSheet(s));
-      wrap.appendChild(row);
-    });
-  }
-  function openStaffSheet(staff){
-    const isNew = !staff;
-    const s = staff || {id:'st-'+Date.now(), name:'', role:'Мойщик', payType:'percent', rate:30, phone:'', shiftsMonth:0, accruedMonth:0};
-    openSheet(`
-      <div class="sheet-title">${isNew?'Новый сотрудник':'Сотрудник'}</div>
-      <div class="field"><label>Имя</label><input type="text" id="sName" value="${s.name}"></div>
-      <div class="field"><label>Роль</label>
-        <select id="sRole"><option value="Мойщик" ${s.role==='Мойщик'?'selected':''}>Мойщик</option><option value="Администратор" ${s.role==='Администратор'?'selected':''}>Администратор</option></select>
-      </div>
-      <div class="field-row">
-        <div class="field"><label>Тип оплаты</label>
-          <select id="sPayType"><option value="percent" ${s.payType==='percent'?'selected':''}>% от выручки</option><option value="fixed" ${s.payType==='fixed'?'selected':''}>Фиксированная</option></select>
-        </div>
-        <div class="field"><label>Ставка</label><input type="number" id="sRate" value="${s.rate}"></div>
-      </div>
-      <div class="field"><label>Телефон</label><input type="tel" id="sPhone" value="${s.phone}"></div>
-      <div class="ticket-row"><span class="k">${s.accruedMonth<0?'Аванс (переплата)':'Начислено за месяц'}</span><span class="v" style="${s.accruedMonth<0?'color:var(--accent);':''}">${s.accruedMonth} BYN</span></div>
-      ${isNew?'':`
-      <div class="field-row" style="align-items:flex-end; margin-top:10px;">
-        <div class="field" style="margin-bottom:0; flex:1;"><label>Сумма к выплате</label>
-          <input type="number" id="payAmount" value="${Math.max(s.accruedMonth,0)}" min="1">
-        </div>
-        <button class="btn btn-primary" id="payStaffBtn" style="flex:none; height:47px; padding:0 18px;">Выплатить</button>
-      </div>
-      <div class="section-title" style="margin:16px 0 8px;">История выплат</div>
-      <div id="payoutHistory" style="font-size:12.5px; color:var(--ink-faint);">Загрузка…</div>
-      `}
-      <div class="sheet-footer-row">
-        ${isNew?'':`<a class="btn btn-outline btn-block" href="tel:${s.phone}">Позвонить</a>`}
-        <button class="btn btn-primary btn-block" id="saveStaffBtn">Сохранить</button>
-      </div>
-      ${isNew?'':`<button class="btn btn-danger btn-block" id="delStaffBtn" style="width:100%; margin-top:10px;">Удалить сотрудника</button>`}
-    `);
-    if(!isNew){
-      $('delStaffBtn').addEventListener('click', async ()=>{
-        if(!await App.confirmAsync('Удалить «'+s.name+'»?')) return;
-        const res = await api('deleteStaff', {id:s.id});
-        if(!res.ok){ showToast('Не удалось удалить сотрудника', true); return; }
-        haptic('success'); closeSheet(); renderStaff();
-      });
-      $('payStaffBtn').addEventListener('click', async ()=>{
-        const amount = Number($('payAmount').value);
-        if(!amount || amount<=0){ showToast('Введите сумму выплаты', true); return; }
-        const isAdvance = amount > s.accruedMonth;
-        const msg = isAdvance
-          ? 'Выплатить '+amount+' BYN сотруднику «'+s.name+'»? Это больше начисленного — остаток уйдёт в аванс.'
-          : 'Выплатить '+amount+' BYN сотруднику «'+s.name+'»?';
-        if(!await App.confirmAsync(msg)) return;
-        const res = await api('payStaff', {staffId:s.id, amount});
-        if(!res.ok){ showToast('Не удалось провести выплату', true); return; }
-        haptic('success'); showToast('Выплата проведена'); closeSheet(); renderStaff();
-      });
-      loadPayoutHistory(s.id);
-    }
-    $('saveStaffBtn').addEventListener('click', async ()=>{
-      const updated = Object.assign({}, s, {
-        name:$('sName').value.trim()||'Без имени', role:$('sRole').value,
-        payType:$('sPayType').value, rate:Number($('sRate').value)||0, phone:$('sPhone').value.trim()
-      });
-      const res = await api('saveStaff', {staff:updated});
-      if(!res.ok){ showToast('Не удалось сохранить сотрудника', true); return; }
-      haptic('success'); closeSheet(); renderStaff();
-    });
-  }
-  $('addStaffBtn').addEventListener('click', ()=>openStaffSheet(null));
-
-  async function loadPayoutHistory(staffId){
-    const res = await api('getPayouts', {staffId});
-    const el = $('payoutHistory');
-    if(!el) return; // шторка уже закрыта к моменту ответа
-    if(!res.ok || !res.payouts.length){ el.textContent = 'Выплат ещё не было.'; return; }
-    el.innerHTML = res.payouts.map(p=>
-      `<div style="display:flex; justify-content:space-between; padding:4px 0;"><span>${fmtDate(p.date)}</span><span class="mono">${p.amount} BYN</span></div>`
-    ).join('');
+  /* ============ TAB: ПЕРСОНАЛ / СМЕНА — модуль staff.js ============ */
+  StaffModule.init({api, haptic, showToast, openSheet, closeSheet});
+  StaffModule.bindButtons();
+  function renderStaff(){
+    const prefetch = staffPrefetch; staffPrefetch = null;
+    return StaffModule.renderShiftTab(prefetch);
   }
 
   /* ============ TAB: СКЛАД ============ */
