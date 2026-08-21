@@ -1,26 +1,42 @@
-/* ---------- SERVICES ---------- */
+/* ---------- SERVICES (bento) ---------- */
 .services{background:var(--navy-900); border-top:1px solid rgba(255,255,255,.05); border-bottom:1px solid rgba(255,255,255,.05);}
 .service-grid{
   display:grid; grid-template-columns:1fr; gap:16px;
 }
-@media(min-width:520px){ .service-grid{grid-template-columns:repeat(2,1fr); gap:24px;} }
-@media(min-width:960px){ .service-grid{grid-template-columns:repeat(4,1fr);} }
+@media(min-width:520px){ .service-grid{grid-template-columns:repeat(2,1fr); gap:20px;} }
+@media(min-width:960px){
+  .service-grid{grid-template-columns:repeat(4,1fr); grid-auto-rows:1fr; gap:20px;}
+  .service-grid .card:nth-child(1){grid-column:span 2; grid-row:span 2;}
+  .service-grid .card:nth-child(2){grid-column:span 2;}
+}
 .card{
   background:var(--navy-800);
   border:1px solid var(--navy-700);
   border-radius:var(--radius);
   padding:24px;
+  display:flex; flex-direction:column;
   transition:transform .4s var(--ease), border-color .4s var(--ease), background .4s var(--ease), box-shadow .4s var(--ease);
 }
 .card:hover{transform:translateY(-6px); border-color:var(--blue-500); background:var(--navy-850); box-shadow:0 20px 40px -24px rgba(0,0,0,.6);}
 .card-icon{
   width:44px; height:44px;
   display:flex; align-items:center; justify-content:center;
-  border-radius:8px;
+  border-radius:var(--radius-sm);
   background:linear-gradient(145deg, rgba(42,171,238,.18), rgba(42,171,238,.04));
   border:1px solid rgba(42,171,238,.35);
   margin-bottom:16px;
 }
 .card h3{font-size:16px; font-weight:600; margin-bottom:8px; letter-spacing:.01em;}
 .card p{font-size:14.5px; color:var(--ink-500); line-height:1.55;}
-.card-link{display:inline-flex; align-items:center; gap:6px; margin-top:14px; font-size:13.5px; font-weight:700; color:var(--blue-400);}
+.card-link{display:inline-flex; align-items:center; gap:6px; margin-top:auto; padding-top:14px; font-size:13.5px; font-weight:700; color:var(--blue-400);}
+
+.card.is-featured{
+  justify-content:center;
+  background:linear-gradient(160deg, var(--navy-800), var(--navy-850));
+}
+.card.is-featured .card-icon{
+  width:56px; height:56px; border-radius:var(--radius);
+  background:linear-gradient(145deg, rgba(42,171,238,.22), rgba(42,171,238,.05));
+}
+.card.is-featured h3{font-size:22px;}
+.card.is-featured p{font-size:15px; max-width:360px;}

@@ -1,0 +1,86 @@
+/* ---------- LIVE DEMO WIDGET (signature) ----------
+   Built from the same component patterns every client Mini App uses
+   (chip-group, phone-field with +375 mask, submit-bar, success-panel) —
+   see the miniapp-style skill. Not a screenshot: a working mini demo of
+   the booking flow, running the studio's own product patterns. */
+.live-demo{background:var(--navy-900); border-top:1px solid rgba(255,255,255,.05); border-bottom:1px solid rgba(255,255,255,.05);}
+.live-demo-grid{display:grid; grid-template-columns:1fr; gap:40px; align-items:center;}
+@media(min-width:900px){ .live-demo-grid{grid-template-columns:1fr .85fr; gap:56px;} }
+
+.demo-widget{
+  width:100%; max-width:360px; margin:0 auto;
+  background:var(--navy-800); border:1px solid var(--navy-700); border-radius:var(--radius);
+  box-shadow:0 24px 60px -24px rgba(0,0,0,.6);
+  overflow:hidden;
+}
+.demo-titlebar{
+  display:flex; align-items:center; gap:10px;
+  padding:14px 18px; border-bottom:1px solid var(--navy-700);
+  background:var(--navy-850);
+}
+.demo-titlebar .avatar{
+  width:28px; height:28px; border-radius:9px; flex:none;
+  background:linear-gradient(135deg, var(--blue-400), var(--blue-600));
+  display:flex; align-items:center; justify-content:center;
+  font-family:'Chakra Petch',sans-serif; font-weight:700; font-size:12px; color:var(--navy-950);
+}
+.demo-titlebar strong{font-size:13.5px; font-weight:600;}
+.demo-titlebar .live{
+  margin-left:auto; display:flex; align-items:center; gap:6px;
+  font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--teal-400);
+}
+.demo-titlebar .live::before{
+  content:""; width:6px; height:6px; border-radius:50%; background:var(--teal-400);
+  animation:livePulse 1.8s ease-in-out infinite;
+}
+@keyframes livePulse{0%,100%{box-shadow:0 0 0 0 var(--teal-soft);} 50%{box-shadow:0 0 0 6px transparent;}}
+
+.demo-body{padding:22px 18px 20px;}
+.demo-step-label{
+  font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+  color:var(--ink-500); margin-bottom:10px;
+}
+.demo-chips{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px;}
+.demo-chip{position:relative;}
+.demo-chip input{position:absolute; opacity:0; width:1px; height:1px;}
+.demo-chip span{
+  display:flex; align-items:center; min-height:38px;
+  padding:0 14px; border-radius:999px; border:1px solid var(--navy-600);
+  font-size:13px; font-weight:600; color:var(--ink-300);
+  transition:border-color .2s var(--ease), background .2s var(--ease), color .2s var(--ease);
+}
+.demo-chip input:checked + span{background:var(--blue-500); border-color:var(--blue-500); color:var(--navy-950);}
+.demo-chip input:focus-visible + span{outline:2px solid var(--blue-300); outline-offset:2px;}
+
+.demo-phone-field{
+  display:flex; align-items:center; gap:8px; min-height:44px;
+  background:var(--navy-900); border:1px solid var(--navy-600); border-radius:var(--radius-sm);
+  padding:0 14px; margin-bottom:18px; transition:border-color .2s var(--ease);
+}
+.demo-phone-field.is-invalid{border-color:var(--danger);}
+.demo-phone-prefix{font-family:'JetBrains Mono',monospace; font-weight:600; color:var(--ink-500); flex:none;}
+.demo-phone-input{
+  flex:1; min-height:44px; border:none; background:transparent; color:var(--ink-50);
+  font-family:'JetBrains Mono',monospace; font-size:15px;
+}
+.demo-phone-input:focus{outline:none;}
+.demo-phone-input::placeholder{color:var(--ink-500);}
+
+.demo-submit{width:100%;}
+
+.demo-success{display:none; text-align:center; padding:18px 4px 6px;}
+.demo-success .check{
+  width:48px; height:48px; margin:0 auto 14px; border-radius:50%;
+  background:var(--teal-soft); display:flex; align-items:center; justify-content:center;
+  animation:checkPop .4s var(--ease);
+}
+@keyframes checkPop{from{transform:scale(.6); opacity:0;} to{transform:scale(1); opacity:1;}}
+.demo-success h4{font-size:16px; margin-bottom:6px;}
+.demo-success p{color:var(--ink-500); font-size:13px; margin-bottom:16px;}
+.demo-success button{background:none; border:none; color:var(--blue-400); font-size:13px; font-weight:600;}
+
+.live-demo-copy .stat-row{display:flex; gap:28px; margin-top:32px; flex-wrap:wrap;}
+.live-demo-copy .stat-row div strong{
+  display:block; font-family:'JetBrains Mono',monospace; font-size:22px; color:var(--teal-400); font-weight:700;
+}
+.live-demo-copy .stat-row div span{font-size:12px; color:var(--ink-500);}
