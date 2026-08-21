@@ -356,12 +356,18 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .hero-cta{display:flex; flex-wrap:wrap; gap:16px; margin-top:32px;}
 
   .hero-stats{
-    display:flex; gap:32px; margin-top:48px; flex-wrap:wrap;
+    display:grid; grid-template-columns:repeat(3,1fr); gap:16px 24px; margin-top:48px;
   }
   .hero-stats div strong{
     display:block; font-family:'Chakra Petch',sans-serif; font-size:26px; color:var(--blue-300); font-weight:700;
+    white-space:nowrap;
   }
   .hero-stats div span{font-size:12.5px; color:var(--ink-500); letter-spacing:.03em;}
+  @media(max-width:400px){
+    .hero-stats{gap:10px 14px;}
+    .hero-stats div strong{font-size:21px;}
+    .hero-stats div span{font-size:10.5px;}
+  }
 
   /* signature logo badge */
   .hero-art{position:relative; z-index:1; display:flex; justify-content:center; transition:transform .3s var(--ease);}
