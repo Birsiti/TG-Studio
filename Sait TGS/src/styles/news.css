@@ -1,0 +1,39 @@
+/* ---------- NEWS LIST ---------- */
+.news-filters{display:flex; flex-wrap:wrap; gap:10px; margin-bottom:32px;}
+.news-filter{
+  padding:9px 16px; border-radius:999px; border:1px solid var(--navy-700);
+  font-size:13.5px; font-weight:600; color:var(--ink-300); background:var(--navy-800);
+  transition:border-color .2s var(--ease), color .2s var(--ease), background .2s var(--ease);
+}
+.news-filter:hover{border-color:var(--blue-500); color:var(--blue-300);}
+.news-filter[aria-current="true"]{background:var(--blue-500); border-color:var(--blue-500); color:var(--navy-950);}
+.news-grid{display:grid; grid-template-columns:1fr; gap:20px;}
+@media(min-width:640px){ .news-grid{grid-template-columns:repeat(2,1fr);} }
+@media(min-width:960px){ .news-grid{grid-template-columns:repeat(3,1fr);} }
+.news-card{
+  display:flex; flex-direction:column; gap:10px;
+  background:var(--navy-800); border:1px solid var(--navy-700); border-radius:var(--radius);
+  padding:22px; transition:transform .3s var(--ease), border-color .3s var(--ease), background .3s var(--ease);
+}
+.news-card:hover{transform:translateY(-4px); border-color:var(--blue-500); background:var(--navy-850);}
+.news-card .cat{
+  align-self:flex-start; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--blue-400); border:1px solid rgba(42,171,238,.35); border-radius:999px; padding:4px 10px;
+}
+.news-card time{font-size:12px; color:var(--ink-500);}
+.news-card h3{font-size:17px; font-weight:600; line-height:1.35;}
+.news-card p{font-size:14px; color:var(--ink-500); line-height:1.55;}
+.news-empty{color:var(--ink-500); font-size:14.5px;}
+
+/* ---------- ARTICLE META / RELATED ---------- */
+.article-meta{display:flex; align-items:center; gap:12px; margin-bottom:20px; font-size:12.5px; color:var(--ink-500);}
+.article-meta .cat{
+  font-family:'JetBrains Mono',monospace; letter-spacing:.08em; text-transform:uppercase; color:var(--blue-400);
+  border:1px solid rgba(42,171,238,.35); border-radius:999px; padding:4px 10px;
+}
+.related-block{background:var(--navy-900); border-top:1px solid rgba(255,255,255,.05); border-bottom:1px solid rgba(255,255,255,.05);}
+.cta-inline{
+  margin-top:40px; padding:28px; border-radius:var(--radius); background:var(--navy-800); border:1px solid var(--navy-700);
+  display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:16px;
+}
+.cta-inline p{color:var(--ink-200); margin:0; font-size:15px;}
