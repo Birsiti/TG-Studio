@@ -46,9 +46,13 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    # No `environment: github-pages` block here on purpose: GitHub's
+    # auto-created github-pages environment defaults to a deployment
+    # branch policy that only allows the repo's default branch. This repo's
+    # default branch is main (unrelated project files, no site source), so
+    # deploys from this working branch would be rejected — that's exactly
+    # what failed on the first run. Omitting the `environment:` key skips
+    # that protection check entirely (deploy-pages doesn't require it).
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
