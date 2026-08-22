@@ -1,0 +1,55 @@
+name: Deploy GitHub Pages preview
+
+on:
+  push:
+    branches:
+      - claude/github-connection-h2acy9
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: "Sait TGS/package-lock.json"
+      - name: Install
+        working-directory: Sait TGS
+        run: npm ci
+      - name: Build
+        working-directory: Sait TGS
+        run: npm run build
+      - name: Rewrite paths for /TG-Studio subpath
+        working-directory: Sait TGS
+        run: node scripts/gh-pages-prefix.mjs /TG-Studio dist
+      - name: Add .nojekyll
+        run: touch "Sait TGS/dist/.nojekyll"
+      - name: Configure Pages
+        uses: actions/configure-pages@v5
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: "Sait TGS/dist"
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
