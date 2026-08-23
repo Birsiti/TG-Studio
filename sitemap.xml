@@ -37,6 +37,12 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://tg-studio.by/novosti/crm-bez-integracii-eto-spisok</loc>
+    <lastmod>2026-03-02</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://tg-studio.by/novosti/ii-assistent-chastye-voprosy</loc>
     <lastmod>2026-02-19</lastmod>
     <changefreq>monthly</changefreq>
@@ -49,8 +55,20 @@
     <priority>0.6</priority>
   </url>
   <url>
+    <loc>https://tg-studio.by/novosti/lichny-kabinet-v-telegram</loc>
+    <lastmod>2026-03-06</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
     <loc>https://tg-studio.by/novosti/mini-app-ili-sajt</loc>
     <lastmod>2026-02-16</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+  <url>
+    <loc>https://tg-studio.by/novosti/skolko-stoit-ii-assistent</loc>
+    <lastmod>2026-03-10</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
   </url>
