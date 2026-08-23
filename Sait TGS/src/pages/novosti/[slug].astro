@@ -27,6 +27,9 @@ const SERVICE_LINKS = {
   'ai-gpt': { href: '/ai-gpt', label: 'ИИ и GPT' },
 };
 const relatedService = SERVICE_LINKS[entry.data.relatedService];
+
+const wordCount = (entry.body ?? '').trim().split(/\s+/).filter(Boolean).length;
+const readingMinutes = Math.max(1, Math.round(wordCount / 180));
 ---
 <BaseLayout title={`${entry.data.title} | TG-Studio`} description={entry.data.description} path={path}>
   <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: 'Новости', href: '/novosti' }, { label: entry.data.title }]} />
@@ -42,6 +45,11 @@ const relatedService = SERVICE_LINKS[entry.data.relatedService];
         </div>
         <h1>{entry.data.title}</h1>
         <p class="lead">{entry.data.description}</p>
+        <div class="article-byline">
+          <strong>TG-Studio</strong>
+          <span class="dot" aria-hidden="true"></span>
+          <span>{readingMinutes} мин чтения</span>
+        </div>
       </div>
     </section>
 

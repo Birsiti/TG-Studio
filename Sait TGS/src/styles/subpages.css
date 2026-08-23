@@ -12,10 +12,14 @@
 .breadcrumbs li{display:flex; align-items:center; gap:6px;}
 
 /* ---------- SIMPLE PAGE HERO (service / case pages) ---------- */
-.page-hero{padding:32px 0 64px;}
-@media(min-width:720px){ .page-hero{padding:40px 0 88px;} }
+.page-hero{padding:32px 0 40px;}
+@media(min-width:720px){ .page-hero{padding:40px 0 48px;} }
 .page-hero h1{font-size:clamp(30px,4.6vw,46px); line-height:1.14; font-weight:700; color:var(--ink-50); max-width:760px;}
 .page-hero p.lead{margin-top:20px; font-size:16.5px; line-height:1.65; color:var(--ink-300); max-width:600px;}
+/* The section right after the hero shouldn't stack its own top padding on
+   top of the hero's bottom padding — that's what left the ~200px dead gap
+   between the lead paragraph and the first heading. */
+.page-hero + section{padding-top:0;}
 
 /* ---------- CONTENT BLOCKS (service / case / article pages) ---------- */
 .prose{max-width:720px;}
