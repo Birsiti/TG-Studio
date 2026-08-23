@@ -1,6 +1,7 @@
 ---
 import { Picture } from 'astro:assets';
 import { getCollection } from 'astro:content';
+import { Send, Inbox, Check, Smartphone, Filter, RefreshCw, Cpu, ChevronRight, ChevronLeft, ChevronDown } from '@lucide/astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import heroPhone from '../images/hero-phone-figma.jpg';
 import caseClient from '../images/case-blesk-client.jpg';
@@ -16,25 +17,25 @@ const services = [
     href: '/mini-apps',
     title: 'Mini Apps',
     desc: 'Как отдельное приложение — каталог, запись, личный кабинет, оплата — но открывается кнопкой прямо в Telegram. Устанавливать ничего не нужно.',
-    icon: '<rect x="4" y="3" width="16" height="18" rx="2.5" stroke="#2aabee" stroke-width="1.6"/><path d="M9 7H15M9 11H15M9 15H12" stroke="#2aabee" stroke-width="1.6" stroke-linecap="round"/>',
+    icon: Smartphone,
   },
   {
     href: '/boty',
     title: 'Чат-боты для продаж',
     desc: 'Приём заявок, квалификация клиента и передача в отдел продаж без потери лидов на всей воронке.',
-    icon: '<path d="M4 4H20L14 12.5V19L10 21V12.5L4 4Z" stroke="#2aabee" stroke-width="1.6" stroke-linejoin="round"/>',
+    icon: Filter,
   },
   {
     href: '/crm-integracii',
     title: 'CRM-интеграции',
     desc: 'Синхронизация заявок, статусов и клиентской базы с amoCRM, Bitrix24 и Google Таблицами.',
-    icon: '<circle cx="12" cy="12" r="3" stroke="#2aabee" stroke-width="1.6"/><path d="M12 3V6M12 18V21M3 12H6M18 12H21M5.6 5.6L7.8 7.8M16.2 16.2L18.4 18.4M18.4 5.6L16.2 7.8M7.8 16.2L5.6 18.4" stroke="#2aabee" stroke-width="1.6" stroke-linecap="round"/>',
+    icon: RefreshCw,
   },
   {
     href: '/ai-gpt',
     title: 'ИИ и GPT',
     desc: 'Диалоговые ассистенты, обработка обращений и генерация ответов на базе языковых моделей.',
-    icon: '<rect x="7" y="7" width="10" height="10" rx="2" stroke="#2aabee" stroke-width="1.6"/><path d="M12 3V7M12 17V21M3 12H7M17 12H21" stroke="#2aabee" stroke-width="1.6" stroke-linecap="round"/>',
+    icon: Cpu,
   },
 ];
 
@@ -86,7 +87,7 @@ const faqLd = {
           <p class="lead">Клиент пишет вам в чат, нажимает кнопку — и открывается форма записи, каталог или оплата. Ставить ничего не нужно: это работает как обычная переписка, но с автоматизацией внутри.</p>
           <div class="hero-cta">
             <a href="#contact" class="btn btn-primary">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M3 12L21 3L14 21L11 13L3 12Z" stroke="#070f18" stroke-width="1.8" stroke-linejoin="round"/></svg>
+              <Send size={16} color="#070f18" strokeWidth={2} aria-hidden="true" />
               Обсудить проект
             </a>
             <a href="#process" class="btn btn-ghost">Как мы работаем</a>
@@ -113,13 +114,13 @@ const faqLd = {
             </div>
             <div class="hero-float-card fc1">
               <div class="dot-ico" aria-hidden="true">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M4 4H20L14 12.5V19L10 21V12.5L4 4Z" stroke="#fff" stroke-width="2" stroke-linejoin="round"/></svg>
+                <Inbox size={14} color="#fff" strokeWidth={2} />
               </div>
               <div class="fc-text"><strong>Новая заявка</strong><span>только что</span></div>
             </div>
             <div class="hero-float-card fc2">
               <div class="dot-ico" aria-hidden="true">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <Check size={14} color="#fff" strokeWidth={2.4} />
               </div>
               <div class="fc-text"><strong>Оплата получена</strong><span>Mini App</span></div>
             </div>
@@ -141,12 +142,12 @@ const faqLd = {
           {services.map((s, i) => (
             <div class={`card${i === 0 ? ' is-featured' : ''}`}>
               <div class="card-icon">
-                <svg width={i === 0 ? 26 : 22} height={i === 0 ? 26 : 22} viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false" set:html={s.icon} />
+                <s.icon size={i === 0 ? 26 : 22} color="#2aabee" strokeWidth={1.6} aria-hidden="true" />
               </div>
               <h3>{s.title}</h3>
               <p>{s.desc}</p>
               <a href={s.href} class="card-link">Подробнее
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <ChevronRight size={12} strokeWidth={2.2} aria-hidden="true" />
               </a>
             </div>
           ))}
@@ -187,11 +188,11 @@ const faqLd = {
 
           <div class="fan-controls">
             <button type="button" class="fan-nav" id="fanPrev" aria-label="Предыдущий слайд">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M15 6L9 12L15 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" />
             </button>
             <div class="fan-dots" id="fanDots"></div>
             <button type="button" class="fan-nav" id="fanNext" aria-label="Следующий слайд">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
             </button>
           </div>
           <p class="fan-caption" id="fanCaption" aria-live="polite">Клиент</p>
@@ -291,7 +292,7 @@ const faqLd = {
             <div class="faq-item" data-open="false">
               <button class="faq-q" aria-expanded="false">
                 {item.q}
-                <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                <ChevronDown class="chev" size={16} strokeWidth={2} aria-hidden="true" />
               </button>
               <div class="faq-a"><div class="faq-a-inner"><p>{item.a}</p></div></div>
             </div>
