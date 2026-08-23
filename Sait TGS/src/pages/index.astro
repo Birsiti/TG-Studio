@@ -123,55 +123,6 @@ const faqLd = {
       </div>
     </section>
 
-    <!-- LIVE DEMO — signature: real Mini App UI patterns, not a screenshot -->
-    <section class="live-demo">
-      <div class="wrap live-demo-grid">
-        <div class="live-demo-copy reveal">
-          <div class="eyebrow">Не макет — интерфейс продукта</div>
-          <h2>Так клиент записывается прямо в Telegram</h2>
-          <p>Это не иллюстрация — рабочий фрагмент того самого интерфейса, который открывается кнопкой в чате бота: выбор услуги, номер телефона, подтверждение. Попробуйте сами, справа.</p>
-          <div class="stat-row">
-            <div><strong>3</strong><span>тапа до записи</span></div>
-            <div><strong>0</strong><span>звонков администратору</span></div>
-          </div>
-        </div>
-
-        <div class="reveal">
-          <div class="demo-widget" id="demoWidget">
-            <div class="demo-titlebar">
-              <div class="avatar" aria-hidden="true">Б</div>
-              <strong>БЛЕСК</strong>
-              <span class="live">demo</span>
-            </div>
-            <div class="demo-body">
-              <div id="demoFormStep">
-                <div class="demo-step-label">Услуга</div>
-                <div class="demo-chips" role="radiogroup" aria-label="Выберите услугу">
-                  <label class="demo-chip"><input type="radio" name="demoService" value="Стандарт" checked><span>Стандарт · 40 BYN</span></label>
-                  <label class="demo-chip"><input type="radio" name="demoService" value="Люкс"><span>Люкс · 65 BYN</span></label>
-                  <label class="demo-chip"><input type="radio" name="demoService" value="VIP"><span>VIP · 90 BYN</span></label>
-                </div>
-                <div class="demo-step-label">Телефон</div>
-                <div class="demo-phone-field" id="demoPhoneField">
-                  <span class="demo-phone-prefix">+375</span>
-                  <input type="tel" class="demo-phone-input" id="demoPhone" inputmode="numeric" placeholder="29-123-45-67" maxlength="12" aria-label="Номер телефона">
-                </div>
-                <button type="button" class="btn btn-primary demo-submit" id="demoSubmit">Записаться</button>
-              </div>
-              <div class="demo-success" id="demoSuccess" role="status" aria-live="polite">
-                <div class="check" aria-hidden="true">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17L4 12" stroke="#38a89d" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </div>
-                <h4>Запись подтверждена</h4>
-                <p>Ждём вас в назначенное время</p>
-                <button type="button" id="demoReset">Попробовать ещё раз</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
     <!-- SERVICES -->
     <section class="services" id="services">
       <div class="wrap">
@@ -390,40 +341,6 @@ const faqLd = {
 </BaseLayout>
 
 <script>
-  // live-demo widget — mock booking flow, mirrors the real Mini App's
-  // phone-field mask + submit-bar + success-panel patterns (no backend)
-  const demoPhone = document.getElementById('demoPhone');
-  const demoPhoneField = document.getElementById('demoPhoneField');
-  const demoFormStep = document.getElementById('demoFormStep');
-  const demoSuccess = document.getElementById('demoSuccess');
-  if (demoPhone) {
-    demoPhone.addEventListener('input', () => {
-      const digits = demoPhone.value.replace(/\D/g, '').slice(0, 9);
-      let out = digits;
-      if (digits.length > 2) out = digits.slice(0, 2) + '-' + digits.slice(2);
-      if (digits.length > 5) out = digits.slice(0, 2) + '-' + digits.slice(2, 5) + '-' + digits.slice(5);
-      if (digits.length > 7) out = digits.slice(0, 2) + '-' + digits.slice(2, 5) + '-' + digits.slice(5, 7) + '-' + digits.slice(7);
-      demoPhone.value = out;
-      demoPhoneField.classList.remove('is-invalid');
-    });
-    document.getElementById('demoSubmit').addEventListener('click', () => {
-      const valid = demoPhone.value.replace(/\D/g, '').length === 9;
-      if (!valid) {
-        demoPhoneField.classList.add('is-invalid');
-        demoPhone.focus();
-        return;
-      }
-      demoFormStep.style.display = 'none';
-      demoSuccess.style.display = 'block';
-    });
-    document.getElementById('demoReset').addEventListener('click', () => {
-      demoPhone.value = '';
-      demoPhoneField.classList.remove('is-invalid');
-      demoSuccess.style.display = 'none';
-      demoFormStep.style.display = 'block';
-    });
-  }
-
   // FAQ accordion
   document.querySelectorAll('.faq-item').forEach(item=>{
     const btn = item.querySelector('.faq-q');
