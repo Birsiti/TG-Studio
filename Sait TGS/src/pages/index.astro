@@ -1,10 +1,15 @@
 ---
 import { Picture } from 'astro:assets';
+import { getCollection } from 'astro:content';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import heroPhone from '../images/hero-phone-figma.jpg';
 import caseClient from '../images/case-blesk-client.jpg';
 import caseAdmin from '../images/case-blesk-admin.jpg';
 import caseOwner from '../images/case-blesk-owner.jpg';
+
+const latestPosts = (await getCollection('news'))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 3);
 
 const services = [
   {
@@ -245,6 +250,34 @@ const faqLd = {
         </div>
       </div>
     </section>
+
+    <!-- NEWS PREVIEW -->
+    {latestPosts.length > 0 && (
+      <section class="related-block">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <div class="eyebrow">Новости</div>
+            <h2>Разбираем кейсы и делимся практикой</h2>
+            <p>Статьи о ботах, Mini Apps и ИИ — из проектов TG-Studio.</p>
+          </div>
+          <div class="news-grid reveal-stagger reveal">
+            {latestPosts.map(post => (
+              <a href={`/novosti/${post.id}`} class="news-card">
+                <span class="cat">{post.data.category}</span>
+                <h3>{post.data.title}</h3>
+                <p>{post.data.description}</p>
+                <time datetime={post.data.date.toISOString()}>
+                  {post.data.date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </time>
+              </a>
+            ))}
+          </div>
+          <div class="case-demo reveal">
+            <a href="/novosti" class="btn btn-ghost">Все статьи</a>
+          </div>
+        </div>
+      </section>
+    )}
 
     <!-- FAQ -->
     <section id="faq">
