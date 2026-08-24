@@ -80,7 +80,7 @@
     display:flex; align-items:center; justify-content:center; gap:6px;
     pointer-events:none;
   }
-  .demo-tag{
+  .role-tag{
     font-family:'Manrope',sans-serif; font-weight:700; text-transform:none;
     letter-spacing:0; font-size:9px; color:var(--accent-ink);
     background:var(--accent); padding:2px 6px; border-radius:6px;
@@ -116,6 +116,7 @@
   .screen{
     display:none; flex-direction:column; height:100%;
     padding:6px 20px 24px; overflow-y:auto;
+    padding-bottom:max(24px, calc(14px + env(safe-area-inset-bottom, 0px)));
   }
   .screen.active{display:flex; animation:fadein .25s ease;}
   @keyframes fadein{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
@@ -371,7 +372,7 @@
 
   <div class="topbar">
     <button class="back-btn" id="backBtn" aria-label="Назад">‹</button>
-    <div class="wordmark">ВЕРСТА <span class="demo-tag">демо</span></div>
+    <div class="wordmark">ВЕРСТА <span class="role-tag">клиент · демо</span></div>
     <button class="theme-toggle" id="themeToggle" type="button" aria-label="Переключить тему">
       <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12h2.5M19 12h2.5M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>
       <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
@@ -478,7 +479,7 @@
         <label for="phoneInput">Телефон</label>
         <div class="phone-input-group" id="phoneGroup">
           <span class="phone-prefix">+375</span>
-          <input type="tel" id="phoneInput" inputmode="numeric" placeholder="29 123 45 67" maxlength="12">
+          <input type="tel" id="phoneInput" inputmode="numeric" placeholder="29 123-45-67" maxlength="12">
         </div>
       </div>
 
@@ -1028,8 +1029,8 @@
     var digits = e.target.value.replace(/\D/g,'').slice(0,9);
     var out = digits.slice(0,2);
     if(digits.length>2) out += ' '+digits.slice(2,5);
-    if(digits.length>5) out += ' '+digits.slice(5,7);
-    if(digits.length>7) out += ' '+digits.slice(7,9);
+    if(digits.length>5) out += '-'+digits.slice(5,7);
+    if(digits.length>7) out += '-'+digits.slice(7,9);
     e.target.value = out;
     document.getElementById('phoneGroup').classList.remove('error');
   });
@@ -1050,7 +1051,7 @@
       code: state.corridor.code, from: state.from, to: state.to,
       dateLabel: state.dateLabel, time: state.trip.time,
       pickupName: currentPickup().name, dropoffName: currentDropoff().name,
-      name: state.name, seats: state.seats,
+      name: state.name, phone: state.phone, seats: state.seats,
       price: perSeatPrice()*state.seats,
       ticketCode: 'V-'+Math.floor(100000+Math.random()*900000),
       driver: DRIVERS[Math.floor(Math.random()*DRIVERS.length)],

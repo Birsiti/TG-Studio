@@ -7,7 +7,7 @@
 <title>ВЕРСТА — водитель</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="palettes.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>
@@ -59,7 +59,8 @@
   :root[data-theme="light"] .theme-toggle .icon-moon{display:block;}
 
   .screens{position:absolute; top:54px; bottom:0; left:0; right:0;}
-  .screen{display:none; flex-direction:column; height:100%; padding:8px 20px 24px; overflow-y:auto;}
+  .screen{display:none; flex-direction:column; height:100%; padding:8px 20px 24px; overflow-y:auto;
+    padding-bottom:max(24px, calc(14px + env(safe-area-inset-bottom, 0px)));}
   .screen.active{display:flex; animation:fadein .22s ease;}
   @keyframes fadein{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
 
@@ -297,6 +298,12 @@
 
   function cityOf(n){ return n.split(',')[0].trim(); }
   function hashStr(s){ var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return h; }
+  function ruPlural(n, one, few, many){
+    var m10=n%10, m100=n%100;
+    if(m10===1 && m100!==11) return one;
+    if(m10>=2 && m10<=4 && (m100<10 || m100>=20)) return few;
+    return many;
+  }
   function dateKey(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
   function fmtDuration(min){
     var h=Math.floor(min/60), m=min%60;
@@ -371,7 +378,6 @@
   /* ---------------- state ---------------- */
   var currentDriver = null;
   var openTripId = null;
-  var SCREEN_ORDER = ['select-driver','my-trips','trip-detail'];
 
   function goTo(name){
     document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
@@ -394,7 +400,7 @@
       card.className = 'driver-card';
       card.innerHTML = '<div class="avatar">'+initials+'</div>'+
         '<div class="driver-info"><div class="driver-name">'+name+'</div>'+
-        '<div class="driver-sub">'+count+' '+(count===1?'рейс':'рейса')+' сегодня</div></div>'+
+        '<div class="driver-sub">'+count+' '+ruPlural(count,'рейс','рейса','рейсов')+' сегодня</div></div>'+
         '<div class="chev">›</div>';
       card.addEventListener('click', function(){
         currentDriver = name;
