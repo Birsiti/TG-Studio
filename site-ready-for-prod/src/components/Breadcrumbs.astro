@@ -1,0 +1,33 @@
+---
+import { SITE_URL } from '../site.config.js';
+
+interface Crumb {
+  label: string;
+  href?: string; // omit on the current (last) item
+}
+interface Props {
+  items: Crumb[];
+}
+const { items } = Astro.props;
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: items.map((item, i) => ({
+    '@type': 'ListItem',
+    position: i + 1,
+    name: item.label,
+    ...(item.href ? { item: new URL(item.href, SITE_URL).toString() } : {}),
+  })),
+};
+---
+<nav class="breadcrumbs wrap" aria-label="Хлебные крошки">
+  <ol>
+    {items.map((item, i) => (
+      item.href
+        ? <li><a href={item.href}>{item.label}</a></li>
+        : <li aria-current="page">{item.label}</li>
+    ))}
+  </ol>
+</nav>
+<script type="application/ld+json" set:html={JSON.stringify(jsonLd)} />

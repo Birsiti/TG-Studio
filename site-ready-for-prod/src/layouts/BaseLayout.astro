@@ -1,0 +1,167 @@
+---
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/global.css';
+import { SITE_URL, BRAND, GEO, CONTACTS, HREFLANG_ALTERNATES } from '../site.config.js';
+
+interface Props {
+  title: string;
+  description: string;
+  path: string; // e.g. "/", "/mini-apps"
+  ogImage?: string;
+  includeLocalBusiness?: boolean;
+}
+const {
+  title,
+  description,
+  path,
+  ogImage = '/assets/og-image.jpg',
+  includeLocalBusiness = false,
+} = Astro.props;
+
+const canonicalUrl = new URL(path, SITE_URL).toString();
+const ogImageUrl = new URL(ogImage, SITE_URL).toString();
+
+const organizationLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Organization',
+  name: BRAND.name,
+  url: SITE_URL + '/',
+  logo: SITE_URL + '/logo-badge.png',
+  description: BRAND.legalDescription,
+  areaServed: GEO.country,
+  sameAs: [CONTACTS.telegramChannel],
+};
+
+const localBusinessLd = {
+  '@context': 'https://schema.org',
+  '@type': 'LocalBusiness',
+  name: BRAND.name,
+  url: SITE_URL + '/',
+  image: ogImageUrl,
+  description: BRAND.legalDescription,
+  address: {
+    '@type': 'PostalAddress',
+    addressLocality: GEO.city,
+    addressCountry: GEO.country,
+  },
+  areaServed: GEO.areaServed,
+  sameAs: [CONTACTS.telegramChannel],
+};
+---
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- Google Tag Manager -->
+<script is:inline>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-NXHZ5TTM');</script>
+<!-- End Google Tag Manager -->
+
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript" is:inline>
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=111729837', 'ym');
+
+    ym(111729837, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/111729837" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+
+<title>{title}</title>
+<meta name="description" content={description}>
+<link rel="canonical" href={canonicalUrl}>
+<meta name="theme-color" content="#0a1622">
+<link rel="icon" href="/logo-badge.png">
+<link rel="apple-touch-icon" href="/logo-badge@2x.png">
+
+{HREFLANG_ALTERNATES.map(alt => (
+  <link rel="alternate" hreflang={alt.hreflang} href={canonicalUrl} />
+))}
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content={BRAND.name}>
+<meta property="og:locale" content="ru_RU">
+<meta property="og:url" content={canonicalUrl}>
+<meta property="og:title" content={title}>
+<meta property="og:description" content={description}>
+<meta property="og:image" content={ogImageUrl}>
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TG-Studio — боты и Mini Apps для Telegram">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content={title}>
+<meta name="twitter:description" content={description}>
+<meta name="twitter:image" content={ogImageUrl}>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<script type="application/ld+json" set:html={JSON.stringify(organizationLd)} />
+{includeLocalBusiness && <script type="application/ld+json" set:html={JSON.stringify(localBusinessLd)} />}
+
+<slot name="head" />
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NXHZ5TTM"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+
+<a href="#main-content" class="skip-link">Перейти к содержимому</a>
+<div class="grain"></div>
+
+<Header currentPath={path} />
+
+<slot />
+
+<Footer />
+
+<script is:inline>
+  // scroll reveal
+  const revealEls = document.querySelectorAll('.reveal');
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(e=>{
+      if(e.isIntersecting){ e.target.classList.add('in'); io.unobserve(e.target); }
+    });
+  }, {threshold:.15});
+  revealEls.forEach(el=>io.observe(el));
+
+  // header scroll state
+  const header = document.getElementById('siteHeader');
+  const onScroll = () => header.classList.toggle('is-scrolled', window.scrollY > 8);
+  onScroll();
+  window.addEventListener('scroll', onScroll, {passive:true});
+
+  // mobile menu
+  const menuToggle = document.getElementById('menuToggle');
+  const mobileMenu = document.getElementById('mobileMenu');
+  const closeMenu = () => {
+    mobileMenu.classList.remove('is-open');
+    menuToggle.setAttribute('aria-expanded','false');
+    menuToggle.setAttribute('aria-label','Открыть меню');
+  };
+  const openMenu = () => {
+    mobileMenu.classList.add('is-open');
+    menuToggle.setAttribute('aria-expanded','true');
+    menuToggle.setAttribute('aria-label','Закрыть меню');
+  };
+  menuToggle.addEventListener('click', ()=>{
+    mobileMenu.classList.contains('is-open') ? closeMenu() : openMenu();
+  });
+  mobileMenu.querySelectorAll('a').forEach(a=>a.addEventListener('click', closeMenu));
+  document.addEventListener('keydown', (e)=>{ if(e.key === 'Escape') closeMenu(); });
+</script>
+</body>
+</html>
