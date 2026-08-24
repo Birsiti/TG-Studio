@@ -40,3 +40,4 @@
 }
 .card.is-featured h3{font-size:22px;}
 .card.is-featured p{font-size:15px; max-width:360px;}
+.card.is-featured .card-link{margin-top:28px;}
