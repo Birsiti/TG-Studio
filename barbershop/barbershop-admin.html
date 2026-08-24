@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>БРИТВА — админ</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+(function(){
+  try{
+    var saved = localStorage.getItem('theme_override');
+    var scheme = saved;
+    if(!scheme){
+      var tg = window.Telegram && window.Telegram.WebApp;
+      scheme = (tg && tg.colorScheme) ? tg.colorScheme
+        : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+    }
+    document.documentElement.dataset.theme = scheme;
+    var brand = localStorage.getItem('color_scheme_override');
+    if (brand) document.documentElement.dataset.brand = brand;
+  }catch(e){}
+})();
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=JetBrains+Mono:wght@500;600;700&display=swap">
+<link rel="stylesheet" href="palettes.css">
+<style>
+  :root{
+    --bg:#161D18; --surface:#1E2820; --surface-2:#253227; --surface-3:#2C3B2E;
+    --ink:#F3E9D6; --ink-soft:#B9AD94; --ink-faint:#8A9686;
+    --accent:#C89B3C; --accent-dark:#A17D2C; --accent-soft:rgba(200,155,60,.16); --on-accent:#1A1108;
+    --red:#7A2632; --red-soft:rgba(122,38,50,.18); --red-text:#D98A96;
+    --ok:#5C8A61; --ok-soft:rgba(92,138,97,.16);
+    --line:#33412F; --line-strong:#455040;
+    --radius:16px; --radius-sm:12px;
+    --safe-top: env(safe-area-inset-top, 0px); --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root[data-theme="light"]{
+    --bg:#F7F1E3; --surface:#FFFFFF; --surface-2:#F1E9D4; --surface-3:#EAE0C6;
+    --ink:#1D2418; --ink-soft:#5B5341; --ink-faint:#6B6354;
+    --accent:#8C6B24; --accent-dark:#6E5219; --accent-soft:rgba(140,107,36,.14); --on-accent:#FFFFFF;
+    --red:#7A2632; --red-soft:rgba(122,38,50,.12); --red-text:#7A2632;
+    --ok:#3F6B44; --ok-soft:rgba(63,107,68,.14);
+    --line:#E4D9BC; --line-strong:#D6C89F;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:'Lora',serif;font-size:15px;line-height:1.45;
+    min-height:100vh;padding-bottom:max(100px, calc(80px + var(--safe-bottom)));transition:background-color .25s,color .25s;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  .display{font-family:'Alfa Slab One',cursive;}
+  button{font-family:inherit;border:none;cursor:pointer;background:none;color:inherit;}
+
+  .pole-rail{height:6px;background:repeating-linear-gradient(115deg,var(--red) 0 14px,var(--ink) 14px 28px,var(--accent) 28px 42px);}
+
+  header{padding:calc(16px + var(--safe-top)) 16px 12px;border-bottom:1px solid var(--line);background:var(--surface);
+    display:flex;align-items:center;justify-content:space-between;gap:12px;}
+  .hdr-title{font-family:'Alfa Slab One',cursive;font-size:19px;color:var(--accent);}
+  .hdr-sub{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint);margin-top:2px;letter-spacing:.06em;}
+  .hdr-actions{display:flex;gap:8px;flex-shrink:0;}
+  #themeToggleBtn .icon-moon{display:none;}
+  :root[data-theme="light"] #themeToggleBtn .icon-moon{display:block;}
+  :root[data-theme="light"] #themeToggleBtn .icon-sun{display:none;}
+
+  main{padding:16px;max-width:520px;margin:0 auto;}
+  .screen{display:none;} .screen.active{display:block;}
+  .section-label{font-family:'JetBrains Mono',monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin:20px 4px 12px;}
+  .section-label:first-child{margin-top:0;}
+
+  .stat-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+  .stat-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px;}
+  .stat-card .lbl{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.04em;}
+  .stat-card .val{font-family:'Alfa Slab One',cursive;font-size:22px;margin-top:4px;color:var(--accent);}
+
+  .op-row{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:8px;display:flex;gap:12px;align-items:center;}
+  .op-time{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);flex-shrink:0;width:48px;}
+  .op-body{flex:1;min-width:0;}
+  .op-client{font-weight:600;font-size:14px;}
+  .op-meta{font-size:12px;color:var(--ink-soft);margin-top:2px;}
+  .op-badge{font-family:'JetBrains Mono',monospace;font-size:9.5px;padding:4px 8px;border-radius:20px;text-transform:uppercase;letter-spacing:.03em;flex-shrink:0;}
+  .op-badge.wait{background:var(--accent-soft);color:var(--accent);}
+  .op-badge.chair{background:var(--red-soft);color:var(--red-text);}
+  .op-badge.done{background:var(--ok-soft);color:var(--ok);}
+
+  .barber-row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:8px;}
+  .avatar-sm{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Alfa Slab One',cursive;font-size:13px;color:#1A1108;flex-shrink:0;}
+  .barber-row .name{font-weight:600;font-size:14px;}
+  .barber-row .sub{font-size:11.5px;color:var(--ink-soft);margin-top:2px;font-family:'JetBrains Mono',monospace;}
+
+  .fab{position:fixed;right:16px;bottom:calc(92px + var(--safe-bottom));width:52px;height:52px;border-radius:50%;
+    background:var(--accent);color:var(--on-accent);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 18px rgba(0,0,0,.4);z-index:30;}
+  .fab svg{width:22px;height:22px;}
+
+  .search-row input{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:12px 16px;color:var(--ink);font-family:'Lora',serif;font-size:16px;outline:none;margin-bottom:16px;}
+  .search-row input:focus{border-color:var(--accent);}
+
+  .tabbar{position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--surface);border-top:1px solid var(--line);
+    padding:8px 8px calc(8px + var(--safe-bottom));display:flex;gap:4px;}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border-radius:12px;color:var(--ink-faint);}
+  .tab svg{width:20px;height:20px;}
+  .tab span{font-family:'JetBrains Mono',monospace;font-size:10px;text-transform:uppercase;letter-spacing:.03em;font-weight:600;}
+  .tab.active{color:var(--accent);}
+
+  .sheet-scrim{position:fixed;inset:0;background:rgba(0,0,0,.55);opacity:0;pointer-events:none;transition:opacity .25s;z-index:60;}
+  .sheet-scrim.show{opacity:1;pointer-events:auto;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;background:var(--surface-2);border-radius:20px 20px 0 0;
+    padding:20px 20px calc(20px + var(--safe-bottom));transform:translateY(110%);opacity:0;visibility:hidden;
+    transition:transform .3s cubic-bezier(.32,.72,0,1),opacity .25s,visibility .3s;
+    z-index:61;max-height:80vh;overflow-y:auto;}
+  .sheet.show{transform:translateY(0);opacity:1;visibility:visible;}
+  .sheet-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .sheet-head h3{font-family:'Alfa Slab One',cursive;font-size:17px;margin:0;}
+  .icon-btn{width:40px;height:40px;border-radius:12px;background:var(--surface-3);display:flex;align-items:center;justify-content:center;}
+  .icon-btn svg{width:16px;height:16px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-family:'JetBrains Mono',monospace;font-size:10.5px;text-transform:uppercase;color:var(--ink-faint);margin-bottom:8px;}
+  .field input,.field select{width:100%;background:var(--surface);border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:12px 16px;color:var(--ink);font-family:'Lora',serif;font-size:16px;outline:none;}
+  .cta-btn{width:100%;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:15px;padding:16px;border-radius:var(--radius-sm);margin-top:8px;text-align:center;}
+  .scheme-row{display:flex;align-items:center;gap:12px;width:100%;padding:12px 4px;border-bottom:1px solid var(--line);text-align:left;min-height:44px;}
+  .scheme-row:last-child{border-bottom:none;}
+  .scheme-swatch{width:40px;height:40px;border-radius:50%;flex:0 0 auto;box-shadow:0 0 0 1px var(--line-strong);}
+  .scheme-row.active .scheme-swatch{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent);}
+  .scheme-name{font-size:14.5px;font-weight:600;color:var(--ink);}
+  .scheme-sub{font-size:12px;color:var(--ink-soft);margin-top:2px;font-style:italic;}
+  .scheme-check{margin-left:auto;color:var(--accent);flex:0 0 auto;visibility:hidden;}
+  .scheme-row.active .scheme-check{visibility:visible;}
+  .status-timeline-inner{padding:4px 4px 12px;}
+  .status-step{position:relative;display:flex;gap:12px;padding-bottom:16px;}
+  .status-step:last-child{padding-bottom:0;}
+  .status-step::before{content:'';position:absolute;left:6px;top:16px;bottom:-4px;width:1px;background:var(--line-strong);}
+  .status-step:last-child::before{display:none;}
+  .status-dot{width:12px;height:12px;border-radius:50%;background:var(--line-strong);flex:0 0 auto;margin-top:2px;position:relative;z-index:1;box-shadow:0 0 0 3px var(--surface-2);}
+  .status-step.done .status-dot{background:var(--ok);}
+  .status-step.done::before{background:var(--ok);}
+  .status-step.current .status-dot{background:var(--accent);box-shadow:0 0 0 3px var(--surface-2), 0 0 0 5px var(--accent-soft);}
+  .status-label{font-size:13px;font-weight:600;color:var(--ink-faint);}
+  .status-step.done .status-label,.status-step.current .status-label{color:var(--ink);}
+  .status-time{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-faint);margin-top:2px;}
+  .toast{position:fixed;left:50%;bottom:calc(92px + var(--safe-bottom));transform:translateX(-50%) translateY(20px);background:var(--ok);
+    color:#fff;padding:12px 20px;border-radius:24px;font-size:13.5px;font-weight:600;opacity:0;pointer-events:none;
+    transition:all .35s cubic-bezier(.34,1.56,.64,1);z-index:70;box-shadow:0 8px 24px rgba(0,0,0,.35);}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+</style>
+</head>
+<body>
+<div class="pole-rail"></div>
+<header>
+  <div>
+    <div class="hdr-title">БРИТВА · ресепшн</div>
+    <div class="hdr-sub" id="todayDate"></div>
+  </div>
+  <div class="hdr-actions">
+    <button class="icon-btn" id="colorSchemeBtn" aria-label="Цветовая схема">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg>
+    </button>
+    <button class="icon-btn" id="themeToggleBtn" aria-label="Переключить тему">
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+    </button>
+  </div>
+</header>
+
+<main>
+  <div class="screen active" id="screen-today">
+    <div class="stat-row">
+      <div class="stat-card"><div class="lbl">Записей сегодня</div><div class="val" id="statTotal"></div></div>
+      <div class="stat-card"><div class="lbl">Свободных окон</div><div class="val" id="statFree"></div></div>
+    </div>
+    <div class="section-label">Сегодня по времени</div>
+    <div id="todayList"></div>
+  </div>
+
+  <div class="screen" id="screen-barbers">
+    <div class="section-label">Мастера сегодня</div>
+    <div id="barberList"></div>
+  </div>
+
+  <div class="screen" id="screen-bookings">
+    <div class="section-label">Все записи</div>
+    <div class="search-row"><input type="text" id="searchInput" placeholder="Поиск по клиенту или мастеру" aria-label="Поиск по клиенту или мастеру"></div>
+    <div id="bookingsList"></div>
+  </div>
+</main>
+
+<button class="fab" id="fabAdd" title="Новая запись" aria-label="Новая запись">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<div class="tabbar">
+  <button class="tab active" data-screen="today">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><circle cx="12" cy="12" r="9"/></svg><span>Сегодня</span>
+  </button>
+  <button class="tab" data-screen="barbers">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg><span>Мастера</span>
+  </button>
+  <button class="tab" data-screen="bookings">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span>Брони</span>
+  </button>
+</div>
+
+<div class="sheet-scrim" id="schemeScrim"></div>
+<div class="sheet" id="schemeSheet">
+  <div class="sheet-head"><h3>Цветовая схема</h3><button class="icon-btn" id="schemeSheetClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+  <div id="schemeList"></div>
+</div>
+
+<div class="sheet-scrim" id="scrim"></div>
+<div class="sheet" id="detailSheet">
+  <div class="sheet-head"><h3 id="sheetTitle">Запись</h3><button class="icon-btn" id="sheetClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+  <div id="sheetBody"></div>
+</div>
+
+<div class="sheet-scrim" id="addScrim"></div>
+<div class="sheet" id="addSheet">
+  <div class="sheet-head"><h3>Новая запись</h3><button class="icon-btn" id="addClose" aria-label="Закрыть"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg></button></div>
+  <div class="field"><label for="addClient">Клиент</label><input type="text" id="addClient" placeholder="Имя клиента"></div>
+  <div class="field"><label for="addBarber">Мастер</label><select id="addBarber"></select></div>
+  <div class="field"><label for="addService">Услуга</label><select id="addService"></select></div>
+  <div class="field"><label for="addTime">Время</label><input type="text" id="addTime" placeholder="напр. 16:20"></div>
+  <button class="cta-btn" id="addSave">Записать</button>
+</div>
+
+<div class="toast" id="toast">Сохранено ✓</div>
+
+<script>
+/* ============================================================ CONFIG ============================================================ */
+const CONFIG = { businessName: "БРИТВА", apiUrl: "PASTE_APPS_SCRIPT_URL_HERE" };
+
+/* ============================================================ MOCK DATA ============================================================ */
+const BARBERS = [
+  { id:"b1", name:"Игорь Соколов", color:"#C89B3C", initials:"ИС" },
+  { id:"b2", name:"Артём Волков", color:"#7A2632", initials:"АВ" },
+  { id:"b3", name:"Максим Орлов", color:"#5C8A61", initials:"МО" },
+  { id:"b4", name:"Денис Крылов", color:"#A17D2C", initials:"ДК" },
+];
+const SERVICES = ["Стрижка машинкой","Стрижка ножницами","Стрижка + борода","Королевское бритьё","Оформление бороды","Детская стрижка"];
+
+let BOOKINGS = [
+  { time:"10:00", client:"Павел Гриц", barber:"b1", service:"Стрижка + борода", status:"done" },
+  { time:"10:40", client:"Роман Зайцев", barber:"b2", service:"Стрижка ножницами", status:"done" },
+  { time:"12:20", client:"Илья Швец", barber:"b4", service:"Детская стрижка", status:"chair" },
+  { time:"14:00", client:"Никита Бык", barber:"b3", service:"Оформление бороды", status:"wait" },
+  { time:"15:40", client:"Сергей Дуб", barber:"b1", service:"Королевское бритьё", status:"wait" },
+  { time:"17:10", client:"Егор Линь", barber:"b2", service:"Стрижка ножницами", status:"wait" },
+];
+
+function bName(id){ return BARBERS.find(b=>b.id===id)?.name || id; }
+const BADGE = { wait:["wait","в ожидании"], chair:["chair","в кресле"], done:["done","завершено"] };
+
+/* ============================================================ RENDER: TODAY ============================================================ */
+function renderToday(){
+  document.getElementById("statTotal").textContent = BOOKINGS.length;
+  document.getElementById("statFree").textContent = 15 - BOOKINGS.length;
+  const el = document.getElementById("todayList");
+  el.innerHTML = BOOKINGS.map((b,i) => {
+    const [cls,label] = BADGE[b.status];
+    return `<div class="op-row" data-i="${i}">
+      <div class="op-time mono">${b.time}</div>
+      <div class="op-body"><div class="op-client">${b.client}</div><div class="op-meta">${b.service} · ${bName(b.barber)}</div></div>
+      <div class="op-badge ${cls}">${label}</div>
+    </div>`;
+  }).join("");
+  el.querySelectorAll(".op-row").forEach(r => r.addEventListener("click", () => openBookingSheet(+r.dataset.i)));
+}
+
+const STATUS_STEP_INDEX = { wait: 1, chair: 2, done: 4 };
+function renderStatusTimeline(b){
+  const steps = [
+    { label: "Запись создана" },
+    { label: "Ожидание", time: b.time },
+    { label: "В кресле" },
+    { label: "Завершено" },
+  ];
+  const curIdx = STATUS_STEP_INDEX[b.status];
+  return steps.map((s,i) => {
+    let cls = "pending";
+    if(i < curIdx) cls = "done";
+    else if(i === curIdx) cls = "current";
+    return `<div class="status-step ${cls}">
+      <div class="status-dot"></div>
+      <div><div class="status-label">${s.label}</div>${s.time ? `<div class="status-time mono">${s.time}</div>` : ""}</div>
+    </div>`;
+  }).join("");
+}
+function openBookingSheet(i){
+  const b = BOOKINGS[i];
+  document.getElementById("sheetTitle").textContent = b.client;
+  document.getElementById("sheetBody").innerHTML = `
+    <div class="field"><label>Услуга</label><div>${b.service}</div></div>
+    <div class="field"><label>Мастер</label><div>${bName(b.barber)}</div></div>
+    <div class="field"><label>Время</label><div class="mono">${b.time}</div></div>
+    <div class="field"><label>Статус записи</label></div>
+    <div class="status-timeline-inner">${renderStatusTimeline(b)}</div>
+    <button class="cta-btn" id="markChair">Посадить в кресло</button>
+    <button class="cta-btn" id="markDone" style="background:var(--ok-soft);color:var(--ok);margin-top:8px;">Завершить</button>
+  `;
+  document.getElementById("markChair").addEventListener("click", () => { b.status="chair"; renderToday(); closeSheet(); showToast(); });
+  document.getElementById("markDone").addEventListener("click", () => { b.status="done"; renderToday(); closeSheet(); showToast(); });
+  openSheet();
+}
+
+/* ============================================================ RENDER: BARBERS ============================================================ */
+function renderBarbers(){
+  const el = document.getElementById("barberList");
+  el.innerHTML = BARBERS.map(b => {
+    const cnt = BOOKINGS.filter(x=>x.barber===b.id).length;
+    return `<div class="barber-row">
+      <div class="avatar-sm" style="background:${b.color}">${b.initials}</div>
+      <div><div class="name">${b.name}</div><div class="sub">${cnt} записей сегодня</div></div>
+    </div>`;
+  }).join("");
+}
+
+/* ============================================================ RENDER: BOOKINGS SEARCH ============================================================ */
+function renderBookings(filter=""){
+  const f = filter.toLowerCase();
+  const list = BOOKINGS.filter(b => b.client.toLowerCase().includes(f) || bName(b.barber).toLowerCase().includes(f));
+  const el = document.getElementById("bookingsList");
+  el.innerHTML = list.map(b => `<div class="op-row" data-i="${BOOKINGS.indexOf(b)}"><div class="op-time mono">${b.time}</div>
+    <div class="op-body"><div class="op-client">${b.client}</div><div class="op-meta">${b.service} · ${bName(b.barber)}</div></div></div>`).join("")
+    || `<div style="text-align:center;color:var(--ink-faint);padding:32px 0;font-style:italic;">Ничего не найдено</div>`;
+  el.querySelectorAll(".op-row").forEach(r => r.addEventListener("click", () => openBookingSheet(+r.dataset.i)));
+}
+document.getElementById("searchInput").addEventListener("input", e => renderBookings(e.target.value));
+
+/* ============================================================ ADD BOOKING ============================================================ */
+document.getElementById("addBarber").innerHTML = BARBERS.map(b=>`<option value="${b.id}">${b.name}</option>`).join("");
+document.getElementById("addService").innerHTML = SERVICES.map(s=>`<option>${s}</option>`).join("");
+document.getElementById("fabAdd").addEventListener("click", () => { document.getElementById("addScrim").classList.add("show"); document.getElementById("addSheet").classList.add("show"); updateBackButton(); });
+document.getElementById("addClose").addEventListener("click", closeAddSheet);
+document.getElementById("addScrim").addEventListener("click", closeAddSheet);
+function closeAddSheet(){ document.getElementById("addScrim").classList.remove("show"); document.getElementById("addSheet").classList.remove("show"); updateBackButton(); }
+document.getElementById("addSave").addEventListener("click", () => {
+  const client = document.getElementById("addClient").value.trim();
+  const time = document.getElementById("addTime").value.trim();
+  if(!client || !time) return;
+  BOOKINGS.push({ time, client, barber: document.getElementById("addBarber").value, service: document.getElementById("addService").value, status:"wait" });
+  BOOKINGS.sort((a,b)=>a.time.localeCompare(b.time));
+  closeAddSheet(); renderToday(); showToast();
+  document.getElementById("addClient").value=""; document.getElementById("addTime").value="";
+});
+
+/* ============================================================ NAV / SHEET ============================================================ */
+document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => {
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active")); t.classList.add("active");
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  document.getElementById("screen-"+t.dataset.screen).classList.add("active");
+  if(t.dataset.screen==="bookings") renderBookings();
+  haptic("light");
+}));
+function openSheet(){ document.getElementById("scrim").classList.add("show"); document.getElementById("detailSheet").classList.add("show"); updateBackButton(); }
+function closeSheet(){ document.getElementById("scrim").classList.remove("show"); document.getElementById("detailSheet").classList.remove("show"); updateBackButton(); }
+document.getElementById("sheetClose").addEventListener("click", closeSheet);
+document.getElementById("scrim").addEventListener("click", closeSheet);
+function showToast(msg){ const t=document.getElementById("toast"); t.textContent = msg || "Сохранено ✓"; t.classList.add("show"); haptic("success"); setTimeout(()=>t.classList.remove("show"),2200); }
+
+/* ============================================================ TELEGRAM ============================================================ */
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+function haptic(style){ if(tg && tg.HapticFeedback){ if(["success","error","warning"].includes(style)) tg.HapticFeedback.notificationOccurred(style); else tg.HapticFeedback.impactOccurred(style||"light"); } }
+function getThemeOverride(){ try{ return localStorage.getItem("theme_override"); }catch(e){ return null; } }
+function autoScheme(){ return (tg && tg.colorScheme) || (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark"); }
+function applyTheme(){
+  const scheme = getThemeOverride() || autoScheme();
+  document.documentElement.setAttribute("data-theme", scheme);
+  if(tg){ requestAnimationFrame(() => { const s=getComputedStyle(document.body); try{tg.setHeaderColor(s.getPropertyValue("--surface").trim());tg.setBackgroundColor(s.getPropertyValue("--bg").trim());}catch(e){} }); }
+  updateThemeToggleLabel(scheme);
+}
+function toggleTheme(){
+  const next = document.documentElement.getAttribute("data-theme") === "light" ? "dark" : "light";
+  try{ localStorage.setItem("theme_override", next); }catch(e){}
+  haptic("light");
+  applyTheme();
+}
+function updateThemeToggleLabel(scheme){
+  const btn = document.getElementById("themeToggleBtn");
+  if(!btn) return;
+  btn.setAttribute("aria-label", scheme === "light" ? "Включить тёмную тему" : "Включить светлую тему");
+}
+function updateBackButton(){
+  if(!tg || !tg.BackButton) return;
+  const sheetOpen = ["detailSheet","addSheet","schemeSheet"].some(id => document.getElementById(id).classList.contains("show"));
+  if(sheetOpen) tg.BackButton.show(); else tg.BackButton.hide();
+}
+function handleBackButton(){
+  if(document.getElementById("schemeSheet").classList.contains("show")){ closeSchemeSheet(); return; }
+  if(document.getElementById("addSheet").classList.contains("show")){ closeAddSheet(); return; }
+  if(document.getElementById("detailSheet").classList.contains("show")){ closeSheet(); return; }
+}
+function initTelegram(){
+  if(!tg){ applyTheme(); matchMedia("(prefers-color-scheme: light)").addEventListener("change", applyTheme); return; }
+  tg.ready(); tg.expand(); applyTheme(); tg.onEvent("themeChanged", applyTheme);
+  if(tg.BackButton){ tg.BackButton.onClick(handleBackButton); updateBackButton(); }
+  if(tg.isVersionAtLeast && tg.isVersionAtLeast("7.7")){ try{ tg.disableVerticalSwipes(); }catch(e){} }
+}
+
+/* ============================================================ COLOR SCHEME ============================================================ */
+const SCHEME_META = {
+  klassika: { label: "Классика", sub: "Тёплое золото — как есть",     swatch: "linear-gradient(135deg,#C89B3C,#7A2632)" },
+  indigo:   { label: "Индиго",   sub: "Глубокий сине-фиолетовый",     swatch: "linear-gradient(135deg,#6C6FC4,#4F52A0)" },
+  tabak:    { label: "Табак",    sub: "Медь и выдержанный табак",     swatch: "linear-gradient(135deg,#B5652E,#8F4E22)" },
+  myata:    { label: "Мята",     sub: "Приглушённый мятный",          swatch: "linear-gradient(135deg,#4E9C8C,#3B7A6D)" },
+};
+const BRAND_LIST = Object.keys(SCHEME_META);
+function getBrand(){ return document.documentElement.dataset.brand || "klassika"; }
+function applyBrand(brand){
+  if(!SCHEME_META[brand]) return;
+  document.documentElement.dataset.brand = brand;
+  try{ localStorage.setItem("color_scheme_override", brand); }catch(e){}
+  if(tg){ const s=getComputedStyle(document.body); try{tg.setHeaderColor(s.getPropertyValue("--surface").trim());tg.setBackgroundColor(s.getPropertyValue("--bg").trim());}catch(e){} }
+}
+function renderSchemeList(){
+  const active = getBrand();
+  document.getElementById("schemeList").innerHTML = BRAND_LIST.map(id => {
+    const m = SCHEME_META[id];
+    return `<button class="scheme-row${id === active ? " active" : ""}" data-scheme="${id}">
+      <div class="scheme-swatch" style="background:${m.swatch};"></div>
+      <div><div class="scheme-name">${m.label}</div><div class="scheme-sub">${m.sub}</div></div>
+      <svg class="scheme-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M20 6L9 17l-5-5"/></svg>
+    </button>`;
+  }).join("");
+  document.getElementById("schemeList").querySelectorAll(".scheme-row").forEach(row => {
+    row.addEventListener("click", () => {
+      applyBrand(row.dataset.scheme);
+      haptic("light");
+      renderSchemeList();
+      showToast(`Схема «${SCHEME_META[row.dataset.scheme].label}» применена`);
+    });
+  });
+}
+function openSchemeSheet(){
+  renderSchemeList();
+  document.getElementById("schemeScrim").classList.add("show");
+  document.getElementById("schemeSheet").classList.add("show");
+  haptic("light");
+  updateBackButton();
+}
+function closeSchemeSheet(){
+  document.getElementById("schemeScrim").classList.remove("show");
+  document.getElementById("schemeSheet").classList.remove("show");
+  updateBackButton();
+}
+document.getElementById("colorSchemeBtn").addEventListener("click", openSchemeSheet);
+document.getElementById("schemeSheetClose").addEventListener("click", closeSchemeSheet);
+document.getElementById("schemeScrim").addEventListener("click", closeSchemeSheet);
+document.getElementById("themeToggleBtn").addEventListener("click", toggleTheme);
+
+/* ============================================================ INIT ============================================================ */
+document.getElementById("todayDate").textContent = new Date().toLocaleDateString("ru-RU",{day:"numeric",month:"long",weekday:"long"}).toUpperCase();
+initTelegram();
+renderToday();
+renderBarbers();
+</script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+/*
+  Цветовые схемы (акцентные палитры) — Прокат-Инструмент.
+  Подключать этот файл ПЕРЕД инлайн-<style> каждого html (client.html/admin.html/owner.html),
+  чтобы переопределения по специфичности [data-brand] уверенно били по-умолчанию
+  прописанным в html цветам, независимо от порядка каскада.
+
+  Схема хранения: document.documentElement.dataset.brand ("amber" | "industrial" | "forest" | "crimson"),
+  сохраняется в localStorage под ключом color_scheme_override (см. applyBrand()/resolveBrand() в каждом html).
+
+  "amber" — схема по умолчанию, её значения уже зашиты в :root/:root[data-theme="light"]
+  каждого html-файла, поэтому отдельного блока [data-brand="amber"] здесь нет.
+
+  Меняются только акцентные переменные (--accent*, --accent-2*) — фон/поверхности/текст
+  и семантические --warn/--danger остаются нейтральными и одинаковыми во всех схемах,
+  чтобы предупреждения/ошибки читались одинаково независимо от выбранной палитры.
+*/
+
+/* ИНДАСТРИАЛ — стальной синий + сигнальный оранжевый */
+:root[data-brand="industrial"]{
+  --accent:#3E8FD9; --accent-dark:#2A6FB0; --accent-soft:rgba(62,143,217,.14);
+  --accent-2:#E8792F; --accent-2-soft:rgba(232,121,47,.14);
+}
+:root[data-brand="industrial"][data-theme="light"]{
+  --accent:#1D5F96; --accent-dark:#154870; --accent-soft:rgba(29,95,150,.12);
+  --accent-2:#B85A1E; --accent-2-soft:rgba(184,90,30,.12);
+}
+
+/* ЛЕСНИК — тёмная зелень + амбер */
+:root[data-brand="forest"]{
+  --accent:#4FAE62; --accent-dark:#398C4A; --accent-soft:rgba(79,174,98,.14);
+  --accent-2:#D9A441; --accent-2-soft:rgba(217,164,65,.14);
+}
+:root[data-brand="forest"][data-theme="light"]{
+  --accent:#2E7A3D; --accent-dark:#205A2C; --accent-soft:rgba(46,122,61,.12);
+  --accent-2:#A87A22; --accent-2-soft:rgba(168,122,34,.12);
+}
+
+/* СТРОЙКА — сигнальный красный + графит */
+:root[data-brand="crimson"]{
+  --accent:#E15252; --accent-dark:#C13A3A; --accent-soft:rgba(225,82,82,.14);
+  --accent-2:#8A93A6; --accent-2-soft:rgba(138,147,166,.14);
+}
+:root[data-brand="crimson"][data-theme="light"]{
+  --accent:#B92E2E; --accent-dark:#8F2020; --accent-soft:rgba(185,46,46,.12);
+  --accent-2:#5A6478; --accent-2-soft:rgba(90,100,120,.12);
+}

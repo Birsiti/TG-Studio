@@ -1,0 +1,61 @@
+/* ============================================================
+   palettes.css — цветовые токены МОСТ (светлая/тёмная тема)
+   Подключается ДО основного <style> в most-cafe-bot.html и
+   most-cafe-admin.html.
+
+   Тема переключается атрибутом data-theme на <html>:
+   [data-theme="light"] | [data-theme="dark"] — выбирает каждый
+   пользователь лично (тумблер в шапке), по умолчанию берётся из
+   tg.colorScheme / prefers-color-scheme (см. initTelegram() в конце
+   каждого файла).
+   ============================================================ */
+
+:root{
+  --font-display:'Golos Text', sans-serif;
+  --font-body:'Work Sans', sans-serif;
+  --font-cn:'Noto Sans SC', sans-serif;
+}
+
+:root[data-theme="light"]{
+  --bg:#f1e8d6;
+  --surface:#fbf7ee;
+  --surface-2:#e6dac0;
+  --ink:#2b241d;
+  --ink-soft:#7a6e58;
+  --line:rgba(43,36,29,0.14);
+
+  --jade:#2f6f5e;        /* бренд/CTA — как versta's --accent */
+  --jade-deep:#1f4e42;
+  --jade-tint:#dfe9e0;
+
+  --honey:#a66f22;       /* акцент "в процессе/готовится" */
+  --honey-light:#d9a54b;
+  --honey-tint:#f0e2c4;
+  --honey-deep:#7a5119;  /* для color: на honey-tint/surface — honey сам по себе не проходит AA */
+
+  --seal:#c1432b;        /* акцент "новое/внимание" (хиты, бейджи, алерты) */
+  --seal-tint:#f3ddd6;
+  --seal-deep:#a8371f;   /* для color: на seal-tint — seal сам по себе не проходит AA на тинте */
+}
+
+:root[data-theme="dark"]{
+  --bg:#1b1712;
+  --surface:#26211a;
+  --surface-2:#332b20;
+  --ink:#f3ead9;
+  --ink-soft:#b9ab8f;
+  --line:rgba(255,255,255,0.14);
+
+  --jade:#4f9c86;
+  --jade-deep:#8fd0ba;
+  --jade-tint:#243830;
+
+  --honey:#e2a94f;
+  --honey-light:#f0c98a;
+  --honey-tint:#3a2e1a;
+  --honey-deep:#e2a94f;  /* базовый honey уже проходит AA на тёмном тинте — отдельного затемнения не нужно */
+
+  --seal:#e2604a;
+  --seal-tint:#3a231e;
+  --seal-deep:#eb7a67;   /* светлее базового seal — на тёмном тинте нужен светлее, не темнее */
+}

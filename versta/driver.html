@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10131A">
+<title>ВЕРСТА — водитель</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="palettes.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+(function(){
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var saved = null;
+  try { saved = localStorage.getItem('versta_theme_override'); } catch(e){}
+  var scheme = saved || ((tg && tg.colorScheme) ? tg.colorScheme
+    : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+  document.documentElement.setAttribute('data-theme', scheme);
+})();
+</script>
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:#05060a; font-family:'Manrope',sans-serif; color:var(--ink);
+    display:flex; justify-content:center; min-height:100vh; padding:28px 14px;
+  }
+  h1,h2,.display{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.02em; font-weight:600; margin:0;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button{font-family:inherit; cursor:pointer;}
+  a{color:inherit; text-decoration:none;}
+  *:focus-visible{outline:2px solid var(--accent2); outline-offset:2px;}
+
+  .phone{
+    position:relative; width:390px; height:844px; background:var(--bg);
+    border-radius:42px; overflow:hidden;
+    box-shadow:0 40px 90px rgba(0,0,0,.65), 0 0 0 9px #0b0d12, 0 0 0 10px #262b36;
+  }
+  @media (max-width:430px){ body{padding:0;} .phone{width:100%; height:100dvh; border-radius:0; box-shadow:none;} }
+
+  .topbar{height:54px; display:flex; align-items:center; padding:0 18px; gap:10px;}
+  .back-btn{width:44px; height:44px; border-radius:50%; background:var(--surface); border:none; color:var(--ink);
+    font-size:22px; display:flex; align-items:center; justify-content:center; visibility:hidden; flex:0 0 auto; box-shadow:var(--shadow-sm);}
+  .back-btn.show{visibility:visible;}
+  .wordmark{font-family:'Oswald'; font-weight:700; font-size:15px; letter-spacing:.12em;}
+  .role-tag{font-family:'Manrope'; font-weight:700; font-size:9px; letter-spacing:0; text-transform:none;
+    color:var(--accent-ink); background:var(--accent); padding:2px 6px; border-radius:6px; margin-left:4px;}
+  .switch-link{font-size:12.5px; font-weight:700; color:var(--ink-soft); background:none; border:none;}
+  .theme-toggle{
+    width:44px; height:44px; border-radius:50%;
+    background:var(--surface); border:none; color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    flex:0 0 auto; margin-left:auto; box-shadow:var(--shadow-sm);
+  }
+  .theme-toggle .icon-moon{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-sun{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-moon{display:block;}
+
+  .screens{position:absolute; top:54px; bottom:0; left:0; right:0;}
+  .screen{display:none; flex-direction:column; height:100%; padding:8px 20px 24px; overflow-y:auto;}
+  .screen.active{display:flex; animation:fadein .22s ease;}
+  @keyframes fadein{from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none}}
+
+  .eyebrow{color:var(--ink-soft); font-size:14px; margin:0 0 2px;}
+  .title{font-size:26px; margin:0 0 16px;}
+  .grow{flex:1;}
+
+  /* driver picker */
+  .driver-card{
+    display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-lg); padding:16px; margin-bottom:11px;
+  }
+  .avatar{
+    width:48px; height:48px; border-radius:50%; background:var(--surface-2); border:1.5px solid var(--accent);
+    display:flex; align-items:center; justify-content:center; font-family:'Oswald'; font-weight:700; font-size:16px;
+    color:var(--accent-dark); flex:0 0 auto;
+  }
+  .driver-info{flex:1;}
+  .driver-name{font-size:16.5px; font-weight:700;}
+  .driver-sub{font-size:12.5px; color:var(--ink-soft); margin-top:2px;}
+  .chev{color:var(--ink-faint); font-size:20px;}
+
+  /* trip list */
+  .badge{font-family:'Oswald'; font-weight:700; font-size:11px; background:var(--accent); color:var(--accent-ink);
+    border:1.5px solid var(--ink); border-radius:5px; padding:1px 5px; box-shadow:0 0 0 2px var(--bg);}
+  .trip-card{
+    background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:16px; margin-bottom:12px;
+  }
+  .trip-card-top{display:flex; align-items:center; gap:12px;}
+  .trip-time{font-family:'JetBrains Mono'; font-weight:700; font-size:24px;}
+  .trip-route{flex:1;}
+  .trip-route-cities{font-size:16px; font-weight:700; margin-bottom:3px;}
+  .trip-route-sub{font-size:12.5px; color:var(--ink-soft);}
+  .status-tag{font-size:11.5px; font-weight:700; padding:5px 10px; border-radius:9px; white-space:nowrap;}
+  .tag-wait{background:var(--surface-2); color:var(--ink-soft);}
+  .tag-live{background:var(--accent-soft); color:var(--accent-dark);}
+  .tag-done{background:var(--success-soft); color:var(--success-dark);}
+  .empty-state{text-align:center; color:var(--ink-soft); padding:60px 16px; font-size:15px; line-height:1.5;}
+
+  /* trip detail */
+  .detail-head{display:flex; align-items:center; gap:10px; margin-bottom:6px;}
+  .detail-cities{font-size:24px;}
+  .detail-sub{color:var(--ink-soft); font-size:14px; margin-bottom:18px;}
+
+  .status-btn{
+    width:100%; border:none; border-radius:var(--radius-lg); padding:18px; font-weight:700; font-size:17px;
+    display:flex; align-items:center; justify-content:center; gap:8px; margin-bottom:20px;
+  }
+  .status-btn.start{background:var(--accent); color:var(--accent-ink);}
+  .status-btn.finish{background:var(--accent2); color:#052420;}
+  .status-btn.done{background:var(--surface-2); color:var(--ink-soft);}
+
+  .roadline{position:relative;}
+  .point-block{display:flex; gap:14px; padding-bottom:6px;}
+  .rail{width:18px; display:flex; flex-direction:column; align-items:center; flex:0 0 auto;}
+  .rail-dot{width:13px; height:13px; border-radius:50%; background:var(--surface-2); border:2px solid var(--ink-faint); margin-top:3px; flex:0 0 auto;}
+  .rail-dot.has-activity{border-color:var(--accent); background:var(--accent);}
+  .rail-line{width:2px; flex:1; background:var(--border); margin-top:3px; min-height:14px;}
+  .point-block:last-child .rail-line{display:none;}
+  .point-content{flex:1; padding-bottom:16px; min-width:0;}
+  .point-name{font-size:14.5px; font-weight:700;}
+  .point-offset{font-size:11.5px; color:var(--ink-soft); margin-bottom:8px;}
+
+  .pax-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; margin-bottom:8px;}
+  .pax-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .pax-name{font-size:15px; font-weight:700;}
+  .pax-seats{font-family:'JetBrains Mono'; font-size:11.5px; font-weight:700; background:var(--surface-2);
+    border-radius:7px; padding:2px 7px; white-space:nowrap;}
+  .pax-actions{display:flex; gap:8px; margin-top:11px;}
+  .pax-btn{flex:1; border:none; border-radius:11px; padding:12px 8px; font-weight:700; font-size:13.5px;
+    display:flex; align-items:center; justify-content:center; gap:6px;}
+  .pax-btn.call{background:var(--accent2-soft); color:var(--accent2-dark);}
+  .pax-btn.board{background:var(--surface-2); color:var(--ink);}
+  .pax-btn.miss{background:var(--danger-soft); color:var(--danger-dark);}
+  .pax-status{font-size:12px; font-weight:700; padding:8px; text-align:center; border-radius:10px; margin-top:11px;}
+  .pax-status.st-board{background:var(--success-soft); color:var(--success-dark);}
+  .pax-status.st-miss{background:var(--danger-soft); color:var(--danger-dark);}
+
+  .dropoff-card{
+    display:flex; align-items:center; gap:10px; background:var(--surface); border:1px dashed var(--border);
+    border-radius:var(--radius-md); padding:11px 12px; margin-bottom:8px; font-size:13.5px; color:var(--ink-soft);
+  }
+  .dropoff-card b{color:var(--ink); font-weight:700;}
+  .section-tag{font-size:10.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); margin-bottom:7px;}
+
+  /* dispatch contact */
+  .dispatch-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px; margin-bottom:20px;}
+  .dispatch-title{font-size:11.5px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--ink-faint); margin-bottom:11px;}
+  .dispatch-row{display:flex; gap:9px;}
+  .dispatch-btn{
+    flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; border:1px solid var(--border);
+    background:var(--surface-2); border-radius:13px; padding:13px 8px; color:var(--ink); font-weight:700; font-size:12.5px;
+  }
+  .dispatch-btn svg{color:var(--ink-soft);}
+  .dispatch-alert{border-radius:var(--radius-md); padding:13px 14px; display:flex; align-items:center; gap:11px;}
+  .dispatch-alert.late{background:rgba(255,197,61,.13); border:1px solid rgba(255,197,61,.3);}
+  .dispatch-alert.break{background:rgba(255,92,108,.12); border:1px solid rgba(255,92,108,.3);}
+  .dispatch-alert-icon{width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex:0 0 auto;}
+  .dispatch-alert.late .dispatch-alert-icon{background:rgba(255,197,61,.2); color:var(--warn-dark);}
+  .dispatch-alert.break .dispatch-alert-icon{background:rgba(255,92,108,.2); color:var(--danger-dark);}
+  .dispatch-alert-body{flex:1;}
+  .dispatch-alert-title{font-size:13px; font-weight:700;}
+  .dispatch-alert-sub{font-size:11px; color:var(--ink-soft); margin-top:2px;}
+  .dispatch-undo{background:none; border:none; color:var(--ink-soft); font-size:11.5px; font-weight:700;
+    text-decoration:underline; text-underline-offset:2px; padding:6px;}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="topbar">
+    <button class="back-btn" id="backBtn" aria-label="Назад">‹</button>
+    <span class="wordmark">ВЕРСТА</span><span class="role-tag">водитель · демо</span>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Переключить тему">
+      <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12h2.5M19 12h2.5M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>
+      <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+    </button>
+    <button class="switch-link" id="switchDriverBtn" style="display:none;">сменить</button>
+  </div>
+
+  <div class="screens">
+
+    <!-- 1. выбор водителя -->
+    <section class="screen active" data-screen="select-driver">
+      <h1 class="title">Кто за рулём?</h1>
+      <div id="driverList"></div>
+    </section>
+
+    <!-- 2. мои рейсы -->
+    <section class="screen" data-screen="my-trips">
+      <p class="eyebrow" id="greeting"></p>
+      <h1 class="title" id="todayLabel">Сегодня</h1>
+      <div id="myTripsList"></div>
+      <div class="grow"></div>
+    </section>
+
+    <!-- 3. рейс -->
+    <section class="screen" data-screen="trip-detail">
+      <div class="detail-head">
+        <span class="badge" id="detailBadge"></span>
+      </div>
+      <h1 class="title detail-cities" id="detailCities" style="margin-bottom:2px;"></h1>
+      <p class="detail-sub" id="detailSub"></p>
+
+      <button class="status-btn" id="statusBtn"></button>
+
+      <div id="dispatchBlock"></div>
+
+      <div class="roadline" id="pointsList"></div>
+    </section>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var tg = window.Telegram ? window.Telegram.WebApp : null;
+  var THEME_KEY = 'versta_theme_override';
+
+  function resolveMode(){
+    var saved = null;
+    try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+    if (saved) return saved;
+    return (tg && tg.colorScheme) ? tg.colorScheme
+      : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  }
+
+  function applyMode(mode, persist){
+    document.documentElement.setAttribute('data-theme', mode);
+    if (persist) { try { localStorage.setItem(THEME_KEY, mode); } catch(e){} }
+    var s = getComputedStyle(document.documentElement);
+    var surface = s.getPropertyValue('--surface').trim();
+    var bg = s.getPropertyValue('--bg').trim();
+    var metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', bg);
+    if (tg) { try { tg.setHeaderColor(surface); tg.setBackgroundColor(bg); } catch(e){} }
+  }
+
+  function toggleTheme(){
+    var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyMode(next, true);
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  }
+
+  function initTelegram(){
+    applyMode(resolveMode(), false);
+    if (tg) {
+      try {
+        tg.ready(); tg.expand();
+        tg.onEvent && tg.onEvent('themeChanged', function(){
+          var saved = null;
+          try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+          if (!saved) applyMode(resolveMode(), false);
+        });
+      } catch(e){}
+    }
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', toggleTheme);
+  }
+
+  try{ initTelegram(); }catch(e){}
+
+  /* ---------------- data (mirrors dispatcher's mock generation) ---------------- */
+  var CORRIDORS = [
+    { code:'M1', fullPrice:22, points:[
+      {name:'Минск, Центральный автовокзал', offset:0},{name:'Барановичи, АВ', offset:90},
+      {name:'Кобрин', offset:165},{name:'Брест, АВ', offset:195}]},
+    { code:'M5', fullPrice:20, points:[
+      {name:'Минск, Восточный автовокзал', offset:0},{name:'Бобруйск, АВ', offset:100},
+      {name:'Жлобин', offset:150},{name:'Гомель, АВ', offset:205}]},
+    { code:'M6', fullPrice:21, points:[
+      {name:'Минск, Центральный автовокзал', offset:0},{name:'Ивенец', offset:55},
+      {name:'Лида, АВ', offset:150},{name:'Гродно, АВ', offset:215}]},
+    { code:'M3', fullPrice:19, points:[
+      {name:'Минск, Центральный автовокзал', offset:0},{name:'Плещеницы', offset:60},
+      {name:'Лепель', offset:130},{name:'Витебск, АВ', offset:200}]},
+    { code:'M4', fullPrice:16, points:[
+      {name:'Минск, Восточный автовокзал', offset:0},{name:'Червень', offset:45},
+      {name:'Березино', offset:80},{name:'Могилёв, АВ', offset:140}]}
+  ];
+  var DRIVERS = ['Сергей Ковалёв','Алексей Дайнеко','Игорь Русак','Павел Шпак'];
+  var VEHICLES = [
+    { plate:'AI 1234-7', model:'Mercedes Sprinter', seats:16 },
+    { plate:'AI 5821-7', model:'Mercedes Sprinter', seats:16 },
+    { plate:'AI 0092-7', model:'Ford Transit', seats:18 },
+    { plate:'AI 7743-7', model:'Mercedes Sprinter', seats:16 }
+  ];
+  var NAME_POOL = ['Анна Ковалёва','Дмитрий Соколов','Ирина Петрова','Максим Гриб','Ольга Шевченко','Павел Литвин',
+    'Наталья Волк','Виктор Мороз','Екатерина Жук','Роман Савич','Татьяна Бондарь','Андрей Кот'];
+  var DOW = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  var MONTHS = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+  var SEATS_TOTAL = 16;
+  var TIMES = ['06:20','08:45','14:15','19:40'];
+
+  function cityOf(n){ return n.split(',')[0].trim(); }
+  function hashStr(s){ var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return h; }
+  function dateKey(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  function fmtDuration(min){
+    var h=Math.floor(min/60), m=min%60;
+    if(h===0) return m+' мин';
+    return h+' ч'+(m? ' '+m+' мин':'');
+  }
+  function genPhone(h){ var n=(h%9000000)+1000000; var s=''+n; return '+375 29 '+s.substr(0,3)+'-'+s.substr(3,2)+'-'+s.substr(5,2); }
+  function findCorridor(code){ for(var i=0;i<CORRIDORS.length;i++){ if(CORRIDORS[i].code===code) return CORRIDORS[i]; } return null; }
+  function orient(corridor, from, to){
+    var first=cityOf(corridor.points[0].name), last=cityOf(corridor.points[corridor.points.length-1].name);
+    if(first===from && last===to) return corridor.points;
+    var total = corridor.points[corridor.points.length-1].offset;
+    return corridor.points.slice().reverse().map(function(p){ return {name:p.name, offset: total-p.offset}; });
+  }
+
+  var PAIRS = [
+    {code:'M1', from:'Минск', to:'Брест'},
+    {code:'M5', from:'Минск', to:'Гомель'},
+    {code:'M6', from:'Минск', to:'Гродно'},
+    {code:'M3', from:'Минск', to:'Витебск'},
+    {code:'M4', from:'Минск', to:'Могилёв'},
+    {code:'M5', from:'Гомель', to:'Минск'}
+  ].map(function(p){
+    var c = findCorridor(p.code);
+    return { code:p.code, from:p.from, to:p.to, fullPrice:c.fullPrice, points: orient(c,p.from,p.to) };
+  });
+
+  var today0 = new Date(); today0.setHours(0,0,0,0);
+  var DATES = [0,1,2].map(function(i){ return new Date(today0.getFullYear(), today0.getMonth(), today0.getDate()+i); });
+  var TODAY_KEY = dateKey(today0);
+  var TODAY_LABEL = DOW[today0.getDay()]+', '+today0.getDate()+' '+MONTHS[today0.getMonth()];
+
+  var MOCK_TRIPS = [];
+  (function generate(){
+    var idCounter = 1;
+    DATES.forEach(function(d, di){
+      var dk = dateKey(d);
+      var label = di===0 ? 'Сегодня' : (di===1 ? 'Завтра' : (DOW[d.getDay()]+', '+d.getDate()+' '+MONTHS[d.getMonth()]));
+      PAIRS.forEach(function(pair){
+        TIMES.forEach(function(time){
+          var h = hashStr(dk+pair.code+pair.from+time);
+          var bookingsCount = h % 5;
+          var bookings = [], filled = 0;
+          for(var bi=0; bi<bookingsCount; bi++){
+            var bh = hashStr(dk+pair.code+time+bi+'b');
+            var seats = (bh % 2) + 1;
+            if(filled + seats > SEATS_TOTAL - 1) break;
+            var maxIdx = pair.points.length - 1;
+            var pIdx = bh % maxIdx;
+            var dIdx = pIdx + 1 + (Math.floor(bh/7) % (maxIdx - pIdx));
+            bookings.push({
+              id: idCounter+'-'+bi, name: NAME_POOL[bh % NAME_POOL.length], phone: genPhone(bh),
+              seats: seats, pickupIdx: pIdx, dropoffIdx: dIdx, status:'ожидание'
+            });
+            filled += seats;
+          }
+          var driverIdx = idCounter % (DRIVERS.length + 2);
+          MOCK_TRIPS.push({
+            id: idCounter++, code: pair.code, from: pair.from, to: pair.to, points: pair.points,
+            dateKey: dk, dateLabel: label, time: time, seatsTotal: SEATS_TOTAL,
+            driver: driverIdx < DRIVERS.length ? DRIVERS[driverIdx] : null,
+            vehicle: driverIdx < DRIVERS.length ? VEHICLES[driverIdx % VEHICLES.length] : null,
+            cancelled:false, driverStatus:'ожидание', driverAlert:null, bookings: bookings
+          });
+        });
+      });
+    });
+  })();
+
+  function tripFilled(t){ return t.bookings.reduce(function(s,b){ return s+b.seats; }, 0); }
+
+  /* ---------------- state ---------------- */
+  var currentDriver = null;
+  var openTripId = null;
+  var SCREEN_ORDER = ['select-driver','my-trips','trip-detail'];
+
+  function goTo(name){
+    document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+    var target = document.querySelector('.screen[data-screen="'+name+'"]');
+    target.classList.add('active'); target.scrollTop = 0;
+    document.getElementById('backBtn').classList.toggle('show', name==='trip-detail');
+    document.getElementById('switchDriverBtn').style.display = (name==='my-trips') ? 'block' : 'none';
+  }
+  document.getElementById('backBtn').addEventListener('click', function(){ goTo('my-trips'); });
+  document.getElementById('switchDriverBtn').addEventListener('click', function(){ goTo('select-driver'); });
+
+  /* ---------------- 1. select driver ---------------- */
+  function renderDriverList(){
+    var wrap = document.getElementById('driverList');
+    wrap.innerHTML = '';
+    DRIVERS.forEach(function(name){
+      var count = MOCK_TRIPS.filter(function(t){ return t.driver===name && t.dateKey===TODAY_KEY && !t.cancelled; }).length;
+      var initials = name.split(' ').map(function(p){ return p[0]; }).join('');
+      var card = document.createElement('div');
+      card.className = 'driver-card';
+      card.innerHTML = '<div class="avatar">'+initials+'</div>'+
+        '<div class="driver-info"><div class="driver-name">'+name+'</div>'+
+        '<div class="driver-sub">'+count+' '+(count===1?'рейс':'рейса')+' сегодня</div></div>'+
+        '<div class="chev">›</div>';
+      card.addEventListener('click', function(){
+        currentDriver = name;
+        renderMyTrips();
+        goTo('my-trips');
+      });
+      wrap.appendChild(card);
+    });
+  }
+
+  /* ---------------- 2. my trips ---------------- */
+  function renderMyTrips(){
+    document.getElementById('greeting').textContent = 'Здравствуйте, '+currentDriver.split(' ')[0]+'!';
+    document.getElementById('todayLabel').textContent = 'Сегодня, '+TODAY_LABEL;
+
+    var trips = MOCK_TRIPS.filter(function(t){ return t.driver===currentDriver && t.dateKey===TODAY_KEY; })
+      .sort(function(a,b){ return a.time.localeCompare(b.time); });
+
+    var wrap = document.getElementById('myTripsList');
+    if(trips.length===0){
+      wrap.innerHTML = '<div class="empty-state">На сегодня рейсов не назначено.<br>Хорошего дня!</div>';
+      return;
+    }
+
+    wrap.innerHTML = trips.map(function(t){
+      var filled = tripFilled(t);
+      var tagClass = t.cancelled ? 'tag-wait' : (t.driverStatus==='в пути' ? 'tag-live' : (t.driverStatus==='завершён' ? 'tag-done' : 'tag-wait'));
+      var tagLabel = t.cancelled ? 'отменён' : t.driverStatus;
+      var alertTag = '';
+      if(t.driverAlert){
+        var aClass = t.driverAlert.type==='опаздываю' ? 'tag-live' : 'tag-wait';
+        alertTag = '<span class="status-tag '+aClass+'" style="margin-left:6px;">'+t.driverAlert.type+'</span>';
+      }
+      return '<div class="trip-card" data-trip="'+t.id+'">'+
+        '<div class="trip-card-top">'+
+          '<div class="trip-time mono">'+t.time+'</div>'+
+          '<div class="trip-route"><div class="trip-route-cities">'+t.from+' → '+t.to+'</div>'+
+            '<div class="trip-route-sub"><span class="badge">'+t.code+'</span> '+filled+'/'+t.seatsTotal+' мест</div></div>'+
+          '<span class="status-tag '+tagClass+'">'+tagLabel+'</span>'+alertTag+
+        '</div>'+
+      '</div>';
+    }).join('');
+
+    wrap.querySelectorAll('.trip-card').forEach(function(card){
+      card.addEventListener('click', function(){ openTripId = +card.dataset.trip; renderTripDetail(); goTo('trip-detail'); });
+    });
+  }
+
+  /* ---------------- 3. trip detail ---------------- */
+  function currentTrip(){ return MOCK_TRIPS.filter(function(t){ return t.id===openTripId; })[0]; }
+
+  var DISPATCH_ICONS = {
+    clock: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.5 2"/></svg>',
+    wrench: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.6 5.6L3 18v3h3l6.1-6.1a4 4 0 0 0 5.6-5.6l-2.8 2.8-2-2 2.8-2.8Z"/></svg>'
+  };
+
+  function renderDispatchBlock(t){
+    var wrap = document.getElementById('dispatchBlock');
+    if(t.driverAlert){
+      var isLate = t.driverAlert.type==='опаздываю';
+      wrap.innerHTML =
+        '<div class="dispatch-card">'+
+          '<div class="dispatch-title">Связь с диспетчером</div>'+
+          '<div class="dispatch-alert '+(isLate?'late':'break')+'">'+
+            '<div class="dispatch-alert-icon">'+DISPATCH_ICONS[isLate?'clock':'wrench']+'</div>'+
+            '<div class="dispatch-alert-body"><div class="dispatch-alert-title">Диспетчер уведомлён: '+t.driverAlert.type+'</div>'+
+              '<div class="dispatch-alert-sub">Отправлено в '+t.driverAlert.time+'</div></div>'+
+          '</div>'+
+          '<button class="dispatch-undo" id="dispatchUndoBtn">Отменить сообщение</button>'+
+        '</div>';
+      document.getElementById('dispatchUndoBtn').addEventListener('click', function(){
+        t.driverAlert = null;
+        renderDispatchBlock(t);
+      });
+    } else {
+      wrap.innerHTML =
+        '<div class="dispatch-card">'+
+          '<div class="dispatch-title">Связь с диспетчером</div>'+
+          '<div class="dispatch-row">'+
+            '<button class="dispatch-btn" id="alertLateBtn">'+DISPATCH_ICONS.clock+'<span>Опаздываю</span></button>'+
+            '<button class="dispatch-btn" id="alertBreakBtn">'+DISPATCH_ICONS.wrench+'<span>Поломка</span></button>'+
+          '</div>'+
+        '</div>';
+      document.getElementById('alertLateBtn').addEventListener('click', function(){
+        t.driverAlert = { type:'опаздываю', time: nowTimeStr() };
+        renderDispatchBlock(t);
+        renderMyTrips();
+      });
+      document.getElementById('alertBreakBtn').addEventListener('click', function(){
+        t.driverAlert = { type:'поломка', time: nowTimeStr() };
+        renderDispatchBlock(t);
+        renderMyTrips();
+      });
+    }
+  }
+  function nowTimeStr(){
+    var d = new Date();
+    var h = d.getHours(), m = d.getMinutes();
+    return (h<10?'0':'')+h+':'+(m<10?'0':'')+m;
+  }
+
+  function renderTripDetail(){
+    var t = currentTrip();
+    document.getElementById('detailBadge').textContent = t.code;
+    document.getElementById('detailCities').textContent = t.from+' → '+t.to;
+    document.getElementById('detailSub').textContent = 'Отправление '+t.time+' · '+tripFilled(t)+'/'+t.seatsTotal+' мест'+
+      (t.vehicle ? ' · '+t.vehicle.plate+', '+t.vehicle.model : ' · ТС не назначено');
+    renderDispatchBlock(t);
+
+    var btn = document.getElementById('statusBtn');
+    if(t.driverStatus==='ожидание'){
+      btn.className = 'status-btn start'; btn.textContent = '▶  Начать рейс';
+    } else if(t.driverStatus==='в пути'){
+      btn.className = 'status-btn finish'; btn.textContent = '✔  Завершить рейс';
+    } else {
+      btn.className = 'status-btn done'; btn.textContent = '✓  Рейс завершён · открыть снова';
+    }
+    btn.onclick = function(){
+      if(t.driverStatus==='ожидание') t.driverStatus='в пути';
+      else if(t.driverStatus==='в пути') t.driverStatus='завершён';
+      else t.driverStatus='ожидание';
+      renderTripDetail();
+    };
+
+    var pointsWrap = document.getElementById('pointsList');
+    pointsWrap.innerHTML = '';
+    t.points.forEach(function(p, idx){
+      var pickups = t.bookings.filter(function(b){ return b.pickupIdx===idx; });
+      var dropoffs = t.bookings.filter(function(b){ return b.dropoffIdx===idx; });
+      var hasActivity = pickups.length>0 || dropoffs.length>0;
+
+      var block = document.createElement('div');
+      block.className = 'point-block';
+      var inner = '<div class="rail"><div class="rail-dot'+(hasActivity?' has-activity':'')+'"></div><div class="rail-line"></div></div>'+
+        '<div class="point-content"><div class="point-name">'+p.name+'</div><div class="point-offset">+'+fmtDuration(p.offset)+' от старта</div>';
+
+      if(pickups.length>0){
+        inner += '<div class="section-tag">Посадка</div>';
+        pickups.forEach(function(b){
+          if(b.status==='ожидание'){
+            inner += '<div class="pax-card" data-booking="'+b.id+'">'+
+              '<div class="pax-top"><span class="pax-name">'+b.name+'</span><span class="pax-seats mono">'+b.seats+' мест</span></div>'+
+              '<div class="pax-actions">'+
+                '<a class="pax-btn call" href="tel:'+b.phone.replace(/\s|-/g,'')+'">☎ Звонок</a>'+
+                '<button class="pax-btn board" data-action="посажен">✓ Посадил</button>'+
+                '<button class="pax-btn miss" data-action="не пришёл" aria-label="Не пришёл">✕</button>'+
+              '</div></div>';
+          } else {
+            var stClass = b.status==='посажен' ? 'st-board' : 'st-miss';
+            inner += '<div class="pax-card" data-booking="'+b.id+'">'+
+              '<div class="pax-top"><span class="pax-name">'+b.name+'</span><span class="pax-seats mono">'+b.seats+' мест</span></div>'+
+              '<div class="pax-status '+stClass+'">'+b.status+'</div></div>';
+          }
+        });
+      }
+      if(dropoffs.length>0){
+        inner += '<div class="section-tag">Высадка</div>';
+        dropoffs.forEach(function(b){
+          inner += '<div class="dropoff-card">Выходит <b>'+b.name+'</b> · '+b.seats+' мест</div>';
+        });
+      }
+
+      inner += '</div>';
+      block.innerHTML = inner;
+      pointsWrap.appendChild(block);
+    });
+
+    pointsWrap.querySelectorAll('.pax-card').forEach(function(card){
+      var boardBtn = card.querySelector('[data-action="посажен"]');
+      var missBtn = card.querySelector('[data-action="не пришёл"]');
+      if(boardBtn) boardBtn.addEventListener('click', function(){ setBookingStatus(card.dataset.booking, 'посажен'); });
+      if(missBtn) missBtn.addEventListener('click', function(){ setBookingStatus(card.dataset.booking, 'не пришёл'); });
+    });
+  }
+
+  function setBookingStatus(bookingId, status){
+    var t = currentTrip();
+    var b = t.bookings.filter(function(x){ return x.id===bookingId; })[0];
+    if(b){ b.status = status; renderTripDetail(); }
+  }
+
+  /* ---------------- init ---------------- */
+  renderDriverList();
+  goTo('select-driver');
+})();
+</script>
+</body>
+</html>

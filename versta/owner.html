@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10131A">
+<title>ВЕРСТА — владелец</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="palettes.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+(function(){
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var saved = null;
+  try { saved = localStorage.getItem('versta_theme_override'); } catch(e){}
+  var scheme = saved || ((tg && tg.colorScheme) ? tg.colorScheme
+    : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+  document.documentElement.setAttribute('data-theme', scheme);
+})();
+</script>
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:#05060a; font-family:'Manrope',sans-serif; color:var(--ink);
+    display:flex; justify-content:center; min-height:100vh; padding:28px 14px;
+  }
+  h1,h2,.display{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.03em; font-weight:600; margin:0;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button{font-family:inherit; cursor:pointer;}
+  *:focus-visible{outline:2px solid var(--accent2); outline-offset:2px;}
+
+  .phone{
+    position:relative; width:390px; height:844px; background:var(--bg);
+    border-radius:42px; overflow:hidden;
+    box-shadow:0 40px 90px rgba(0,0,0,.65), 0 0 0 9px #0b0d12, 0 0 0 10px #262b36;
+  }
+  @media (max-width:430px){ body{padding:0;} .phone{width:100%; height:100dvh; border-radius:0; box-shadow:none;} }
+
+  .topbar{height:52px; display:flex; align-items:center; justify-content:center; gap:6px; position:relative;}
+  .wordmark{font-family:'Oswald'; font-weight:700; font-size:15px; letter-spacing:.12em;}
+  .role-tag{font-family:'Manrope'; font-weight:700; font-size:9px; letter-spacing:0; text-transform:none;
+    color:var(--accent-ink); background:var(--accent); padding:2px 6px; border-radius:6px;}
+  .theme-toggle{
+    position:absolute; right:16px; top:50%; transform:translateY(-50%);
+    width:44px; height:44px; border-radius:50%;
+    background:var(--surface); border:none; color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:var(--shadow-sm);
+  }
+  .theme-toggle .icon-moon{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-sun{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-moon{display:block;}
+
+  .tab-content{position:absolute; top:52px; bottom:70px; left:0; right:0; overflow-y:auto; padding:6px 18px 24px;}
+
+  .tabbar{position:absolute; left:0; right:0; bottom:0; display:flex; background:var(--surface);
+    border-top:1px solid var(--border); padding:8px 0 max(20px, calc(8px + env(safe-area-inset-bottom))); z-index:4;}
+  .tab-btn{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none;
+    color:var(--ink-faint); font-size:10.5px; font-weight:700;}
+  .tab-btn.active{color:var(--accent-dark);}
+
+  .title{font-size:24px; margin:0 0 2px;}
+  .eyebrow{color:var(--ink-soft); font-size:12.5px; margin:0 0 16px;}
+  .section-label{font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin:20px 0 10px;}
+
+  .badge{font-family:'Oswald'; font-weight:700; font-size:10.5px; background:var(--accent); color:var(--accent-ink);
+    border:1.5px solid var(--ink); border-radius:5px; padding:1px 5px; box-shadow:0 0 0 2px var(--bg);}
+
+  /* KPI grid */
+  .kpi-grid{display:grid; grid-template-columns:1fr 1fr; gap:9px;}
+  .kpi-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px;}
+  .kpi-value{font-family:'JetBrains Mono'; font-weight:700; font-size:21px;}
+  .kpi-label{font-size:11px; color:var(--ink-soft); margin-top:4px; line-height:1.3;}
+
+  /* chart */
+  .chart-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:16px 14px 12px; margin-top:20px;}
+  .chart-title{font-size:13px; font-weight:700; margin-bottom:14px;}
+  .chart-bars{display:flex; align-items:flex-end; gap:8px; height:78px;}
+  .chart-col{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%;}
+  .chart-value{font-family:'JetBrains Mono'; font-size:9px; color:var(--ink-soft); margin-bottom:4px;}
+  .chart-bar{width:100%; max-width:26px; border-radius:6px 6px 3px 3px; background:var(--accent2);}
+  .chart-bar.today{background:var(--accent);}
+  .chart-day{font-size:10px; color:var(--ink-faint); margin-top:6px;}
+
+  /* rank rows (top routes) */
+  .rank-row{display:flex; align-items:center; gap:11px; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-md); padding:12px; margin-bottom:8px;}
+  .rank-num{font-family:'JetBrains Mono'; font-weight:700; color:var(--ink-faint); font-size:14px; width:16px;}
+  .rank-mid{flex:1; min-width:0;}
+  .rank-cities{font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:6px; margin-bottom:6px;}
+  .rank-bar{height:4px; border-radius:2px; background:var(--surface-2); overflow:hidden;}
+  .rank-bar-fill{height:100%; background:var(--accent); border-radius:2px;}
+  .rank-value{font-family:'JetBrains Mono'; font-weight:700; font-size:13.5px; white-space:nowrap;}
+
+  /* route cards (Маршруты tab) */
+  .route-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px; margin-bottom:10px;}
+  .route-top{display:flex; align-items:center; gap:8px; margin-bottom:10px;}
+  .route-cities{font-size:15px; font-weight:700; flex:1;}
+  .occ-bar{height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; margin-bottom:8px;}
+  .occ-bar-fill{height:100%; border-radius:3px;}
+  .route-stats{display:flex; justify-content:space-between; font-size:11.5px; color:var(--ink-soft);}
+  .route-stats b{color:var(--ink); font-family:'JetBrains Mono'; font-weight:700;}
+
+  /* driver cards (Водители tab) */
+  .drv-card{display:flex; gap:13px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-lg); padding:14px; margin-bottom:10px;}
+  .avatar{width:44px; height:44px; border-radius:50%; background:var(--surface-2); border:1.5px solid var(--accent);
+    display:flex; align-items:center; justify-content:center; font-family:'Oswald'; font-weight:700; font-size:14px;
+    color:var(--accent-dark); flex:0 0 auto;}
+  .drv-info{flex:1;}
+  .drv-name{font-size:14.5px; font-weight:700; margin-bottom:7px;}
+  .drv-stats{display:flex; gap:14px; flex-wrap:wrap;}
+  .drv-stat{font-size:11px; color:var(--ink-soft);}
+  .drv-stat b{color:var(--ink); font-family:'JetBrains Mono'; font-weight:700; display:block; font-size:14px;}
+  .drv-empty{color:var(--ink-faint); font-size:12.5px; padding-top:4px;}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="topbar">
+    <span class="wordmark">ВЕРСТА</span>
+    <span class="role-tag">владелец · демо</span>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Переключить тему">
+      <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12h2.5M19 12h2.5M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>
+      <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+    </button>
+  </div>
+
+  <div class="tab-content" id="tabContent"></div>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab="overview">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 19V10"/><path d="M12 19V5"/><path d="M20 19v-7"/></svg>
+      <span>Обзор</span>
+    </button>
+    <button class="tab-btn" data-tab="routes">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="19" r="2" fill="currentColor"/><circle cx="19" cy="5" r="2" fill="currentColor"/><line x1="7" y1="17" x2="17" y2="7" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.4 2.4" stroke-linecap="round"/></svg>
+      <span>Маршруты</span>
+    </button>
+    <button class="tab-btn" data-tab="drivers">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="3.4"/><path d="M5 20c1.2-3.6 4-5.4 7-5.4s5.8 1.8 7 5.4" stroke-linecap="round"/></svg>
+      <span>Водители</span>
+    </button>
+  </nav>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var tg = window.Telegram ? window.Telegram.WebApp : null;
+  var THEME_KEY = 'versta_theme_override';
+
+  function resolveMode(){
+    var saved = null;
+    try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+    if (saved) return saved;
+    return (tg && tg.colorScheme) ? tg.colorScheme
+      : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  }
+
+  function applyMode(mode, persist){
+    document.documentElement.setAttribute('data-theme', mode);
+    if (persist) { try { localStorage.setItem(THEME_KEY, mode); } catch(e){} }
+    var s = getComputedStyle(document.documentElement);
+    var surface = s.getPropertyValue('--surface').trim();
+    var bg = s.getPropertyValue('--bg').trim();
+    var metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', bg);
+    if (tg) { try { tg.setHeaderColor(surface); tg.setBackgroundColor(bg); } catch(e){} }
+  }
+
+  function toggleTheme(){
+    var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyMode(next, true);
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  }
+
+  function initTelegram(){
+    applyMode(resolveMode(), false);
+    if (tg) {
+      try {
+        tg.ready(); tg.expand();
+        tg.onEvent && tg.onEvent('themeChanged', function(){
+          var saved = null;
+          try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+          if (!saved) applyMode(resolveMode(), false);
+        });
+      } catch(e){}
+    }
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', toggleTheme);
+  }
+
+  try{ initTelegram(); }catch(e){}
+
+  /* ---------------- data ---------------- */
+  var CORRIDORS = [
+    { code:'M1', fullPrice:22, points:[
+      {name:'Минск, Центральный автовокзал', offset:0},{name:'Барановичи, АВ', offset:90},
+      {name:'Кобрин', offset:165},{name:'Брест, АВ', offset:195}]},
+    { code:'M5', fullPrice:20, points:[
+      {name:'Минск, Восточный автовокзал', offset:0},{name:'Бобруйск, АВ', offset:100},
+      {name:'Жлобин', offset:150},{name:'Гомель, АВ', offset:205}]},
+    { code:'M6', fullPrice:21, points:[
+      {name:'Минск, Центральный автовокзал', offset:0},{name:'Ивенец', offset:55},
+      {name:'Лида, АВ', offset:150},{name:'Гродно, АВ', offset:215}]},
+    { code:'M3', fullPrice:19, points:[
+      {name:'Минск, Центральный автовокзал', offset:0},{name:'Плещеницы', offset:60},
+      {name:'Лепель', offset:130},{name:'Витебск, АВ', offset:200}]},
+    { code:'M4', fullPrice:16, points:[
+      {name:'Минск, Восточный автовокзал', offset:0},{name:'Червень', offset:45},
+      {name:'Березино', offset:80},{name:'Могилёв, АВ', offset:140}]}
+  ];
+  var DRIVERS = ['Сергей Ковалёв','Алексей Дайнеко','Игорь Русак','Павел Шпак'];
+  var DOW = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  var SEATS_TOTAL = 16;
+  var TIMES = ['06:20','08:45','14:15','19:40'];
+
+  function cityOf(n){ return n.split(',')[0].trim(); }
+  function hashStr(s){ var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return h; }
+  function dateKey(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  function findCorridor(code){ for(var i=0;i<CORRIDORS.length;i++){ if(CORRIDORS[i].code===code) return CORRIDORS[i]; } return null; }
+  function orient(corridor, from, to){
+    var first=cityOf(corridor.points[0].name), last=cityOf(corridor.points[corridor.points.length-1].name);
+    if(first===from && last===to) return corridor.points;
+    var total = corridor.points[corridor.points.length-1].offset;
+    return corridor.points.slice().reverse().map(function(p){ return {name:p.name, offset: total-p.offset}; });
+  }
+  function segmentPrice(fullPrice, points, fromIdx, toIdx){
+    var total = points[points.length-1].offset;
+    var perMin = fullPrice/total;
+    return Math.max(5, Math.round((points[toIdx].offset - points[fromIdx].offset)*perMin));
+  }
+
+  var PAIRS = [
+    {code:'M1', from:'Минск', to:'Брест'},
+    {code:'M5', from:'Минск', to:'Гомель'},
+    {code:'M6', from:'Минск', to:'Гродно'},
+    {code:'M3', from:'Минск', to:'Витебск'},
+    {code:'M4', from:'Минск', to:'Могилёв'},
+    {code:'M5', from:'Гомель', to:'Минск'}
+  ].map(function(p){
+    var c = findCorridor(p.code);
+    return { code:p.code, from:p.from, to:p.to, fullPrice:c.fullPrice, points: orient(c,p.from,p.to) };
+  });
+
+  var today0 = new Date(); today0.setHours(0,0,0,0);
+  var WINDOW = [];
+  for(var i=6;i>=0;i--){ WINDOW.push(new Date(today0.getFullYear(), today0.getMonth(), today0.getDate()-i)); }
+
+  /* generate 7-day historical trip set */
+  var TRIPS = [];
+  (function generate(){
+    var idCounter = 1;
+    WINDOW.forEach(function(d, di){
+      var dk = dateKey(d);
+      PAIRS.forEach(function(pair){
+        TIMES.forEach(function(time){
+          var h = hashStr(dk+pair.code+pair.from+time);
+          var bookingsCount = h % 6; // 0-5
+          var bookings = [], filled = 0;
+          for(var bi=0; bi<bookingsCount; bi++){
+            var bh = hashStr(dk+pair.code+time+bi+'o');
+            var seats = (bh % 2) + 1;
+            if(filled + seats > SEATS_TOTAL) break;
+            var maxIdx = pair.points.length - 1;
+            var pIdx = bh % maxIdx;
+            var dIdx = pIdx + 1 + (Math.floor(bh/7) % (maxIdx - pIdx));
+            var status = (bh % 9 === 0) ? 'не пришёл' : 'посажен';
+            var price = segmentPrice(pair.fullPrice, pair.points, pIdx, dIdx) * seats;
+            bookings.push({ seats:seats, pickupIdx:pIdx, dropoffIdx:dIdx, status:status, price:price });
+            filled += seats;
+          }
+          var driverIdx = idCounter % (DRIVERS.length + 2);
+          TRIPS.push({
+            id: idCounter++, code: pair.code, from: pair.from, to: pair.to,
+            dayIndex: di, dateKey: dk, time: time, seatsTotal: SEATS_TOTAL,
+            driver: driverIdx < DRIVERS.length ? DRIVERS[driverIdx] : null,
+            filled: filled, bookings: bookings,
+            revenue: bookings.reduce(function(s,b){ return s+b.price; }, 0)
+          });
+        });
+      });
+    });
+  })();
+
+  /* ---------------- aggregates ---------------- */
+  var dailyRevenue = WINDOW.map(function(d,di){
+    return TRIPS.filter(function(t){ return t.dayIndex===di; }).reduce(function(s,t){ return s+t.revenue; }, 0);
+  });
+  var totalRevenue = dailyRevenue.reduce(function(a,b){ return a+b; }, 0);
+  var todayRevenue = dailyRevenue[6];
+  var todayBookings = TRIPS.filter(function(t){ return t.dayIndex===6; }).reduce(function(s,t){ return s+t.bookings.length; }, 0);
+  var totalFilled = TRIPS.reduce(function(s,t){ return s+t.filled; }, 0);
+  var totalCap = TRIPS.reduce(function(s,t){ return s+t.seatsTotal; }, 0);
+  var avgOccupancy = totalCap ? Math.round(totalFilled/totalCap*100) : 0;
+
+  var routeAgg = PAIRS.map(function(p){
+    var trips = TRIPS.filter(function(t){ return t.code===p.code && t.from===p.from && t.to===p.to; });
+    var revenue = trips.reduce(function(s,t){ return s+t.revenue; }, 0);
+    var filled = trips.reduce(function(s,t){ return s+t.filled; }, 0);
+    var cap = trips.reduce(function(s,t){ return s+t.seatsTotal; }, 0);
+    return { code:p.code, from:p.from, to:p.to, revenue:revenue, occ: cap?Math.round(filled/cap*100):0, trips: trips.length };
+  }).sort(function(a,b){ return b.revenue-a.revenue; });
+
+  var driverAgg = DRIVERS.map(function(name){
+    var trips = TRIPS.filter(function(t){ return t.driver===name; });
+    var passengers = trips.reduce(function(s,t){ return s + t.bookings.reduce(function(x,b){ return x+b.seats; },0); }, 0);
+    var noShows = trips.reduce(function(s,t){ return s + t.bookings.filter(function(b){ return b.status==='не пришёл'; }).length; }, 0);
+    var filled = trips.reduce(function(s,t){ return s+t.filled; }, 0);
+    var cap = trips.reduce(function(s,t){ return s+t.seatsTotal; }, 0);
+    return { name:name, trips: trips.length, passengers: passengers, noShows: noShows, occ: cap?Math.round(filled/cap*100):0 };
+  });
+
+  /* ---------------- render ---------------- */
+  var currentTab = 'overview';
+
+  function renderOverview(){
+    var maxRev = Math.max.apply(null, dailyRevenue.concat([1]));
+    var html = '<h1 class="title">Обзор</h1><p class="eyebrow">Последние 7 дней</p>';
+
+    html += '<div class="kpi-grid">'+
+      '<div class="kpi-card"><div class="kpi-value mono">'+todayRevenue+' BYN</div><div class="kpi-label">Выручка сегодня</div></div>'+
+      '<div class="kpi-card"><div class="kpi-value mono">'+totalRevenue+' BYN</div><div class="kpi-label">Выручка за 7 дней</div></div>'+
+      '<div class="kpi-card"><div class="kpi-value mono">'+todayBookings+'</div><div class="kpi-label">Броней сегодня</div></div>'+
+      '<div class="kpi-card"><div class="kpi-value mono">'+avgOccupancy+'%</div><div class="kpi-label">Средняя заполняемость</div></div>'+
+    '</div>';
+
+    html += '<div class="chart-card"><div class="chart-title">Выручка по дням, BYN</div><div class="chart-bars">';
+    WINDOW.forEach(function(d, di){
+      var h = Math.max(4, Math.round(dailyRevenue[di]/maxRev*70));
+      html += '<div class="chart-col">'+
+        '<div class="chart-value">'+dailyRevenue[di]+'</div>'+
+        '<div class="chart-bar'+(di===6?' today':'')+'" style="height:'+h+'px;"></div>'+
+        '<div class="chart-day">'+(di===6?'сег.':DOW[d.getDay()])+'</div>'+
+      '</div>';
+    });
+    html += '</div></div>';
+
+    html += '<p class="section-label">Топ направлений</p>';
+    var maxRouteRev = routeAgg[0] ? routeAgg[0].revenue : 1;
+    routeAgg.slice(0,5).forEach(function(r, i){
+      html += '<div class="rank-row"><div class="rank-num">'+(i+1)+'</div>'+
+        '<div class="rank-mid"><div class="rank-cities"><span class="badge">'+r.code+'</span>'+r.from+' → '+r.to+'</div>'+
+          '<div class="rank-bar"><div class="rank-bar-fill" style="width:'+Math.round(r.revenue/maxRouteRev*100)+'%;"></div></div></div>'+
+        '<div class="rank-value">'+r.revenue+' BYN</div></div>';
+    });
+
+    document.getElementById('tabContent').innerHTML = html;
+  }
+
+  function occColor(pct){ return pct>=85 ? 'var(--accent2)' : (pct>=50 ? 'var(--accent)' : 'var(--warn)'); }
+
+  function renderRoutes(){
+    var html = '<h1 class="title">Маршруты</h1><p class="eyebrow">Заполняемость и выручка за 7 дней</p>';
+    routeAgg.forEach(function(r){
+      html += '<div class="route-card">'+
+        '<div class="route-top"><span class="badge">'+r.code+'</span><span class="route-cities">'+r.from+' → '+r.to+'</span>'+
+          '<span class="mono" style="font-weight:700; font-size:13px; color:'+occColor(r.occ)+';">'+r.occ+'%</span></div>'+
+        '<div class="occ-bar"><div class="occ-bar-fill" style="width:'+r.occ+'%; background:'+occColor(r.occ)+';"></div></div>'+
+        '<div class="route-stats"><span>Рейсов: <b>'+r.trips+'</b></span><span>Выручка: <b>'+r.revenue+' BYN</b></span></div>'+
+      '</div>';
+    });
+    document.getElementById('tabContent').innerHTML = html;
+  }
+
+  function renderDrivers(){
+    var html = '<h1 class="title">Водители</h1><p class="eyebrow">Показатели за 7 дней</p>';
+    driverAgg.forEach(function(d){
+      var initials = d.name.split(' ').map(function(p){ return p[0]; }).join('');
+      html += '<div class="drv-card"><div class="avatar">'+initials+'</div><div class="drv-info">'+
+        '<div class="drv-name">'+d.name+'</div>';
+      if(d.trips===0){
+        html += '<div class="drv-empty">Рейсов за период не было</div>';
+      } else {
+        html += '<div class="drv-stats">'+
+          '<div class="drv-stat"><b>'+d.trips+'</b>рейсов</div>'+
+          '<div class="drv-stat"><b>'+d.passengers+'</b>пассажиров</div>'+
+          '<div class="drv-stat"><b style="color:'+(d.noShows>0?'var(--danger)':'var(--ink)')+';">'+d.noShows+'</b>не пришли</div>'+
+          '<div class="drv-stat"><b style="color:'+occColor(d.occ)+';">'+d.occ+'%</b>загрузка</div>'+
+        '</div>';
+      }
+      html += '</div></div>';
+    });
+    document.getElementById('tabContent').innerHTML = html;
+  }
+
+  function renderTab(){
+    if(currentTab==='overview') renderOverview();
+    else if(currentTab==='routes') renderRoutes();
+    else renderDrivers();
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentTab = btn.dataset.tab;
+      renderTab();
+    });
+  });
+
+  renderTab();
+})();
+</script>
+</body>
+</html>

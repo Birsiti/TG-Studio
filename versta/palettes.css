@@ -1,0 +1,86 @@
+/* ============================================================
+   palettes.css — цветовые токены ВЕРСТА (светлая/тёмная тема)
+   Подключается ДО основного <style> в client.html / admin.html /
+   driver.html / owner.html / platform.html.
+
+   Тема переключается атрибутом data-theme на <html>:
+   [data-theme="dark"] | [data-theme="light"] — выбирает каждый
+   пользователь лично (тумблер в шапке), по умолчанию берётся из
+   tg.colorScheme / prefers-color-scheme (см. initTelegram() в конце
+   каждого файла).
+
+   Компоненты в <style> каждого файла используют ТОЛЬКО эти
+   переменные, не хардкодят цвета брендовых ролей.
+   ============================================================ */
+
+:root{
+  --radius-lg:16px;
+  --radius-md:14px;
+  --radius-sm:12px;
+}
+
+:root[data-theme="dark"]{
+  --bg:#10131A;
+  --surface:#1A1F29;
+  --surface-2:#232936;
+  --ink:#F1F3F7;
+  --ink-soft:#8891A3;
+  --ink-faint:#5B6373;
+  --border:rgba(255,255,255,0.08);
+
+  --accent:#FF9640;         /* амбер — основной CTA/бренд */
+  --accent-dark:#A05000;    /* для color: на светлых поверхностях */
+  --accent-soft:rgba(255,150,64,.16);
+  --accent-ink:#241300;     /* текст поверх заливки --accent */
+
+  --accent2:#2FD9B9;        /* бирюза — вторичный акцент/декор */
+  --accent2-dark:#0E7A64;
+  --accent2-soft:rgba(47,217,185,.14);
+
+  --success:#2FD9B9;        /* семантика "подтверждено/на месте" — та же бирюза */
+  --success-dark:#0E7A64;
+  --success-soft:rgba(47,217,185,.14);
+
+  --warn:#FFC53D;
+  --warn-dark:#8A5D00;
+  --warn-soft:rgba(255,197,61,.16);
+
+  --danger:#FF5C6C;
+  --danger-dark:#C7202F;
+  --danger-soft:rgba(255,92,108,.12);
+
+  --shadow-sm:0 4px 14px rgba(0,0,0,.35);
+}
+
+:root[data-theme="light"]{
+  --bg:#EEF1F6;
+  --surface:#FFFFFF;
+  --surface-2:#E7EBF1;
+  --ink:#12151C;
+  --ink-soft:#5B6373;
+  --ink-faint:#8891A3;
+  --border:rgba(10,14,22,0.09);
+
+  --accent:#FF9640;
+  --accent-dark:#A05000;
+  --accent-soft:rgba(255,150,64,.16);
+  --accent-ink:#241300;
+
+  --accent2:#2FD9B9;
+  --accent2-dark:#0E7A64;
+  --accent2-soft:rgba(47,217,185,.14);
+
+  --success:#2FD9B9;
+  --success-dark:#0E7A64;
+  --success-soft:rgba(47,217,185,.14);
+
+  --warn:#FFC53D;
+  --warn-dark:#8A5D00;
+  --warn-soft:rgba(255,197,61,.16);
+
+  --danger:#FF5C6C;
+  --danger-dark:#C7202F;
+  --danger-soft:rgba(255,92,108,.12);
+
+  --shadow-sm:0 4px 14px rgba(20,24,32,.12);
+}

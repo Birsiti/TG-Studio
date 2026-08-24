@@ -1,0 +1,43 @@
+/*
+  Цветовые схемы (акцентные палитры) — БРИТВА (барбершоп).
+  Подключать этот файл ПЕРЕД инлайн-<style> каждого html
+  (barbershop-client.html/barbershop-admin.html/barbershop-owner.html),
+  чтобы переопределения по специфичности [data-brand] уверенно били по-умолчанию
+  прописанным в html цветам, независимо от порядка каскада.
+
+  Схема хранения: document.documentElement.dataset.brand
+  ("klassika" | "indigo" | "tabak" | "myata"),
+  сохраняется в localStorage под ключом color_scheme_override
+  (см. applyBrand()/getBrand() в каждом html).
+
+  "klassika" — схема по умолчанию, её значения уже зашиты в :root/:root[data-theme="light"]
+  каждого html-файла, поэтому отдельного блока [data-brand="klassika"] здесь нет.
+
+  Меняются только --accent/--accent-dark/--accent-soft/--on-accent — фон, поверхности,
+  текст и сигнатурная красно-золотая полоса цирюльника (--red) остаются одинаковыми
+  во всех схемах: полоса — фирменный неизменный элемент бренда, а не акцент.
+*/
+
+/* ИНДИГО — глубокий сине-фиолетовый */
+:root[data-brand="indigo"]{
+  --accent:#6C6FC4; --accent-dark:#4F52A0; --accent-soft:rgba(108,111,196,.16); --on-accent:#FFFFFF;
+}
+:root[data-brand="indigo"][data-theme="light"]{
+  --accent:#4A4DAA; --accent-dark:#383A85; --accent-soft:rgba(74,77,170,.12); --on-accent:#FFFFFF;
+}
+
+/* ТАБАК — медь и выдержанный табак */
+:root[data-brand="tabak"]{
+  --accent:#B5652E; --accent-dark:#8F4E22; --accent-soft:rgba(181,101,46,.16); --on-accent:#FFFFFF;
+}
+:root[data-brand="tabak"][data-theme="light"]{
+  --accent:#8A4A1E; --accent-dark:#6B3814; --accent-soft:rgba(138,74,30,.12); --on-accent:#FFFFFF;
+}
+
+/* МЯТА — приглушённый мятный */
+:root[data-brand="myata"]{
+  --accent:#4E9C8C; --accent-dark:#3B7A6D; --accent-soft:rgba(78,156,140,.16); --on-accent:#0E211D;
+}
+:root[data-brand="myata"][data-theme="light"]{
+  --accent:#35766A; --accent-dark:#285951; --accent-soft:rgba(53,118,106,.12); --on-accent:#FFFFFF;
+}

@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>Оставить заявку — TG-Studio</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<script>
+(function(){
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var saved;
+  try { saved = localStorage.getItem('ob_mode_override'); } catch(e) {}
+  var scheme = (saved === 'light' || saved === 'dark') ? saved
+    : (tg && tg.colorScheme) ? tg.colorScheme
+    : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  document.documentElement.setAttribute('data-theme', scheme);
+})();
+</script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+  :root{
+    --radius:14px; --radius-sm:10px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  :root[data-theme="dark"]{
+    --bg:#111417; --surface:#1A1E22; --surface-2:#20252A; --surface-3:#262B31;
+    --ink:#EDEFF0; --ink-soft:#8C949C; --ink-faint:#565D64;
+    --accent:#7C5CFC; --accent-dark:#6144D9; --accent-soft:rgba(124,92,252,.16);
+    --ok:#38A89D; --ok-soft:rgba(56,168,157,.14);
+    --danger:#E5626A; --danger-soft:rgba(229,98,106,.12);
+    --line:#2A2F35; --line-strong:#3A414A;
+  }
+  :root[data-theme="light"]{
+    --bg:#F4F6F8; --surface:#FFFFFF; --surface-2:#EEF1F4; --surface-3:#E4E8EC;
+    --ink:#171A1D; --ink-soft:#5B6570; --ink-faint:#98A1AA;
+    --accent:#7C5CFC; --accent-dark:#6144D9; --accent-soft:rgba(124,92,252,.12);
+    --ok:#2E9B8F; --ok-soft:rgba(46,155,143,.12);
+    --danger:#D6505A; --danger-soft:rgba(214,80,90,.10);
+    --line:#E2E6EA; --line-strong:#CDD3D9;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{background:var(--bg);color:var(--ink);font-family:'Inter',sans-serif;font-size:15px;line-height:1.5;
+    height:100vh;overflow:hidden;display:flex;flex-direction:column;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  h1,h2,h3{font-family:'Chakra Petch',sans-serif;font-weight:600;margin:0;}
+  button{font-family:inherit;border:none;cursor:pointer;background:none;color:inherit;}
+
+  .power-rail{height:3px;background:linear-gradient(90deg,var(--accent-dark),var(--accent),var(--ok));flex-shrink:0;}
+
+  /* header */
+  header{flex-shrink:0;padding:calc(12px + var(--safe-top)) 16px 12px;background:var(--surface);
+    border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;}
+  .back-btn,.icon-btn{width:44px;height:44px;border-radius:10px;background:var(--surface-2);display:flex;
+    align-items:center;justify-content:center;flex-shrink:0;color:var(--ink-soft);transition:background .15s,color .15s;}
+  .back-btn svg,.icon-btn svg{width:18px;height:18px;}
+  .icon-btn:active{background:var(--surface-3);}
+  .hdr-info{flex:1;min-width:0;}
+  .hdr-actions{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+  .hdr-title{font-size:16px;letter-spacing:.01em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hdr-sub{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-soft);margin-top:2px;font-family:'JetBrains Mono',monospace;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .dot-live{width:6px;height:6px;border-radius:50%;background:var(--ok);flex-shrink:0;
+    box-shadow:0 0 0 0 rgba(56,168,157,.6);animation:pulse 2s infinite;}
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(56,168,157,.5);}
+    70%{box-shadow:0 0 0 6px rgba(56,168,157,0);}
+    100%{box-shadow:0 0 0 0 rgba(56,168,157,0);}
+  }
+
+  /* content */
+  .content{flex:1;overflow-y:auto;padding:20px 16px calc(24px + var(--safe-bottom));
+    -webkit-overflow-scrolling:touch;}
+  .intro{margin-bottom:22px;}
+  .intro h1{font-size:20px;letter-spacing:.01em;margin-bottom:6px;}
+  .intro p{margin:0;color:var(--ink-soft);font-size:14px;line-height:1.55;overflow-wrap:break-word;}
+
+  form{display:flex;flex-direction:column;gap:18px;}
+  .field > label{display:block;font-family:'JetBrains Mono',monospace;font-size:11px;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--ink-faint);margin-bottom:7px;}
+  .field > label .req{color:var(--accent);}
+  .field > input[type="text"],
+  .field > input[type="tel"],
+  .field > textarea{width:100%;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--radius-sm);
+    padding:13px 14px;color:var(--ink);font-family:'Inter',sans-serif;font-size:16px;outline:none;
+    transition:border-color .15s;}
+  .field > textarea{resize:none;min-height:96px;line-height:1.5;}
+  .field > input::placeholder,.field > textarea::placeholder{color:var(--ink-faint);}
+  .field > input:focus,.field > textarea:focus{border-color:var(--accent);}
+  .field.invalid > input,.field.invalid > textarea{border-color:var(--danger);}
+  .field-error{display:none;color:var(--danger);font-size:12.5px;margin-top:6px;line-height:1.4;}
+  .field.invalid .field-error{display:block;}
+
+  .phone-row{display:flex;align-items:center;gap:8px;background:var(--surface-2);border:1px solid var(--line);
+    border-radius:var(--radius-sm);padding:0 14px;transition:border-color .15s;}
+  .phone-row:focus-within{border-color:var(--accent);}
+  .field.invalid .phone-row{border-color:var(--danger);}
+  .phone-prefix{color:var(--ink-soft);font-weight:600;flex-shrink:0;}
+  .phone-row input{flex:1;min-width:0;background:transparent;border:none;box-shadow:none;padding:13px 0;
+    color:var(--ink);font-family:'JetBrains Mono',monospace;font-size:16px;outline:none;
+    -webkit-appearance:none;appearance:none;border-radius:0;}
+  .phone-row input::placeholder{color:var(--ink-faint);}
+  .phone-row input:-webkit-autofill{
+    -webkit-text-fill-color:var(--ink);
+    -webkit-box-shadow:0 0 0 1000px var(--surface-2) inset;
+    transition:background-color 9999s ease-in-out 0s;
+  }
+
+  .chip-group{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{position:relative;display:flex;align-items:center;justify-content:center;min-height:44px;
+    padding:0 16px;border-radius:22px;border:1px solid var(--line-strong);background:var(--surface-2);
+    font-size:13.5px;color:var(--ink-soft);transition:background .15s,border-color .15s,color .15s;}
+  .chip input{position:absolute;inset:0;opacity:0;margin:0;cursor:pointer;}
+  .chip.active{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+  /* submit bar */
+  .submit-bar{flex-shrink:0;padding:12px 16px calc(12px + var(--safe-bottom));background:var(--surface);
+    border-top:1px solid var(--line);}
+  .submit-btn{width:100%;min-height:50px;border-radius:var(--radius-sm);background:var(--accent);color:#fff;
+    font-family:'Inter',sans-serif;font-size:15.5px;font-weight:600;display:flex;align-items:center;
+    justify-content:center;gap:9px;transition:opacity .2s,transform .15s;}
+  .submit-btn:active{transform:scale(.98);}
+  .submit-btn.disabled{opacity:.5;pointer-events:none;}
+  .spinner{width:16px;height:16px;border-radius:50%;border:2px solid rgba(255,255,255,.35);
+    border-top-color:#fff;animation:spin .7s linear infinite;flex-shrink:0;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .submit-error{display:none;color:var(--danger);font-size:12.5px;text-align:center;margin-top:10px;}
+  .submit-error.show{display:block;}
+
+  /* success state */
+  .success-panel{display:flex;flex-direction:column;align-items:center;text-align:center;
+    padding:36px 12px 12px;animation:rise .35s ease both;}
+  @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  .success-icon{width:56px;height:56px;border-radius:50%;background:var(--ok-soft);display:flex;
+    align-items:center;justify-content:center;margin-bottom:18px;flex-shrink:0;}
+  .success-icon svg{width:26px;height:26px;color:var(--ok);}
+  .success-panel h2{font-size:19px;margin-bottom:8px;}
+  .success-panel p{margin:0;color:var(--ink-soft);font-size:14px;max-width:280px;line-height:1.55;}
+  .restart-btn{margin-top:22px;color:var(--accent);font-size:13.5px;font-family:'JetBrains Mono',monospace;
+    text-decoration:underline;min-height:44px;display:flex;align-items:center;}
+
+  .hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<div class="power-rail"></div>
+
+<header>
+  <div class="back-btn" id="backBtn">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+  </div>
+  <div class="hdr-info">
+    <div class="hdr-title">Оставить заявку</div>
+    <div class="hdr-sub"><span class="dot-live"></span>TG-Studio · ответим быстро</div>
+  </div>
+  <div class="hdr-actions">
+    <button class="icon-btn" id="accentBtn" title="Сменить цвет" aria-label="Сменить цвет акцента">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c-5.5 0-10-4-10-9a10 10 0 0 1 10-10c5 0 9 3.5 9 8a5 5 0 0 1-5 5h-1.5a1.5 1.5 0 0 0-1.06 2.56c.44.44.56 1 .56 1.44a2 2 0 0 1-2 2z"/><circle cx="7" cy="10" r="1" fill="currentColor"/><circle cx="10" cy="6.5" r="1" fill="currentColor"/><circle cx="14.5" cy="6.5" r="1" fill="currentColor"/><circle cx="17" cy="10.5" r="1" fill="currentColor"/></svg>
+    </button>
+    <button class="icon-btn" id="modeBtn" title="Светлая/тёмная тема" aria-label="Переключить тему">
+      <svg id="modeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+    </button>
+  </div>
+</header>
+
+<div class="content" id="content">
+
+  <div class="intro" id="intro">
+    <h1>Расскажите о задаче</h1>
+    <p>Оставьте контакты и пару слов о том, что нужно автоматизировать — команда свяжется и обсудит детали.</p>
+  </div>
+
+  <form id="leadForm" novalidate>
+    <div class="field" id="fieldName">
+      <label for="fldName">Имя <span class="req">*</span></label>
+      <input type="text" id="fldName" name="name" autocomplete="name" placeholder="Как к вам обращаться">
+      <div class="field-error" id="errName" role="alert"></div>
+    </div>
+
+    <div class="field" id="fieldPhone">
+      <label for="fldPhone">Телефон <span class="req">*</span></label>
+      <div class="phone-row">
+        <span class="phone-prefix mono">+375</span>
+        <input type="tel" id="fldPhone" name="phone" autocomplete="tel" inputmode="numeric" placeholder="29-123-45-67" maxlength="12">
+      </div>
+      <div class="field-error" id="errPhone" role="alert"></div>
+    </div>
+
+    <div class="field" id="fieldBusiness">
+      <label for="fldBusiness">Сфера бизнеса</label>
+      <input type="text" id="fldBusiness" name="business" autocomplete="organization" placeholder="Например: салон красоты">
+    </div>
+
+    <div class="field" id="fieldTask">
+      <label for="fldTask">Что нужно автоматизировать <span class="req">*</span></label>
+      <textarea id="fldTask" name="task" rows="4" placeholder="Опишите в двух словах: запись, каталог, доставка…"></textarea>
+      <div class="field-error" id="errTask" role="alert"></div>
+    </div>
+
+    <div class="field">
+      <label>Бюджет</label>
+      <div class="chip-group" id="budgetGroup" role="radiogroup" aria-label="Бюджет">
+        <label class="chip"><input type="radio" name="budget" value="До 500 BYN"><span class="mono">До 500 BYN</span></label>
+        <label class="chip"><input type="radio" name="budget" value="500–1500 BYN"><span class="mono">500–1500 BYN</span></label>
+        <label class="chip"><input type="radio" name="budget" value="1500+ BYN"><span class="mono">1500+ BYN</span></label>
+        <label class="chip"><input type="radio" name="budget" value="Обсудим"><span>Обсудим</span></label>
+      </div>
+    </div>
+  </form>
+
+  <div class="success-panel hidden" id="successPanel">
+    <div class="success-icon">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+    </div>
+    <h2>Заявка отправлена</h2>
+    <p>Мы получили ваши данные и свяжемся в ближайшее время, чтобы обсудить детали.</p>
+    <span class="restart-btn" id="restartBtn">Отправить ещё одну заявку</span>
+  </div>
+
+</div>
+
+<div class="submit-bar" id="submitBar">
+  <button class="submit-btn" id="submitBtn">
+    <span id="submitBtnLabel">Отправить заявку</span>
+  </button>
+  <div class="submit-error" id="submitError" role="alert">Не получилось отправить. Проверьте соединение и попробуйте ещё раз.</div>
+</div>
+
+<script>
+/* ============================================================ CONFIG ============================================================ */
+// ВРЕМЕННО (быстрый вариант, пока нет бэкенда): заявка уходит в Telegram
+// напрямую из клиента. Токен виден в исходнике страницы — это тот же риск,
+// что привёл к утечке предыдущего токена, поэтому он: (1) НОВЫЙ, старый уже
+// невалиден, (2) должен быть переведён на бэкенд (Apps Script / Cloudflare
+// Worker, см. carwash-miniapp/BACKEND-README.md), как только он появится —
+// тогда просто удалить botToken отсюда и подставить apiUrl.
+const CONFIG = {
+  workerUrl: 'https://tg-studio-leads.birsiti.workers.dev',
+};
+
+/* ============================================================ TELEGRAM ============================================================ */
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+function haptic(style) {
+  if (tg && tg.HapticFeedback) {
+    if (["success","error","warning"].includes(style)) tg.HapticFeedback.notificationOccurred(style);
+    else tg.HapticFeedback.impactOccurred(style || "light");
+  }
+}
+
+/* ---- светлая/тёмная тема: выбор пользователя приоритетнее темы Telegram ---- */
+const MODE_KEY = "ob_mode_override";
+const MODE_ICONS = {
+  light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  dark: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>',
+};
+function resolveMode() {
+  let saved;
+  try { saved = localStorage.getItem(MODE_KEY); } catch(e) {}
+  if (saved === "light" || saved === "dark") return saved;
+  return (tg && tg.colorScheme) ? tg.colorScheme
+    : (matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark");
+}
+function updateModeIcon() {
+  const mode = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  document.getElementById("modeIcon").innerHTML = MODE_ICONS[mode];
+}
+
+/* ---- цвет акцента: несколько готовых палитр на выбор (демо для клиента) ---- */
+const ACCENT_KEY = "ob_accent_override";
+const ACCENT_PALETTES = [
+  { dark: { accent:"#7C5CFC", accentDark:"#6144D9", accentSoft:"rgba(124,92,252,.16)" }, light: { accent:"#7C5CFC", accentDark:"#6144D9", accentSoft:"rgba(124,92,252,.12)" } },
+  { dark: { accent:"#2AABEE", accentDark:"#1B8FCB", accentSoft:"rgba(42,171,238,.16)" }, light: { accent:"#2AABEE", accentDark:"#1B8FCB", accentSoft:"rgba(42,171,238,.12)" } },
+  { dark: { accent:"#2FC7B0", accentDark:"#1FA491", accentSoft:"rgba(47,199,176,.16)" }, light: { accent:"#209985", accentDark:"#187C6C", accentSoft:"rgba(32,153,133,.12)" } },
+  { dark: { accent:"#F2A93B", accentDark:"#D68C1F", accentSoft:"rgba(242,169,59,.16)" }, light: { accent:"#DB8F1F", accentDark:"#B87515", accentSoft:"rgba(219,143,31,.12)" } },
+  { dark: { accent:"#F0578E", accentDark:"#D13E74", accentSoft:"rgba(240,87,142,.16)" }, light: { accent:"#DB3E77", accentDark:"#B92E62", accentSoft:"rgba(219,62,119,.12)" } },
+];
+function currentAccentIndex() {
+  let saved;
+  try { saved = parseInt(localStorage.getItem(ACCENT_KEY), 10); } catch(e) {}
+  return (Number.isInteger(saved) && ACCENT_PALETTES[saved]) ? saved : 0;
+}
+function applyAccent(index) {
+  const mode = document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark";
+  const c = ACCENT_PALETTES[index][mode];
+  const root = document.documentElement.style;
+  root.setProperty("--accent", c.accent);
+  root.setProperty("--accent-dark", c.accentDark);
+  root.setProperty("--accent-soft", c.accentSoft);
+  try { localStorage.setItem(ACCENT_KEY, index); } catch(e) {}
+}
+
+function applyThemeUI() {
+  document.documentElement.setAttribute("data-theme", resolveMode());
+  updateModeIcon();
+  applyAccent(currentAccentIndex());
+}
+function applyTelegramTheme() {
+  applyThemeUI();
+  if (tg) {
+    const s = getComputedStyle(document.documentElement);
+    try { tg.setHeaderColor(s.getPropertyValue("--surface").trim()); tg.setBackgroundColor(s.getPropertyValue("--bg").trim()); } catch(e) {}
+  }
+}
+function initTelegram() {
+  applyTelegramTheme();
+  if (!tg) return;
+  tg.ready(); tg.expand();
+  tg.onEvent && tg.onEvent("themeChanged", applyTelegramTheme);
+  if (tg.isVersionAtLeast && tg.isVersionAtLeast("7.7")) { try { tg.disableVerticalSwipes(); } catch(e) {} }
+}
+document.getElementById("backBtn").addEventListener("click", () => {
+  haptic("light");
+  if (tg && tg.close) tg.close(); else history.back();
+});
+document.getElementById("modeBtn").addEventListener("click", () => {
+  haptic("light");
+  const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+  try { localStorage.setItem(MODE_KEY, next); } catch(e) {}
+  applyTelegramTheme();
+});
+document.getElementById("accentBtn").addEventListener("click", () => {
+  haptic("light");
+  applyAccent((currentAccentIndex() + 1) % ACCENT_PALETTES.length);
+});
+
+/* ============================================================ FORM ============================================================ */
+const form = document.getElementById("leadForm");
+const submitBtn = document.getElementById("submitBtn");
+const submitBtnLabel = document.getElementById("submitBtnLabel");
+const submitError = document.getElementById("submitError");
+const budgetGroup = document.getElementById("budgetGroup");
+
+const PHONE_PREFIX = "+375";
+function fullPhone(v) { return PHONE_PREFIX + v.replace(/\D/g, ""); }
+function bindPhoneMask(el) {
+  el.addEventListener("input", () => {
+    const digits = el.value.replace(/\D/g, "").slice(0, 9);
+    let out = digits;
+    if (digits.length > 2) out = digits.slice(0, 2) + "-" + digits.slice(2);
+    if (digits.length > 5) out = digits.slice(0, 2) + "-" + digits.slice(2, 5) + "-" + digits.slice(5);
+    if (digits.length > 7) out = digits.slice(0, 2) + "-" + digits.slice(2, 5) + "-" + digits.slice(5, 7) + "-" + digits.slice(7);
+    el.value = out;
+  });
+}
+bindPhoneMask(document.getElementById("fldPhone"));
+
+const FIELDS = [
+  { key: "name", label: "Имя", fieldId: "fieldName", errId: "errName", inputId: "fldName",
+    validate: v => v.trim().length >= 2 ? "" : "Укажите имя" },
+  { key: "phone", label: "Телефон", fieldId: "fieldPhone", errId: "errPhone", inputId: "fldPhone",
+    validate: v => v.replace(/\D/g, "").length === 9 ? "" : "Укажите номер полностью — 9 цифр после +375" },
+  { key: "task", label: "Задача", fieldId: "fieldTask", errId: "errTask", inputId: "fldTask",
+    validate: v => v.trim().length >= 5 ? "" : "Расскажите, что нужно" },
+];
+
+budgetGroup.querySelectorAll("input[type=radio]").forEach(radio => {
+  radio.addEventListener("change", () => {
+    budgetGroup.querySelectorAll(".chip").forEach(chip => chip.classList.remove("active"));
+    radio.closest(".chip").classList.add("active");
+  });
+});
+
+function validateField(f) {
+  const input = document.getElementById(f.inputId);
+  const fieldEl = document.getElementById(f.fieldId);
+  const errEl = document.getElementById(f.errId);
+  const msg = f.validate(input.value);
+  fieldEl.classList.toggle("invalid", !!msg);
+  errEl.textContent = msg;
+  return !msg;
+}
+
+FIELDS.forEach(f => {
+  document.getElementById(f.inputId).addEventListener("blur", () => validateField(f));
+});
+
+function validateAll() {
+  let firstInvalid = null;
+  let allValid = true;
+  FIELDS.forEach(f => {
+    const ok = validateField(f);
+    if (!ok) {
+      allValid = false;
+      if (!firstInvalid) firstInvalid = document.getElementById(f.inputId);
+    }
+  });
+  if (firstInvalid) firstInvalid.focus();
+  return allValid;
+}
+
+function collectPayload() {
+  const budget = budgetGroup.querySelector("input[type=radio]:checked");
+  return {
+    name: document.getElementById("fldName").value.trim(),
+    phone: fullPhone(document.getElementById("fldPhone").value),
+    business: document.getElementById("fldBusiness").value.trim(),
+    task: document.getElementById("fldTask").value.trim(),
+    budget: budget ? budget.value : "не выбран",
+    tg_id: tg && tg.initDataUnsafe && tg.initDataUnsafe.user ? String(tg.initDataUnsafe.user.id) : '',
+  };
+}
+
+function buildMessage(p) {
+  return [
+    "🆕 Новая заявка (order-bot)",
+    `Имя: ${p.name}`,
+    `Телефон: ${p.phone}`,
+    `Сфера: ${p.business || "не указано"}`,
+    `Задача: ${p.task}`,
+    `Бюджет: ${p.budget}`,
+  ].join("\n");
+}
+
+async function sendLead(payload) {
+  if (!CONFIG.workerUrl || CONFIG.workerUrl.startsWith("PASTE_")) {
+    await new Promise(r => setTimeout(r, 500));
+    return;
+  }
+  const res = await fetch(CONFIG.workerUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  const data = await res.json();
+  if (!res.ok || !data.ok) throw new Error("send_failed");
+}
+
+function setLoading(loading) {
+  submitBtn.classList.toggle("disabled", loading);
+  submitBtnLabel.textContent = loading ? "Отправка…" : "Отправить заявку";
+  if (loading) {
+    const spinner = document.createElement("span");
+    spinner.className = "spinner";
+    spinner.id = "submitSpinner";
+    submitBtn.insertBefore(spinner, submitBtnLabel);
+  } else {
+    const s = document.getElementById("submitSpinner");
+    if (s) s.remove();
+  }
+}
+
+function showSuccess() {
+  document.getElementById("intro").classList.add("hidden");
+  form.classList.add("hidden");
+  document.getElementById("successPanel").classList.remove("hidden");
+  document.getElementById("submitBar").classList.add("hidden");
+  haptic("success");
+}
+
+function resetForm() {
+  form.reset();
+  budgetGroup.querySelectorAll(".chip").forEach(chip => chip.classList.remove("active"));
+  FIELDS.forEach(f => {
+    document.getElementById(f.fieldId).classList.remove("invalid");
+    document.getElementById(f.errId).textContent = "";
+  });
+  submitError.classList.remove("show");
+  document.getElementById("intro").classList.remove("hidden");
+  form.classList.remove("hidden");
+  document.getElementById("successPanel").classList.add("hidden");
+  document.getElementById("submitBar").classList.remove("hidden");
+}
+document.getElementById("restartBtn").addEventListener("click", resetForm);
+
+submitBtn.addEventListener("click", async () => {
+  submitError.classList.remove("show");
+  if (!validateAll()) { haptic("error"); return; }
+
+  setLoading(true);
+  try {
+    const payload = collectPayload();
+    await sendLead(payload);
+    showSuccess();
+  } catch (e) {
+    submitError.classList.add("show");
+    haptic("error");
+  } finally {
+    setLoading(false);
+  }
+});
+
+/* ============================================================ INIT ============================================================ */
+initTelegram();
+</script>
+</body>
+</html>

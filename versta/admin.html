@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10131A">
+<title>ВЕРСТА — диспетчер</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="palettes.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+(function(){
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var saved = null;
+  try { saved = localStorage.getItem('versta_theme_override'); } catch(e){}
+  var scheme = saved || ((tg && tg.colorScheme) ? tg.colorScheme
+    : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+  document.documentElement.setAttribute('data-theme', scheme);
+})();
+</script>
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:#05060a; font-family:'Manrope',sans-serif; color:var(--ink);
+    display:flex; justify-content:center; min-height:100vh; padding:28px 14px;
+  }
+  h1,h2,h3,.display{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.03em; font-weight:600; margin:0;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button,select,input{font-family:inherit;}
+  button{cursor:pointer;}
+  *:focus-visible{outline:2px solid var(--accent2); outline-offset:2px;}
+
+  .phone{
+    position:relative; width:390px; height:844px; background:var(--bg);
+    border-radius:42px; overflow:hidden;
+    box-shadow:0 40px 90px rgba(0,0,0,.65), 0 0 0 9px #0b0d12, 0 0 0 10px #262b36;
+  }
+  @media (max-width:430px){ body{padding:0;} .phone{width:100%; height:100dvh; border-radius:0; box-shadow:none;} }
+
+  .topbar{height:52px; display:flex; align-items:center; justify-content:center; gap:6px; position:relative;}
+  .wordmark{font-family:'Oswald'; font-weight:700; font-size:15px; letter-spacing:.12em;}
+  .role-tag{font-family:'Manrope'; font-weight:700; font-size:9px; letter-spacing:0; text-transform:none;
+    color:var(--accent-ink); background:var(--accent); padding:2px 6px; border-radius:6px;}
+  .theme-toggle{
+    position:absolute; right:16px; top:50%; transform:translateY(-50%);
+    width:44px; height:44px; border-radius:50%;
+    background:var(--surface); border:none; color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:var(--shadow-sm);
+  }
+  .theme-toggle .icon-moon{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-sun{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-moon{display:block;}
+
+  .tab-content{position:absolute; top:52px; bottom:70px; left:0; right:0; overflow-y:auto; padding:6px 18px 24px;}
+
+  .tabbar{position:absolute; left:0; right:0; bottom:0; display:flex; background:var(--surface);
+    border-top:1px solid var(--border); padding:8px 0 max(20px, calc(8px + env(safe-area-inset-bottom))); z-index:4;}
+  .tab-btn{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none;
+    color:var(--ink-faint); font-size:10.5px; font-weight:700;}
+  .tab-btn svg{display:block;}
+  .tab-btn.active{color:var(--accent-dark);}
+
+  .eyebrow{color:var(--ink-soft); font-size:12px; margin:2px 0 0;}
+  .title{font-size:24px; margin:0 0 14px;}
+  .row-between{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;}
+
+  .btn{border:none; border-radius:var(--radius-sm); padding:11px 16px; font-weight:700; font-size:13px;}
+  .btn-primary{background:var(--accent); color:var(--accent-ink);}
+  .btn-secondary{background:var(--surface-2); color:var(--ink); border:1px solid var(--border);}
+  .btn-danger{background:var(--danger-soft); color:var(--danger-dark); border:1px solid rgba(255,92,108,.3);}
+  .btn-block{width:100%;}
+  .btn-sm{padding:7px 12px; font-size:12px; border-radius:9px;}
+
+  .badge{font-family:'Oswald'; font-weight:700; font-size:10.5px; background:var(--accent); color:var(--accent-ink);
+    border:1.5px solid var(--ink); border-radius:5px; padding:1px 5px; box-shadow:0 0 0 2px var(--bg);}
+
+  /* stat cards */
+  .stat-row{display:flex; gap:8px; margin-bottom:16px;}
+  .stat-card{flex:1; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:11px;}
+  .stat-num{font-family:'JetBrains Mono'; font-weight:700; font-size:19px;}
+  .stat-num.warn{color:var(--warn-dark);}
+  .stat-label{font-size:10.5px; color:var(--ink-soft); margin-top:2px;}
+
+  /* date strip (reused pattern) */
+  .date-strip{display:flex; gap:8px; margin-bottom:14px;}
+  .date-btn{flex:1; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-sm); padding:9px 0; text-align:center;}
+  .date-btn.active{background:var(--accent); border-color:var(--accent);}
+  .date-btn .dow{font-size:10.5px; color:var(--ink-soft);}
+  .date-btn.active .dow{color:var(--accent-ink);}
+  .date-btn .num{font-family:'Oswald'; font-size:16px; font-weight:600; margin-top:1px;}
+  .date-btn.active .num{color:var(--accent-ink);}
+
+  /* trip row */
+  .trip-row{display:flex; gap:12px; align-items:center; background:var(--surface); border:1px solid var(--border);
+    border-radius:var(--radius-md); padding:12px; margin-bottom:9px;}
+  .trip-row.cancelled{opacity:.45;}
+  .trip-row.trip-alert-late{border-color:rgba(255,197,61,.4); background:rgba(255,197,61,.05);}
+  .trip-row.trip-alert-break{border-color:rgba(255,92,108,.4); background:rgba(255,92,108,.05);}
+  .trip-time{font-family:'JetBrains Mono'; font-weight:700; font-size:17px; min-width:50px;}
+  .trip-mid{flex:1; min-width:0;}
+  .trip-route{display:flex; align-items:center; gap:6px; font-size:13.5px; font-weight:600;}
+  .seat-bar-wrap{margin-top:6px;}
+  .seat-bar{height:4px; border-radius:2px; background:var(--surface-2); overflow:hidden;}
+  .seat-bar-fill{height:100%; border-radius:2px;}
+  .seat-bar-label{font-size:10.5px; color:var(--ink-soft); margin-top:3px;}
+  .driver-tag{font-size:11px; font-weight:600; text-align:right; white-space:nowrap;}
+  .driver-tag.unassigned{color:var(--warn-dark);}
+  .driver-tag.assigned{color:var(--ink-soft);}
+
+  .empty-state{text-align:center; color:var(--ink-soft); padding:40px 10px; font-size:13.5px;}
+
+  /* status chips */
+  .status-chip{font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:8px; white-space:nowrap;}
+  .st-wait{background:var(--surface-2); color:var(--ink-soft);}
+  .st-board{background:var(--success-soft); color:var(--success-dark);}
+  .st-no{background:rgba(255,92,108,.14); color:var(--danger-dark);}
+  .st-cancel{background:var(--surface-2); color:var(--ink-faint); text-decoration:line-through;}
+  .st-late{background:var(--warn-soft); color:var(--warn-dark);}
+  .st-break{background:rgba(255,92,108,.16); color:var(--danger-dark);}
+
+  /* bookings list */
+  .search-wrap{margin-bottom:10px;}
+  .search-wrap input{width:100%; background:var(--surface); border:1px solid var(--border); color:var(--ink);
+    border-radius:var(--radius-sm); padding:11px 14px; font-size:14px;}
+  .filter-chips{display:flex; gap:7px; overflow-x:auto; margin-bottom:14px;}
+  .filter-chip{flex:0 0 auto; background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:7px 11px; font-size:12px; font-weight:600; color:var(--ink-soft);}
+  .filter-chip.active{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+  .booking-row{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; margin-bottom:9px;}
+  .booking-top{display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px;}
+  .booking-name{font-weight:700; font-size:14px;}
+  .booking-sub{font-size:11.5px; color:var(--ink-soft); margin-top:2px;}
+  .booking-bottom{display:flex; justify-content:space-between; align-items:center; font-size:11.5px; color:var(--ink-soft);}
+
+  /* panels */
+  .panel-overlay{position:absolute; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none;
+    transition:opacity .2s ease; z-index:6;}
+  .panel-overlay.open{opacity:1; pointer-events:auto;}
+  .panel{position:absolute; left:0; right:0; bottom:0; top:9%; background:var(--bg); border-radius:22px 22px 0 0;
+    transform:translateY(100%); transition:transform .25s ease; z-index:7; display:flex; flex-direction:column;
+    box-shadow:0 -10px 30px rgba(0,0,0,.4);}
+  .panel.open{transform:translateY(0);}
+  .panel-header{display:flex; align-items:center; gap:10px; padding:16px 18px 12px; border-bottom:1px solid var(--border);}
+  .panel-header h2{font-size:17px; flex:1;}
+  .close-btn{width:44px; height:44px; border-radius:50%; background:var(--surface); border:none; color:var(--ink); font-size:17px; flex:0 0 auto;}
+  .panel-body{flex:1; overflow-y:auto; padding:16px 18px 30px;}
+
+  .field{margin-bottom:13px;}
+  .field label{font-size:11.5px; color:var(--ink-soft); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em;}
+  .field select,.field input{width:100%; background:var(--surface); border:1px solid var(--border); color:var(--ink);
+    border-radius:var(--radius-sm); padding:12px 13px; font-size:14.5px; font-family:inherit;}
+  .field select{appearance:none;}
+
+  .cancel-banner{background:var(--danger-soft); color:var(--danger-dark); border-radius:var(--radius-sm); padding:10px 13px;
+    font-size:12.5px; font-weight:600; margin-bottom:14px;}
+
+  .driver-alert-banner{display:flex; align-items:center; justify-content:space-between; gap:10px;
+    border-radius:var(--radius-sm); padding:11px 13px; margin-bottom:14px; font-size:12.5px;}
+  .driver-alert-banner.late{background:rgba(255,197,61,.13); border:1px solid rgba(255,197,61,.3);}
+  .driver-alert-banner.break{background:rgba(255,92,108,.12); border:1px solid rgba(255,92,108,.3);}
+
+  .passenger-row{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; margin-bottom:9px;}
+  .passenger-top{display:flex; justify-content:space-between; align-items:flex-start; gap:8px;}
+  .passenger-name{font-weight:700; font-size:14px;}
+  .passenger-phone{font-size:11.5px; color:var(--accent2-dark); margin-top:2px;}
+  .passenger-route{font-size:11.5px; color:var(--ink-soft); margin-top:6px;}
+  .passenger-actions{display:flex; gap:7px; margin-top:9px;}
+  .seats-pill{font-family:'JetBrains Mono'; font-size:11px; font-weight:700; background:var(--surface-2);
+    border-radius:7px; padding:2px 7px;}
+
+  .section-label{font-size:11.5px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin:16px 0 10px;}
+
+  /* templates */
+  .template-row{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:12px; margin-bottom:9px;}
+  .template-row.inactive{opacity:.5;}
+  .template-top{display:flex; align-items:center; gap:8px; margin-bottom:9px;}
+  .template-route{flex:1; font-size:13.5px; font-weight:700;}
+  .template-time{font-family:'JetBrains Mono'; font-weight:700; font-size:14px;}
+  .template-days{display:flex; gap:4px;}
+  .template-day-dot{width:19px; height:19px; border-radius:5px; background:var(--surface-2); color:var(--ink-faint);
+    font-size:9px; font-weight:700; display:flex; align-items:center; justify-content:center;}
+  .template-day-dot.on{background:var(--accent); color:var(--accent-ink);}
+  .template-off-tag{font-size:10.5px; color:var(--ink-faint); margin-top:7px;}
+
+  .day-chips{display:flex; gap:5px;}
+  .day-chip{flex:1; text-align:center; padding:9px 0; border-radius:9px; background:var(--surface); border:1px solid var(--border);
+    font-size:11.5px; font-weight:700; color:var(--ink-soft);}
+  .day-chip.active{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+
+  .toggle-switch{position:relative; width:42px; height:24px; border-radius:var(--radius-sm); background:var(--surface); border:1px solid var(--border); flex:0 0 auto;}
+  .toggle-switch::after{content:''; position:absolute; top:2px; left:2px; width:18px; height:18px; border-radius:50%;
+    background:var(--ink-faint); transition:transform .18s ease, background .18s ease;}
+  .toggle-switch.on{background:rgba(47,217,185,.16); border-color:var(--accent2);}
+  .toggle-switch.on::after{background:var(--accent2); transform:translateX(18px);}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="topbar">
+    <span class="wordmark">ВЕРСТА</span>
+    <span class="role-tag">диспетчер · демо</span>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Переключить тему">
+      <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12h2.5M19 12h2.5M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>
+      <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+    </button>
+  </div>
+
+  <div class="tab-content" id="tabContent"></div>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab="today">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="8.3"/><path d="M12 7.5V12l3 2" stroke-linecap="round"/></svg>
+      <span>Сегодня</span>
+    </button>
+    <button class="tab-btn" data-tab="trips">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><circle cx="5" cy="19" r="2" fill="currentColor"/><circle cx="19" cy="5" r="2" fill="currentColor"/><line x1="7" y1="17" x2="17" y2="7" stroke="currentColor" stroke-width="1.8" stroke-dasharray="2.4 2.4" stroke-linecap="round"/></svg>
+      <span>Рейсы</span>
+    </button>
+    <button class="tab-btn" data-tab="templates">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15.5-6.5L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15.5 6.5L3 16"/><path d="M3 21v-5h5"/></svg>
+      <span>Шаблоны</span>
+    </button>
+    <button class="tab-btn" data-tab="bookings">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v1a1.5 1.5 0 0 0 0 3v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1a1.5 1.5 0 0 0 0-3V9Z"/><line x1="14" y1="7.3" x2="14" y2="16.7" stroke-dasharray="1.8 1.8"/></svg>
+      <span>Брони</span>
+    </button>
+  </nav>
+
+  <div class="panel-overlay" id="panelOverlay"></div>
+
+  <div class="panel" id="tripPanel">
+    <div class="panel-header">
+      <h2 id="tripPanelTitle">Рейс</h2>
+      <button class="close-btn" id="tripPanelClose" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="panel-body" id="tripPanelBody"></div>
+  </div>
+
+  <div class="panel" id="addPanel">
+    <div class="panel-header">
+      <h2>Новый рейс</h2>
+      <button class="close-btn" id="addPanelClose" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="panel-body">
+      <div class="field">
+        <label for="addRoute">Направление</label>
+        <select id="addRoute"></select>
+      </div>
+      <div class="field">
+        <label for="addDate">Дата</label>
+        <input type="date" id="addDate">
+      </div>
+      <div class="field">
+        <label for="addTime">Время отправления</label>
+        <input type="time" id="addTime" value="06:20">
+      </div>
+      <div class="field">
+        <label for="addSeats">Мест всего</label>
+        <input type="number" id="addSeats" value="16" min="1" max="30">
+      </div>
+      <div class="field">
+        <label for="addDriver">Водитель</label>
+        <select id="addDriver"></select>
+      </div>
+      <button class="btn btn-primary btn-block" id="addSubmit">Добавить рейс</button>
+    </div>
+  </div>
+
+  <div class="panel" id="templatePanel">
+    <div class="panel-header">
+      <h2 id="templatePanelTitle">Шаблон</h2>
+      <button class="close-btn" id="templatePanelClose" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="panel-body" id="templatePanelBody"></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var tg = window.Telegram ? window.Telegram.WebApp : null;
+  var THEME_KEY = 'versta_theme_override';
+
+  function resolveMode(){
+    var saved = null;
+    try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+    if (saved) return saved;
+    return (tg && tg.colorScheme) ? tg.colorScheme
+      : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  }
+
+  function applyMode(mode, persist){
+    document.documentElement.setAttribute('data-theme', mode);
+    if (persist) { try { localStorage.setItem(THEME_KEY, mode); } catch(e){} }
+    var s = getComputedStyle(document.documentElement);
+    var surface = s.getPropertyValue('--surface').trim();
+    var bg = s.getPropertyValue('--bg').trim();
+    var metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', bg);
+    if (tg) { try { tg.setHeaderColor(surface); tg.setBackgroundColor(bg); } catch(e){} }
+  }
+
+  function toggleTheme(){
+    var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyMode(next, true);
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  }
+
+  function initTelegram(){
+    applyMode(resolveMode(), false);
+    if (tg) {
+      try {
+        tg.ready(); tg.expand();
+        tg.onEvent && tg.onEvent('themeChanged', function(){
+          var saved = null;
+          try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+          if (!saved) applyMode(resolveMode(), false);
+        });
+      } catch(e){}
+    }
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', toggleTheme);
+  }
+
+  try{ initTelegram(); }catch(e){}
+
+  /* ---------------- data ---------------- */
+  var CORRIDORS = [
+    { code:'M1', fullPrice:22, points:[
+      {name:'Минск, Центральный автовокзал', offset:0},{name:'Барановичи, АВ', offset:90},
+      {name:'Кобрин', offset:165},{name:'Брест, АВ', offset:195}]},
+    { code:'M5', fullPrice:20, points:[
+      {name:'Минск, Восточный автовокзал', offset:0},{name:'Бобруйск, АВ', offset:100},
+      {name:'Жлобин', offset:150},{name:'Гомель, АВ', offset:205}]},
+    { code:'M6', fullPrice:21, points:[
+      {name:'Минск, Центральный автовокзал', offset:0},{name:'Ивенец', offset:55},
+      {name:'Лида, АВ', offset:150},{name:'Гродно, АВ', offset:215}]},
+    { code:'M3', fullPrice:19, points:[
+      {name:'Минск, Центральный автовокзал', offset:0},{name:'Плещеницы', offset:60},
+      {name:'Лепель', offset:130},{name:'Витебск, АВ', offset:200}]},
+    { code:'M4', fullPrice:16, points:[
+      {name:'Минск, Восточный автовокзал', offset:0},{name:'Червень', offset:45},
+      {name:'Березино', offset:80},{name:'Могилёв, АВ', offset:140}]}
+  ];
+  var DRIVERS = ['Сергей Ковалёв','Алексей Дайнеко','Игорь Русак','Павел Шпак'];
+  var VEHICLES = [
+    { plate:'AI 1234-7', model:'Mercedes Sprinter', seats:16 },
+    { plate:'AI 5821-7', model:'Mercedes Sprinter', seats:16 },
+    { plate:'AI 0092-7', model:'Ford Transit', seats:18 },
+    { plate:'AI 7743-7', model:'Mercedes Sprinter', seats:16 }
+  ];
+  var NAME_POOL = ['Анна Ковалёва','Дмитрий Соколов','Ирина Петрова','Максим Гриб','Ольга Шевченко','Павел Литвин',
+    'Наталья Волк','Виктор Мороз','Екатерина Жук','Роман Савич','Татьяна Бондарь','Андрей Кот'];
+  var DOW = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  var MONTHS = ['янв','фев','мар','апр','мая','июн','июл','авг','сен','окт','ноя','дек'];
+  var SEATS_TOTAL = 16;
+  var TIMES = ['06:20','08:45','14:15','19:40'];
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  function cityOf(n){ return n.split(',')[0].trim(); }
+  function hashStr(s){ var h=0; for(var i=0;i<s.length;i++){ h=(h*31+s.charCodeAt(i))>>>0; } return h; }
+  function ruPlural(n, one, few, many){
+    var m10=n%10, m100=n%100;
+    if(m10===1 && m100!==11) return one;
+    if(m10>=2 && m10<=4 && (m100<10 || m100>=20)) return few;
+    return many;
+  }
+  function dateKey(d){ return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
+  function isoDate(d){ var m=d.getMonth()+1,day=d.getDate(); return d.getFullYear()+'-'+(m<10?'0':'')+m+'-'+(day<10?'0':'')+day; }
+  function genPhone(h){ var n=(h%9000000)+1000000; var s=''+n; return '+375 29 '+s.substr(0,3)+'-'+s.substr(3,2)+'-'+s.substr(5,2); }
+  function findCorridor(code){ for(var i=0;i<CORRIDORS.length;i++){ if(CORRIDORS[i].code===code) return CORRIDORS[i]; } return null; }
+  function orient(corridor, from, to){
+    var first=cityOf(corridor.points[0].name), last=cityOf(corridor.points[corridor.points.length-1].name);
+    if(first===from && last===to) return corridor.points;
+    var total = corridor.points[corridor.points.length-1].offset;
+    return corridor.points.slice().reverse().map(function(p){ return {name:p.name, offset: total-p.offset}; });
+  }
+
+  var PAIRS = [
+    {code:'M1', from:'Минск', to:'Брест'},
+    {code:'M5', from:'Минск', to:'Гомель'},
+    {code:'M6', from:'Минск', to:'Гродно'},
+    {code:'M3', from:'Минск', to:'Витебск'},
+    {code:'M4', from:'Минск', to:'Могилёв'},
+    {code:'M5', from:'Гомель', to:'Минск'}
+  ].map(function(p){
+    var c = findCorridor(p.code);
+    return { code:p.code, from:p.from, to:p.to, fullPrice:c.fullPrice, points: orient(c,p.from,p.to) };
+  });
+
+  var today0 = new Date(); today0.setHours(0,0,0,0);
+  var DATES = [0,1,2].map(function(i){ return new Date(today0.getFullYear(), today0.getMonth(), today0.getDate()+i); });
+  var TODAY_KEY = dateKey(today0);
+
+  var MOCK_TRIPS = [];
+  (function generate(){
+    var idCounter = 1;
+    DATES.forEach(function(d, di){
+      var dk = dateKey(d);
+      var label = di===0 ? 'Сегодня' : (di===1 ? 'Завтра' : (DOW[d.getDay()]+', '+d.getDate()+' '+MONTHS[d.getMonth()]));
+      PAIRS.forEach(function(pair){
+        TIMES.forEach(function(time){
+          var h = hashStr(dk+pair.code+pair.from+time);
+          var bookingsCount = h % 5;
+          var bookings = [], filled = 0;
+          for(var bi=0; bi<bookingsCount; bi++){
+            var bh = hashStr(dk+pair.code+time+bi+'b');
+            var seats = (bh % 2) + 1;
+            if(filled + seats > SEATS_TOTAL - 1) break;
+            var maxIdx = pair.points.length - 1;
+            var pIdx = bh % maxIdx;
+            var dIdx = pIdx + 1 + (Math.floor(bh/7) % (maxIdx - pIdx));
+            bookings.push({
+              id: idCounter+'-'+bi,
+              name: NAME_POOL[bh % NAME_POOL.length],
+              phone: genPhone(bh),
+              seats: seats, pickupIdx: pIdx, dropoffIdx: dIdx, status:'ожидание'
+            });
+            filled += seats;
+          }
+          var driverIdx = idCounter % (DRIVERS.length + 2);
+          var hasDriver = driverIdx < DRIVERS.length;
+          var ah = hashStr('alert'+dk+pair.code+time);
+          var driverAlert = null;
+          if(hasDriver && dk===TODAY_KEY){
+            if(ah % 11 === 0) driverAlert = { type:'опаздываю', time: '0'+(6+(ah%3))+':'+(10+(ah%40)) };
+            else if(ah % 13 === 0) driverAlert = { type:'поломка', time: '0'+(6+(ah%3))+':'+(10+(ah%40)) };
+          }
+          MOCK_TRIPS.push({
+            id: idCounter++, code: pair.code, from: pair.from, to: pair.to, points: pair.points,
+            fullPrice: pair.fullPrice, dateKey: dk, dateLabel: label, time: time,
+            seatsTotal: SEATS_TOTAL, driver: hasDriver ? DRIVERS[driverIdx] : null,
+            vehicle: hasDriver ? VEHICLES[driverIdx % VEHICLES.length] : null,
+            cancelled: false, driverAlert: driverAlert, bookings: bookings
+          });
+        });
+      });
+    });
+  })();
+
+  var DAY_DEFS = [[1,'Пн'],[2,'Вт'],[3,'Ср'],[4,'Чт'],[5,'Пт'],[6,'Сб'],[0,'Вс']];
+
+  /* регулярное расписание: каждый текущий рейс сначала выглядит как шаблон "каждый день" —
+     это описывает уже сгенерированные выше рейсы, новые/изменённые шаблоны генерируют рейсы отдельно */
+  var MOCK_TEMPLATES = [];
+  (function seedTemplates(){
+    var tid = 1;
+    PAIRS.forEach(function(pair, pi){
+      TIMES.forEach(function(time){
+        MOCK_TEMPLATES.push({ id: tid++, pairIndex: pi, time: time, seatsTotal: SEATS_TOTAL, active: true, days:[0,1,2,3,4,5,6] });
+      });
+    });
+  })();
+
+  function generateTripsForTemplate(tpl){
+    var pair = PAIRS[tpl.pairIndex];
+    DATES.forEach(function(d, di){
+      if(tpl.days.indexOf(d.getDay())===-1) return;
+      var dk = dateKey(d);
+      var exists = MOCK_TRIPS.some(function(t){ return t.dateKey===dk && t.time===tpl.time && t.code===pair.code && t.from===pair.from && t.to===pair.to; });
+      if(exists) return;
+      var label = di===0 ? 'Сегодня' : (di===1 ? 'Завтра' : (DOW[d.getDay()]+', '+d.getDate()+' '+MONTHS[d.getMonth()]));
+      MOCK_TRIPS.push({
+        id: Date.now()+Math.floor(Math.random()*10000)+di, code: pair.code, from: pair.from, to: pair.to, points: pair.points,
+        fullPrice: pair.fullPrice, dateKey: dk, dateLabel: label, time: tpl.time,
+        seatsTotal: tpl.seatsTotal, driver: null, vehicle: null, cancelled:false, bookings: [], templateId: tpl.id
+      });
+    });
+  }
+
+  function tripFilled(t){ return t.bookings.reduce(function(s,b){ return s+b.seats; }, 0); }
+  function tripsForDate(dk){ return MOCK_TRIPS.filter(function(t){ return t.dateKey===dk; }).sort(function(a,b){ return a.time.localeCompare(b.time); }); }
+  function seatBarColor(filled,total){ var r=filled/total; return r>=1?'var(--danger)':(r>=0.7?'var(--warn)':'var(--accent2)'); }
+
+  /* ---------------- state ---------------- */
+  var currentTab = 'today';
+  var tripsTabDateKey = TODAY_KEY;
+  var bookingsSearch = '';
+  var bookingsFilter = 'all';
+
+  /* ---------------- tab rendering ---------------- */
+  function renderTripRow(t){
+    var filled = tripFilled(t);
+    var pct = Math.min(100, Math.round(filled/t.seatsTotal*100));
+    var driverHtml = t.driver
+      ? '<div class="driver-tag assigned">'+t.driver.split(' ')[0]+'</div>'
+      : '<div class="driver-tag unassigned">Нет водителя</div>';
+    var alertClass = t.driverAlert ? (t.driverAlert.type==='опаздываю' ? 'trip-alert-late' : 'trip-alert-break') : '';
+    return '<div class="trip-row'+(t.cancelled?' cancelled':'')+(alertClass?' '+alertClass:'')+'" data-trip="'+t.id+'">'+
+      '<div class="trip-time mono">'+t.time+'</div>'+
+      '<div class="trip-mid">'+
+        '<div class="trip-route"><span class="badge">'+t.code+'</span><span>'+t.from+' → '+t.to+'</span>'+
+          (t.driverAlert ? '<span class="status-chip '+(t.driverAlert.type==='опаздываю'?'st-late':'st-break')+'">'+t.driverAlert.type+'</span>' : '')+
+        '</div>'+
+        '<div class="seat-bar-wrap"><div class="seat-bar"><div class="seat-bar-fill" style="width:'+pct+'%; background:'+seatBarColor(filled,t.seatsTotal)+';"></div></div>'+
+        '<div class="seat-bar-label">'+filled+' / '+t.seatsTotal+' мест'+(t.cancelled?' · отменён':'')+'</div></div>'+
+      '</div>'+
+      driverHtml+
+    '</div>';
+  }
+
+  function renderToday(){
+    var trips = tripsForDate(TODAY_KEY);
+    var active = trips.filter(function(t){ return !t.cancelled; });
+    var totalSeats = active.reduce(function(s,t){ return s+tripFilled(t); }, 0);
+    var totalCap = active.reduce(function(s,t){ return s+t.seatsTotal; }, 0);
+    var noDriver = active.filter(function(t){ return !t.driver; }).length;
+
+    var html = '<h1 class="title">Сегодня</h1>'+
+      '<div class="stat-row">'+
+        '<div class="stat-card"><div class="stat-num mono">'+active.length+'</div><div class="stat-label">рейсов</div></div>'+
+        '<div class="stat-card"><div class="stat-num mono">'+totalSeats+'/'+totalCap+'</div><div class="stat-label">мест занято</div></div>'+
+        '<div class="stat-card"><div class="stat-num mono'+(noDriver>0?' warn':'')+'">'+noDriver+'</div><div class="stat-label">без водителя</div></div>'+
+      '</div>';
+
+    if(trips.length===0){
+      html += '<div class="empty-state">На сегодня рейсов нет.</div>';
+    } else {
+      html += trips.map(renderTripRow).join('');
+    }
+    document.getElementById('tabContent').innerHTML = html;
+    bindTripRows();
+  }
+
+  function renderTripsTab(){
+    var html = '<div class="row-between"><h1 class="title" style="margin:0;">Рейсы</h1>'+
+      '<button class="btn btn-primary btn-sm" id="openAddBtn">+ Добавить</button></div>';
+    html += '<div class="date-strip">';
+    DATES.forEach(function(d, i){
+      var dk = dateKey(d);
+      html += '<button class="date-btn'+(dk===tripsTabDateKey?' active':'')+'" data-datekey="'+dk+'">'+
+        '<div class="dow">'+(i===0?'сегодня':(i===1?'завтра':DOW[d.getDay()]))+'</div>'+
+        '<div class="num">'+d.getDate()+'</div></button>';
+    });
+    html += '</div>';
+
+    var trips = tripsForDate(tripsTabDateKey);
+    if(trips.length===0){
+      html += '<div class="empty-state">Рейсов на эту дату пока нет.</div>';
+    } else {
+      html += trips.map(renderTripRow).join('');
+    }
+    document.getElementById('tabContent').innerHTML = html;
+
+    document.getElementById('openAddBtn').addEventListener('click', function(){ openAddPanel(); });
+    document.querySelectorAll('.date-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){ tripsTabDateKey = btn.dataset.datekey; renderTripsTab(); });
+    });
+    bindTripRows();
+  }
+
+  function renderTemplateRow(t){
+    var pair = PAIRS[t.pairIndex];
+    var daysHtml = DAY_DEFS.map(function(d){
+      var on = t.days.indexOf(d[0])!==-1;
+      return '<div class="template-day-dot'+(on?' on':'')+'">'+d[1][0]+'</div>';
+    }).join('');
+    return '<div class="template-row'+(t.active?'':' inactive')+'" data-template="'+t.id+'">'+
+      '<div class="template-top"><span class="badge">'+pair.code+'</span><span class="template-route">'+pair.from+' → '+pair.to+'</span>'+
+        '<span class="template-time mono">'+t.time+'</span></div>'+
+      '<div class="template-days">'+daysHtml+'</div>'+
+      (t.active ? '' : '<div class="template-off-tag">выключен · новые рейсы не создаются</div>')+
+    '</div>';
+  }
+
+  function renderTemplatesTab(){
+    var html = '<div class="row-between"><h1 class="title" style="margin:0;">Шаблоны</h1>'+
+      '<button class="btn btn-primary btn-sm" id="openAddTemplateBtn">+ Добавить</button></div>'+
+      '<p class="eyebrow" style="margin-bottom:16px;">Регулярное расписание — рейсы создаются автоматически на '+DATES.length+' дня вперёд по выбранным дням недели.</p>';
+
+    if(MOCK_TEMPLATES.length===0){
+      html += '<div class="empty-state">Шаблонов пока нет.</div>';
+    } else {
+      var sorted = MOCK_TEMPLATES.slice().sort(function(a,b){ return a.pairIndex-b.pairIndex || a.time.localeCompare(b.time); });
+      html += sorted.map(renderTemplateRow).join('');
+    }
+
+    document.getElementById('tabContent').innerHTML = html;
+    document.getElementById('openAddTemplateBtn').addEventListener('click', function(){ openTemplateForm(null); });
+    document.querySelectorAll('.template-row').forEach(function(row){
+      row.addEventListener('click', function(){
+        var tpl = MOCK_TEMPLATES.filter(function(x){ return x.id===+row.dataset.template; })[0];
+        openTemplateForm(tpl);
+      });
+    });
+  }
+
+  function renderBookingsTab(){
+    var html = '<h1 class="title">Брони</h1>'+
+      '<div class="search-wrap"><input type="text" id="searchInput" placeholder="Имя или телефон" value="'+escapeHtml(bookingsSearch)+'"></div>'+
+      '<div class="filter-chips">'+
+        ['all:Все','ожидание:Ожидание','посажен:Посажен','не пришёл:Не пришёл','отменена:Отменена'].map(function(f){
+          var parts = f.split(':'); var key=parts[0], label=parts[1];
+          return '<button class="filter-chip'+(bookingsFilter===key?' active':'')+'" data-filter="'+key+'">'+label+'</button>';
+        }).join('')+
+      '</div>';
+
+    var rows = [];
+    MOCK_TRIPS.slice().sort(function(a,b){ return (a.dateKey+a.time).localeCompare(b.dateKey+b.time); }).forEach(function(t){
+      t.bookings.forEach(function(b){
+        var status = t.cancelled ? 'отменена' : b.status;
+        if(bookingsFilter!=='all' && status!==bookingsFilter) return;
+        var q = bookingsSearch.trim().toLowerCase();
+        if(q && b.name.toLowerCase().indexOf(q)===-1 && b.phone.indexOf(q)===-1) return;
+        rows.push({t:t, b:b, status:status});
+      });
+    });
+
+    if(rows.length===0){
+      html += '<div class="empty-state">Броней не найдено.</div>';
+    } else {
+      html += rows.map(function(r){
+        var t=r.t, b=r.b;
+        var chipClass = r.status==='посажен'?'st-board':(r.status==='не пришёл'?'st-no':(r.status==='отменена'?'st-cancel':'st-wait'));
+        var price = Math.max(5, Math.round((t.points[b.dropoffIdx].offset - t.points[b.pickupIdx].offset) * (t.fullPrice/t.points[t.points.length-1].offset)));
+        return '<div class="booking-row" data-trip="'+t.id+'">'+
+          '<div class="booking-top"><div><div class="booking-name">'+b.name+'</div>'+
+            '<div class="booking-sub">'+t.code+' '+t.from+' → '+t.to+' · '+t.dateLabel+', '+t.time+'</div></div>'+
+            '<span class="status-chip '+chipClass+'">'+r.status+'</span></div>'+
+          '<div class="booking-bottom"><span>'+b.seats+' мест · '+(price*b.seats)+' BYN</span><span class="mono">'+b.phone+'</span></div>'+
+        '</div>';
+      }).join('');
+    }
+
+    document.getElementById('tabContent').innerHTML = html;
+    document.getElementById('searchInput').addEventListener('input', function(e){ bookingsSearch = e.target.value; renderBookingsTab(); });
+    document.getElementById('searchInput').focus();
+    document.getElementById('searchInput').selectionStart = document.getElementById('searchInput').value.length;
+    document.querySelectorAll('.filter-chip').forEach(function(chip){
+      chip.addEventListener('click', function(){ bookingsFilter = chip.dataset.filter; renderBookingsTab(); });
+    });
+    document.querySelectorAll('.booking-row').forEach(function(row){
+      row.addEventListener('click', function(){ openTripPanel(+row.dataset.trip); });
+    });
+  }
+
+  function bindTripRows(){
+    document.querySelectorAll('.trip-row').forEach(function(row){
+      row.addEventListener('click', function(){ openTripPanel(+row.dataset.trip); });
+    });
+  }
+
+  function renderTab(){
+    if(currentTab==='today') renderToday();
+    else if(currentTab==='trips') renderTripsTab();
+    else if(currentTab==='templates') renderTemplatesTab();
+    else renderBookingsTab();
+  }
+
+  function switchToTab(name){
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    var btn = document.querySelector('.tab-btn[data-tab="'+name+'"]');
+    if(btn) btn.classList.add('active');
+    currentTab = name;
+    renderTab();
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentTab = btn.dataset.tab;
+      renderTab();
+    });
+  });
+
+  /* ---------------- trip detail panel ---------------- */
+  var overlay = document.getElementById('panelOverlay');
+  var tripPanel = document.getElementById('tripPanel');
+  var addPanel = document.getElementById('addPanel');
+  var openTripId = null;
+
+  function openTripPanel(tripId){
+    openTripId = tripId;
+    renderTripPanelBody();
+    overlay.classList.add('open');
+    tripPanel.classList.add('open');
+  }
+  function closeTripPanel(){
+    overlay.classList.remove('open');
+    tripPanel.classList.remove('open');
+    openTripId = null;
+  }
+  document.getElementById('tripPanelClose').addEventListener('click', closeTripPanel);
+
+  function renderTripPanelBody(){
+    var t = MOCK_TRIPS.filter(function(x){ return x.id===openTripId; })[0];
+    if(!t) return;
+    document.getElementById('tripPanelTitle').innerHTML = '<span class="badge">'+t.code+'</span> '+t.from+' → '+t.to;
+
+    var filled = tripFilled(t);
+    var driverOptions = '<option value="">Не назначен</option>'+DRIVERS.map(function(d){
+      return '<option value="'+d+'"'+(t.driver===d?' selected':'')+'>'+d+'</option>';
+    }).join('');
+    var vehicleOptions = '<option value="">Не назначено</option>'+VEHICLES.map(function(v,i){
+      return '<option value="'+i+'"'+(t.vehicle && t.vehicle.plate===v.plate?' selected':'')+'>'+v.plate+'  '+v.model+' · '+v.seats+' мест</option>';
+    }).join('');
+
+    var body = '<p class="eyebrow" style="margin-bottom:14px;">'+t.dateLabel+', отправление '+t.time+'</p>';
+
+    if(t.driverAlert){
+      var isLate = t.driverAlert.type==='опаздываю';
+      body += '<div class="driver-alert-banner '+(isLate?'late':'break')+'">'+
+        '<div><b>Водитель сообщил: '+t.driverAlert.type+'</b><div style="font-size:11px; opacity:.85; margin-top:2px;">Отправлено в '+t.driverAlert.time+'</div></div>'+
+        '<button class="btn btn-secondary btn-sm" id="dismissAlertBtn">Прочитано</button>'+
+      '</div>';
+    }
+
+    if(t.cancelled){
+      var cancelMsg = 'Рейс отменён';
+      if(t.bookings.length>0) cancelMsg += ' — уведомление получат '+t.bookings.length+' '+ruPlural(t.bookings.length,'пассажир','пассажира','пассажиров');
+      body += '<div class="cancel-banner">'+cancelMsg+'</div>';
+    }
+
+    body += '<div class="field"><label>Водитель</label><select id="driverSelect">'+driverOptions+'</select></div>';
+    if(t.driver && t.bookings.length>0){
+      body += '<p style="font-size:11.5px; color:var(--ink-soft); margin:-7px 0 14px;">Контакт водителя автоматически уйдёт '+t.bookings.length+' '+ruPlural(t.bookings.length,'пассажиру','пассажирам','пассажирам')+' в чат бота.</p>';
+    }
+    body += '<div class="field"><label>Транспорт</label><select id="vehicleSelect">'+vehicleOptions+'</select></div>';
+
+    body += '<div class="seat-bar" style="margin-top:2px;"><div class="seat-bar-fill" style="width:'+Math.min(100, Math.round(filled/t.seatsTotal*100))+'%; background:'+seatBarColor(filled,t.seatsTotal)+';"></div></div>'+
+      '<div class="seat-bar-label" style="margin-bottom:16px;">Занято '+filled+' из '+t.seatsTotal+' мест</div>';
+
+    body += '<button class="btn '+(t.cancelled?'btn-secondary':'btn-danger')+' btn-block" id="cancelTripBtn">'+(t.cancelled?'Восстановить рейс':'Отменить рейс')+'</button>';
+
+    body += '<p class="section-label">Пассажиры ('+t.bookings.length+')</p>';
+    if(t.bookings.length===0){
+      body += '<div class="empty-state">Пока никто не забронировал место.</div>';
+    } else {
+      var sorted = t.bookings.slice().sort(function(a,b){ return a.pickupIdx-b.pickupIdx; });
+      sorted.forEach(function(b){
+        var chipClass = b.status==='посажен'?'st-board':(b.status==='не пришёл'?'st-no':'st-wait');
+        body += '<div class="passenger-row">'+
+          '<div class="passenger-top"><div><div class="passenger-name">'+b.name+'</div>'+
+            '<a class="passenger-phone mono" href="tel:'+b.phone.replace(/\s|-/g,'')+'">'+b.phone+'</a></div>'+
+            '<span class="status-chip '+chipClass+'">'+b.status+'</span></div>'+
+          '<div class="passenger-route">'+t.points[b.pickupIdx].name+' → '+t.points[b.dropoffIdx].name+' · <span class="seats-pill">'+b.seats+' мест</span></div>'+
+          '<div class="passenger-actions" data-booking="'+b.id+'">'+
+            (b.status==='ожидание'
+              ? '<button class="btn btn-secondary btn-sm" data-action="посажен">✓ Посадил</button><button class="btn btn-secondary btn-sm" data-action="не пришёл">✕ Не пришёл</button>'
+              : '<button class="btn btn-secondary btn-sm" data-action="ожидание">↺ Сбросить</button>')+
+          '</div>'+
+        '</div>';
+      });
+    }
+
+    document.getElementById('tripPanelBody').innerHTML = body;
+
+    document.getElementById('driverSelect').addEventListener('change', function(e){
+      t.driver = e.target.value || null;
+      renderTab();
+    });
+    document.getElementById('vehicleSelect').addEventListener('change', function(e){
+      t.vehicle = e.target.value === '' ? null : VEHICLES[+e.target.value];
+      renderTab();
+    });
+    var dismissBtn = document.getElementById('dismissAlertBtn');
+    if(dismissBtn) dismissBtn.addEventListener('click', function(){
+      t.driverAlert = null;
+      renderTripPanelBody();
+      renderTab();
+    });
+    document.getElementById('cancelTripBtn').addEventListener('click', function(){
+      t.cancelled = !t.cancelled;
+      renderTripPanelBody();
+      renderTab();
+    });
+    document.querySelectorAll('.passenger-actions button').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var bookingId = btn.parentElement.dataset.booking;
+        var booking = t.bookings.filter(function(b){ return b.id===bookingId; })[0];
+        booking.status = btn.dataset.action;
+        renderTripPanelBody();
+      });
+    });
+  }
+
+  /* ---------------- add trip panel ---------------- */
+  function openAddPanel(){
+    var routeSelect = document.getElementById('addRoute');
+    routeSelect.innerHTML = PAIRS.map(function(p,i){ return '<option value="'+i+'">'+p.code+'  '+p.from+' → '+p.to+'</option>'; }).join('');
+    document.getElementById('addDate').value = isoDate(new Date(
+      parseInt(tripsTabDateKey.split('-')[0]), parseInt(tripsTabDateKey.split('-')[1])-1, parseInt(tripsTabDateKey.split('-')[2])
+    ));
+    document.getElementById('addDate').min = isoDate(today0);
+    document.getElementById('addTime').value = '06:20';
+    document.getElementById('addSeats').value = 16;
+    var driverSelect = document.getElementById('addDriver');
+    driverSelect.innerHTML = '<option value="">Не назначен</option>'+DRIVERS.map(function(d){ return '<option value="'+d+'">'+d+'</option>'; }).join('');
+
+    overlay.classList.add('open');
+    addPanel.classList.add('open');
+  }
+  function closeAddPanel(){ overlay.classList.remove('open'); addPanel.classList.remove('open'); }
+  document.getElementById('addPanelClose').addEventListener('click', closeAddPanel);
+
+  document.getElementById('addSubmit').addEventListener('click', function(){
+    var pair = PAIRS[+document.getElementById('addRoute').value];
+    var dateVal = document.getElementById('addDate').value;
+    var time = document.getElementById('addTime').value;
+    var seats = +document.getElementById('addSeats').value || 16;
+    var driver = document.getElementById('addDriver').value || null;
+    if(!dateVal || !time) return;
+
+    var parts = dateVal.split('-');
+    var d = new Date(+parts[0], +parts[1]-1, +parts[2]);
+    var dk = dateKey(d);
+    var label = dk===TODAY_KEY ? 'Сегодня' : (DOW[d.getDay()]+', '+d.getDate()+' '+MONTHS[d.getMonth()]);
+
+    MOCK_TRIPS.push({
+      id: Date.now(), code: pair.code, from: pair.from, to: pair.to, points: pair.points,
+      fullPrice: pair.fullPrice, dateKey: dk, dateLabel: label, time: time,
+      seatsTotal: seats, driver: driver, vehicle: null, cancelled:false, bookings: []
+    });
+
+    closeAddPanel();
+    tripsTabDateKey = dk;
+    document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    document.querySelector('.tab-btn[data-tab="trips"]').classList.add('active');
+    currentTab = 'trips';
+    renderTripsTab();
+  });
+
+  overlay.addEventListener('click', function(){ closeTripPanel(); closeAddPanel(); closeTemplatePanel(); });
+
+  /* ---------------- template panel ---------------- */
+  var templatePanel = document.getElementById('templatePanel');
+  var templateDraft = null;
+
+  function openTemplateForm(existing){
+    templateDraft = existing
+      ? { id: existing.id, pairIndex: existing.pairIndex, time: existing.time, seatsTotal: existing.seatsTotal, active: existing.active, days: existing.days.slice() }
+      : { id: null, pairIndex: 0, time: '06:20', seatsTotal: 16, active: true, days: [0,1,2,3,4,5,6] };
+    renderTemplateForm();
+    overlay.classList.add('open');
+    templatePanel.classList.add('open');
+  }
+  function closeTemplatePanel(){
+    overlay.classList.remove('open');
+    templatePanel.classList.remove('open');
+    templateDraft = null;
+  }
+  document.getElementById('templatePanelClose').addEventListener('click', closeTemplatePanel);
+
+  function renderTemplateForm(){
+    document.getElementById('templatePanelTitle').textContent = templateDraft.id ? 'Шаблон' : 'Новый шаблон';
+
+    var routeOptions = PAIRS.map(function(p,i){
+      return '<option value="'+i+'"'+(i===templateDraft.pairIndex?' selected':'')+'>'+p.code+'  '+p.from+' → '+p.to+'</option>';
+    }).join('');
+    var dayChips = DAY_DEFS.map(function(d){
+      var on = templateDraft.days.indexOf(d[0])!==-1;
+      return '<div class="day-chip'+(on?' active':'')+'" data-day="'+d[0]+'">'+d[1]+'</div>';
+    }).join('');
+
+    var body =
+      '<div class="field"><label>Направление</label><select id="tplRoute">'+routeOptions+'</select></div>'+
+      '<div class="field"><label>Дни недели</label><div class="day-chips" id="tplDayChips">'+dayChips+'</div>'+
+        '<div id="tplDayError" style="display:none; color:var(--danger-dark); font-size:11px; margin-top:7px;">Выберите хотя бы один день</div></div>'+
+      '<div class="field"><label for="tplTime">Время отправления</label><input type="time" id="tplTime" value="'+templateDraft.time+'"></div>'+
+      '<div class="field"><label for="tplSeats">Мест всего</label><input type="number" id="tplSeats" value="'+templateDraft.seatsTotal+'" min="1" max="30"></div>'+
+      '<div class="field" style="display:flex; align-items:center; justify-content:space-between;">'+
+        '<label style="margin:0;">Активен</label><div class="toggle-switch'+(templateDraft.active?' on':'')+'" id="tplActiveToggle"></div>'+
+      '</div>'+
+      '<p style="font-size:11.5px; color:var(--ink-faint); line-height:1.5; margin:2px 0 16px;">Выключение или изменение шаблона не отменяет уже созданные рейсы — их нужно отменить вручную во вкладке «Рейсы».</p>'+
+      '<button class="btn btn-primary btn-block" id="tplSaveBtn" style="margin-bottom:10px;">Сохранить шаблон</button>'+
+      (templateDraft.id ? '<button class="btn btn-danger btn-block" id="tplDeleteBtn">Удалить шаблон</button>' : '');
+
+    document.getElementById('templatePanelBody').innerHTML = body;
+
+    document.querySelectorAll('.day-chip').forEach(function(chip){
+      chip.addEventListener('click', function(){
+        var day = +chip.dataset.day;
+        var idx = templateDraft.days.indexOf(day);
+        if(idx===-1){ templateDraft.days.push(day); chip.classList.add('active'); }
+        else { templateDraft.days.splice(idx,1); chip.classList.remove('active'); }
+        document.getElementById('tplDayError').style.display = 'none';
+      });
+    });
+    document.getElementById('tplActiveToggle').addEventListener('click', function(){
+      templateDraft.active = !templateDraft.active;
+      this.classList.toggle('on', templateDraft.active);
+    });
+    document.getElementById('tplSaveBtn').addEventListener('click', saveTemplateDraft);
+    var delBtn = document.getElementById('tplDeleteBtn');
+    if(delBtn) delBtn.addEventListener('click', deleteTemplateDraft);
+  }
+
+  function saveTemplateDraft(){
+    templateDraft.pairIndex = +document.getElementById('tplRoute').value;
+    templateDraft.time = document.getElementById('tplTime').value || '06:20';
+    templateDraft.seatsTotal = +document.getElementById('tplSeats').value || 16;
+    if(templateDraft.days.length===0){ document.getElementById('tplDayError').style.display='block'; return; }
+
+    var existing = templateDraft.id ? MOCK_TEMPLATES.filter(function(t){ return t.id===templateDraft.id; })[0] : null;
+    if(existing){
+      existing.pairIndex = templateDraft.pairIndex;
+      existing.time = templateDraft.time;
+      existing.seatsTotal = templateDraft.seatsTotal;
+      existing.active = templateDraft.active;
+      existing.days = templateDraft.days.slice();
+      if(existing.active) generateTripsForTemplate(existing);
+    } else {
+      var newTpl = { id: Date.now(), pairIndex: templateDraft.pairIndex, time: templateDraft.time,
+        seatsTotal: templateDraft.seatsTotal, active: templateDraft.active, days: templateDraft.days.slice() };
+      MOCK_TEMPLATES.push(newTpl);
+      if(newTpl.active) generateTripsForTemplate(newTpl);
+    }
+    closeTemplatePanel();
+    switchToTab('templates');
+  }
+
+  function deleteTemplateDraft(){
+    var id = templateDraft.id;
+    MOCK_TEMPLATES = MOCK_TEMPLATES.filter(function(t){ return t.id!==id; });
+    closeTemplatePanel();
+    switchToTab('templates');
+  }
+
+  /* ---------------- init ---------------- */
+  renderTab();
+})();
+</script>
+</body>
+</html>

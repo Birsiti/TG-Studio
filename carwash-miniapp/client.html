@@ -1,0 +1,1109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+<title>Запись на мойку</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@500;700;800&family=Manrope:wght@600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="palettes.css">
+<link rel="stylesheet" href="theme.css">
+</head>
+<body data-theme="avtohimiya">
+
+<!-- ============ КОНФИГ ПО УМОЛЧАНИЮ (используется, если реестр недоступен) ============ -->
+<script>
+  const REGISTRY_URL = "PASTE_REGISTRY_URL_HERE"; // общий на все мойки, не меняется от инсталляции к инсталляции
+  const DEMO_CONFIG = {
+    businessName: "БЛЕСК",
+    phone: "+375291234567",
+    apiUrl: "https://script.google.com/macros/s/AKfycbykm9L9cQXN1icfFCjl9arS9JGXSMLLZjlWVLufwORlS8mj49PRaLKx-8JmsCZn5VAg/exec",
+    status: "active",
+    theme: "avtohimiya"   // voda | avtohimiya | chrome | mercedes
+  };
+</script>
+<script src="bootstrap.js"></script>
+
+<div class="app" id="app">
+
+  <div class="boot-overlay" id="bootLoading">
+    <div class="boot-spinner"></div>
+  </div>
+  <div class="boot-overlay" id="bootPaused" style="display:none;">
+    <div class="boot-icon"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16h.01"/></svg></div>
+    <div class="boot-title">Сервис временно недоступен</div>
+    <div class="boot-sub">Обратитесь к владельцу мойки</div>
+  </div>
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-top">
+      <div class="hero-brand display"><span class="drop"></span><span id="brandName"></span></div>
+      <div class="hero-icons">
+        <button class="glass-btn" id="brandSettingsBtn" title="Цветовая схема">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r=".5" fill="currentColor"/><circle cx="17.5" cy="10.5" r=".5" fill="currentColor"/><circle cx="8.5" cy="7.5" r=".5" fill="currentColor"/><circle cx="6.5" cy="12.5" r=".5" fill="currentColor"/><path d="M12 2a10 10 0 1 0 10 10 4 4 0 0 1-4-4 3 3 0 0 1 3-3 10 10 0 0 0-9-3z"/></svg>
+        </button>
+        <button class="glass-btn" id="modeToggleBtn" title="Светлая/тёмная тема">
+          <svg id="modeIcon" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></svg>
+        </button>
+        <button class="glass-btn" id="myBookingsBtn" title="Мои записи">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>
+          <span class="btn-badge" id="myBookingsBadge" style="display:none;"></span>
+        </button>
+        <a class="glass-btn" id="callBtn" title="Позвонить">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+        </a>
+      </div>
+    </div>
+    <div class="stepper" id="stepper"></div>
+    <div class="step-label" id="stepLabel"></div>
+    <div class="hero-glow"></div>
+  </div>
+
+  <!-- STEP 1: CAR -->
+  <div class="screen fade-step" id="screen-1">
+    <div class="screen-title">Ваш автомобиль</div>
+    <div class="screen-sub">Укажите номер и класс — от этого зависит стоимость услуг</div>
+
+    <div class="my-cars-wrap" id="myCarsWrap" style="display:none;">
+      <div class="my-cars-scroller" id="myCarsScroller"></div>
+    </div>
+
+    <div class="plate-wrap">
+      <div class="plate" id="plateBox">
+        <div class="strip"><span class="by">BY</span><span class="flag"><span></span><span></span></span></div>
+        <div class="number empty" id="plateNumber">А000АА-7</div>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Номер автомобиля</label>
+      <input type="text" id="carNumber" placeholder="Например, 1234 AB-7" autocomplete="off">
+    </div>
+    <div class="field-row">
+      <div class="field"><label>Марка</label><input type="text" id="carBrand" placeholder="Toyota" autocomplete="off"></div>
+      <div class="field"><label>Модель</label><input type="text" id="carModel" placeholder="Camry" autocomplete="off"></div>
+    </div>
+
+    <div class="field">
+      <label>Класс автомобиля</label>
+      <div class="chip-group" id="carClassGroup"></div>
+    </div>
+  </div>
+
+  <!-- STEP 2: SERVICES -->
+  <div class="screen fade-step hidden" id="screen-2">
+    <div class="back-link" data-back="1"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Назад</div>
+    <div class="screen-title">Выберите услуги</div>
+    <div class="screen-sub">Цены указаны для выбранного класса авто</div>
+    <div id="categories"></div>
+  </div>
+
+  <!-- STEP 3: DATE/TIME -->
+  <div class="screen fade-step hidden" id="screen-3">
+    <div class="back-link" data-back="2"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Назад</div>
+    <div class="screen-title">Дата и время</div>
+    <div class="screen-sub">Выберите удобный слот</div>
+    <div class="day-scroller" id="dayScroller"></div>
+    <div class="slot-grid" id="slotGrid"></div>
+  </div>
+
+  <!-- STEP 4: CONTACT -->
+  <div class="screen fade-step hidden" id="screen-4">
+    <div class="back-link" data-back="3"><svg viewBox="0 0 24 24" fill="none" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>Назад</div>
+    <div class="screen-title">Ваши контакты</div>
+    <div class="screen-sub">Нужны, чтобы подтвердить запись</div>
+
+    <div class="field"><label>Имя</label><input type="text" id="clientName" placeholder="Как к вам обращаться" autocomplete="off"></div>
+    <div class="field-row">
+      <div class="field" style="flex:0 0 88px;">
+        <label>Код</label>
+        <div class="select-wrap">
+          <select id="phoneCode"><option value="+375">+375</option><option value="+7">+7</option><option value="+380">+380</option></select>
+          <svg class="select-chev" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+      <div class="field"><label>Телефон</label><input type="tel" id="clientPhone" placeholder="(29)123-45-67" inputmode="numeric" maxlength="13" autocomplete="off"></div>
+    </div>
+
+    <label class="consent">
+      <input type="checkbox" id="consent">
+      <span>Нажимая «Записаться», я соглашаюсь с политикой обработки персональных данных</span>
+    </label>
+  </div>
+
+  <!-- STEP 5: TICKET -->
+  <div class="screen fade-step hidden" id="screen-5">
+    <div class="success-icon" id="successIcon"><svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg></div>
+    <div class="screen-title" style="text-align:center;" id="ticketTitle">Запись подтверждена</div>
+    <div class="screen-sub" style="text-align:center;" id="ticketSub">Ждём вас в назначенное время</div>
+
+    <div class="ticket-card" id="ticketCard"></div>
+
+    <div style="display:flex; flex-direction:column; gap:10px; margin-top:20px;">
+      <button class="btn btn-danger btn-block" id="cancelBookingBtn">Отменить запись</button>
+      <button class="btn btn-ghost btn-block" id="newBookingBtn">Новая запись</button>
+    </div>
+  </div>
+
+  <!-- STICKY BAR -->
+  <div class="sticky-bar" id="stickyBar">
+    <div class="sticky-inner">
+      <div class="sticky-total" id="stickyTotal"></div>
+      <button class="btn btn-primary" id="nextBtn">Далее</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- OVERLAY: МОИ ЗАПИСИ -->
+<div class="overlay" id="myBookingsOverlay">
+  <div class="overlay-header">
+    <button class="glass-btn" style="background:var(--surface); border-color:var(--border);" id="closeOverlayBtn">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" style="stroke:var(--ink);"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <h2 style="font-size:18px;">Мои записи</h2>
+  </div>
+  <div id="myBookingsList"></div>
+</div>
+
+<!-- SHEET -->
+<div class="sheet-overlay" id="sheetOverlay"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div id="sheetContent"></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ ОБЩАЯ ЛОГИКА ИЗ bootstrap.js ============ */
+  const tg = App.tg;
+  const tgUser = App.tgUser;
+  const haptic = App.haptic;
+  let CONFIG = null;
+
+  /* ============ MOCK DATA (заменить на реальные ответы API_URL) ============ */
+  let MY_CARS = [
+    {id:'car1', number:'7788 MK-4', brand:'Kia', model:'Sportage', carClass:'krossover', lastUsedAt:Date.now()-86400000*6}
+  ];
+  // Профиль клиента, если он уже записывался раньше — подставляется на шаге контактов
+  let MY_PROFILE = {name:'Денис', phone:'291234567'};
+  let MOCK_THEME = null; // личная цветовая схема демо-пользователя (имитация листа "ТЕМЫ")
+
+  const CAR_CLASSES = [
+    {id:'legkovoy', label:'Легковой'},
+    {id:'krossover', label:'Кроссовер'},
+    {id:'vnedorozhnik', label:'Внедорожник'},
+    {id:'minivan', label:'Минивэн'}
+  ];
+
+  const CAR_MODELS = {
+    'Toyota': ['Camry','Corolla','RAV4','Land Cruiser','Land Cruiser Prado','Hilux','Yaris','C-HR','Highlander'],
+    'Volkswagen': ['Polo','Golf','Passat','Tiguan','Jetta','Touareg','Teramont','Arteon'],
+    'BMW': ['3 серии','5 серии','7 серии','X1','X3','X5','X6','1 серии'],
+    'Mercedes-Benz': ['A-Class','C-Class','E-Class','S-Class','GLA','GLC','GLE','Vito','Sprinter'],
+    'Audi': ['A3','A4','A6','A8','Q3','Q5','Q7','Q8'],
+    'Renault': ['Logan','Sandero','Duster','Kaptur','Megane','Fluence','Arkana'],
+    'Hyundai': ['Solaris','Elantra','Sonata','Tucson','Santa Fe','Creta','ix35'],
+    'Kia': ['Rio','Cerato','K5','Sportage','Sorento','Seltos','Soul'],
+    'Skoda': ['Octavia','Rapid','Superb','Kodiaq','Karoq','Fabia'],
+    'Nissan': ['Almera','Qashqai','X-Trail','Juke','Murano','Teana'],
+    'Ford': ['Focus','Fiesta','Mondeo','Kuga','EcoSport','Explorer'],
+    'Chevrolet': ['Cruze','Aveo','Lacetti','Niva','Captiva','Tahoe'],
+    'Opel': ['Astra','Insignia','Corsa','Mokka','Zafira'],
+    'Peugeot': ['308','408','508','2008','3008','5008'],
+    'Mazda': ['3','6','CX-5','CX-3','CX-9'],
+    'Honda': ['Civic','Accord','CR-V','Pilot','HR-V'],
+    'Lexus': ['ES','RX','NX','LX','GX'],
+    'Volvo': ['S60','S90','XC40','XC60','XC90'],
+    'Mitsubishi': ['Lancer','Outlander','ASX','Pajero','Eclipse Cross'],
+    'Subaru': ['Forester','Outback','Impreza','XV'],
+    'Geely': ['Coolray','Atlas','Emgrand','Tugella','Monjaro'],
+    'Chery': ['Tiggo 4','Tiggo 7','Tiggo 8','Arrizo'],
+    'Haval': ['Jolion','F7','H6','Dargo'],
+    'BYD': ['Song Plus','Han','Tang','Atto 3'],
+    'Lada (ВАЗ)': ['Granta','Vesta','Niva','XRAY','Largus'],
+    'УАЗ': ['Patriot','Хантер','Буханка'],
+    'Fiat': ['Albea','Doblo','Ducato'],
+    'Citroen': ['C4','C5','Berlingo'],
+    'Land Rover': ['Discovery','Range Rover','Defender','Evoque'],
+    'Jeep': ['Grand Cherokee','Cherokee','Compass','Wrangler'],
+    'Porsche': ['Cayenne','Macan','Panamera','911'],
+    'Mini': ['Cooper','Countryman'],
+    'Suzuki': ['Vitara','SX4','Swift','Jimny'],
+    'Infiniti': ['Q50','QX50','QX60'],
+    'Jaguar': ['XE','XF','F-Pace'],
+    'Cadillac': ['Escalade','XT5'],
+    'Great Wall': ['Poer','Wingle'],
+    'JAC': ['S3','S4'],
+    'Changan': ['CS35','CS75'],
+    'Datsun': ['on-DO','mi-DO']
+  };
+  const CAR_BRANDS = Object.keys(CAR_MODELS);
+
+  const CATEGORY_ICONS = {
+    'Мойка': '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5s6 7 6 11.5a6 6 0 0 1-12 0c0-4.5 6-11.5 6-11.5z"/></svg>',
+    'Полировка': '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l1.6 4.9L18 8l-4.4 1.1L12 14l-1.6-4.9L6 8l4.4-1.1z"/><path d="M19 15l.7 2.1L22 18l-2.3.9L19 21l-.7-2.1L16 18l2.3-.9z"/></svg>',
+    'Доп. услуги': '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94z"/></svg>',
+    'Химчистка': '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="17" r="2.2"/><circle cx="15" cy="14" r="1.4"/><circle cx="17" cy="19" r="1"/><path d="M9 4c0 3-3 3-3 6"/></svg>'
+  };
+  function iconFor(cat){ return CATEGORY_ICONS[cat] || CATEGORY_ICONS['Мойка']; }
+
+  const MOCK_SERVICES = [
+    {category:'Мойка', items:[
+      {id:'wash-express', name:'Смыв кузова водой', price:{legkovoy:[5,5],krossover:[6,6],vnedorozhnik:[7,7],minivan:[12,12]}},
+      {id:'wash-contactless', name:'Бесконтактная мойка', price:{legkovoy:[10,10],krossover:[12,12],vnedorozhnik:[15,15],minivan:[20,20]}},
+      {id:'wash-hand', name:'Ручная мойка без сушки', price:{legkovoy:[15,15],krossover:[18,18],vnedorozhnik:[22,22],minivan:[30,30]}},
+      {id:'wash-standard', name:'Стандарт', price:{legkovoy:[30,35],krossover:[35,40],vnedorozhnik:[40,45],minivan:[45,50]},
+        desc:'Предмойка бесконтактным шампунем, ручная мойка кузова, воск, сушка кузова и проёмов, чистка ковриков (4 шт).'},
+      {id:'wash-lux', name:'Люкс', price:{legkovoy:[50,60],krossover:[55,65],vnedorozhnik:[60,65],minivan:[60,65]},
+        desc:'Всё из «Стандарт» + уборка салона и багажника пылесосом, обработка пластика, мойка стёкол изнутри.'},
+      {id:'wash-vip', name:'VIP', price:{legkovoy:[60,70],krossover:[65,75],vnedorozhnik:[70,75],minivan:[70,75]},
+        desc:'Ручная мойка составом, воск, полная уборка салона, обработка пластика, мойка стёкол изнутри, коврики (5 шт).'},
+      {id:'wash-nano', name:'Nano VIP', price:{legkovoy:[80,100],krossover:[85,100],vnedorozhnik:[90,100],minivan:[90,100]},
+        desc:'NANO-шампунь и NANO-консервант на кузов, полная уборка салона, чернение шин, мойка стёкол изнутри.'}
+    ]},
+    {category:'Полировка', items:[
+      {id:'polish-chrome', name:'Полировка хрома', price:{legkovoy:[15,30],krossover:[15,30],vnedorozhnik:[15,30],minivan:[15,30]}},
+      {id:'polish-headlights', name:'Полировка фар (пара)', price:{legkovoy:[50,150],krossover:[50,150],vnedorozhnik:[50,150],minivan:[50,150]}},
+      {id:'polish-light', name:'Лёгкая полировка кузова', price:{legkovoy:[120,450],krossover:[120,450],vnedorozhnik:[120,450],minivan:[160,700]}},
+      {id:'polish-full', name:'Полировка кузова', price:{legkovoy:[300,1000],krossover:[300,1000],vnedorozhnik:[300,1000],minivan:[500,1500]}}
+    ]},
+    {category:'Доп. услуги', items:[
+      {id:'extra-tire', name:'Чернение резины', price:{legkovoy:[5,10],krossover:[5,10],vnedorozhnik:[5,10],minivan:[5,10]}},
+      {id:'extra-vacuum', name:'Пылесос салона', price:{legkovoy:[10,20],krossover:[12,25],vnedorozhnik:[14,30],minivan:[14,30]}},
+      {id:'extra-engine', name:'Мойка двигателя сверху', price:{legkovoy:[30,100],krossover:[30,100],vnedorozhnik:[30,100],minivan:[30,100]}},
+      {id:'extra-rain', name:'Антидождь, лобовое стекло', price:{legkovoy:[40,100],krossover:[40,100],vnedorozhnik:[40,100],minivan:[40,100]}}
+    ]},
+    {category:'Химчистка', items:[
+      {id:'chem-seat', name:'Химчистка переднего сиденья', price:{legkovoy:[35,100],krossover:[35,100],vnedorozhnik:[35,100],minivan:[35,100]}},
+      {id:'chem-mat', name:'Химчистка коврика', price:{legkovoy:[30,50],krossover:[30,50],vnedorozhnik:[30,50],minivan:[30,50]}},
+      {id:'chem-trunk', name:'Химчистка багажника', price:{legkovoy:[90,200],krossover:[100,250],vnedorozhnik:[100,250],minivan:[100,300]}},
+      {id:'chem-full', name:'Полная химчистка салона', price:{legkovoy:[180,700],krossover:[220,800],vnedorozhnik:[260,900],minivan:[280,1000]},
+        desc:'Пылесос, химчистка пола, потолка, сидений, дверных карт, мойка стёкол изнутри, чистка педалей и воздуховодов.'}
+    ]}
+  ];
+
+  /* ============ API WRAPPER (реальный бэкенд — Apps Script) ============ */
+  async function api(action, payload){
+    payload = payload || {};
+    try{
+      if(CONFIG.apiUrl.indexOf('PASTE_') === 0) throw new Error('demo mode');
+      const res = await fetch(CONFIG.apiUrl, {
+        method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'},
+        body: JSON.stringify(Object.assign({action}, payload))
+      });
+      if(!res.ok) throw new Error('bad response');
+      return await res.json();
+    }catch(e){
+      return mockApi(action, payload);
+    }
+  }
+
+  function mockApi(action, payload){
+    if(action === 'getMyCars') return {ok:true, cars: MY_CARS.slice().sort((a,b)=>b.lastUsedAt-a.lastUsedAt)};
+    if(action === 'saveCar'){
+      const norm = (payload.car.number||'').trim().toUpperCase();
+      let car = MY_CARS.find(c=>c.id===payload.car.id) || MY_CARS.find(c=>c.number===norm);
+      if(car){
+        Object.assign(car, payload.car, {number:norm, lastUsedAt:Date.now()});
+      } else {
+        car = Object.assign({id:'car'+Date.now()}, payload.car, {number:norm, lastUsedAt:Date.now()});
+        MY_CARS.unshift(car);
+      }
+      return {ok:true, car};
+    }
+    if(action === 'deleteCar'){
+      MY_CARS = MY_CARS.filter(c=>c.id!==payload.id);
+      return {ok:true};
+    }
+    if(action === 'getMyProfile'){
+      // Как на реальном бэкенде: берём имя/телефон из последней записи клиента,
+      // а до первой записи — из демо-профиля (имитация уже существующего клиента).
+      const sorted = STATE.bookings.slice().sort((a,b)=> (b.date+b.time).localeCompare(a.date+a.time));
+      const latest = sorted[0];
+      const profile = latest ? {name:latest.contact.name, phone:latest.contact.phone} : (MY_PROFILE.phone ? MY_PROFILE : null);
+      return {ok:true, profile};
+    }
+    if(action === 'getMyTheme') return {ok:true, theme: MOCK_THEME};
+    if(action === 'saveTheme'){ MOCK_THEME = payload.theme; return {ok:true}; }
+    if(action === 'getServices') return {ok:true, categories: MOCK_SERVICES};
+    if(action === 'getSchedule'){
+      const schedule = {};
+      ['mon','tue','wed','thu','fri','sat','sun'].forEach(k=> schedule[k] = {open:true, from:'9:00', to:'19:00'});
+      return {ok:true, schedule, closedDates:[]};
+    }
+    if(action === 'getSlots'){
+      const slots = [];
+      const isToday = payload.date === todayKey();
+      const now = new Date();
+      for(let h=9; h<=19; h++){
+        ['00','30'].forEach(m=>{
+          const label = h + ':' + m;
+          let disabled = Math.random() < 0.28;
+          if(isToday){
+            const slotTime = new Date(); slotTime.setHours(h, parseInt(m), 0, 0);
+            if(slotTime < now) disabled = true;
+          }
+          slots.push({time:label, disabled});
+        });
+      }
+      return {ok:true, slots};
+    }
+    if(action === 'createBooking'){
+      const id = 'BLK-' + Math.floor(1000 + Math.random()*9000);
+      const booking = Object.assign({id, status:'Подтверждена'}, payload);
+      STATE.bookings.unshift(booking);
+      return {ok:true, booking};
+    }
+    if(action === 'cancelBooking'){
+      const b = STATE.bookings.find(x=>x.id===payload.id);
+      if(b) b.status = 'Отменена';
+      return {ok:true};
+    }
+    if(action === 'getMyBookings') return {ok:true, bookings: STATE.bookings};
+    return {ok:false};
+  }
+
+  /* ============ STATE ============ */
+  const STATE = {
+    step:1,
+    car:{number:'', brand:'', model:'', carClass:null, selectedCarId:null},
+    myCars:[],
+    services:[],
+    servicesData:[],
+    date:null,
+    time:null,
+    slots:[],
+    schedule:{},
+    closedDates:[],
+    contact:{name:'', phone:''},
+    bookings:[],
+    currentTicket:null
+  };
+
+  const stepsMeta = [
+    {n:1, label:'Шаг 1 из 4 · Автомобиль'},
+    {n:2, label:'Шаг 2 из 4 · Услуги'},
+    {n:3, label:'Шаг 3 из 4 · Дата и время'},
+    {n:4, label:'Шаг 4 из 4 · Контакты'}
+  ];
+
+  /* ============ DOM ============ */
+  const $ = (id)=>document.getElementById(id);
+
+  function renderStepper(){
+    const wrap = $('stepper'); wrap.innerHTML='';
+    for(let i=1;i<=4;i++){
+      const d = document.createElement('div');
+      d.className = 'dot' + (i < STATE.step ? ' done' : i===STATE.step ? ' current':'');
+      wrap.appendChild(d);
+    }
+    const meta = stepsMeta.find(s=>s.n===STATE.step);
+    $('stepLabel').textContent = meta ? meta.label : '';
+  }
+
+  function showScreen(n){
+    for(let i=1;i<=5;i++){ $('screen-'+i).classList.toggle('hidden', i!==n); }
+    STATE.step = n;
+    renderStepper();
+    $('stepper').style.display = n<=4 ? 'flex':'none';
+    $('stepLabel').style.display = n<=4 ? 'block':'none';
+    $('stickyBar').style.display = n<=4 ? 'block':'none';
+    updateStickyBar();
+    if(tg && tg.BackButton){
+      try{
+        if(n===1){ tg.BackButton.hide(); }
+        else { tg.BackButton.show(); tg.BackButton.onClick(()=>goBack()); }
+      }catch(e){}
+    }
+    window.scrollTo(0,0);
+  }
+  function goBack(){ if(STATE.step>1) showScreen(STATE.step-1); }
+  document.querySelectorAll('[data-back]').forEach(el=>{
+    el.addEventListener('click', ()=> showScreen(parseInt(el.dataset.back)));
+  });
+
+  /* ---------- STEP 1: CAR ---------- */
+  const classGroup = $('carClassGroup');
+  function setCarClassActive(classId){
+    [...classGroup.children].forEach(ch=>ch.classList.toggle('active', ch.dataset.id===classId));
+  }
+  CAR_CLASSES.forEach(c=>{
+    const chip = document.createElement('div');
+    chip.className='chip'; chip.textContent=c.label; chip.dataset.id=c.id;
+    chip.addEventListener('click', ()=>{
+      STATE.car.carClass = c.id;
+      setCarClassActive(c.id);
+      haptic();
+      validateStep1();
+      renderCategories();
+    });
+    classGroup.appendChild(chip);
+  });
+
+  const carNumberInput = $('carNumber');
+  const plateBox = $('plateBox');
+  const plateNumber = $('plateNumber');
+  function setPlateDisplay(v){
+    if(v && v.trim()){ plateNumber.textContent = v; plateNumber.classList.remove('empty'); }
+    else { plateNumber.textContent = 'А000АА-7'; plateNumber.classList.add('empty'); }
+    plateBox.classList.remove('shine'); void plateBox.offsetWidth; plateBox.classList.add('shine');
+  }
+  function fillCarFields(car){
+    STATE.car.selectedCarId = car.id;
+    STATE.car.number = car.number || ''; STATE.car.brand = car.brand || '';
+    STATE.car.model = car.model || ''; STATE.car.carClass = car.carClass || null;
+    carNumberInput.value = STATE.car.number;
+    $('carBrand').value = STATE.car.brand;
+    $('carModel').value = STATE.car.model;
+    setPlateDisplay(STATE.car.number);
+    if(STATE.car.carClass) setCarClassActive(STATE.car.carClass);
+    validateStep1();
+    renderCategories();
+    renderMyCarsChips();
+  }
+  function clearCarFields(){
+    STATE.car = {number:'', brand:'', model:'', carClass:null, selectedCarId:null};
+    carNumberInput.value=''; $('carBrand').value=''; $('carModel').value='';
+    setPlateDisplay(''); setCarClassActive(null);
+    validateStep1();
+    renderMyCarsChips();
+  }
+
+  async function loadMyCars(){
+    const res = await api('getMyCars', {userId: tgUser.id});
+    STATE.myCars = res.cars || [];
+    renderMyCarsChips();
+    if(STATE.myCars.length && !STATE.car.number){
+      fillCarFields(STATE.myCars[0]); // самая недавняя машина подставляется автоматически
+    }
+  }
+
+  function renderMyCarsChips(){
+    const wrap = $('myCarsWrap'); const scroller = $('myCarsScroller');
+    if(!STATE.myCars.length){ wrap.style.display='none'; return; }
+    wrap.style.display='block';
+    scroller.innerHTML='';
+    STATE.myCars.forEach(car=>{
+      const chip = document.createElement('div');
+      chip.className='car-chip'+(STATE.car.selectedCarId===car.id?' active':'');
+      chip.innerHTML = `
+        <div class="num">${car.number}</div>
+        <div class="bm">${car.brand||''} ${car.model||''}</div>
+        <div class="del"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.5" stroke-linecap="round"><path d="M18 6L6 18M6 6l12 12"/></svg></div>
+      `;
+      chip.addEventListener('click', (e)=>{
+        if(e.target.closest('.del')) return;
+        haptic(); fillCarFields(car);
+      });
+      chip.querySelector('.del').addEventListener('click', async (e)=>{
+        e.stopPropagation();
+        if(!await App.confirmAsync('Удалить машину «'+car.number+'» из сохранённых?')) return;
+        await api('deleteCar', {userId: tgUser.id, id:car.id});
+        STATE.myCars = STATE.myCars.filter(c=>c.id!==car.id);
+        if(STATE.car.selectedCarId===car.id) clearCarFields();
+        renderMyCarsChips();
+        haptic();
+      });
+      scroller.appendChild(chip);
+    });
+    const addChip = document.createElement('div');
+    addChip.className='car-chip-add';
+    addChip.textContent='+ Новая';
+    addChip.addEventListener('click', ()=>{ haptic(); clearCarFields(); carNumberInput.focus(); });
+    scroller.appendChild(addChip);
+  }
+
+  carNumberInput.addEventListener('input', ()=>{
+    const v = carNumberInput.value.toUpperCase();
+    carNumberInput.value = v;
+    STATE.car.number = v;
+    setPlateDisplay(v);
+    validateStep1();
+  });
+  $('carBrand').addEventListener('input', e=>{ STATE.car.brand = e.target.value; });
+  $('carModel').addEventListener('input', e=>{ STATE.car.model = e.target.value; });
+
+  /* ---------- ПОДСКАЗКИ: марка/модель по первым буквам ---------- */
+  function attachSuggest(inputEl, getItems){
+    const list = document.createElement('div');
+    list.className = 'suggest-list';
+    inputEl.parentElement.appendChild(list);
+    function hide(){ list.classList.remove('open'); list.innerHTML=''; }
+    function show(){
+      const q = inputEl.value.trim().toLowerCase();
+      if(!q){ hide(); return; }
+      const items = getItems(q).slice(0, 6);
+      if(!items.length){ hide(); return; }
+      list.innerHTML = items.map(v=>`<div class="suggest-item">${v}</div>`).join('');
+      list.classList.add('open');
+    }
+    inputEl.addEventListener('input', show);
+    inputEl.addEventListener('focus', ()=>{
+      show();
+      setTimeout(()=>{ inputEl.scrollIntoView({block:'center', behavior:'smooth'}); }, 300);
+    });
+    inputEl.addEventListener('blur', ()=> setTimeout(hide, 150));
+    list.addEventListener('mousedown', (e)=>{
+      const item = e.target.closest('.suggest-item');
+      if(!item) return;
+      e.preventDefault();
+      inputEl.value = item.textContent;
+      inputEl.dispatchEvent(new Event('input', {bubbles:true}));
+      hide();
+    });
+  }
+  attachSuggest($('carBrand'), (q)=> CAR_BRANDS.filter(b=>b.toLowerCase().startsWith(q)));
+  attachSuggest($('carModel'), (q)=>{
+    const brand = Object.keys(CAR_MODELS).find(b=> b.toLowerCase() === $('carBrand').value.trim().toLowerCase());
+    const models = brand ? CAR_MODELS[brand] : [];
+    return models.filter(m=>m.toLowerCase().startsWith(q));
+  });
+
+  /* ---------- Прокрутка поля к видимой области при появлении клавиатуры ---------- */
+  document.querySelectorAll('.field input, .field select').forEach(el=>{
+    el.addEventListener('focus', ()=>{
+      setTimeout(()=>{ el.scrollIntoView({block:'center', behavior:'smooth'}); }, 300);
+    });
+  });
+
+  function validateStep1(){
+    const ok = STATE.car.number.trim().length>=4 && !!STATE.car.carClass;
+    updateNextButton(ok);
+    return ok;
+  }
+
+  /* ---------- STEP 2: SERVICES ---------- */
+  const categoriesWrap = $('categories');
+
+  async function loadServices(){
+    const res = await api('getServices', {audience:'client'});
+    STATE.servicesData = res.categories || [];
+    renderCategories();
+  }
+
+  function priceFor(item){
+    const cls = STATE.car.carClass || 'legkovoy';
+    const p = item.price[cls] || item.price.legkovoy;
+    return p[0]===p[1] ? p[0] : p[0]+'–'+p[1];
+  }
+
+  function renderCategories(){
+    categoriesWrap.innerHTML='';
+    STATE.servicesData.forEach((cat, ci)=>{
+      const catEl = document.createElement('div');
+      catEl.className = 'category stagger' + (ci===0 ? ' open':'');
+      catEl.style.animationDelay = (ci*60)+'ms';
+      const selectedCount = cat.items.filter(it=>STATE.services.includes(it.id)).length;
+      catEl.innerHTML = `
+        <div class="category-header">
+          <div class="cat-icon">${iconFor(cat.category)}</div>
+          <div class="title">${cat.category}${selectedCount? `<span class="count">выбрано ${selectedCount}</span>`:''}</div>
+          <svg class="chev" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="category-body"></div>
+      `;
+      catEl.querySelector('.category-header').addEventListener('click', ()=>{ catEl.classList.toggle('open'); });
+      const body = catEl.querySelector('.category-body');
+      cat.items.forEach(item=>{
+        const row = document.createElement('div');
+        row.className='service-row';
+        const checked = STATE.services.includes(item.id);
+        row.innerHTML = `
+          <div class="service-check${checked?' checked':''}">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+          </div>
+          <div class="service-main">
+            <div class="service-name">${item.name}</div>
+            ${item.desc ? `<span class="service-desc-toggle">состав услуги</span><div class="service-desc">${item.desc}</div>` : ''}
+          </div>
+          <div class="service-price">${priceFor(item)} BYN</div>
+        `;
+        row.querySelector('.service-check').addEventListener('click', ()=>{ toggleService(item.id); haptic(); renderCategories(); });
+        row.querySelector('.service-main').addEventListener('click', (e)=>{
+          if(e.target.classList.contains('service-desc-toggle')){ row.querySelector('.service-desc').classList.toggle('open'); }
+          else { toggleService(item.id); haptic(); renderCategories(); }
+        });
+        body.appendChild(row);
+      });
+      categoriesWrap.appendChild(catEl);
+    });
+    updateStickyBar();
+  }
+
+  function toggleService(id){
+    const idx = STATE.services.indexOf(id);
+    if(idx>-1) STATE.services.splice(idx,1); else STATE.services.push(id);
+  }
+  function allServiceItems(){ return STATE.servicesData.flatMap(c=>c.items); }
+  function selectedTotal(){
+    const items = allServiceItems().filter(it=>STATE.services.includes(it.id));
+    let min=0,max=0;
+    items.forEach(it=>{
+      const cls = STATE.car.carClass || 'legkovoy';
+      const p = it.price[cls] || it.price.legkovoy;
+      min+=p[0]; max+=p[1];
+    });
+    return {count:items.length, min, max};
+  }
+
+  /* ---------- STEP 3: DATE/TIME ---------- */
+  function todayKey(d){ d = d || new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  const dayScroller = $('dayScroller');
+  const slotGrid = $('slotGrid');
+  const WEEKDAY_KEYS = ['sun','mon','tue','wed','thu','fri','sat'];
+
+  function isDateOpen(key){
+    if(STATE.closedDates.includes(key)) return false;
+    const day = STATE.schedule[WEEKDAY_KEYS[new Date(key+'T00:00:00').getDay()]];
+    return !!(day && day.open);
+  }
+
+  async function loadSchedule(){
+    if(Object.keys(STATE.schedule).length) return;
+    const res = await api('getSchedule');
+    STATE.schedule = res.schedule || {};
+    STATE.closedDates = res.closedDates || [];
+  }
+
+  function renderDays(){
+    dayScroller.innerHTML='';
+    const today = new Date();
+    for(let i=0;i<14;i++){
+      const d = new Date(today); d.setDate(today.getDate()+i);
+      const key = todayKey(d);
+      const open = isDateOpen(key);
+      const chip = document.createElement('div');
+      chip.className='day-chip' + (STATE.date===key ? ' active':'') + (open ? '' : ' disabled');
+      chip.innerHTML = `<div class="dow">${d.toLocaleDateString('ru-RU',{weekday:'short'})}</div><div class="num">${d.getDate()}</div>`;
+      if(open){
+        chip.addEventListener('click', async ()=>{
+          STATE.date = key; STATE.time = null;
+          haptic(); renderDays(); await renderSlots(); updateNextButton(false);
+        });
+      }
+      dayScroller.appendChild(chip);
+    }
+  }
+
+  async function renderSlots(){
+    if(!STATE.date){
+      STATE.slots = [];
+      slotGrid.innerHTML = '<div style="grid-column:1/-1; color:var(--ink-soft); font-size:13px;">Нет доступных дат в ближайшие две недели.</div>';
+      return;
+    }
+    slotGrid.innerHTML = '<div style="grid-column:1/-1; color:var(--ink-soft); font-size:13px;">Загрузка слотов…</div>';
+    const res = await api('getSlots', {date: STATE.date});
+    STATE.slots = res.slots || [];
+    slotGrid.innerHTML='';
+    if(!STATE.slots.length){
+      slotGrid.innerHTML = '<div style="grid-column:1/-1; color:var(--ink-soft); font-size:13px;">В этот день мойка не работает — выберите другую дату.</div>';
+      return;
+    }
+    STATE.slots.forEach(s=>{
+      const el = document.createElement('div');
+      el.className='slot' + (s.disabled ? ' disabled':'') + (STATE.time===s.time ? ' active':'');
+      el.textContent = s.time;
+      if(!s.disabled){
+        el.addEventListener('click', ()=>{ STATE.time = s.time; haptic(); renderSlots(); updateNextButton(true); });
+      }
+      slotGrid.appendChild(el);
+    });
+  }
+
+  /* ---------- STEP 4: CONTACT ---------- */
+  // Маска (29)123-45-67 — 2 цифры оператора в скобках + 7 цифр номера, храним STATE.contact.phone только цифрами
+  function formatPhone(digits){
+    digits = (digits || '').replace(/\D/g,'').slice(0,9);
+    if(!digits) return '';
+    let out = '(' + digits.slice(0,2);
+    if(digits.length >= 2) out += ')';
+    if(digits.length > 2) out += digits.slice(2,5);
+    if(digits.length > 5) out += '-' + digits.slice(5,7);
+    if(digits.length > 7) out += '-' + digits.slice(7,9);
+    return out;
+  }
+  const clientPhoneInput = $('clientPhone');
+  $('clientName').addEventListener('input', e=>{ STATE.contact.name = e.target.value; validateStep4(); });
+
+  // Сколько цифр стоит в formatted-строке до позиции caret (скобки/дефисы не считаются)
+  function digitsBeforeCaret(formatted, caret){ return (formatted.slice(0, caret).match(/\d/g) || []).length; }
+  // Позиция курсора сразу после того, как в маске набрано digitCount цифр
+  function caretAfterDigitCount(digits, digitCount){ return formatPhone(digits.slice(0, digitCount)).length; }
+  function setPhoneDigits(digits, caret){
+    STATE.contact.phone = digits;
+    clientPhoneInput.value = formatPhone(digits);
+    clientPhoneInput.setSelectionRange(caret, caret);
+    validateStep4();
+  }
+
+  // Backspace/Delete с курс[ором вплотную к «)» или «-» иначе стирают декоративный
+  // символ, а не цифру — маска пересобирается в ТУ ЖЕ строку, и кажется, что
+  // удаление не работает. Поэтому здесь стираем цифру по её позиции сами.
+  clientPhoneInput.addEventListener('keydown', (e)=>{
+    if(e.key !== 'Backspace' && e.key !== 'Delete') return;
+    const start = clientPhoneInput.selectionStart, end = clientPhoneInput.selectionEnd;
+    if(start !== end) return; // есть выделение — пусть браузер удалит диапазон как обычно
+    const digits = STATE.contact.phone;
+    if(e.key === 'Backspace'){
+      if(start === 0) return;
+      const count = digitsBeforeCaret(clientPhoneInput.value, start);
+      if(count === 0) return;
+      e.preventDefault();
+      setPhoneDigits(digits.slice(0, count-1) + digits.slice(count), caretAfterDigitCount(digits, count-1));
+    } else {
+      const count = digitsBeforeCaret(clientPhoneInput.value, start);
+      if(count >= digits.length) return;
+      e.preventDefault();
+      setPhoneDigits(digits.slice(0, count) + digits.slice(count+1), caretAfterDigitCount(digits, count));
+    }
+  });
+  clientPhoneInput.addEventListener('input', ()=>{
+    const digits = clientPhoneInput.value.replace(/\D/g,'').slice(0,9);
+    clientPhoneInput.value = formatPhone(digits);
+    STATE.contact.phone = digits;
+    validateStep4();
+  });
+  $('consent').addEventListener('change', validateStep4);
+  function validateStep4(){
+    const ok = STATE.contact.name.trim().length>1 && STATE.contact.phone.length===9 && $('consent').checked;
+    updateNextButton(ok);
+    return ok;
+  }
+
+  /* ---------- Профиль клиента: если уже записывался раньше — подставляем имя и телефон ---------- */
+  async function loadMyProfile(){
+    const res = await api('getMyProfile', {userId: tgUser.id});
+    if(res.ok && res.profile && res.profile.phone){
+      // Телефон в базе может быть с кодом страны (+375...) — берём последние 9 цифр, это локальный номер
+      const localDigits = String(res.profile.phone).replace(/\D/g,'').slice(-9);
+      STATE.contact.name = res.profile.name || '';
+      STATE.contact.phone = localDigits;
+      $('clientName').value = STATE.contact.name;
+      clientPhoneInput.value = formatPhone(localDigits);
+      validateStep4();
+    }
+  }
+
+  /* ---------- STICKY BAR / NEXT LOGIC ---------- */
+  const nextBtn = $('nextBtn');
+  const stickyTotal = $('stickyTotal');
+
+  function updateStickyBar(){
+    if(STATE.step===2){
+      const t = selectedTotal();
+      stickyTotal.innerHTML = t.count
+        ? `<div class="label">Выбрано ${t.count} услуг</div><div class="value">${t.min===t.max? t.min : t.min+'–'+t.max} BYN</div>`
+        : `<div class="label">Выберите хотя бы одну услугу</div>`;
+      nextBtn.textContent='Далее'; updateNextButton(t.count>0);
+    } else if(STATE.step===1){
+      stickyTotal.innerHTML = `<div class="label">Шаг 1 из 4</div><div class="value">Автомобиль</div>`;
+      nextBtn.textContent='Далее'; validateStep1();
+    } else if(STATE.step===3){
+      stickyTotal.innerHTML = STATE.time
+        ? `<div class="label">Вы выбрали</div><div class="value">${formatDate(STATE.date)}, ${STATE.time}</div>`
+        : `<div class="label">Выберите дату и время</div>`;
+      nextBtn.textContent='Далее'; updateNextButton(!!(STATE.date && STATE.time));
+    } else if(STATE.step===4){
+      const t = selectedTotal();
+      stickyTotal.innerHTML = `<div class="label">Итого к оплате</div><div class="value">${t.min===t.max? t.min : t.min+'–'+t.max} BYN</div>`;
+      nextBtn.textContent='Записаться'; validateStep4();
+    }
+  }
+  function updateNextButton(enabled){ nextBtn.disabled = !enabled; }
+  function formatDate(key){
+    if(!key) return '';
+    const [y,m,d] = key.split('-').map(Number);
+    return new Date(y, m-1, d).toLocaleDateString('ru-RU', {day:'numeric', month:'long'});
+  }
+
+  nextBtn.addEventListener('click', async ()=>{
+    if(nextBtn.disabled) return;
+    haptic();
+    if(STATE.step===1){
+      showScreen(2);
+      if(!STATE.servicesData.length) await loadServices(); else renderCategories();
+    } else if(STATE.step===2){
+      showScreen(3);
+      await loadSchedule();
+      if(!STATE.date || !isDateOpen(STATE.date)){
+        const today = new Date();
+        STATE.date = null;
+        for(let i=0;i<14;i++){
+          const d = new Date(today); d.setDate(today.getDate()+i);
+          const key = todayKey(d);
+          if(isDateOpen(key)){ STATE.date = key; break; }
+        }
+        STATE.time = null;
+      }
+      renderDays(); await renderSlots();
+    } else if(STATE.step===3){
+      showScreen(4);
+    } else if(STATE.step===4){
+      await submitBooking();
+    }
+  });
+
+  /* ---------- SUBMIT ---------- */
+  async function submitBooking(){
+    nextBtn.disabled = true; nextBtn.textContent='Записываем…';
+    const t = selectedTotal();
+    const items = allServiceItems().filter(it=>STATE.services.includes(it.id));
+    const fullPhone = $('phoneCode').value + STATE.contact.phone;
+    const payload = {
+      userId: tgUser.id, car: STATE.car, services: items.map(i=>i.name),
+      date: STATE.date, time: STATE.time, priceMin: t.min, priceMax: t.max,
+      contact: {name: STATE.contact.name, phone: fullPhone}
+    };
+    const res = await api('createBooking', payload);
+    if(!res.ok){
+      haptic('error');
+      nextBtn.disabled = false; nextBtn.textContent='Записаться';
+      await App.alertAsync('Это время уже занято. Пожалуйста, выберите другое.');
+      STATE.time = null;
+      showScreen(3);
+      await renderSlots();
+      updateNextButton(false);
+      return;
+    }
+    const carRes = await api('saveCar', {userId: tgUser.id, car:{
+      id: STATE.car.selectedCarId, number: STATE.car.number, brand: STATE.car.brand,
+      model: STATE.car.model, carClass: STATE.car.carClass
+    }});
+    if(carRes.car) STATE.car.selectedCarId = carRes.car.id;
+    haptic('success');
+    STATE.currentTicket = res.booking;
+    renderTicket(STATE.currentTicket, false);
+    showScreen(5);
+    markUnseenBooking();
+  }
+
+  function renderTicket(b, cancelled){
+    $('ticketTitle').textContent = cancelled ? 'Запись отменена' : 'Запись подтверждена';
+    $('ticketSub').textContent = cancelled ? 'Будем рады видеть вас в другой раз' : 'Ждём вас в назначенное время';
+    $('successIcon').style.background = cancelled ? 'var(--danger)' : 'var(--success)';
+    $('cancelBookingBtn').style.display = cancelled ? 'none':'flex';
+
+    const priceLabel = (b.priceMin===b.priceMax) ? (b.priceMin+' BYN') : (b.priceMin+'–'+b.priceMax+' BYN');
+    $('ticketCard').innerHTML = `
+      <div class="ticket-status${cancelled?' cancelled':''}">${cancelled?'Отменена':'Подтверждена'}</div>
+      <div class="ticket-row"><span class="k">Автомобиль</span><span class="v">${b.car.number} · ${b.car.brand||''} ${b.car.model||''}</span></div>
+      <div class="ticket-row"><span class="k">Услуги</span><span class="v">${b.services.join(', ')}</span></div>
+      <div class="ticket-row"><span class="k">Дата и время</span><span class="v">${formatDate(b.date)}, ${b.time}</span></div>
+      <div class="ticket-row"><span class="k">Клиент</span><span class="v">${b.contact.name}</span></div>
+      <div class="ticket-divider"></div>
+      <div class="ticket-total"><span class="k">Итого</span><span class="v">${priceLabel}</span></div>
+      <div class="ticket-id">№ ${b.id}</div>
+    `;
+  }
+
+  $('cancelBookingBtn').addEventListener('click', async ()=>{
+    if(!STATE.currentTicket) return;
+    if(!await App.confirmAsync('Отменить эту запись?')) return;
+    await api('cancelBooking', {id: STATE.currentTicket.id});
+    STATE.currentTicket.status='Отменена';
+    renderTicket(STATE.currentTicket, true);
+    haptic();
+  });
+
+  $('newBookingBtn').addEventListener('click', ()=>{
+    STATE.services = []; STATE.date=null; STATE.time=null;
+    STATE.contact = {name:'', phone:''};
+    $('clientName').value=''; $('clientPhone').value=''; $('consent').checked=false;
+    showScreen(1);
+  });
+
+  /* ---------- МОИ ЗАПИСИ ---------- */
+  const overlay = $('myBookingsOverlay');
+
+  // Бейдж на кнопке "Мои записи" — загорается после успешной записи, гаснет,
+  // когда клиент реально открыл список (личный индикатор, только в браузере).
+  const UNSEEN_BOOKING_KEY = 'cw_unseen_booking';
+  function markUnseenBooking(){ try{ localStorage.setItem(UNSEEN_BOOKING_KEY, '1'); }catch(e){} updateBookingsBadge(); }
+  function clearUnseenBooking(){ try{ localStorage.removeItem(UNSEEN_BOOKING_KEY); }catch(e){} updateBookingsBadge(); }
+  function updateBookingsBadge(){
+    let has = false; try{ has = localStorage.getItem(UNSEEN_BOOKING_KEY) === '1'; }catch(e){}
+    $('myBookingsBadge').style.display = has ? 'block' : 'none';
+  }
+
+  $('myBookingsBtn').addEventListener('click', async ()=>{
+    overlay.classList.add('open');
+    clearUnseenBooking();
+    if(tg && tg.BackButton){ try{ tg.BackButton.show(); tg.BackButton.onClick(closeOverlay); }catch(e){} }
+    const res = await api('getMyBookings', {userId: tgUser.id});
+    renderMyBookings(res.bookings || []);
+  });
+  function closeOverlay(){
+    overlay.classList.remove('open');
+    if(tg && tg.BackButton){ try{ STATE.step===1 ? tg.BackButton.hide() : tg.BackButton.onClick(goBack); }catch(e){} }
+  }
+  $('closeOverlayBtn').addEventListener('click', closeOverlay);
+
+  const BOOKING_STATUS_CLASS = {
+    'Ожидает':'st-pending', 'Подтверждена':'st-confirmed', 'Выполнена':'st-done', 'Отменена':'st-cancelled'
+  };
+  function renderBookingRow(b){
+    const el = document.createElement('div');
+    el.className='booking-mini';
+    const priceLabel = (b.priceMin===b.priceMax) ? (b.priceMin+' BYN') : (b.priceMin+'–'+b.priceMax+' BYN');
+    el.innerHTML = `
+      <div class="top"><span class="plate-mini">${b.car.number}</span><span class="status-pill ${BOOKING_STATUS_CLASS[b.status]||''}">${b.status}</span></div>
+      <div class="meta">${formatDate(b.date)}, ${b.time} · ${b.services.length} услуг · ${priceLabel}</div>
+    `;
+    el.addEventListener('click', ()=>{
+      closeOverlay();
+      STATE.currentTicket = b;
+      renderTicket(b, b.status==='Отменена');
+      showScreen(5);
+    });
+    return el;
+  }
+
+  // Разделяем по дате: активные — сегодня и позже (ещё предстоят), история —
+  // вчера и раньше. Не по статусу — админ не всегда помечает запись
+  // "выполнена", а дата уже прошла, поэтому это надёжнее.
+  function renderMyBookings(list){
+    const wrap = $('myBookingsList');
+    if(!list.length){
+      wrap.innerHTML = `<div class="empty-state"><div class="drop-big"></div>Пока нет записей.<br>Оформите первую запись на мойку.</div>`;
+      return;
+    }
+    const today = todayKey();
+    const active = list.filter(b => b.date >= today).sort((a,b)=> (a.date+a.time).localeCompare(b.date+b.time));
+    const past = list.filter(b => b.date < today); // уже отсортирован бэкендом от новых к старым
+    wrap.innerHTML='';
+    function renderGroup(title, items){
+      if(!items.length) return;
+      const label = document.createElement('div');
+      label.className='section-title';
+      label.style.cssText='padding:0 18px; margin:16px 0 8px;';
+      label.textContent = title;
+      wrap.appendChild(label);
+      items.forEach(b=> wrap.appendChild(renderBookingRow(b)));
+    }
+    renderGroup('Активные', active);
+    renderGroup('История', past);
+  }
+
+  /* ============ ПЕРЕКЛЮЧЕНИЕ СВЕТЛАЯ/ТЁМНАЯ ============ */
+  const MODE_ICONS = {
+    light: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+    dark: '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>'
+  };
+  function renderModeIcon(){ $('modeIcon').innerHTML = MODE_ICONS[App.getMode()] || MODE_ICONS.light; }
+  $('modeToggleBtn').addEventListener('click', ()=>{ haptic(); App.toggleMode(); renderModeIcon(); });
+  renderModeIcon();
+
+  /* ============ SHEET HELPERS ============ */
+  const sheet = $('sheet'), sheetOverlay = $('sheetOverlay');
+  function openSheet(html){
+    $('sheetContent').innerHTML = html;
+    sheet.classList.add('open'); sheetOverlay.classList.add('open');
+    if(tg && tg.BackButton){ try{ tg.BackButton.show(); tg.BackButton.onClick(closeSheet); }catch(e){} }
+  }
+  function closeSheet(){
+    sheet.classList.remove('open'); sheetOverlay.classList.remove('open');
+    if(tg && tg.BackButton){ try{ STATE.step===1 ? tg.BackButton.hide() : tg.BackButton.onClick(goBack); }catch(e){} }
+  }
+  sheetOverlay.addEventListener('click', closeSheet);
+
+  /* ============ TOAST ============ */
+  let toastEl = null, toastTimer = null;
+  function showToast(msg, isError){
+    if(!toastEl){ toastEl = document.createElement('div'); toastEl.className='toast'; document.body.appendChild(toastEl); }
+    toastEl.textContent = msg;
+    toastEl.className = 'toast show' + (isError ? ' error' : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(()=> toastEl.classList.remove('show'), 2600);
+  }
+
+  /* ============ ЦВЕТОВАЯ СХЕМА (личный выбор, привязан к tg_id на сервере) ============ */
+  const BRAND_META = {
+    avtohimiya: { label: 'Автохимия с полки', sub: 'Зелёный/оранжевый, дружелюбный', swatch: 'linear-gradient(135deg,#63B33A,#F2624A)' },
+    voda:       { label: 'Вода и пена', sub: 'Бирюзовый/янтарный, свежий', swatch: 'linear-gradient(135deg,#0C8599,#E8A33D)' },
+    chrome:     { label: 'Хром и перламутр', sub: 'Синий, технологичный', swatch: 'linear-gradient(135deg,#2E5EFF,#1E44CC)' },
+    mercedes:   { label: 'Mercedes', sub: 'Премиальный, хром + красный', swatch: 'linear-gradient(135deg,#C6CBD1,#B3122E)' },
+    telegram:   { label: 'Telegram', sub: 'Фирменный синий, как в самом Telegram', swatch: 'linear-gradient(135deg,#2AABEE,#229ED9)' },
+  };
+  function openBrandSheet(){
+    const current = App.getBrand();
+    openSheet(`
+      <div class="sheet-title">Цветовая схема</div>
+      <div style="font-size:12.5px; color:var(--ink-soft); margin:-6px 0 14px;">Меняет оформление только у вас — привязано к вашему аккаунту, у других клиентов и в панели администратора/владельца ничего не меняется.</div>
+      <div id="brandOptions"></div>
+    `);
+    const wrap = $('brandOptions');
+    App.BRAND_LIST.forEach(id=>{
+      const meta = BRAND_META[id];
+      const active = id === current;
+      const row = document.createElement('div');
+      row.className = 'staff-row';
+      row.innerHTML = `
+        <div style="width:40px;height:40px;border-radius:50%;flex-shrink:0;background:${meta.swatch};${active?'box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--accent);':''}"></div>
+        <div class="staff-main">
+          <div class="staff-name">${meta.label}</div>
+          <div class="staff-role">${meta.sub}</div>
+        </div>
+        ${active ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:20px;height:20px;color:var(--accent);flex-shrink:0;"><path d="M20 6L9 17l-5-5"/></svg>' : ''}
+      `;
+      row.addEventListener('click', ()=>{
+        closeSheet();
+        if(active) return;
+        App.applyBrand(id);
+        api('saveTheme', {userId: tgUser.id, theme:id}).catch(()=>{});
+        haptic('success');
+        showToast('Схема «' + meta.label + '» применена');
+      });
+      wrap.appendChild(row);
+    });
+  }
+  $('brandSettingsBtn').addEventListener('click', openBrandSheet);
+
+  // Догоняем локальный выбор серверным при заходе — если с другого устройства
+  // сохранена другая схема или Telegram WebView успел почистить localStorage.
+  async function loadMyTheme(){
+    const res = await api('getMyTheme', {userId: tgUser.id});
+    if(res.ok && res.theme && res.theme !== App.getBrand()) App.applyBrand(res.theme);
+  }
+
+  /* ============ BOOTSTRAP ============ */
+  async function bootstrapApp(){
+    CONFIG = await App.loadConfig();
+
+    document.body.dataset.theme = App.resolveBrand(CONFIG.theme);
+    const cs = getComputedStyle(document.body);
+    App.setChrome(cs.getPropertyValue('--bg').trim(), cs.getPropertyValue('--surface').trim());
+    loadMyTheme().catch(()=>{});
+
+    if(CONFIG.status === 'paused'){
+      $('bootLoading').style.display='none';
+      $('bootPaused').style.display='flex';
+      return;
+    }
+
+    $('brandName').textContent = CONFIG.businessName;
+    $('callBtn').setAttribute('href', 'tel:' + CONFIG.phone);
+
+    showScreen(1);
+    validateStep1();
+    updateBookingsBadge();
+    loadMyCars();
+    loadMyProfile();
+    // Запускаем заранее, пока клиент заполняет шаг 1 (машина) — к моменту
+    // перехода на шаги 2/3 данные уже в кэше STATE, и Apps Script round-trip
+    // (несколько секунд на мобильной сети) не блокирует переход между экранами.
+    loadServices().catch(()=>{});
+    loadSchedule().catch(()=>{});
+
+    $('bootLoading').style.display='none';
+  }
+  bootstrapApp();
+})();
+</script>
+</body>
+</html>

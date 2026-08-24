@@ -1,0 +1,957 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>МОСТ — панель управления</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@600;700;800;900&family=Work+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="palettes.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+(function(){
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var saved = null;
+  try { saved = localStorage.getItem('mostcafe_theme_override'); } catch(e){}
+  var scheme = saved || ((tg && tg.colorScheme) ? tg.colorScheme
+    : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+  document.documentElement.setAttribute('data-theme', scheme);
+})();
+</script>
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{ background:var(--bg); color:var(--ink); font-family:var(--font-body); min-height:100vh; display:flex; justify-content:center; }
+  body[data-lang="cn"] .i18n{font-family:var(--font-cn);}
+  .app{ width:100%; max-width:480px; min-height:100vh; background:var(--bg); position:relative; padding-bottom:calc(92px + env(safe-area-inset-bottom)); }
+
+  /* ---------- Header ---------- */
+  .topbar{
+    position:relative; padding:calc(20px + env(safe-area-inset-top)) 20px 18px; overflow:hidden;
+    background:linear-gradient(100deg, var(--jade) 0%, var(--jade) 48%, var(--honey) 52%, var(--honey) 100%);
+    color:#fff;
+  }
+  .topbar-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
+  .brand{display:flex; align-items:center; gap:11px;}
+  .brand-mark{
+    width:40px; height:40px; flex:none; border-radius:50%;
+    background:var(--seal); border:2px dashed rgba(255,255,255,0.6);
+    display:flex; align-items:center; justify-content:center;
+    font-family:var(--font-cn); font-weight:700; font-size:17px; color:#fff;
+    transform:rotate(-6deg);
+  }
+  h1.brand-name{ font-family:var(--font-display); font-weight:800; font-size:19px; letter-spacing:0.02em; margin:0; line-height:1.08; text-transform:uppercase; }
+  .tagline{margin:3px 0 0; font-size:12px; color:rgba(255,255,255,0.85); font-weight:500;}
+  .header-actions{display:flex; align-items:center; gap:8px; flex:none;}
+  .icon-btn{
+    width:40px; height:40px; border-radius:50%; flex:none;
+    background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.4);
+    color:#fff; font-size:16px; cursor:pointer;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn:active{background:rgba(255,255,255,0.3);}
+  .lang-toggle{
+    background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.4); color:#fff;
+    font-family:var(--font-body); font-weight:700; font-size:12.5px; padding:0 13px; height:40px; border-radius:20px; cursor:pointer; flex:none;
+  }
+
+  .accept-row{
+    margin-top:16px; display:flex; align-items:center; justify-content:space-between;
+    background:rgba(251,247,238,0.95); padding:10px 14px; border-radius:16px;
+    box-shadow:0 4px 14px rgba(0,0,0,0.16);
+  }
+  .accept-label{font-size:13px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:7px;}
+  .accept-dot{width:7px; height:7px; border-radius:50%; background:var(--jade); flex:none;}
+  .accept-row.off .accept-dot{background:var(--seal);}
+
+  /* ---------- Switch ---------- */
+  .switch{ width:46px; height:28px; border-radius:16px; background:var(--surface-2); position:relative; cursor:pointer; flex:none; transition:background .2s; }
+  .switch.on{background:var(--jade);}
+  .switch-knob{ width:22px; height:22px; border-radius:50%; background:#fff; position:absolute; top:3px; left:3px; transition:left .2s; box-shadow:0 1px 3px rgba(0,0,0,0.3); }
+  .switch.on .switch-knob{left:21px;}
+
+  /* ---------- Views ---------- */
+  .view{padding:16px 20px 4px;}
+  .section-title{ font-family:var(--font-display); font-weight:700; font-size:12px; text-transform:uppercase; letter-spacing:0.08em; color:var(--ink-soft); margin:16px 2px 8px; }
+  .section-title:first-child{margin-top:0;}
+
+  /* ---------- Order cards ---------- */
+  .order-card{
+    background:var(--surface); border:1px solid var(--line); border-left:4px solid var(--ink-soft);
+    border-radius:14px; padding:13px 14px; margin-bottom:10px; cursor:pointer;
+  }
+  .order-card.status-new{border-left-color:var(--seal);}
+  .order-card.status-preparing{border-left-color:var(--honey);}
+  .order-card.status-ready{border-left-color:var(--jade);}
+  .order-card.status-done{border-left-color:var(--ink-soft); opacity:0.5;}
+  .order-top{display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;}
+  .order-id{font-family:var(--font-display); font-weight:700; font-size:14px;}
+  .status-chip{ font-size:10.5px; font-weight:800; text-transform:uppercase; padding:3px 8px; border-radius:20px; letter-spacing:0.03em; }
+  .status-chip.status-new{background:var(--seal-tint); color:var(--seal-deep);}
+  .status-chip.status-preparing{background:var(--honey-tint); color:var(--honey-deep);}
+  .status-chip.status-ready{background:var(--jade-tint); color:var(--jade-deep);}
+  .status-chip.status-done{background:var(--surface-2); color:var(--ink-soft);}
+  .order-type-tag{font-size:12px; color:var(--ink-soft); font-weight:600; margin-bottom:4px;}
+  .order-items-preview{font-size:13px; color:var(--ink); line-height:1.4; margin-bottom:8px;}
+  .order-bottom{display:flex; align-items:center; justify-content:space-between;}
+  .order-total{font-family:var(--font-display); font-weight:800; font-size:14.5px; color:var(--jade-deep);}
+  .order-action{
+    border:none; border-radius:12px; padding:10px 15px; min-height:40px; font-family:var(--font-body);
+    font-weight:700; font-size:12.5px; cursor:pointer; background:var(--ink); color:var(--surface);
+  }
+  .order-action.ready{background:var(--jade);}
+  .order-done-label{font-size:12.5px; font-weight:700; color:var(--ink-soft);}
+  .empty-state{padding:36px 10px; text-align:center; color:var(--ink-soft); font-size:13.5px;}
+
+  .fab{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:calc(88px + env(safe-area-inset-bottom)); z-index:15;
+    background:var(--seal); color:#fff; border:none; border-radius:30px;
+    padding:14px 22px; min-height:48px; font-family:var(--font-body); font-weight:800; font-size:13.5px;
+    box-shadow:0 10px 26px rgba(0,0,0,0.25); cursor:pointer;
+  }
+
+  /* ---------- Menu view ---------- */
+  .menu-item{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:10px 10px 10px 12px; margin-bottom:8px; display:flex; align-items:center; gap:8px; }
+  .menu-item.out{opacity:0.5;}
+  .menu-item-icon{width:36px; height:36px; border-radius:10px; background:var(--surface-2); flex:none; display:flex; align-items:center; justify-content:center; font-size:17px;}
+  .menu-item-body{flex:1; min-width:0;}
+  .menu-item-name{font-weight:700; font-size:13.5px; margin:0 0 2px;}
+  .menu-item-price{font-size:12.5px; color:var(--ink-soft);}
+  .star-btn{ background:none; border:none; font-size:18px; cursor:pointer; color:var(--surface-2); flex:none; width:40px; height:40px; display:flex; align-items:center; justify-content:center; }
+  .star-btn.on{color:var(--seal);}
+  .edit-btn{ background:var(--surface-2); border:none; border-radius:10px; width:40px; height:40px; font-size:14px; cursor:pointer; color:var(--ink-soft); flex:none; }
+  .add-dish-row{
+    background:var(--surface); border:1.5px dashed var(--jade); border-radius:14px; padding:14px; min-height:44px;
+    text-align:center; font-weight:700; font-size:13.5px; color:var(--jade-deep); cursor:pointer; margin-top:4px;
+  }
+
+  /* ---------- Stats view ---------- */
+  .period-tabs{display:flex; gap:8px; margin-bottom:12px;}
+  .period-tab{ flex:1; text-align:center; padding:10px; min-height:40px; border-radius:12px; border:1px solid var(--line); background:var(--surface); color:var(--ink-soft); font-weight:700; font-size:12.5px; cursor:pointer; }
+  .period-tab.active{background:var(--jade); color:#fff; border-color:var(--jade);}
+  .stats-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:6px;}
+  .stat-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px;}
+  .stat-value{font-family:var(--font-display); font-weight:800; font-size:21px; color:var(--ink);}
+  .stat-label{font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:0.04em; margin-top:2px; font-weight:700;}
+
+  .split-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px; margin-top:4px;}
+  .split-bar{height:10px; border-radius:8px; overflow:hidden; display:flex; margin:10px 0 8px;}
+  .split-bar .pickup{background:var(--jade);}
+  .split-bar .delivery{background:var(--honey-light);}
+  .split-legend{display:flex; justify-content:space-between; font-size:12px; color:var(--ink-soft); font-weight:600;}
+  .split-legend .dot{display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:5px;}
+
+  .top-item-row{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .top-item-name{width:38%; font-size:13px; font-weight:700; flex:none;}
+  .top-item-bar-wrap{flex:1; background:var(--surface-2); border-radius:6px; height:10px; overflow:hidden;}
+  .top-item-bar{height:100%; background:var(--jade); border-radius:6px;}
+  .top-item-count{font-size:12px; color:var(--ink-soft); font-weight:700; width:26px; text-align:right; flex:none;}
+
+  /* ---------- Settings view ---------- */
+  .settings-card{background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:12px;}
+  .zone-row{display:flex; gap:8px; align-items:center; margin-bottom:8px;}
+  .zone-row input{flex:1; min-width:0;}
+  .zone-row-label{font-size:11.5px; color:var(--ink-soft); width:64px; flex:none;}
+
+  /* ---------- Bottom nav ---------- */
+  .bottom-nav{
+    position:fixed; left:50%; transform:translateX(-50%); bottom:0; width:100%; max-width:480px;
+    display:flex; background:var(--surface); border-top:1px solid var(--line); z-index:20;
+    padding:8px 4px calc(8px + env(safe-area-inset-bottom));
+  }
+  .nav-btn{
+    flex:1; background:none; border:none; padding:8px 2px; min-height:48px; display:flex; flex-direction:column; align-items:center; gap:3px;
+    font-family:var(--font-body); font-weight:700; font-size:10.5px; color:var(--ink-soft); cursor:pointer; position:relative;
+  }
+  .nav-btn.active{color:var(--jade-deep);}
+  .nav-icon{width:20px; height:20px;}
+  .nav-icon svg{width:100%; height:100%; display:block;}
+  .nav-badge{
+    position:absolute; top:2px; right:20%; background:var(--seal); color:#fff; font-size:9px; font-weight:800;
+    min-width:15px; height:15px; border-radius:8px; display:flex; align-items:center; justify-content:center; padding:0 3px;
+  }
+
+  /* ---------- Sheet ---------- */
+  .overlay{ position:fixed; inset:0; background:rgba(20,18,16,0.55); opacity:0; pointer-events:none; transition:opacity .25s; z-index:30; }
+  .overlay.show{opacity:1; pointer-events:auto;}
+  .sheet{
+    position:fixed; left:50%; bottom:0; transform:translate(-50%,100%); width:100%; max-width:480px;
+    background:var(--surface); border-radius:24px 24px 0 0; padding:20px 20px calc(26px + env(safe-area-inset-bottom));
+    z-index:31; transition:transform .3s ease; max-height:86vh; overflow-y:auto;
+  }
+  .sheet.show{transform:translate(-50%,0);}
+  .sheet-handle{width:36px; height:4px; border-radius:3px; background:var(--line); margin:0 auto 16px;}
+  .sheet-title{font-family:var(--font-display); font-weight:700; font-size:17.5px; margin:0 0 14px;}
+  .field-label{font-size:12.5px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin:14px 0 6px;}
+  .field-label:first-of-type{margin-top:0;}
+  .text-input{ width:100%; border:1px solid var(--line); border-radius:12px; padding:13px 14px; font-family:var(--font-body); font-size:14px; background:var(--surface); color:var(--ink); }
+  .text-input:focus{outline:2px solid var(--jade); outline-offset:1px;}
+  select.text-input{ appearance:none; background-image:linear-gradient(45deg, transparent 50%, var(--ink-soft) 50%), linear-gradient(135deg, var(--ink-soft) 50%, transparent 50%); background-position:calc(100% - 18px) center, calc(100% - 13px) center; background-size:5px 5px, 5px 5px; background-repeat:no-repeat; }
+  .btn-primary{ width:100%; margin-top:18px; background:var(--jade); color:var(--surface); border:none; border-radius:16px; padding:16px; min-height:52px; font-family:var(--font-body); font-weight:800; font-size:15px; cursor:pointer; }
+  .btn-ghost{ width:100%; margin-top:10px; min-height:44px; background:transparent; border:none; padding:10px; font-family:var(--font-body); font-weight:700; font-size:13.5px; cursor:pointer; color:var(--ink-soft); }
+
+  .icon-picker{display:flex; gap:8px; flex-wrap:wrap;}
+  .icon-opt{ width:40px; height:40px; border-radius:10px; border:1px solid var(--line); background:var(--surface-2); font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
+  .icon-opt.active{background:var(--jade); border-color:var(--jade);}
+
+  /* ---------- Order detail sheet ---------- */
+  .detail-line{display:flex; justify-content:space-between; font-size:13.5px; padding:6px 0; border-bottom:1px dashed var(--line);}
+  .detail-line:last-of-type{border-bottom:none;}
+  .detail-meta-row{display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink-soft); padding:5px 0;}
+  .detail-note-box{background:var(--surface-2); border-radius:12px; padding:11px 13px; font-size:13px; margin-top:10px;}
+  .timeline{display:flex; gap:6px; margin:14px 0 4px;}
+  .timeline-step{flex:1; text-align:center; font-size:10.5px; font-weight:700; color:var(--ink-soft); padding-top:10px; position:relative;}
+  .timeline-step::before{content:''; position:absolute; top:0; left:0; right:0; height:4px; border-radius:4px; background:var(--surface-2);}
+  .timeline-step.done::before{background:var(--jade);}
+</style>
+</head>
+<body data-lang="ru">
+
+<div class="app">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="brand">
+        <div class="brand-mark">桥</div>
+        <div>
+          <h1 class="brand-name i18n" data-i18n="brandName">Мост · Панель</h1>
+          <p class="tagline i18n" data-i18n="subtitle">для персонала и владельца</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="icon-btn" id="themeToggle" aria-label="Переключить тему">🌙</button>
+        <button class="lang-toggle" id="langToggle">中文</button>
+      </div>
+    </div>
+    <div class="accept-row" id="acceptRow">
+      <span class="accept-label"><span class="accept-dot"></span><span class="i18n" data-i18n="acceptingLabel">Приём заказов</span></span>
+      <div class="switch on" id="acceptSwitch"><div class="switch-knob"></div></div>
+    </div>
+  </div>
+
+  <div class="view" id="ordersView">
+    <div class="section-title i18n" data-i18n="tabOrders">Заказы</div>
+    <div id="ordersList"></div>
+  </div>
+
+  <div class="view" id="menuView" style="display:none;">
+    <div id="menuList"></div>
+  </div>
+
+  <div class="view" id="statsView" style="display:none;">
+    <div class="period-tabs" id="periodTabs"></div>
+    <div class="stats-grid" id="statsGrid"></div>
+    <div class="split-card">
+      <div class="section-title i18n" data-i18n="splitLabel" style="margin:0 0 2px;">Самовывоз / Доставка</div>
+      <div class="split-bar"><div class="pickup" id="splitPickup"></div><div class="delivery" id="splitDelivery"></div></div>
+      <div class="split-legend">
+        <span><span class="dot" style="background:var(--jade);"></span><span class="i18n" data-i18n="pickupTab">Самовывоз</span> — <span id="splitPickupPct"></span>%</span>
+        <span><span class="dot" style="background:var(--honey-light);"></span><span class="i18n" data-i18n="deliveryTab">Доставка</span> — <span id="splitDeliveryPct"></span>%</span>
+      </div>
+    </div>
+    <div class="section-title i18n" data-i18n="topItemsLabel">Топ позиций</div>
+    <div id="topItemsList"></div>
+  </div>
+
+  <div class="view" id="settingsView" style="display:none;">
+    <div class="section-title i18n" data-i18n="tabSettings">Настройки</div>
+    <div class="settings-card">
+      <div class="field-label i18n" data-i18n="phoneLabel">Телефон</div>
+      <input class="text-input" id="setPhone">
+      <div class="field-label i18n" data-i18n="addressLabel">Адрес</div>
+      <input class="text-input" id="setAddress">
+      <div class="field-label i18n" data-i18n="workHoursLabel">Часы работы</div>
+      <div class="zone-row">
+        <input class="text-input" id="setHoursFrom" placeholder="08:00">
+        <span>—</span>
+        <input class="text-input" id="setHoursTo" placeholder="20:00">
+      </div>
+    </div>
+    <div class="settings-card">
+      <div class="field-label i18n" data-i18n="deliveryZonesLabel" style="margin-top:0;">Зоны доставки (км / цена / мин)</div>
+      <div id="zonesEditor"></div>
+    </div>
+    <button class="btn-primary i18n" id="saveSettingsBtn" data-i18n="saveBtn">Сохранить</button>
+  </div>
+</div>
+
+<button class="fab" id="fabBtn"><span id="fabLabel">+ Новый заказ</span></button>
+
+<nav class="bottom-nav">
+  <button class="nav-btn active" data-tab="orders">
+    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6a1 1 0 0 1 1 1v2H8V3a1 1 0 0 1 1-1Z"/><rect x="4" y="5" width="16" height="16" rx="2"/><path d="M9 12h6M9 16h6"/></svg></span>
+    <span class="i18n" data-i18n="tabOrders">Заказы</span>
+    <span class="nav-badge" id="ordersBadge">0</span>
+  </button>
+  <button class="nav-btn" data-tab="menu">
+    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2v8M4 2v4a2 2 0 0 0 2 2 2 2 0 0 0 2-2V2M18 2v20M18 2c-2.2 0-4 2.7-4 6s1.8 6 4 6"/></svg></span>
+    <span class="i18n" data-i18n="tabMenu">Меню</span>
+  </button>
+  <button class="nav-btn" data-tab="stats">
+    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M12 20V4M20 20v-7"/></svg></span>
+    <span class="i18n" data-i18n="tabStats">Статистика</span>
+  </button>
+  <button class="nav-btn" data-tab="settings">
+    <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.2a1.7 1.7 0 0 0-1-1.5 1.7 1.7 0 0 0-1.9.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.9 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.2a1.7 1.7 0 0 0 1.5-1 1.7 1.7 0 0 0-.3-1.9l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.9.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.2a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.9-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.9V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.2a1.7 1.7 0 0 0-1.5 1Z"/></svg></span>
+    <span class="i18n" data-i18n="tabSettings">Настройки</span>
+  </button>
+</nav>
+
+<div class="overlay" id="overlay"></div>
+
+<div class="sheet" id="orderDetailSheet">
+  <div class="sheet-handle"></div>
+  <h2 class="sheet-title" id="orderDetailTitle">Заказ</h2>
+  <div id="orderDetailBody"></div>
+  <button class="btn-ghost i18n" id="closeOrderDetailBtn" data-i18n="cancelBtn">Отмена</button>
+</div>
+
+<div class="sheet" id="itemSheet">
+  <div class="sheet-handle"></div>
+  <h2 class="sheet-title" id="itemSheetTitle">Блюдо</h2>
+
+  <div class="field-label i18n" data-i18n="categoryLabel">Категория</div>
+  <select class="text-input" id="editCat"></select>
+
+  <div class="field-label i18n" data-i18n="iconLabel">Иконка</div>
+  <div class="icon-picker" id="editIconPicker"></div>
+
+  <div class="field-label i18n" data-i18n="nameRuLabel">Название (RU)</div>
+  <input class="text-input" id="editNameRu">
+
+  <div class="field-label i18n" data-i18n="nameCnLabel">Название (中文)</div>
+  <input class="text-input" id="editNameCn">
+
+  <div class="field-label i18n" data-i18n="descRuLabel">Описание (RU)</div>
+  <input class="text-input" id="editDescRu">
+
+  <div class="field-label i18n" data-i18n="descCnLabel">Описание (中文)</div>
+  <input class="text-input" id="editDescCn">
+
+  <div class="field-label i18n" data-i18n="priceLabel">Цена, BYN</div>
+  <input class="text-input" id="editPrice" type="number" step="0.10" inputmode="decimal">
+
+  <button class="btn-primary i18n" id="saveItemBtn" data-i18n="saveBtn">Сохранить</button>
+  <button class="btn-ghost" id="deleteItemBtn" style="color:var(--seal);"></button>
+  <button class="btn-ghost i18n" id="cancelItemBtn" data-i18n="cancelBtn">Отмена</button>
+</div>
+
+<script>
+/* ============================================================ CONFIG ============================================================ */
+const DEMO_CONFIG = {
+  businessName: 'Мост',
+  phone: '+375291234567',
+  address: 'просп. Независимости, 58, 1 этаж',
+  coords: { lat:53.9628, lng:28.0295 },
+  workHours: { from:'08:00', to:'20:00' },
+  pickupEtaMin: 12,
+  deliveryZones: [ {maxKm:1.5, fee:3.00, eta:15}, {maxKm:4, fee:5.50, eta:25}, {maxKm:8, fee:8.00, eta:35} ],
+  apiUrl: 'PASTE_APPS_SCRIPT_URL_HERE'
+};
+
+/* ============================================================ Telegram WebApp ============================================================ */
+const tg = window.Telegram ? window.Telegram.WebApp : null;
+
+function haptic(style){
+  if(!tg || !tg.HapticFeedback) return;
+  try{
+    if(['success','error','warning'].includes(style)) tg.HapticFeedback.notificationOccurred(style);
+    else tg.HapticFeedback.impactOccurred(style || 'light');
+  }catch(e){}
+}
+
+function confirmAsync(message){
+  return new Promise((resolve)=>{
+    if(tg && tg.showConfirm && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')){
+      try{ tg.showConfirm(message, (ok)=>resolve(ok)); return; }catch(e){}
+    }
+    resolve(window.confirm(message));
+  });
+}
+
+const THEME_KEY = 'mostcafe_theme_override';
+
+function resolveTheme(){
+  let saved = null;
+  try{ saved = localStorage.getItem(THEME_KEY); }catch(e){}
+  if(saved) return saved;
+  return (tg && tg.colorScheme) ? tg.colorScheme
+    : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+}
+
+function applyTheme(scheme, persist){
+  document.documentElement.setAttribute('data-theme', scheme);
+  if(persist){ try{ localStorage.setItem(THEME_KEY, scheme); }catch(e){} }
+  const btn = document.getElementById('themeToggle');
+  if(btn) btn.textContent = scheme === 'dark' ? '☀️' : '🌙';
+  if(tg){
+    try{
+      const s = getComputedStyle(document.documentElement);
+      tg.setHeaderColor && tg.setHeaderColor(s.getPropertyValue('--jade').trim());
+      tg.setBackgroundColor && tg.setBackgroundColor(s.getPropertyValue('--bg').trim());
+    }catch(e){}
+  }
+}
+
+function applyTelegramTheme(){ applyTheme(resolveTheme(), false); }
+
+function toggleTheme(){
+  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  applyTheme(next, true);
+  haptic('light');
+}
+
+function initTelegram(){
+  applyTheme(resolveTheme(), false);
+  const themeBtn = document.getElementById('themeToggle');
+  if(themeBtn) themeBtn.onclick = toggleTheme;
+  if(!tg) return;
+  try{
+    tg.ready(); tg.expand();
+    applyTelegramTheme();
+    tg.onEvent && tg.onEvent('themeChanged', ()=>{
+      let saved = null;
+      try{ saved = localStorage.getItem(THEME_KEY); }catch(e){}
+      if(!saved) applyTelegramTheme();
+    });
+    if(tg.isVersionAtLeast && tg.isVersionAtLeast('7.7')){ try{ tg.disableVerticalSwipes(); }catch(e){} }
+    tg.BackButton && tg.BackButton.onClick(closeSheets);
+  }catch(e){}
+}
+
+function syncBackButton(anyOpen){
+  if(!tg || !tg.BackButton) return;
+  try{ anyOpen ? tg.BackButton.show() : tg.BackButton.hide(); }catch(e){}
+}
+
+/* ---------------- i18n ---------------- */
+const I18N = {
+  ru:{
+    brandName:'Мост · Панель', subtitle:'для персонала и владельца',
+    acceptingLabel:'Приём заказов', tabOrders:'Заказы', tabMenu:'Меню', tabStats:'Статистика', tabSettings:'Настройки',
+    statusNew:'Новый', statusPreparing:'Готовится', statusReady:'Готов', statusDone:'Выдан',
+    actionStart:'Взять в работу', actionReady:'Готово', actionServe:'Выдать', doneLabel:'Выдан ✓',
+    emptyOrders:'Нет активных заказов', simulateBtn:'+ Новый заказ', addDishBtn:'+ Добавить блюдо',
+    pickupTab:'Самовывоз', deliveryTab:'Доставка',
+    inStockLabel:'В наличии', revenueLabel:'Выручка', ordersCountLabel:'Заказов', totalLabel:'Итого',
+    avgCheckLabel:'Средний чек', splitLabel:'Самовывоз / Доставка', topItemsLabel:'Топ позиций',
+    categoryLabel:'Категория', iconLabel:'Иконка', nameRuLabel:'Название (RU)', nameCnLabel:'Название (中文)',
+    descRuLabel:'Описание (RU)', descCnLabel:'Описание (中文)', priceLabel:'Цена, BYN',
+    saveBtn:'Сохранить', deleteBtn:'Удалить блюдо', cancelBtn:'Отмена',
+    editDishTitle:'Изменить блюдо', newDishTitle:'Новое блюдо',
+    periodToday:'Сегодня', periodWeek:'Неделя', periodMonth:'Месяц',
+    phoneLabel:'Телефон', addressLabel:'Адрес', workHoursLabel:'Часы работы', deliveryZonesLabel:'Зоны доставки (км / цена / мин)',
+    orderDetailTitle:'Заказ', noteLabel:'Комментарий', phoneOrderLabel:'Телефон', addressOrderLabel:'Адрес',
+    confirmDeleteDish:'Удалить это блюдо из меню?', settingsSaved:'Настройки сохранены',
+    zoneUpTo:'до',
+  },
+  cn:{
+    brandName:'桥 · 后台', subtitle:'员工与店主端',
+    acceptingLabel:'接受订单', tabOrders:'订单', tabMenu:'菜单', tabStats:'统计', tabSettings:'设置',
+    statusNew:'新订单', statusPreparing:'制作中', statusReady:'已完成', statusDone:'已取餐',
+    actionStart:'开始制作', actionReady:'已做好', actionServe:'交付顾客', doneLabel:'已取餐 ✓',
+    emptyOrders:'暂无订单', simulateBtn:'+ 模拟订单', addDishBtn:'+ 添加菜品',
+    pickupTab:'自取', deliveryTab:'外送',
+    inStockLabel:'有货', revenueLabel:'营收', ordersCountLabel:'订单数', totalLabel:'合计',
+    avgCheckLabel:'客单价', splitLabel:'自取 / 外送', topItemsLabel:'热销榜',
+    categoryLabel:'分类', iconLabel:'图标', nameRuLabel:'名称（俄语）', nameCnLabel:'名称（中文）',
+    descRuLabel:'描述（俄语）', descCnLabel:'描述（中文）', priceLabel:'价格（BYN）',
+    saveBtn:'保存', deleteBtn:'删除菜品', cancelBtn:'取消',
+    editDishTitle:'编辑菜品', newDishTitle:'新增菜品',
+    periodToday:'今日', periodWeek:'本周', periodMonth:'本月',
+    phoneLabel:'电话', addressLabel:'地址', workHoursLabel:'营业时间', deliveryZonesLabel:'配送区域（公里/价格/分钟）',
+    orderDetailTitle:'订单', noteLabel:'备注', phoneOrderLabel:'电话', addressOrderLabel:'地址',
+    confirmDeleteDish:'确定要删除这个菜品吗？', settingsSaved:'设置已保存',
+    zoneUpTo:'至',
+  }
+};
+
+/* ---------------- Categories & menu catalog ---------------- */
+const CATEGORIES = [
+  { id:'fusion', ru:'Фьюжн', cn:'融合' },
+  { id:'coffee', ru:'Кофе', cn:'咖啡' },
+  { id:'lunch',  ru:'Обед', cn:'午餐' },
+  { id:'bakery', ru:'Выпечка', cn:'烘焙' },
+  { id:'drinks', ru:'Напитки', cn:'饮品' },
+];
+
+const ICON_CHOICES = ['🥟','🍙','🥔','☕','🍲','🍜','🥗','🥪','🥐','🍰','🍪','💧','🍵','🍋','🍱','🍔','🍕','🥤','🍩','🍮'];
+
+let ITEMS = [
+  { id:16, cat:'fusion', icon:'🥟', price:6.50, hit:true,  inStock:true,  name:{ru:'Пян-се с курицей', cn:'鸡肉蒸包'}, desc:{ru:'паровая булка, сычуаньский соус', cn:'四川风味酱汁'} },
+  { id:17, cat:'fusion', icon:'🍙', price:7.20, hit:false, inStock:true,  name:{ru:'Онигири с копчёной сельдью', cn:'熏鲱鱼饭团'}, desc:{ru:'рис, нори, беларусский акцент', cn:'米饭配紫菜'} },
+  { id:18, cat:'fusion', icon:'🥔', price:8.90, hit:true,  inStock:true,  name:{ru:'Драники, соус чили-мёд', cn:'辣蜜土豆饼'}, desc:{ru:'хрустящие, к обеду или перекусу', cn:'香脆可口'} },
+  { id:19, cat:'fusion', icon:'🥟', price:7.50, hit:false, inStock:false, name:{ru:'Момо, картофель-грибы', cn:'土豆蘑菇饺子'}, desc:{ru:'на пару, соевый соус', cn:'清蒸配酱油'} },
+  { id:1,  cat:'coffee', icon:'☕', price:3.80, hit:false, inStock:true,  name:{ru:'Эспрессо', cn:'浓缩咖啡'}, desc:{ru:'двойная порция', cn:'双份'} },
+  { id:2,  cat:'coffee', icon:'☕', price:4.50, hit:false, inStock:true,  name:{ru:'Американо', cn:'美式咖啡'}, desc:{ru:'классический, без молока', cn:'不加奶'} },
+  { id:3,  cat:'coffee', icon:'☕', price:6.20, hit:true,  inStock:true,  name:{ru:'Капучино', cn:'卡布奇诺'}, desc:{ru:'мягкая молочная пенка', cn:'细腻奶泡'} },
+  { id:4,  cat:'coffee', icon:'☕', price:6.50, hit:false, inStock:true,  name:{ru:'Латте', cn:'拿铁'}, desc:{ru:'обычное, овсяное или соевое', cn:'可选普通/燕麦/豆奶'} },
+  { id:5,  cat:'coffee', icon:'☕', price:7.80, hit:false, inStock:true,  name:{ru:'Раф на овсяном', cn:'燕麦生椰拿铁'}, desc:{ru:'ванильный сироп', cn:'香草糖浆'} },
+  { id:6,  cat:'lunch',  icon:'🍲', price:12.50,hit:true,  inStock:true,  name:{ru:'Бизнес-ланч №1', cn:'商务套餐 1号'}, desc:{ru:'борщ · котлета · гречка', cn:'甜菜汤·肉饼·荞麦'} },
+  { id:7,  cat:'lunch',  icon:'🍜', price:12.90,hit:false, inStock:true,  name:{ru:'Бизнес-ланч №2', cn:'商务套餐 2号'}, desc:{ru:'суп-лапша · курица · рис', cn:'鸡肉汤面·米饭'} },
+  { id:8,  cat:'lunch',  icon:'🥗', price:9.40, hit:false, inStock:true,  name:{ru:'Салат с курицей', cn:'鸡肉沙拉'}, desc:{ru:'свежие овощи, гриль', cn:'新鲜蔬菜·烤鸡'} },
+  { id:9,  cat:'lunch',  icon:'🥪', price:7.90, hit:false, inStock:true,  name:{ru:'Тёплый сэндвич', cn:'热三明治'}, desc:{ru:'ветчина, сыр, томат', cn:'火腿·奶酪·番茄'} },
+  { id:10, cat:'bakery', icon:'🥐', price:4.90, hit:false, inStock:true,  name:{ru:'Круассан', cn:'牛角包'}, desc:{ru:'классический сливочный', cn:'黄油经典款'} },
+  { id:11, cat:'bakery', icon:'🍰', price:6.90, hit:false, inStock:false, name:{ru:'Чизкейк', cn:'芝士蛋糕'}, desc:{ru:'нью-йоркский', cn:'纽约风味'} },
+  { id:12, cat:'bakery', icon:'🍪', price:3.20, hit:false, inStock:true,  name:{ru:'Овсяное печенье', cn:'燕麦饼干'}, desc:{ru:'с изюмом', cn:'含葡萄干'} },
+  { id:13, cat:'drinks', icon:'💧', price:2.50, hit:false, inStock:true,  name:{ru:'Вода негазированная', cn:'矿泉水'}, desc:{ru:'0,5 л', cn:'0.5升'} },
+  { id:14, cat:'drinks', icon:'🍵', price:3.50, hit:false, inStock:true,  name:{ru:'Чай чёрный / улун', cn:'红茶/乌龙茶'}, desc:{ru:'листовой', cn:'茶叶冲泡'} },
+  { id:15, cat:'drinks', icon:'🍋', price:5.90, hit:false, inStock:true,  name:{ru:'Домашний лимонад', cn:'自制柠檬水'}, desc:{ru:'мята, имбирь', cn:'薄荷·姜'} },
+];
+
+/* ---------------- Mock orders ---------------- */
+const STATUS_FLOW = ['new','preparing','ready','done'];
+let orderSeq = 104;
+let orders = [
+  { id:'М-104', time:'12:40', type:'delivery', items:[{n:'Момо, картофель-грибы',q:2},{n:'Чай чёрный / улун',q:2}], total:22.00, status:'new', phone:'+375 29 611-22-33', address:'ул. Сурганова, 20, кв. 14', note:'Позвонить за 5 минут' },
+  { id:'М-103', time:'12:36', type:'pickup',   items:[{n:'Драники, соус чили-мёд',q:1},{n:'Американо',q:1}], total:13.40, status:'new' },
+  { id:'М-102', time:'12:31', type:'pickup',   items:[{n:'Бизнес-ланч №1',q:1},{n:'Капучино (Овсяное)',q:1}], total:18.70, status:'preparing' },
+  { id:'М-101', time:'12:24', type:'delivery', items:[{n:'Пян-се с курицей',q:2},{n:'Латте',q:1}], total:20.20, status:'ready', phone:'+375 33 405-19-02', address:'просп. Дзержинского, 3', note:'' },
+  { id:'М-098', time:'12:05', type:'delivery', items:[{n:'Онигири с копчёной сельдью',q:1},{n:'Домашний лимонад',q:1}], total:13.10, status:'done', phone:'+375 29 900-11-45', address:'ул. Притыцкого, 60' },
+  { id:'М-095', time:'11:52', type:'pickup',   items:[{n:'Круассан',q:2},{n:'Раф на овсяном',q:1}], total:17.60, status:'done' },
+];
+
+const STATS_BY_PERIOD = {
+  today: { revenue:428.60, count:34, avg:12.60, pickupPct:62, deliveryPct:38,
+    top:[ {name:{ru:'Капучино',cn:'卡布奇诺'}, count:19}, {name:{ru:'Пян-се с курицей',cn:'鸡肉蒸包'}, count:14}, {name:{ru:'Бизнес-ланч №1',cn:'商务套餐 1号'}, count:11} ] },
+  week: { revenue:2860.40, count:221, avg:12.95, pickupPct:58, deliveryPct:42,
+    top:[ {name:{ru:'Капучино',cn:'卡布奇诺'}, count:126}, {name:{ru:'Бизнес-ланч №1',cn:'商务套餐 1号'}, count:98}, {name:{ru:'Пян-се с курицей',cn:'鸡肉蒸包'}, count:87} ] },
+  month: { revenue:11940.00, count:905, avg:13.20, pickupPct:55, deliveryPct:45,
+    top:[ {name:{ru:'Бизнес-ланч №1',cn:'商务套餐 1号'}, count:401}, {name:{ru:'Капучино',cn:'卡布奇诺'}, count:388}, {name:{ru:'Латте',cn:'拿铁'}, count:255} ] },
+};
+
+/* ============================================================ api(action, payload) ============================================================ */
+function api(action, payload){
+  return new Promise((resolve)=>{
+    switch(action){
+      case 'getOrders': resolve({ ok:true, orders }); break;
+      case 'advanceOrder': {
+        const order = orders.find(o=>o.id===payload.id);
+        if(order){ const idx = STATUS_FLOW.indexOf(order.status); if(idx < STATUS_FLOW.length-1) order.status = STATUS_FLOW[idx+1]; }
+        resolve({ ok:true });
+        break;
+      }
+      case 'getMenu': resolve({ ok:true, categories:CATEGORIES, items:ITEMS }); break;
+      case 'saveDish': {
+        if(payload.id){
+          const item = ITEMS.find(i=>i.id===payload.id);
+          Object.assign(item, payload);
+        } else {
+          const newId = Math.max(...ITEMS.map(i=>i.id)) + 1;
+          const { id, ...rest } = payload;
+          ITEMS.push(Object.assign({ id:newId, hit:false, inStock:true }, rest));
+        }
+        resolve({ ok:true });
+        break;
+      }
+      case 'deleteDish': ITEMS = ITEMS.filter(i=>i.id !== payload.id); resolve({ ok:true }); break;
+      case 'toggleStock': { const item = ITEMS.find(i=>i.id===payload.id); if(item) item.inStock = !item.inStock; resolve({ ok:true }); break; }
+      case 'toggleHit': { const item = ITEMS.find(i=>i.id===payload.id); if(item) item.hit = !item.hit; resolve({ ok:true }); break; }
+      case 'getStats': resolve({ ok:true, stats:STATS_BY_PERIOD[payload.period] || STATS_BY_PERIOD.today }); break;
+      case 'getSettings': resolve({ ok:true, config:DEMO_CONFIG }); break;
+      case 'saveSettings': Object.assign(DEMO_CONFIG, payload); resolve({ ok:true }); break;
+      case 'setAccepting': resolve({ ok:true }); break;
+      default: resolve({ ok:false });
+    }
+  });
+}
+
+/* ---------------- State ---------------- */
+let lang = 'ru';
+let activeTab = 'orders';
+let acceptingOrders = true;
+let editingId = null;
+let statsPeriod = 'today';
+let editIcon = ICON_CHOICES[0];
+let detailOrder = null;
+
+function t(key){ return I18N[lang][key] || key; }
+function fmt(n){ return n.toFixed(2).replace('.', ',') + ' BYN'; }
+
+/* ---------------- Static i18n ---------------- */
+function applyStaticI18n(){
+  document.body.setAttribute('data-lang', lang);
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key = el.getAttribute('data-i18n');
+    if(I18N[lang][key] !== undefined) el.textContent = I18N[lang][key];
+  });
+  document.getElementById('langToggle').textContent = lang === 'ru' ? '中文' : 'RU';
+  document.getElementById('fabLabel').textContent = activeTab === 'menu' ? t('addDishBtn') : t('simulateBtn');
+}
+
+/* ---------------- Tabs ---------------- */
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    activeTab = btn.getAttribute('data-tab');
+    haptic('light');
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active', b===btn));
+    document.getElementById('ordersView').style.display = activeTab === 'orders' ? 'block' : 'none';
+    document.getElementById('menuView').style.display = activeTab === 'menu' ? 'block' : 'none';
+    document.getElementById('statsView').style.display = activeTab === 'stats' ? 'block' : 'none';
+    document.getElementById('settingsView').style.display = activeTab === 'settings' ? 'block' : 'none';
+    document.getElementById('fabBtn').style.display = (activeTab === 'stats' || activeTab === 'settings') ? 'none' : 'block';
+    document.getElementById('fabLabel').textContent = activeTab === 'menu' ? t('addDishBtn') : t('simulateBtn');
+    if(activeTab === 'stats') renderStats();
+    if(activeTab === 'settings') renderSettings();
+  });
+});
+
+/* ---------------- Orders ---------------- */
+function statusOrder(status){ return STATUS_FLOW.indexOf(status); }
+function sortedOrders(){ return [...orders].sort((a,b)=> statusOrder(a.status) - statusOrder(b.status)); }
+
+function actionLabelFor(status){
+  if(status === 'new') return t('actionStart');
+  if(status === 'preparing') return t('actionReady');
+  if(status === 'ready') return t('actionServe');
+  return '';
+}
+
+async function advanceOrder(id){
+  await api('advanceOrder', {id});
+  haptic('success');
+  renderOrders();
+}
+
+function renderOrders(){
+  const wrap = document.getElementById('ordersList');
+  wrap.innerHTML = '';
+  const list = sortedOrders();
+  const activeCount = orders.filter(o=>o.status!=='done').length;
+  document.getElementById('ordersBadge').textContent = activeCount;
+  document.getElementById('ordersBadge').style.display = activeCount > 0 ? 'flex' : 'none';
+
+  if(list.length === 0){
+    wrap.innerHTML = `<div class="empty-state">${t('emptyOrders')}</div>`;
+    return;
+  }
+
+  list.forEach(o=>{
+    const card = document.createElement('div');
+    card.className = `order-card status-${o.status}`;
+    const itemsText = o.items.map(i=>`${i.q}× ${i.n}`).join(', ');
+    const typeLabel = o.type === 'pickup' ? t('pickupTab') : t('deliveryTab');
+    const statusLabelKey = 'status' + o.status.charAt(0).toUpperCase() + o.status.slice(1);
+
+    card.innerHTML = `
+      <div class="order-top">
+        <span class="order-id">${o.id}</span>
+        <span class="status-chip status-${o.status}">${t(statusLabelKey)}</span>
+      </div>
+      <div class="order-type-tag">${o.time} · ${typeLabel}</div>
+      <div class="order-items-preview">${itemsText}</div>
+      <div class="order-bottom">
+        <span class="order-total">${fmt(o.total)}</span>
+      </div>
+    `;
+    card.onclick = ()=> openOrderDetail(o);
+    const bottom = card.querySelector('.order-bottom');
+    if(o.status === 'done'){
+      const doneLabel = document.createElement('span');
+      doneLabel.className = 'order-done-label';
+      doneLabel.textContent = t('doneLabel');
+      bottom.appendChild(doneLabel);
+    } else {
+      const btn = document.createElement('button');
+      btn.className = 'order-action' + (o.status === 'ready' ? ' ready' : '');
+      btn.textContent = actionLabelFor(o.status);
+      btn.onclick = (e)=>{ e.stopPropagation(); advanceOrder(o.id); };
+      bottom.appendChild(btn);
+    }
+    wrap.appendChild(card);
+  });
+}
+
+/* ---------------- Order detail sheet ---------------- */
+function openOrderDetail(order){
+  detailOrder = order;
+  document.getElementById('orderDetailTitle').textContent = `${t('orderDetailTitle')} ${order.id}`;
+  const body = document.getElementById('orderDetailBody');
+  const typeLabel = order.type === 'pickup' ? t('pickupTab') : t('deliveryTab');
+  const statusLabelKey = 'status' + order.status.charAt(0).toUpperCase() + order.status.slice(1);
+
+  let html = `<div class="order-type-tag">${order.time} · ${typeLabel} · <span class="status-chip status-${order.status}">${t(statusLabelKey)}</span></div>`;
+  html += `<div style="margin-top:10px;">`;
+  order.items.forEach(i=>{ html += `<div class="detail-line"><span>${i.q}× ${i.n}</span></div>`; });
+  html += `</div>`;
+  html += `<div class="detail-meta-row"><span>${t('totalLabel')}</span><span style="font-weight:800; color:var(--jade-deep);">${fmt(order.total)}</span></div>`;
+  if(order.phone) html += `<div class="detail-meta-row"><span>${t('phoneOrderLabel')}</span><span>${order.phone}</span></div>`;
+  if(order.address) html += `<div class="detail-meta-row"><span>${t('addressOrderLabel')}</span><span>${order.address}</span></div>`;
+  if(order.note) html += `<div class="detail-note-box">💬 ${order.note}</div>`;
+
+  const stepIdx = statusOrder(order.status);
+  html += `<div class="timeline">`;
+  STATUS_FLOW.forEach((s,i)=>{ html += `<div class="timeline-step${i<=stepIdx?' done':''}">${t('status'+s.charAt(0).toUpperCase()+s.slice(1))}</div>`; });
+  html += `</div>`;
+
+  body.innerHTML = html;
+  openSheet(document.getElementById('orderDetailSheet'));
+}
+document.getElementById('closeOrderDetailBtn').onclick = closeSheets;
+
+const MOCK_TEMPLATES = [
+  { type:'pickup', items:[{n:'Капучино',q:1},{n:'Круассан',q:1}], total:11.10 },
+  { type:'delivery', items:[{n:'Бизнес-ланч №2',q:1},{n:'Латте',q:1}], total:19.40, phone:'+375 29 733-04-51', address:'ул. Немига, 12' },
+  { type:'pickup', items:[{n:'Пян-се с курицей',q:1},{n:'Американо',q:1}], total:11.00 },
+  { type:'delivery', items:[{n:'Драники, соус чили-мёд',q:2},{n:'Домашний лимонад',q:1}], total:23.70, phone:'+375 44 221-90-08', address:'ул. Радужная, 7' },
+];
+
+function simulateOrder(){
+  orderSeq += 1;
+  const tpl = MOCK_TEMPLATES[Math.floor(Math.random()*MOCK_TEMPLATES.length)];
+  const now = new Date();
+  const time = String(now.getHours()).padStart(2,'0') + ':' + String(now.getMinutes()).padStart(2,'0');
+  orders.unshift(Object.assign({ id:'М-'+orderSeq, time, status:'new' }, tpl));
+  haptic('success');
+  renderOrders();
+}
+
+document.getElementById('fabBtn').onclick = ()=>{
+  if(activeTab === 'menu') openItemEditor(null);
+  else simulateOrder();
+};
+
+/* ---------------- Accepting orders switch ---------------- */
+document.getElementById('acceptSwitch').onclick = async ()=>{
+  acceptingOrders = !acceptingOrders;
+  await api('setAccepting', acceptingOrders);
+  haptic('light');
+  document.getElementById('acceptSwitch').classList.toggle('on', acceptingOrders);
+  document.getElementById('acceptRow').classList.toggle('off', !acceptingOrders);
+};
+
+/* ---------------- Menu view ---------------- */
+function renderMenu(){
+  const wrap = document.getElementById('menuList');
+  wrap.innerHTML = '';
+
+  CATEGORIES.forEach(cat=>{
+    const items = ITEMS.filter(i=>i.cat===cat.id);
+    if(items.length === 0) return;
+    const title = document.createElement('div');
+    title.className = 'section-title';
+    title.textContent = lang === 'ru' ? cat.ru : cat.cn;
+    wrap.appendChild(title);
+
+    items.forEach(item=>{
+      const row = document.createElement('div');
+      row.className = 'menu-item' + (item.inStock ? '' : ' out');
+      row.innerHTML = `
+        <button class="star-btn ${item.hit ? 'on' : ''}" data-act="star">★</button>
+        <div class="menu-item-icon">${item.icon || '🍽'}</div>
+        <div class="menu-item-body">
+          <p class="menu-item-name">${item.name[lang]}</p>
+          <p class="menu-item-price">${fmt(item.price)}</p>
+        </div>
+      `;
+      const sw = document.createElement('div');
+      sw.className = 'switch' + (item.inStock ? ' on' : '');
+      sw.innerHTML = `<div class="switch-knob"></div>`;
+      sw.onclick = async ()=>{ await api('toggleStock', {id:item.id}); haptic('light'); renderMenu(); };
+
+      const editBtn = document.createElement('button');
+      editBtn.className = 'edit-btn';
+      editBtn.textContent = '✎';
+      editBtn.onclick = ()=> openItemEditor(item);
+
+      row.querySelector('[data-act="star"]').onclick = async ()=>{ await api('toggleHit', {id:item.id}); haptic('light'); renderMenu(); };
+      row.appendChild(sw);
+      row.appendChild(editBtn);
+      wrap.appendChild(row);
+    });
+  });
+
+  const addRow = document.createElement('div');
+  addRow.className = 'add-dish-row';
+  addRow.textContent = t('addDishBtn');
+  addRow.onclick = ()=> openItemEditor(null);
+  wrap.appendChild(addRow);
+}
+
+/* ---------------- Item editor sheet ---------------- */
+const overlay = document.getElementById('overlay');
+const ALL_SHEETS = ['orderDetailSheet','itemSheet'].map(id=>document.getElementById(id));
+
+function openSheet(sheet){ overlay.classList.add('show'); sheet.classList.add('show'); syncBackButton(true); }
+function closeSheets(){ overlay.classList.remove('show'); ALL_SHEETS.forEach(s=>s.classList.remove('show')); syncBackButton(false); }
+
+function populateCatSelect(selectedCat){
+  const sel = document.getElementById('editCat');
+  sel.innerHTML = '';
+  CATEGORIES.forEach(c=>{
+    const opt = document.createElement('option');
+    opt.value = c.id;
+    opt.textContent = lang === 'ru' ? c.ru : c.cn;
+    if(c.id === selectedCat) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
+
+function renderIconPicker(){
+  const wrap = document.getElementById('editIconPicker');
+  wrap.innerHTML = '';
+  ICON_CHOICES.forEach(icon=>{
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'icon-opt' + (icon === editIcon ? ' active' : '');
+    btn.textContent = icon;
+    btn.onclick = ()=>{ editIcon = icon; renderIconPicker(); };
+    wrap.appendChild(btn);
+  });
+}
+
+function openItemEditor(item){
+  editingId = item ? item.id : null;
+  editIcon = item ? item.icon : ICON_CHOICES[0];
+  document.getElementById('itemSheetTitle').textContent = item ? t('editDishTitle') : t('newDishTitle');
+  populateCatSelect(item ? item.cat : CATEGORIES[0].id);
+  renderIconPicker();
+  document.getElementById('editNameRu').value = item ? item.name.ru : '';
+  document.getElementById('editNameCn').value = item ? item.name.cn : '';
+  document.getElementById('editDescRu').value = item && item.desc ? item.desc.ru : '';
+  document.getElementById('editDescCn').value = item && item.desc ? item.desc.cn : '';
+  document.getElementById('editPrice').value = item ? item.price : '';
+  const delBtn = document.getElementById('deleteItemBtn');
+  delBtn.style.display = item ? 'block' : 'none';
+  delBtn.textContent = t('deleteBtn');
+  openSheet(document.getElementById('itemSheet'));
+}
+
+document.getElementById('cancelItemBtn').onclick = closeSheets;
+
+document.getElementById('saveItemBtn').onclick = async ()=>{
+  const cat = document.getElementById('editCat').value;
+  const nameRu = document.getElementById('editNameRu').value.trim();
+  const nameCn = document.getElementById('editNameCn').value.trim();
+  const descRu = document.getElementById('editDescRu').value.trim();
+  const descCn = document.getElementById('editDescCn').value.trim();
+  const price = parseFloat(document.getElementById('editPrice').value);
+  if(!nameRu || isNaN(price)) return;
+
+  await api('saveDish', {
+    id: editingId,
+    cat, icon: editIcon, price,
+    name:{ru:nameRu, cn:nameCn || nameRu},
+    desc:{ru:descRu, cn:descCn || descRu},
+  });
+  haptic('success');
+  closeSheets();
+  renderMenu();
+};
+
+document.getElementById('deleteItemBtn').onclick = async ()=>{
+  if(!editingId) return;
+  const ok = await confirmAsync(t('confirmDeleteDish'));
+  if(!ok) return;
+  await api('deleteDish', {id:editingId});
+  haptic('warning');
+  closeSheets();
+  renderMenu();
+};
+
+/* ---------------- Stats view ---------------- */
+function renderPeriodTabs(){
+  const wrap = document.getElementById('periodTabs');
+  wrap.innerHTML = '';
+  [ {id:'today',key:'periodToday'}, {id:'week',key:'periodWeek'}, {id:'month',key:'periodMonth'} ].forEach(p=>{
+    const btn = document.createElement('button');
+    btn.className = 'period-tab' + (statsPeriod === p.id ? ' active' : '');
+    btn.textContent = t(p.key);
+    btn.onclick = ()=>{ statsPeriod = p.id; haptic('light'); renderStats(); };
+    wrap.appendChild(btn);
+  });
+}
+
+async function renderStats(){
+  renderPeriodTabs();
+  const res = await api('getStats', {period:statsPeriod});
+  const s = res.stats;
+  const grid = document.getElementById('statsGrid');
+  grid.innerHTML = `
+    <div class="stat-card"><div class="stat-value">${s.revenue.toFixed(0)} BYN</div><div class="stat-label">${t('revenueLabel')}</div></div>
+    <div class="stat-card"><div class="stat-value">${s.count}</div><div class="stat-label">${t('ordersCountLabel')}</div></div>
+    <div class="stat-card" style="grid-column:1 / -1;"><div class="stat-value">${fmt(s.avg)}</div><div class="stat-label">${t('avgCheckLabel')}</div></div>
+  `;
+  document.getElementById('splitPickup').style.width = s.pickupPct + '%';
+  document.getElementById('splitDelivery').style.width = s.deliveryPct + '%';
+  document.getElementById('splitPickupPct').textContent = s.pickupPct;
+  document.getElementById('splitDeliveryPct').textContent = s.deliveryPct;
+
+  const topWrap = document.getElementById('topItemsList');
+  topWrap.innerHTML = '';
+  const maxCount = Math.max(...s.top.map(i=>i.count));
+  s.top.forEach(i=>{
+    const row = document.createElement('div');
+    row.className = 'top-item-row';
+    row.innerHTML = `
+      <span class="top-item-name">${i.name[lang]}</span>
+      <span class="top-item-bar-wrap"><span class="top-item-bar" style="width:${(i.count/maxCount*100).toFixed(0)}%;"></span></span>
+      <span class="top-item-count">${i.count}</span>
+    `;
+    topWrap.appendChild(row);
+  });
+}
+
+/* ---------------- Settings view ---------------- */
+function renderZonesEditor(){
+  const wrap = document.getElementById('zonesEditor');
+  wrap.innerHTML = '';
+  DEMO_CONFIG.deliveryZones.forEach((z, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'zone-row';
+    row.innerHTML = `
+      <span class="zone-row-label">${t('zoneUpTo')} ${z.maxKm} км</span>
+      <input class="text-input" type="number" step="0.5" data-zone="${idx}" data-field="fee" value="${z.fee}">
+      <input class="text-input" type="number" step="1" data-zone="${idx}" data-field="eta" value="${z.eta}">
+    `;
+    wrap.appendChild(row);
+  });
+}
+
+async function renderSettings(){
+  const res = await api('getSettings');
+  const cfg = res.config;
+  document.getElementById('setPhone').value = cfg.phone;
+  document.getElementById('setAddress').value = cfg.address;
+  document.getElementById('setHoursFrom').value = cfg.workHours.from;
+  document.getElementById('setHoursTo').value = cfg.workHours.to;
+  renderZonesEditor();
+}
+
+document.getElementById('saveSettingsBtn').onclick = async ()=>{
+  const zones = DEMO_CONFIG.deliveryZones.map((z, idx)=>{
+    const feeInput = document.querySelector(`[data-zone="${idx}"][data-field="fee"]`);
+    const etaInput = document.querySelector(`[data-zone="${idx}"][data-field="eta"]`);
+    return { maxKm:z.maxKm, fee:parseFloat(feeInput.value)||0, eta:parseInt(etaInput.value,10)||0 };
+  });
+  await api('saveSettings', {
+    phone: document.getElementById('setPhone').value.trim(),
+    address: document.getElementById('setAddress').value.trim(),
+    workHours: { from:document.getElementById('setHoursFrom').value.trim(), to:document.getElementById('setHoursTo').value.trim() },
+    deliveryZones: zones,
+  });
+  haptic('success');
+  renderZonesEditor();
+};
+
+/* ---------------- Lang toggle ---------------- */
+document.getElementById('langToggle').onclick = ()=>{
+  lang = lang === 'ru' ? 'cn' : 'ru';
+  haptic('light');
+  applyStaticI18n();
+  renderOrders();
+  renderMenu();
+  if(activeTab === 'stats') renderStats();
+  if(activeTab === 'settings') renderSettings();
+};
+
+overlay.onclick = closeSheets;
+
+/* ---------------- Init ---------------- */
+initTelegram();
+applyStaticI18n();
+renderOrders();
+renderMenu();
+</script>
+
+</body>
+</html>
