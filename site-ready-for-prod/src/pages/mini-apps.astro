@@ -1,0 +1,64 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { SITE_URL, BRAND, GEO } from '../site.config.js';
+
+const title = 'Mini Apps для Telegram — приложение для Android и iOS | TG-Studio';
+const description = 'Разработка Telegram Mini Apps: каталог, запись, личный кабинет и оплата в виде полноценного приложения для Android и iOS, без публикации в App Store и Google Play.';
+const lead = 'Mini App — это приложение в Telegram для Android и iOS, которое открывается кнопкой в чате с ботом: каталог, форма записи, личный кабинет или оплата работают как отдельный экран внутри мессенджера, а не как страница в браузере.';
+
+const serviceLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  serviceType: 'Разработка Telegram Mini Apps',
+  name: 'Mini Apps',
+  description,
+  provider: { '@type': 'Organization', name: BRAND.name, url: SITE_URL + '/' },
+  areaServed: GEO.country,
+  url: SITE_URL + '/mini-apps',
+};
+---
+<BaseLayout title={title} description={description} path="/mini-apps">
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(serviceLd)} />
+
+  <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: 'Mini Apps' }]} />
+
+  <main id="main-content">
+    <section class="page-hero">
+      <div class="wrap">
+        <div class="eyebrow">Услуги</div>
+        <h1>Mini Apps — приложение в Telegram для Android и iOS</h1>
+        <p class="lead">{lead}</p>
+        <div class="hero-cta">
+          <a href="/#contact" class="btn btn-primary">Обсудить проект</a>
+          <a href="/keysy/blesk" class="btn btn-ghost">Смотреть готовый кейс</a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap prose reveal">
+        <h2>Чем Mini App отличается от сайта или отдельного приложения</h2>
+        <p>Клиенту не нужно ничего скачивать из App Store или Google Play и не нужно ждать модерации сторов при каждом обновлении — Mini App открывается кнопкой прямо в переписке с ботом и работает одинаково на Android, iOS и десктопе, потому что физически это одно и то же приложение, встроенное в интерфейс Telegram.</p>
+        <p>Для бизнеса это означает: единая кодовая база вместо отдельных iOS- и Android-приложений, мгновенные обновления без публикации новой версии и доступ ко всей аудитории Telegram без установки.</p>
+
+        <h2>Что можно построить как Mini App</h2>
+        <ul>
+          <li>Форма записи и расписание — как в кейсе БЛЕСК: клиент видит свободные слоты и подтверждает запись за пару касаний.</li>
+          <li>Каталог товаров или услуг с корзиной и оформлением заказа.</li>
+          <li>Личный кабинет клиента: история записей, бонусы, статус заказа.</li>
+          <li>Приём оплаты — картой или через Telegram Payments, без перехода на сторонний сайт.</li>
+          <li>Панель администратора и владельца — смены, заявки, выручка, статистика в реальном времени.</li>
+        </ul>
+
+        <h2>Как устроена разработка</h2>
+        <p>Начинаем с сценариев: что должен увидеть и сделать клиент, администратор и владелец бизнеса. Проектируем интерфейс под интерфейс Telegram (тема, safe area, нативные жесты), связываем Mini App с ботом и, при необходимости, с CRM или Google Таблицами. Тестируем на реальных устройствах Android и iOS перед запуском.</p>
+
+        <div class="cta-inline">
+          <p>Расскажите, какой процесс хотите перенести в Telegram — оценим сроки и стоимость бесплатно.</p>
+          <a href="/#contact" class="btn btn-primary btn-sm">Получить консультацию</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

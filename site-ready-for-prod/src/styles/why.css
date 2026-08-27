@@ -1,0 +1,24 @@
+/* ---------- WHY ---------- */
+.why-grid{
+  display:grid; grid-template-columns:1fr; gap:16px;
+}
+@media(min-width:640px){ .why-grid{grid-template-columns:repeat(2,1fr); gap:20px;} }
+@media(min-width:820px){ .why-grid{grid-template-columns:repeat(3,1fr);} }
+.why-item{
+  background:var(--navy-800);
+  border:1px solid var(--navy-700);
+  border-radius:var(--radius);
+  padding:26px 24px;
+  transition:transform .4s var(--ease), border-color .4s var(--ease), background .4s var(--ease);
+}
+.why-item:hover{transform:translateY(-6px); border-color:var(--blue-500); background:var(--navy-850);}
+.why-item .num{
+  width:34px; height:34px; border-radius:9px; flex:none;
+  background:linear-gradient(145deg, rgba(42,171,238,.2), rgba(42,171,238,.04));
+  border:1px solid rgba(42,171,238,.35);
+  display:flex; align-items:center; justify-content:center;
+  font-family:'JetBrains Mono',monospace; font-size:12.5px; color:var(--blue-300); font-weight:600;
+  margin-bottom:18px;
+}
+.why-item h3{font-size:17px; font-weight:600; margin-bottom:8px;}
+.why-item p{color:var(--ink-500); font-size:14px; line-height:1.6;}

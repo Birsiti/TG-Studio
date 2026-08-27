@@ -1,0 +1,11 @@
+# Netlify build config for tg-studio.by.
+# The site now needs a build step (Astro SSG) instead of being served as raw
+# static files, so this replaces whatever base/publish directory is set in
+# the Netlify UI. If the dashboard has its own "Base directory" / "Publish
+# directory" already configured, verify they match this file (or delete the
+# UI overrides) after this branch merges — UI settings can win over
+# netlify.toml depending on how the site was first configured.
+[build]
+  base = "Sait TGS"
+  command = "npm run build"
+  publish = "dist"

@@ -1,0 +1,581 @@
+---
+import { Picture } from 'astro:assets';
+import { getCollection } from 'astro:content';
+import { Send, Inbox, Check, Smartphone, Filter, RefreshCw, Cpu, ChevronRight, ChevronLeft, ChevronDown } from '@lucide/astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import heroPhone from '../images/hero-phone-figma.jpg';
+import caseClient from '../images/case-blesk-client.jpg';
+import caseAdmin from '../images/case-blesk-admin.jpg';
+import caseOwner from '../images/case-blesk-owner.jpg';
+
+const latestPosts = (await getCollection('news'))
+  .sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf())
+  .slice(0, 3);
+
+const services = [
+  {
+    href: '/mini-apps',
+    title: 'Mini Apps',
+    desc: 'Как отдельное приложение — каталог, запись, личный кабинет, оплата — но открывается кнопкой прямо в Telegram. Устанавливать ничего не нужно.',
+    icon: Smartphone,
+  },
+  {
+    href: '/boty',
+    title: 'Чат-боты для продаж',
+    desc: 'Приём заявок, квалификация клиента и передача в отдел продаж без потери лидов на всей воронке.',
+    icon: Filter,
+  },
+  {
+    href: '/crm-integracii',
+    title: 'CRM-интеграции',
+    desc: 'Синхронизация заявок, статусов и клиентской базы с amoCRM, Bitrix24 и Google Таблицами.',
+    icon: RefreshCw,
+  },
+  {
+    href: '/ai-gpt',
+    title: 'ИИ и GPT',
+    desc: 'Диалоговые ассистенты, обработка обращений и генерация ответов на базе языковых моделей.',
+    icon: Cpu,
+  },
+];
+
+const faqItems = [
+  {
+    q: 'Клиенту нужно что-то скачивать?',
+    a: 'Нет. Клиент пишет боту в обычном чате Telegram и нажимает кнопку — форма записи, каталог или оплата открываются прямо внутри переписки, без App Store и установки.',
+  },
+  {
+    q: 'Сколько стоит разработка бота?',
+    a: 'Стоимость зависит от сложности сценариев и интеграций — считаем индивидуально. Есть базовый пакет разово плюс небольшая ежемесячная поддержка. После бесплатной консультации присылаем смету с фиксированной стоимостью и сроком.',
+  },
+  {
+    q: 'Сколько занимает запуск?',
+    a: 'Простой бот для заявок — от одной-двух недель. Проекты с CRM-интеграциями и ИИ-логикой обсуждаются индивидуально на этапе анализа.',
+  },
+  {
+    q: 'Что после запуска — поддержка есть?',
+    a: 'Да, сопровождаем бота после релиза: мониторим работу, вносим доработки и расширяем сценарии по мере роста бизнеса.',
+  },
+];
+
+const faqLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: faqItems.map(item => ({
+    '@type': 'Question',
+    name: item.q,
+    acceptedAnswer: { '@type': 'Answer', text: item.a },
+  })),
+};
+---
+<BaseLayout
+  title="Разработка Telegram-ботов и Mini Apps для бизнеса | TG-Studio, Минск"
+  description="Разработка Telegram-ботов и Mini Apps под задачи бизнеса: запись клиентов, приём заявок, оплата, CRM. Автомойки, прокат, кафе, транспорт. Минск, Беларусь."
+  path="/"
+  includeLocalBusiness={true}
+>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(faqLd)} />
+
+  <main id="main-content">
+
+    <!-- HERO -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div class="hero-copy">
+          <div class="eyebrow">Без скачивания · прямо в Telegram</div>
+          <h1>Приложение для вашего бизнеса, <em>которое живёт в Telegram</em></h1>
+          <p class="lead">Клиент пишет вам в чат, нажимает кнопку — и открывается форма записи, каталог или оплата. Ставить ничего не нужно: это работает как обычная переписка, но с автоматизацией внутри.</p>
+          <div class="hero-cta">
+            <a href="#contact" class="btn btn-primary">
+              <Send size={16} color="#070f18" strokeWidth={2} aria-hidden="true" />
+              Обсудить проект
+            </a>
+            <a href="#process" class="btn btn-ghost">Как мы работаем</a>
+          </div>
+          <div class="hero-stats">
+            <div><strong>5</strong><span>этапов запуска</span></div>
+            <div><strong>24/7</strong><span>работа бота</span></div>
+            <div class="is-outcome"><strong>∞</strong><span>заявок без потери</span></div>
+          </div>
+        </div>
+
+        <div class="hero-art">
+          <div class="hero-badge">
+            <div class="hero-photo">
+              <Picture
+                src={heroPhone}
+                formats={['avif', 'webp']}
+                alt="Экран подтверждения записи в мини-приложении БЛЕСК — реальный проект TG-Studio"
+                width={620}
+                height={1100}
+                loading="eager"
+                fetchpriority="high"
+              />
+            </div>
+            <div class="hero-float-card fc1">
+              <div class="dot-ico" aria-hidden="true">
+                <Inbox size={14} color="#fff" strokeWidth={2} />
+              </div>
+              <div class="fc-text"><strong>Новая заявка</strong><span>только что</span></div>
+            </div>
+            <div class="hero-float-card fc2">
+              <div class="dot-ico" aria-hidden="true">
+                <Check size={14} color="#fff" strokeWidth={2.4} />
+              </div>
+              <div class="fc-text"><strong>Оплата получена</strong><span>Mini App</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SERVICES -->
+    <section class="services" id="services">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <div class="eyebrow">Услуги</div>
+          <h2>Что мы строим</h2>
+          <p>Каждое решение считаем с точки зрения результата — заявок, продаж и времени, которое оно экономит, а не количества функций.</p>
+        </div>
+
+        <div class="service-grid reveal-stagger reveal">
+          {services.map((s, i) => (
+            <div class={`card${i === 0 ? ' is-featured' : ''}`}>
+              <div class="card-icon">
+                <s.icon size={i === 0 ? 26 : 22} color="#2aabee" strokeWidth={1.6} aria-hidden="true" />
+              </div>
+              <h3>{s.title}</h3>
+              <p>{s.desc}</p>
+              <a href={s.href} class="card-link">Подробнее
+                <ChevronRight size={12} strokeWidth={2.2} aria-hidden="true" />
+              </a>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- CASES -->
+    <section class="showcase" id="advantages">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <div class="eyebrow">Простыми словами</div>
+          <h2>Один бот — три разных экрана</h2>
+          <p>Клиент видит запись, администратор — смену, владелец — цифры. Всё в одном месте, прямо в Telegram, без скачивания и установки. Это живые скриншоты кейса БЛЕСК — листайте стрелками или нажмите на карточку.</p>
+        </div>
+
+        <div class="fan-carousel reveal" id="fanCarousel">
+          <div class="fan-track" id="fanTrack" role="group" tabindex="0" aria-roledescription="карусель" aria-label="Экраны мини-приложения БЛЕСК, используйте стрелки влево-вправо">
+            <button type="button" class="phone-card" data-index="0" aria-label="Слайд 1 из 3: Клиент — экран подтверждения записи. Показать в центре">
+              <div class="fan-photo">
+                <Picture src={caseClient} formats={['avif', 'webp']} alt="Экран подтверждения записи клиента в мини-приложении БЛЕСК" width={700} height={1291} loading="lazy" />
+                <div class="fan-photo-label">Клиент<span>Подтверждение записи</span></div>
+              </div>
+            </button>
+            <button type="button" class="phone-card" data-index="1" aria-label="Слайд 2 из 3: Администратор — кто на смене и записи на сегодня. Показать в центре">
+              <div class="fan-photo">
+                <Picture src={caseAdmin} formats={['avif', 'webp']} alt="Экран администратора: кто на смене и записи на сегодня в мини-приложении БЛЕСК" width={700} height={1286} loading="lazy" />
+                <div class="fan-photo-label">Администратор<span>Кто на смене сегодня</span></div>
+              </div>
+            </button>
+            <button type="button" class="phone-card" data-index="2" aria-label="Слайд 3 из 3: Владелец — выручка и топ услуг. Показать в центре">
+              <div class="fan-photo">
+                <Picture src={caseOwner} formats={['avif', 'webp']} alt="Экран владельца: выручка и топ услуг в мини-приложении БЛЕСК" width={700} height={1283} loading="lazy" />
+                <div class="fan-photo-label">Владелец<span>Выручка и статистика</span></div>
+              </div>
+            </button>
+          </div>
+
+          <div class="fan-controls">
+            <button type="button" class="fan-nav" id="fanPrev" aria-label="Предыдущий слайд">
+              <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
+            <div class="fan-dots" id="fanDots"></div>
+            <button type="button" class="fan-nav" id="fanNext" aria-label="Следующий слайд">
+              <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
+            </button>
+          </div>
+          <p class="fan-caption" id="fanCaption" aria-live="polite">Клиент</p>
+        </div>
+
+        <div class="case-demo reveal">
+          <a href="/keysy/blesk" class="btn btn-primary">Читать кейс БЛЕСК целиком</a>
+          <a href="https://t.me/tg_studio_BY_bot" target="_blank" rel="noopener" class="btn btn-ghost">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M21 4L2.5 11.5L9 13.5M21 4L14.5 21L9 13.5M21 4L9 13.5" stroke="#2aabee" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            Попробовать живой пример в Telegram
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- WHY -->
+    <section id="why">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <div class="eyebrow">Результат</div>
+          <h2>Что это даёт бизнесу</h2>
+        </div>
+        <div class="why-grid reveal">
+          <div class="why-item">
+            <span class="num mono">01</span>
+            <h3>Ни одна заявка не теряется</h3>
+            <p>Проектируем архитектуру так, чтобы бот выдерживал рост нагрузки и не терял обращения клиентов даже в пиковые дни.</p>
+          </div>
+          <div class="why-item">
+            <span class="num mono">02</span>
+            <h3>Быстрый запуск без сдвига сроков</h3>
+            <p>Называем реалистичную дату старта и укладываемся в неё — бот начинает приносить заявки, а не месяцами висит в разработке.</p>
+          </div>
+          <div class="why-item">
+            <span class="num mono">03</span>
+            <h3>Интерфейс, которому доверяют</h3>
+            <p>Понятный сценарий и аккуратный дизайн повышают конверсию из диалога в заявку уже с первого сообщения.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROCESS -->
+    <section class="process" id="process">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <div class="eyebrow">Как мы работаем</div>
+          <h2>Пять шагов от заявки до запуска</h2>
+        </div>
+        <div class="timeline reveal">
+          <div class="step"><div class="step-dot">01</div><div class="step-body"><h3>Заявка</h3><p>Оставляете контакты и коротко описываете задачу.</p></div></div>
+          <div class="step"><div class="step-dot">02</div><div class="step-body"><h3>Анализ и проектирование</h3><p>Разбираем процесс бизнеса и продумываем сценарии, архитектуру и интеграции.</p></div></div>
+          <div class="step"><div class="step-dot">03</div><div class="step-body"><h3>Разработка и тестирование</h3><p>Пишем и тестируем бота итерациями, показываем прогресс на каждом шаге.</p></div></div>
+          <div class="step"><div class="step-dot">04</div><div class="step-body"><h3>Оплата</h3><p>Фиксируем смету заранее, оплата — поэтапно по мере готовности.</p></div></div>
+          <div class="step"><div class="step-dot">05</div><div class="step-body"><h3>Сопровождение</h3><p>Запускаем бота, обучаем команду и остаёмся на связи после старта.</p></div></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- NEWS PREVIEW -->
+    {latestPosts.length > 0 && (
+      <section class="related-block">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <div class="eyebrow">Новости</div>
+            <h2>Разбираем кейсы и делимся практикой</h2>
+            <p>Статьи о ботах, Mini Apps и ИИ — из проектов TG-Studio.</p>
+          </div>
+          <div class="news-grid reveal-stagger reveal">
+            {latestPosts.map(post => (
+              <a href={`/novosti/${post.id}`} class="news-card">
+                <span class="cat">{post.data.category}</span>
+                <h3>{post.data.title}</h3>
+                <p>{post.data.description}</p>
+                <time datetime={post.data.date.toISOString()}>
+                  {post.data.date.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' })}
+                </time>
+              </a>
+            ))}
+          </div>
+          <div class="case-demo reveal">
+            <a href="/novosti" class="btn btn-ghost">Все статьи</a>
+          </div>
+        </div>
+      </section>
+    )}
+
+    <!-- FAQ -->
+    <section id="faq">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <div class="eyebrow">Вопросы</div>
+          <h2>Отвечаем до старта проекта</h2>
+        </div>
+        <div class="faq-list reveal">
+          {faqItems.map(item => (
+            <div class="faq-item" data-open="false">
+              <button class="faq-q" aria-expanded="false">
+                {item.q}
+                <ChevronDown class="chev" size={16} strokeWidth={2} aria-hidden="true" />
+              </button>
+              <div class="faq-a"><div class="faq-a-inner"><p>{item.a}</p></div></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact">
+      <div class="wrap contact-grid">
+        <div class="reveal">
+          <div class="eyebrow">Заявка</div>
+          <h2 style="font-size:clamp(26px,3.4vw,36px); font-weight:600; line-height:1.2;">Готовы автоматизировать бизнес?</h2>
+          <p style="margin-top:14px; font-size:15.5px; max-width:440px;">Оставьте контакты — свяжемся в течение дня, обсудим задачу и предложим решение под ваш бюджет.</p>
+
+          <div class="trust-list">
+            <div class="trust-item">
+              <div class="dot" aria-hidden="true"></div>
+              <p><strong>Бесплатная консультация</strong>Разбираем задачу и прикидываем объём работ без обязательств.</p>
+            </div>
+            <div class="trust-item">
+              <div class="dot" aria-hidden="true"></div>
+              <p><strong>Фикс по срокам</strong>Называем реалистичную дату запуска и держим её.</p>
+            </div>
+            <div class="trust-item">
+              <div class="dot" aria-hidden="true"></div>
+              <p><strong>Поддержка после запуска</strong>Не бросаем бота сразу после релиза — сопровождаем и дорабатываем.</p>
+            </div>
+          </div>
+
+          <div class="contact-links">
+            <a class="contact-link" href="https://t.me/TG_Studio_BY" target="_blank" rel="noopener">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M21 4L2.5 11.5L9 13.5M21 4L14.5 21L9 13.5M21 4L9 13.5" stroke="#2aabee" stroke-width="1.6" stroke-linejoin="round"/></svg>
+              Написать в Telegram
+            </a>
+          </div>
+        </div>
+
+        <div class="form-card reveal">
+          <div id="formView">
+            <h3>Получить консультацию</h3>
+            <p>Заполните форму — этого достаточно для первого звонка.</p>
+            <form id="leadForm" novalidate>
+              <div class="field">
+                <div class="field-label-row"><label for="f-name">Имя <span class="req">*</span></label></div>
+                <input id="f-name" name="name" type="text" placeholder="Как к вам обращаться" autocomplete="name" required>
+                <p class="field-error" id="f-name-error">Укажите, как к вам обращаться.</p>
+              </div>
+              <div class="field">
+                <div class="field-label-row"><label for="f-phone">Телефон <span class="req">*</span></label></div>
+                <input id="f-phone" name="phone" type="tel" placeholder="+375 (__) ___-__-__" autocomplete="tel" inputmode="tel" required>
+                <p class="field-error" id="f-phone-error">Введите номер телефона полностью.</p>
+              </div>
+              <div class="field">
+                <div class="field-label-row"><label for="f-business">Сфера бизнеса</label></div>
+                <input id="f-business" name="business" type="text" placeholder="Например: салон красоты" autocomplete="organization">
+              </div>
+              <div class="field">
+                <div class="field-label-row"><label for="f-task">Что нужно автоматизировать <span class="req">*</span></label></div>
+                <textarea id="f-task" name="task" rows="4" placeholder="Опишите в двух словах: запись, каталог, доставка…" required></textarea>
+                <p class="field-error" id="f-task-error">Расскажите, что нужно автоматизировать.</p>
+              </div>
+              <button type="submit" class="btn btn-primary" id="submitBtn">Получить консультацию</button>
+              <p class="field-error" id="formSubmitError">Не получилось отправить заявку. Попробуйте ещё раз или напишите нам в Telegram напрямую.</p>
+              <p class="form-note">Нажимая кнопку, вы соглашаетесь на обработку данных для связи с вами.</p>
+            </form>
+          </div>
+          <div class="success-box" id="successView" role="status" aria-live="polite" tabindex="-1">
+            <div class="dot" aria-hidden="true"></div>
+            <h4>Заявка принята</h4>
+            <p>Свяжемся с вами в ближайшее время — обычно в течение нескольких часов.</p>
+            <button type="button" class="btn btn-ghost" id="resetFormBtn">Отправить ещё одну заявку</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</BaseLayout>
+
+<script>
+  // FAQ accordion
+  document.querySelectorAll('.faq-item').forEach(item=>{
+    const btn = item.querySelector('.faq-q');
+    btn.addEventListener('click', ()=>{
+      const isOpen = item.getAttribute('data-open') === 'true';
+      item.setAttribute('data-open', String(!isOpen));
+      btn.setAttribute('aria-expanded', String(!isOpen));
+    });
+  });
+
+  // phone mask +375
+  const phone = document.getElementById('f-phone');
+  phone.addEventListener('input', ()=>{
+    let d = phone.value.replace(/\D/g,'');
+    if(d.startsWith('375')) d = d.slice(3);
+    d = d.slice(0,9);
+    let out = '+375';
+    if(d.length>0) out += ' (' + d.slice(0,2);
+    if(d.length>=2) out += ') ' + d.slice(2,5);
+    if(d.length>=5) out += '-' + d.slice(5,7);
+    if(d.length>=7) out += '-' + d.slice(7,9);
+    phone.value = out;
+  });
+  phone.addEventListener('focus', ()=>{ if(!phone.value) phone.value = '+375 ('; });
+
+  // inline validation
+  const nameInput = document.getElementById('f-name');
+  const nameError = document.getElementById('f-name-error');
+  const phoneError = document.getElementById('f-phone-error');
+  const taskInput = document.getElementById('f-task');
+  const taskError = document.getElementById('f-task-error');
+
+  function validateName(){
+    const ok = nameInput.value.trim().length > 0;
+    nameInput.setAttribute('aria-invalid', String(!ok));
+    nameError.classList.toggle('is-visible', !ok);
+    return ok;
+  }
+  function validatePhone(){
+    const digits = phone.value.replace(/\D/g,'');
+    const ok = digits.length >= 11;
+    phone.setAttribute('aria-invalid', String(!ok));
+    phoneError.classList.toggle('is-visible', !ok);
+    return ok;
+  }
+  function validateTask(){
+    const ok = taskInput.value.trim().length >= 5;
+    taskInput.setAttribute('aria-invalid', String(!ok));
+    taskError.classList.toggle('is-visible', !ok);
+    return ok;
+  }
+  nameInput.addEventListener('blur', validateName);
+  phone.addEventListener('blur', validatePhone);
+  taskInput.addEventListener('blur', validateTask);
+
+  // form submit — sends the lead to Telegram via a Cloudflare Worker proxy
+  // (the bot token must never live in this client-side file — see worker/telegram-lead-worker.js)
+  const LEAD_ENDPOINT = 'https://tg-studio-leads.birsiti.workers.dev';
+  const form = document.getElementById('leadForm');
+  const submitBtn = document.getElementById('submitBtn');
+  const formView = document.getElementById('formView');
+  const successView = document.getElementById('successView');
+  const submitError = document.getElementById('formSubmitError');
+
+  form.addEventListener('submit', (e)=>{
+    e.preventDefault();
+    const nameOk = validateName();
+    const phoneOk = validatePhone();
+    const taskOk = validateTask();
+    if(!nameOk){ nameInput.focus(); return; }
+    if(!phoneOk){ phone.focus(); return; }
+    if(!taskOk){ taskInput.focus(); return; }
+
+    submitError.classList.remove('is-visible');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span> Отправляем…';
+
+    fetch(LEAD_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source: 'site',
+        name: nameInput.value.trim(),
+        phone: phone.value.trim(),
+        business: document.getElementById('f-business').value.trim(),
+        task: taskInput.value.trim()
+      })
+    })
+      .then(res => { if(!res.ok) throw new Error('bad response'); return res.json(); })
+      .then(data => {
+        if(!data || !data.ok) throw new Error('failed');
+        formView.style.display = 'none';
+        successView.style.display = 'block';
+        successView.focus();
+        window.dataLayer = window.dataLayer || [];
+        window.dataLayer.push({ event: 'lead_form_submit' });
+        if (typeof window.ym === 'function') { window.ym(111729837, 'reachGoal', 'lead_form_submit'); }
+      })
+      .catch(() => {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Получить консультацию';
+        submitError.classList.add('is-visible');
+      });
+  });
+
+  document.getElementById('resetFormBtn').addEventListener('click', ()=>{
+    form.reset();
+    nameInput.removeAttribute('aria-invalid');
+    phone.removeAttribute('aria-invalid');
+    taskInput.removeAttribute('aria-invalid');
+    nameError.classList.remove('is-visible');
+    phoneError.classList.remove('is-visible');
+    taskError.classList.remove('is-visible');
+    submitError.classList.remove('is-visible');
+    submitBtn.disabled = false;
+    submitBtn.textContent = 'Получить консультацию';
+    successView.style.display = 'none';
+    formView.style.display = 'block';
+    nameInput.focus();
+  });
+
+  // hero parallax (desktop, pointer-fine only, respects reduced motion)
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const hoverCapable = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+  const heroSection = document.querySelector('.hero');
+  const heroArt = document.querySelector('.hero-art');
+  if(heroSection && heroArt && hoverCapable && !reducedMotion){
+    heroSection.addEventListener('mousemove', (e)=>{
+      const x = (e.clientX / window.innerWidth - 0.5) * 18;
+      const y = (e.clientY / window.innerHeight - 0.5) * 18;
+      heroArt.style.transform = `translate(${x}px, ${y}px)`;
+    });
+    heroSection.addEventListener('mouseleave', ()=>{ heroArt.style.transform = 'translate(0,0)'; });
+  }
+
+  // fan carousel
+  const fanTrack = document.getElementById('fanTrack');
+  const fanCards = Array.from(fanTrack ? fanTrack.querySelectorAll('.phone-card') : []);
+  if(fanCards.length){
+    const captions = ['Клиент', 'Администратор', 'Владелец'];
+    const fanCaption = document.getElementById('fanCaption');
+    const fanDots = document.getElementById('fanDots');
+    const fanPrev = document.getElementById('fanPrev');
+    const fanNext = document.getElementById('fanNext');
+    let active = 0;
+
+    fanCards.forEach((_, i)=>{
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 'fan-dot';
+      dot.setAttribute('aria-label', 'Слайд ' + (i+1));
+      dot.innerHTML = '<span></span>';
+      dot.addEventListener('click', ()=> setActive(i));
+      fanDots.appendChild(dot);
+    });
+    const dotEls = Array.from(fanDots.children);
+
+    function spread(){
+      const w = fanTrack.clientWidth;
+      return Math.max(56, Math.min(130, w * 0.22));
+    }
+
+    function render(){
+      const gap = spread();
+      fanCards.forEach((card, i)=>{
+        let offset = i - active;
+        const n = fanCards.length;
+        if(offset > n/2) offset -= n;
+        if(offset < -n/2) offset += n;
+        const abs = Math.abs(offset);
+        const visible = abs <= 2;
+        card.style.transform = `translateX(calc(-50% + ${offset*gap}px)) translateY(calc(-50% + ${abs*14}px)) rotate(${offset*8}deg) scale(${1 - abs*0.08})`;
+        card.style.opacity = visible ? String(1 - abs*0.22) : '0';
+        card.style.filter = abs === 0 ? 'none' : `blur(${Math.min(abs,2)*1.1}px)`;
+        card.style.zIndex = String(10 - abs);
+        card.style.pointerEvents = visible ? 'auto' : 'none';
+        card.classList.toggle('is-active', offset === 0);
+      });
+      dotEls.forEach((d,i)=> d.setAttribute('aria-current', String(i===active)));
+      if(fanCaption) fanCaption.textContent = captions[active] || '';
+    }
+
+    function setActive(i){
+      active = (i + fanCards.length) % fanCards.length;
+      render();
+    }
+
+    fanCards.forEach((card, i)=> card.addEventListener('click', ()=> setActive(i)));
+    fanPrev && fanPrev.addEventListener('click', ()=> setActive(active - 1));
+    fanNext && fanNext.addEventListener('click', ()=> setActive(active + 1));
+    fanTrack.addEventListener('keydown', (e)=>{
+      if(e.key === 'ArrowLeft'){ e.preventDefault(); setActive(active - 1); }
+      if(e.key === 'ArrowRight'){ e.preventDefault(); setActive(active + 1); }
+    });
+
+    let resizeTimer;
+    window.addEventListener('resize', ()=>{
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(render, 120);
+    });
+
+    render();
+  }
+</script>

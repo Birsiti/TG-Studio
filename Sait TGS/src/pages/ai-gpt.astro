@@ -1,0 +1,62 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { SITE_URL, BRAND, GEO } from '../site.config.js';
+
+const title = 'ИИ и GPT-ассистенты для Telegram-ботов | TG-Studio';
+const description = 'Диалоговые ассистенты, обработка обращений и генерация ответов на базе языковых моделей для Telegram-ботов и Mini Apps.';
+const lead = 'ИИ-ассистент отвечает на типовые вопросы клиентов своими словами, а не по жёсткому скрипту, и передаёт менеджеру только те обращения, где действительно нужен человек.';
+
+const serviceLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  serviceType: 'Разработка ИИ и GPT-ассистентов',
+  name: 'ИИ и GPT',
+  description,
+  provider: { '@type': 'Organization', name: BRAND.name, url: SITE_URL + '/' },
+  areaServed: GEO.country,
+  url: SITE_URL + '/ai-gpt',
+};
+---
+<BaseLayout title={title} description={description} path="/ai-gpt">
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(serviceLd)} />
+
+  <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: 'ИИ и GPT' }]} />
+
+  <main id="main-content">
+    <section class="page-hero">
+      <div class="wrap">
+        <div class="eyebrow">Услуги</div>
+        <h1>ИИ и GPT-ассистенты для Telegram-ботов</h1>
+        <p class="lead">{lead}</p>
+        <div class="hero-cta">
+          <a href="/#contact" class="btn btn-primary">Обсудить проект</a>
+          <a href="/keysy/blesk" class="btn btn-ghost">Смотреть готовый кейс</a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap prose reveal">
+        <h2>Где ИИ реально экономит время</h2>
+        <ul>
+          <li>Ответы на частые вопросы — цены, условия, график работы — без участия менеджера.</li>
+          <li>Первичная обработка обращений: бот уточняет детали и формулирует суть запроса для команды.</li>
+          <li>Генерация текстов — описаний услуг, ответов на отзывы, вариантов сообщений для рассылки.</li>
+          <li>Подсказки администратору внутри Mini App на основе истории клиента.</li>
+        </ul>
+
+        <h2>Как контролируем качество ответов</h2>
+        <p>Ассистент работает в рамках базы знаний вашего бизнеса — не сочиняет цены и условия, а опирается на данные, которые вы предоставили. Для чувствительных сценариев (оплата, спорные ситуации) настраиваем обязательную передачу диалога человеку.</p>
+
+        <h2>С чего начинается внедрение</h2>
+        <p>Собираем базу знаний (сайт, прайс, частые вопросы из переписки), подключаем языковую модель к боту или Mini App, тестируем на реальных диалогах и донастраиваем тон и границы ответов перед запуском.</p>
+
+        <div class="cta-inline">
+          <p>Расскажите, какие обращения сейчас отнимают больше всего времени у команды.</p>
+          <a href="/#contact" class="btn btn-primary btn-sm">Получить консультацию</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

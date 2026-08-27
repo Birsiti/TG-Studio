@@ -1,0 +1,66 @@
+---
+import { getCollection, render } from 'astro:content';
+import { Picture } from 'astro:assets';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import caseClient from '../../images/case-blesk-client.jpg';
+import caseAdmin from '../../images/case-blesk-admin.jpg';
+import caseOwner from '../../images/case-blesk-owner.jpg';
+
+export async function getStaticPaths() {
+  const cases = await getCollection('keysy');
+  return cases.map(entry => ({
+    params: { slug: entry.id },
+    props: { entry },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+const path = `/keysy/${entry.id}`;
+
+const screens = [
+  { src: caseClient, alt: 'Экран подтверждения записи клиента в мини-приложении БЛЕСК', label: 'Клиент', caption: 'Подтверждение записи' },
+  { src: caseAdmin, alt: 'Экран администратора: кто на смене и записи на сегодня в мини-приложении БЛЕСК', label: 'Администратор', caption: 'Кто на смене сегодня' },
+  { src: caseOwner, alt: 'Экран владельца: выручка и топ услуг в мини-приложении БЛЕСК', label: 'Владелец', caption: 'Выручка и статистика' },
+];
+---
+<BaseLayout title={`${entry.data.title} | TG-Studio`} description={entry.data.description} path={path}>
+  <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: 'Кейсы', href: '/#advantages' }, { label: entry.data.client }]} />
+
+  <main id="main-content">
+    <section class="page-hero">
+      <div class="wrap">
+        <div class="eyebrow">Кейс</div>
+        <h1>{entry.data.title}</h1>
+        <p class="lead">{entry.data.description}</p>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap prose reveal">
+        <Content />
+      </div>
+    </section>
+
+    <section class="showcase">
+      <div class="wrap">
+        <div class="service-grid" style="grid-template-columns:repeat(auto-fit, minmax(200px,1fr));">
+          {screens.map(s => (
+            <div class="card" style="padding:0; overflow:hidden;">
+              <Picture src={s.src} formats={['avif', 'webp']} alt={s.alt} width={480} loading="lazy" />
+              <div style="padding:16px 20px;">
+                <h3>{s.label}</h3>
+                <p>{s.caption}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div class="cta-inline">
+          <p>Хотите похожее решение для своего бизнеса?</p>
+          <a href="/#contact" class="btn btn-primary btn-sm">Обсудить проект</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

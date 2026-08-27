@@ -1,0 +1,62 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { SITE_URL, BRAND, GEO } from '../site.config.js';
+
+const title = 'Чат-боты для продаж в Telegram | TG-Studio';
+const description = 'Разработка чат-ботов для продаж: приём заявок, квалификация клиента и передача в отдел продаж без потери лидов на всей воронке.';
+const lead = 'Чат-бот принимает заявку в любое время суток, задаёт уточняющие вопросы, квалифицирует клиента по вашим критериям и передаёт готовый лид менеджеру — без ручной переписки и потерянных сообщений.';
+
+const serviceLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  serviceType: 'Разработка чат-ботов для продаж',
+  name: 'Чат-боты для продаж',
+  description,
+  provider: { '@type': 'Organization', name: BRAND.name, url: SITE_URL + '/' },
+  areaServed: GEO.country,
+  url: SITE_URL + '/boty',
+};
+---
+<BaseLayout title={title} description={description} path="/boty">
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(serviceLd)} />
+
+  <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: 'Чат-боты для продаж' }]} />
+
+  <main id="main-content">
+    <section class="page-hero">
+      <div class="wrap">
+        <div class="eyebrow">Услуги</div>
+        <h1>Чат-боты для продаж в Telegram</h1>
+        <p class="lead">{lead}</p>
+        <div class="hero-cta">
+          <a href="/#contact" class="btn btn-primary">Обсудить проект</a>
+          <a href="/keysy/blesk" class="btn btn-ghost">Смотреть готовый кейс</a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap prose reveal">
+        <h2>Какую задачу решает бот</h2>
+        <p>Пока менеджер занят или офис закрыт, бот уже отвечает клиенту: приветствует, задаёт уточняющие вопросы по сценарию, который вы согласовали заранее, и собирает всё нужное для звонка или расчёта — контакты, задачу, бюджет, сроки.</p>
+
+        <h2>Что входит в разработку</h2>
+        <ul>
+          <li>Сценарий диалога под вашу воронку продаж — от первого сообщения до передачи лида.</li>
+          <li>Квалификация клиента: бот отсекает нецелевые обращения и приоритизирует горячие заявки.</li>
+          <li>Уведомления в рабочий чат или CRM сразу после того, как клиент оставил заявку.</li>
+          <li>Кнопки, быстрые ответы и вложения вместо длинного набора текста клиентом.</li>
+        </ul>
+
+        <h2>Почему заявки не теряются</h2>
+        <p>Бот работает 24/7 и не зависит от загрузки менеджера: каждое сообщение фиксируется, а при сбое на стороне интеграций у нас есть запасной канал доставки заявки, чтобы обращение не осталось без ответа.</p>
+
+        <div class="cta-inline">
+          <p>Опишите вашу воронку продаж — предложим сценарий бота и посчитаем сроки.</p>
+          <a href="/#contact" class="btn btn-primary btn-sm">Получить консультацию</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

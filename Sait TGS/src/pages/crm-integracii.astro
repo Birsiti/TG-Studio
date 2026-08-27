@@ -1,0 +1,61 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import Breadcrumbs from '../components/Breadcrumbs.astro';
+import { SITE_URL, BRAND, GEO } from '../site.config.js';
+
+const title = 'CRM-интеграции для Telegram-ботов | TG-Studio';
+const description = 'Синхронизация заявок, статусов и клиентской базы Telegram-бота с amoCRM, Bitrix24 и Google Таблицами.';
+const lead = 'Заявка из Telegram-бота попадает в вашу CRM или таблицу автоматически — с именем, контактом и деталями обращения, без ручного переноса и потери данных.';
+
+const serviceLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Service',
+  serviceType: 'Интеграция Telegram-ботов с CRM',
+  name: 'CRM-интеграции',
+  description,
+  provider: { '@type': 'Organization', name: BRAND.name, url: SITE_URL + '/' },
+  areaServed: GEO.country,
+  url: SITE_URL + '/crm-integracii',
+};
+---
+<BaseLayout title={title} description={description} path="/crm-integracii">
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(serviceLd)} />
+
+  <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: 'CRM-интеграции' }]} />
+
+  <main id="main-content">
+    <section class="page-hero">
+      <div class="wrap">
+        <div class="eyebrow">Услуги</div>
+        <h1>CRM-интеграции для Telegram-ботов</h1>
+        <p class="lead">{lead}</p>
+        <div class="hero-cta">
+          <a href="/#contact" class="btn btn-primary">Обсудить проект</a>
+          <a href="/keysy/blesk" class="btn btn-ghost">Смотреть готовый кейс</a>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="wrap prose reveal">
+        <h2>С какими системами работаем</h2>
+        <ul>
+          <li>amoCRM — сделки, статусы и карточки клиентов создаются автоматически из диалога с ботом.</li>
+          <li>Bitrix24 — заявки, лиды и задачи менеджерам без ручного ввода.</li>
+          <li>Google Таблицы — простой и прозрачный вариант для бизнеса без отдельной CRM: каждая заявка — новая строка.</li>
+        </ul>
+
+        <h2>Что синхронизируется</h2>
+        <p>Заявки и статусы обращений, контакты и история переписки, изменения записи или заказа — данные обновляются в обе стороны там, где это нужно, чтобы менеджер и бот всегда видели одну и ту же картину.</p>
+
+        <h2>Как это выглядит на практике</h2>
+        <p>Клиент оставляет заявку в Mini App или боте — карточка сделки появляется в CRM за секунды, с пометкой источника «Telegram» и всеми полями, которые вы указали заранее. Менеджеру не нужно ничего копировать вручную.</p>
+
+        <div class="cta-inline">
+          <p>Скажите, какой системой пользуетесь — покажем, как будет выглядеть интеграция.</p>
+          <a href="/#contact" class="btn btn-primary btn-sm">Получить консультацию</a>
+        </div>
+      </div>
+    </section>
+  </main>
+</BaseLayout>

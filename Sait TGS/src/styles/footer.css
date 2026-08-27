@@ -1,0 +1,16 @@
+/* ---------- FOOTER ---------- */
+footer{
+  border-top:1px solid rgba(255,255,255,.06);
+  padding:40px 0 max(24px, env(safe-area-inset-bottom));
+}
+.foot-row{
+  display:flex; flex-wrap:wrap; gap:20px;
+  align-items:center; justify-content:space-between;
+}
+.foot-brand{display:flex; align-items:center; gap:8px;}
+.foot-brand .brand-mark{width:24px; height:24px;}
+.foot-brand span{font-size:13px; color:var(--ink-500);}
+.foot-links{display:flex; gap:16px; flex-wrap:wrap;}
+.foot-links a{font-size:13px; color:var(--ink-500); transition:color .25s var(--ease);}
+.foot-links a:hover{color:var(--blue-400);}
+footer .copy{font-size:12.5px; color:var(--ink-500); font-family:'JetBrains Mono',monospace;}

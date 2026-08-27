@@ -1,0 +1,15 @@
+/* Single entry point for the site's CSS — split by section so each part is
+   easy to find. Order doesn't matter for the cascade here: every section
+   below only defines its own classes, none of them overlap. */
+@import './base.css';
+@import './header.css';
+@import './hero.css';
+@import './services.css';
+@import './showcase.css';
+@import './why.css';
+@import './process.css';
+@import './contact.css';
+@import './faq.css';
+@import './footer.css';
+@import './subpages.css';
+@import './news.css';

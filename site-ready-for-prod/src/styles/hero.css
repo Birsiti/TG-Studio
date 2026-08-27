@@ -1,0 +1,104 @@
+/* ---------- HERO ---------- */
+.hero{
+  position:relative;
+  padding:152px 0 96px;
+  overflow:hidden;
+  box-shadow:inset 0 0 140px 20px rgba(0,0,0,.4);
+}
+@media(min-width:720px){ .hero{padding:176px 0 112px;} }
+.hero::before{
+  content:"";
+  position:absolute; top:-224px; left:50%; transform:translateX(-38%);
+  width:900px; height:900px;
+  background:radial-gradient(circle, rgba(42,171,238,.22), rgba(42,171,238,0) 60%);
+  z-index:0; pointer-events:none;
+}
+.hero::after{
+  content:"";
+  position:absolute; top:120px; right:-176px;
+  width:600px; height:600px;
+  background:radial-gradient(circle, rgba(138,212,247,.14), rgba(138,212,247,0) 65%);
+  z-index:0; pointer-events:none;
+}
+.hero-grid{
+  position:relative; z-index:1;
+  display:grid; grid-template-columns:1fr; gap:48px;
+  align-items:center;
+}
+@media(min-width:960px){ .hero-grid{grid-template-columns:1.05fr .95fr; gap:56px;} }
+
+@keyframes heroReveal{from{opacity:0; transform:translateY(18px);} to{opacity:1; transform:translateY(0);}}
+.hero-copy > *{animation:heroReveal .8s var(--ease) both;}
+.hero-copy > *:nth-child(1){animation-delay:.05s;}
+.hero-copy > *:nth-child(2){animation-delay:.16s;}
+.hero-copy > *:nth-child(3){animation-delay:.28s;}
+.hero-copy > *:nth-child(4){animation-delay:.4s;}
+.hero-copy > *:nth-child(5){animation-delay:.5s;}
+
+.hero h1{
+  font-size:clamp(32px, 5.6vw, 58px);
+  line-height:1.1;
+  font-weight:700;
+  color:var(--ink-50);
+}
+.hero h1 em{
+  font-style:normal;
+  background:linear-gradient(100deg, var(--blue-300), var(--blue-500));
+  -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.hero p.lead{
+  margin-top:24px;
+  font-size:17.5px;
+  line-height:1.65;
+  color:var(--ink-300);
+  max-width:520px;
+}
+.hero-cta{display:flex; flex-wrap:wrap; gap:16px; margin-top:32px;}
+
+.hero-stats{
+  display:grid; grid-template-columns:repeat(3,1fr); gap:16px 24px; margin-top:48px;
+}
+.hero-stats div strong{
+  display:block; font-family:'Chakra Petch',sans-serif; font-size:26px; color:var(--blue-300); font-weight:700;
+  white-space:nowrap;
+}
+.hero-stats div span{font-size:12.5px; color:var(--ink-500); letter-spacing:.03em;}
+.hero-stats .is-outcome strong{color:var(--teal-400);}
+@media(max-width:400px){
+  .hero-stats{gap:10px 14px;}
+  .hero-stats div strong{font-size:21px;}
+  .hero-stats div span{font-size:10.5px;}
+}
+
+/* signature logo badge */
+.hero-art{position:relative; z-index:1; display:flex; justify-content:center; transition:transform .3s var(--ease);}
+.hero-badge{
+  position:relative; width:100%; max-width:300px;
+  animation:heroArtReveal 1s var(--ease) .32s both, floatY 6s ease-in-out infinite;
+}
+@keyframes heroArtReveal{from{opacity:0; transform:scale(.92);} to{opacity:1; transform:scale(1);}}
+@keyframes floatY{0%,100%{transform:translateY(0);} 50%{transform:translateY(-14px);}}
+.hero-photo{
+  width:100%; aspect-ratio:9/16;
+  border-radius:28px; overflow:hidden;
+  box-shadow:0 30px 70px -20px rgba(42,171,238,.5), 0 0 0 1px rgba(255,255,255,.08);
+}
+.hero-photo img{width:100%; height:100%; object-fit:cover; display:block;}
+.hero-float-card{
+  position:absolute; z-index:2;
+  background:var(--navy-800); border:1px solid var(--navy-700); border-radius:14px;
+  padding:10px 12px; display:flex; align-items:center; gap:8px;
+  box-shadow:0 16px 32px -14px rgba(0,0,0,.5);
+  animation:floatY 5s ease-in-out infinite;
+}
+.hero-float-card.fc1{top:-6%; left:-12%; animation-delay:.4s;}
+.hero-float-card.fc2{bottom:-4%; right:-10%; animation-delay:.9s;}
+.hero-float-card .dot-ico{
+  width:26px; height:26px; border-radius:8px; flex:none;
+  background:linear-gradient(135deg, var(--blue-400), var(--blue-600));
+  display:flex; align-items:center; justify-content:center;
+}
+.hero-float-card.fc2 .dot-ico{background:linear-gradient(135deg, var(--teal-400), var(--teal-600));}
+.hero-float-card .fc-text strong{display:block; font-size:12px; font-weight:700; color:var(--ink-50);}
+.hero-float-card .fc-text span{font-size:10.5px; color:var(--ink-500);}
+@media(max-width:640px){ .hero-float-card{display:none;} }
