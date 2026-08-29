@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#10131A">
+<title>ВЕРСТА — механик</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="palettes.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+(function(){
+  var tg = window.Telegram && window.Telegram.WebApp;
+  var saved = null;
+  try { saved = localStorage.getItem('versta_theme_override'); } catch(e){}
+  var scheme = saved || ((tg && tg.colorScheme) ? tg.colorScheme
+    : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark'));
+  document.documentElement.setAttribute('data-theme', scheme);
+})();
+</script>
+<style>
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
+  html,body{margin:0; padding:0;}
+  body{
+    background:#05060a; font-family:'Manrope',sans-serif; color:var(--ink);
+    display:flex; justify-content:center; min-height:100vh; padding:28px 14px;
+  }
+  h1,h2,h3,.display{font-family:'Oswald',sans-serif; text-transform:uppercase; letter-spacing:.03em; font-weight:600; margin:0;}
+  .mono{font-family:'JetBrains Mono',monospace;}
+  button,select,input,textarea{font-family:inherit;}
+  button{cursor:pointer;}
+  *:focus-visible{outline:2px solid var(--accent2); outline-offset:2px;}
+
+  .phone{
+    position:relative; width:390px; height:844px; background:var(--bg);
+    border-radius:42px; overflow:hidden;
+    box-shadow:0 40px 90px rgba(0,0,0,.65), 0 0 0 9px #0b0d12, 0 0 0 10px #262b36;
+  }
+  @media (max-width:430px){ body{padding:0;} .phone{width:100%; height:100dvh; border-radius:0; box-shadow:none;} }
+
+  .topbar{height:52px; display:flex; align-items:center; justify-content:center; gap:6px; position:relative;}
+  .wordmark{font-family:'Oswald'; font-weight:700; font-size:15px; letter-spacing:.12em;}
+  .role-tag{font-family:'Manrope'; font-weight:700; font-size:9px; letter-spacing:0; text-transform:none;
+    color:var(--accent-ink); background:var(--accent); padding:2px 6px; border-radius:6px;}
+  .theme-toggle{
+    position:absolute; right:16px; top:50%; transform:translateY(-50%);
+    width:44px; height:44px; border-radius:50%;
+    background:var(--surface); border:none; color:var(--ink);
+    display:flex; align-items:center; justify-content:center;
+    box-shadow:var(--shadow-sm);
+  }
+  .theme-toggle .icon-moon{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-sun{display:none;}
+  :root[data-theme="light"] .theme-toggle .icon-moon{display:block;}
+
+  .tab-content{position:absolute; top:52px; bottom:70px; left:0; right:0; overflow-y:auto; padding:6px 18px 24px;}
+
+  .tabbar{position:absolute; left:0; right:0; bottom:0; display:flex; background:var(--surface);
+    border-top:1px solid var(--border); padding:8px 0 max(20px, calc(8px + env(safe-area-inset-bottom))); z-index:4;}
+  .tab-btn{position:relative; flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; background:none; border:none;
+    color:var(--ink-faint); font-size:10px; font-weight:700;}
+  .tab-btn svg{display:block;}
+  .tab-btn.active{color:var(--accent-dark);}
+  .tab-btn .tb-dot{position:absolute; top:2px; left:50%; margin-left:6px; width:7px; height:7px; border-radius:50%;
+    background:var(--danger); border:1.5px solid var(--surface);}
+
+  .eyebrow{color:var(--ink-soft); font-size:12px; margin:2px 0 0;}
+  .title{font-size:24px; margin:0 0 4px;}
+  .subline{color:var(--ink-soft); font-size:12.5px; margin:0 0 16px;}
+  .row-between{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:10px;}
+
+  .btn{border:none; border-radius:var(--radius-sm); padding:12px 16px; font-weight:700; font-size:13.5px;}
+  .btn-primary{background:var(--accent); color:var(--accent-ink);}
+  .btn-ok{background:var(--success); color:#03251f;}
+  .btn-secondary{background:var(--surface-2); color:var(--ink); border:1px solid var(--border);}
+  .btn-danger{background:var(--danger-soft); color:var(--danger-dark); border:1px solid rgba(255,92,108,.3);}
+  .btn-block{width:100%;}
+  .btn-sm{padding:8px 12px; font-size:12px; border-radius:9px;}
+  .btn-row{display:flex; gap:8px;}
+  .btn-row .btn{flex:1;}
+
+  .badge{font-family:'Oswald'; font-weight:700; font-size:11px; background:var(--surface-2); color:var(--ink);
+    border:1px solid var(--border); border-radius:6px; padding:2px 7px; letter-spacing:.03em;}
+
+  /* stat cards */
+  .stat-row{display:flex; gap:7px; margin-bottom:16px;}
+  .stat-card{flex:1; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:10px 9px;}
+  .stat-num{font-family:'JetBrains Mono'; font-weight:700; font-size:20px; line-height:1;}
+  .stat-num.warn{color:var(--warn-dark);}
+  .stat-num.bad{color:var(--danger-dark);}
+  .stat-num.ok{color:var(--success-dark);}
+  .stat-label{font-size:9.5px; color:var(--ink-soft); margin-top:5px; text-transform:uppercase; letter-spacing:.03em;}
+
+  /* status chips */
+  .chip{font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:8px; white-space:nowrap; display:inline-block;}
+  .st-ok{background:var(--success-soft); color:var(--success-dark);}
+  .st-warn{background:var(--warn-soft); color:var(--warn-dark);}
+  .st-bad{background:var(--danger-soft); color:var(--danger-dark);}
+  .st-mut{background:var(--surface-2); color:var(--ink-soft);}
+
+  /* generic card */
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:13px; margin-bottom:10px;}
+  .card.tap{cursor:pointer;}
+  .card.lb-bad{border-left:3px solid var(--danger);}
+  .card.lb-warn{border-left:3px solid var(--warn);}
+  .card.lb-ok{border-left:3px solid var(--success);}
+  .card-top{display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+  .plate{font-family:'JetBrains Mono'; font-weight:700; font-size:13px; background:var(--surface-2);
+    border:1px solid var(--border); border-radius:6px; padding:2px 7px; letter-spacing:.02em;}
+  .card-title{font-size:14.5px; font-weight:700; line-height:1.3;}
+  .card-line{font-size:12px; color:var(--ink-soft); margin-top:4px; line-height:1.4;}
+  .card-line b{color:var(--ink); font-weight:700;}
+  .card-line.bad b, .val-bad{color:var(--danger-dark);}
+  .card-line.warn b, .val-warn{color:var(--warn-dark);}
+  .grow{flex:1;}
+  .chev{color:var(--ink-faint); font-size:18px; flex:0 0 auto;}
+
+  .empty-state{text-align:center; color:var(--ink-soft); padding:44px 12px; font-size:13.5px; line-height:1.5;}
+
+  /* filter chips */
+  .filter-chips{display:flex; gap:7px; overflow-x:auto; margin:0 -18px 14px; padding:0 18px 2px; scrollbar-width:none;}
+  .filter-chips::-webkit-scrollbar{display:none;}
+  .filter-chip{flex:0 0 auto; background:var(--surface); border:1px solid var(--border); border-radius:10px;
+    padding:8px 12px; font-size:12px; font-weight:700; color:var(--ink-soft);}
+  .filter-chip.active{background:var(--accent); border-color:var(--accent); color:var(--accent-ink);}
+
+  /* note banner */
+  .note-banner{border-radius:var(--radius-sm); padding:11px 13px; font-size:12px; font-weight:600; margin-bottom:14px;
+    display:flex; gap:9px; align-items:flex-start; line-height:1.4;}
+  .note-banner svg{flex:0 0 auto; margin-top:1px;}
+  .nb-warn{background:var(--warn-soft); color:var(--warn-dark);}
+  .nb-bad{background:var(--danger-soft); color:var(--danger-dark);}
+  .nb-info{background:var(--accent2-soft); color:var(--accent2-dark);}
+
+  .section-label{font-size:11px; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.05em; margin:18px 0 9px; font-weight:700;}
+  .section-label:first-child{margin-top:4px;}
+
+  /* progress bar (пробег → ТО) */
+  .bar{height:5px; border-radius:3px; background:var(--surface-2); overflow:hidden; margin-top:8px;}
+  .bar-fill{height:100%; border-radius:3px; background:var(--accent2);}
+  .bar-fill.warn{background:var(--warn);}
+  .bar-fill.bad{background:var(--danger);}
+
+  /* key-value list */
+  .kv{display:flex; justify-content:space-between; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); font-size:13px;}
+  .kv:last-child{border-bottom:none;}
+  .kv-k{color:var(--ink-soft);}
+  .kv-v{font-weight:700; text-align:right;}
+  .kv-v .mono{font-weight:700;}
+
+  /* timeline */
+  .tl-item{display:flex; gap:11px; padding-bottom:14px; position:relative;}
+  .tl-item:last-child{padding-bottom:0;}
+  .tl-dot{width:9px; height:9px; border-radius:50%; background:var(--accent2); margin-top:4px; flex:0 0 auto; position:relative; z-index:1;}
+  .tl-item:not(:last-child)::before{content:''; position:absolute; left:4px; top:12px; bottom:0; width:1px; background:var(--border);}
+  .tl-body{flex:1; min-width:0;}
+  .tl-text{font-size:12.5px; line-height:1.4;}
+  .tl-meta{font-size:10.5px; color:var(--ink-faint); margin-top:2px;}
+
+  /* checklist */
+  .chk-row{display:flex; align-items:center; gap:10px; padding:11px 0; border-bottom:1px solid var(--border);}
+  .chk-row:last-child{border-bottom:none;}
+  .chk-label{flex:1; font-size:12.5px; line-height:1.35;}
+  .seg{display:flex; flex:0 0 auto; border:1px solid var(--border); border-radius:9px; overflow:hidden;}
+  .seg-btn{background:var(--surface); border:none; color:var(--ink-soft); font-size:11px; font-weight:700; padding:7px 10px; min-height:34px;}
+  .seg-btn.on[data-v="ok"]{background:var(--success-soft); color:var(--success-dark);}
+  .seg-btn.on[data-v="bad"]{background:var(--danger-soft); color:var(--danger-dark);}
+
+  /* forms */
+  .field{margin-bottom:13px;}
+  .field label{font-size:11px; color:var(--ink-soft); display:block; margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em;}
+  .field input,.field select,.field textarea{width:100%; background:var(--surface); border:1px solid var(--border); color:var(--ink);
+    border-radius:var(--radius-sm); padding:12px 13px; font-size:14.5px;}
+  .field textarea{min-height:74px; resize:vertical;}
+  .field select{appearance:none;}
+  .field .hint{font-size:11px; color:var(--ink-faint); margin-top:5px;}
+  .odo-field input{font-family:'JetBrains Mono'; font-weight:700; letter-spacing:.04em;}
+
+  /* panel */
+  .panel-overlay{position:absolute; inset:0; background:rgba(0,0,0,.55); opacity:0; pointer-events:none; transition:opacity .2s ease; z-index:6;}
+  .panel-overlay.open{opacity:1; pointer-events:auto;}
+  .panel{position:absolute; left:0; right:0; bottom:0; top:7%; background:var(--bg); border-radius:22px 22px 0 0;
+    transform:translateY(110%); opacity:0; visibility:hidden; transition:transform .25s ease, opacity .25s ease; z-index:7;
+    display:flex; flex-direction:column; box-shadow:0 -10px 30px rgba(0,0,0,.4);}
+  .panel.open{transform:translateY(0); opacity:1; visibility:visible;}
+  .panel-header{display:flex; align-items:center; gap:10px; padding:15px 16px 12px; border-bottom:1px solid var(--border);}
+  .panel-header h2{font-size:16px; flex:1; line-height:1.25;}
+  .close-btn{width:40px; height:40px; border-radius:50%; background:var(--surface); border:none; color:var(--ink); font-size:16px; flex:0 0 auto;}
+  .panel-body{flex:1; overflow-y:auto; padding:16px 16px 30px;
+    padding-bottom:max(30px, calc(20px + env(safe-area-inset-bottom, 0px)));}
+  .panel-lead{font-size:12.5px; color:var(--ink-soft); margin:-4px 0 14px; line-height:1.45;}
+</style>
+</head>
+<body>
+<div class="phone">
+
+  <div class="topbar">
+    <span class="wordmark">ВЕРСТА</span>
+    <span class="role-tag">механик · демо</span>
+    <button class="theme-toggle" id="themeToggle" type="button" aria-label="Переключить тему">
+      <svg class="icon-sun" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.5M12 19v2.5M4.2 4.2l1.8 1.8M18 18l1.8 1.8M2.5 12h2.5M19 12h2.5M4.2 19.8l1.8-1.8M18 6l1.8-1.8"/></svg>
+      <svg class="icon-moon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>
+    </button>
+  </div>
+
+  <div class="tab-content" id="tabContent"></div>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab="release">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4.5h6M8 6h8a1.5 1.5 0 0 1 1.5 1.5v11A1.5 1.5 0 0 1 16 20H8a1.5 1.5 0 0 1-1.5-1.5v-11A1.5 1.5 0 0 1 8 6Z"/><path d="M9 13l2 2 4-4.5"/></svg>
+      <span>Выпуск</span>
+    </button>
+    <button class="tab-btn" data-tab="fleet">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="10" rx="2"/><path d="M3 11h18"/><circle cx="7.5" cy="18" r="1.7" fill="currentColor" stroke="none"/><circle cx="16.5" cy="18" r="1.7" fill="currentColor" stroke="none"/></svg>
+      <span>Автопарк</span>
+    </button>
+    <button class="tab-btn" data-tab="defects">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 19h18L12 4Z"/><path d="M12 10v4.5"/><circle cx="12" cy="17.5" r="1" fill="currentColor" stroke="none"/></svg>
+      <span>Заявки</span>
+    </button>
+    <button class="tab-btn" data-tab="reg">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15a8 8 0 0 1 16 0"/><path d="M12 15l4.5-3.5"/><path d="M4 15h1.5M18.5 15H20"/></svg>
+      <span>Регламент</span>
+    </button>
+  </nav>
+
+  <div class="panel-overlay" id="panelOverlay"></div>
+  <div class="panel" id="panel">
+    <div class="panel-header">
+      <h2 id="panelTitle">—</h2>
+      <button class="close-btn" id="panelClose" aria-label="Закрыть">✕</button>
+    </div>
+    <div class="panel-body" id="panelBody"></div>
+  </div>
+
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var tg = window.Telegram ? window.Telegram.WebApp : null;
+  var THEME_KEY = 'versta_theme_override';
+
+  /* ---------------- theme boilerplate (единый для всех ролей ВЕРСТА) ---------------- */
+  function resolveMode(){
+    var saved = null;
+    try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+    if (saved) return saved;
+    return (tg && tg.colorScheme) ? tg.colorScheme
+      : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  }
+  function applyMode(mode, persist){
+    document.documentElement.setAttribute('data-theme', mode);
+    if (persist) { try { localStorage.setItem(THEME_KEY, mode); } catch(e){} }
+    var s = getComputedStyle(document.documentElement);
+    var surface = s.getPropertyValue('--surface').trim();
+    var bg = s.getPropertyValue('--bg').trim();
+    var metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) metaTheme.setAttribute('content', bg);
+    if (tg) { try { tg.setHeaderColor(surface); tg.setBackgroundColor(bg); } catch(e){} }
+  }
+  function toggleTheme(){
+    var next = document.documentElement.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    applyMode(next, true);
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.impactOccurred('light');
+  }
+  function haptic(style){
+    if (tg && tg.HapticFeedback) {
+      if (['success','error','warning'].indexOf(style) !== -1) tg.HapticFeedback.notificationOccurred(style);
+      else tg.HapticFeedback.impactOccurred(style || 'light');
+    }
+  }
+  function alertAsync(message){
+    return new Promise(function(resolve){
+      if (tg && tg.showAlert && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
+        try { tg.showAlert(message, resolve); return; } catch(e){}
+      }
+      window.alert(message); resolve();
+    });
+  }
+  function confirmAsync(message){
+    return new Promise(function(resolve){
+      if (tg && tg.showConfirm && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
+        try { tg.showConfirm(message, resolve); return; } catch(e){}
+      }
+      resolve(window.confirm(message));
+    });
+  }
+  function initTelegram(){
+    applyMode(resolveMode(), false);
+    if (tg) {
+      try {
+        tg.ready(); tg.expand();
+        tg.onEvent && tg.onEvent('themeChanged', function(){
+          var saved = null;
+          try { saved = localStorage.getItem(THEME_KEY); } catch(e){}
+          if (!saved) applyMode(resolveMode(), false);
+        });
+        if (tg.isVersionAtLeast && tg.isVersionAtLeast('7.7')) { try { tg.disableVerticalSwipes(); } catch(e){} }
+      } catch(e){}
+    }
+    var btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', toggleTheme);
+  }
+  try{ initTelegram(); }catch(e){}
+
+  /* ---------------- helpers ---------------- */
+  var DOW = ['Вс','Пн','Вт','Ср','Чт','Пт','Сб'];
+  var MONTHS = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+  var DAILY_KM = 340;               // средний суточный пробег междугородней маршрутки — для оценки «через сколько дней»
+
+  var today = new Date(); today.setHours(0,0,0,0);
+  function addDays(n){ var d = new Date(today); d.setDate(d.getDate()+n); return d; }
+  function shiftDate(base, n){ var d = new Date(base); d.setDate(d.getDate()+n); return d; }
+  function daysUntil(d){ return Math.round((d - today) / 86400000); }
+  function fmtDate(d){
+    var dd = ('0'+d.getDate()).slice(-2), mm = ('0'+(d.getMonth()+1)).slice(-2), yy = (''+d.getFullYear()).slice(-2);
+    return dd+'.'+mm+'.'+yy;
+  }
+  function fmtDateLong(d){ return d.getDate()+' '+MONTHS[d.getMonth()]; }
+  function fmtKm(n){ return (''+Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ' '); }
+  function nowHM(){ var d = new Date(); return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); }
+  function esc(s){
+    return String(s).replace(/[&<>"']/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+  function $(id){ return document.getElementById(id); }
+
+  /* ---------------- mock: автопарк ---------------- */
+  /* пробег/даты документов заданы относительно «сегодня», чтобы индикаторы «просрочено / истекает»
+     были осмысленными в любой день запуска демо */
+  var FLEET = [
+    { plate:'AI 1234-7', model:'Mercedes-Benz Sprinter', year:2019, seats:16, odo:341987,
+      status:'в строю',
+      docs:{ 'ОСГО (автогражданка)':addDays(74), 'Гостехосмотр':addDays(188), 'Тахограф — калибровка':addDays(410),
+             'Огнетушитель — перезарядка':addDays(19), 'Аптечка — срок годности':addDays(150) } },
+    { plate:'AI 5821-7', model:'Mercedes-Benz Sprinter', year:2021, seats:16, odo:268450,
+      status:'в строю',
+      docs:{ 'ОСГО (автогражданка)':addDays(-3), 'Гостехосмотр':addDays(96), 'Тахограф — калибровка':addDays(300),
+             'Огнетушитель — перезарядка':addDays(120), 'Аптечка — срок годности':addDays(60) } },
+    { plate:'AI 0092-7', model:'Ford Transit', year:2018, seats:18, odo:402300,
+      status:'в ремонте', repairNote:'Замена комплекта сцепления — заявка D-1042',
+      docs:{ 'ОСГО (автогражданка)':addDays(40), 'Гостехосмотр':addDays(12), 'Тахограф — калибровка':addDays(210),
+             'Огнетушитель — перезарядка':addDays(90), 'Аптечка — срок годности':addDays(200) } },
+    { plate:'AI 7743-7', model:'Mercedes-Benz Sprinter', year:2020, seats:16, odo:288300,
+      status:'в строю',
+      docs:{ 'ОСГО (автогражданка)':addDays(150), 'Гостехосмотр':addDays(250), 'Тахограф — калибровка':addDays(500),
+             'Огнетушитель — перезарядка':addDays(240), 'Аптечка — срок годности':addDays(330) } },
+    { plate:'AI 3310-7', model:'Peugeot Boxer', year:2017, seats:19, odo:375640,
+      status:'ожидает з/ч', repairNote:'Ожидается моторчик отопителя салона — заявка D-1049',
+      docs:{ 'ОСГО (автогражданка)':addDays(58), 'Гостехосмотр':addDays(9), 'Тахограф — калибровка':addDays(120),
+             'Огнетушитель — перезарядка':addDays(70), 'Аптечка — срок годности':addDays(-10) } },
+    { plate:'AI 6604-7', model:'Volkswagen Crafter', year:2022, seats:18, odo:96120,
+      status:'в строю',
+      docs:{ 'ОСГО (автогражданка)':addDays(210), 'Гостехосмотр':addDays(390), 'Тахограф — калибровка':addDays(600),
+             'Огнетушитель — перезарядка':addDays(300), 'Аптечка — срок годности':addDays(400) } }
+  ];
+  function vehByPlate(p){ for(var i=0;i<FLEET.length;i++) if(FLEET[i].plate===p) return FLEET[i]; return null; }
+
+  /* последнее ТО (для карточки ТС и таймлайна) */
+  var LAST_SERVICE = {
+    'AI 1234-7': { km:335000, date:addDays(-24), text:'ТО, полный объём (масло, все фильтры, диагностика ходовой)' },
+    'AI 5821-7': { km:255000, date:addDays(-40), text:'ТО, полный объём + замена передних тормозных колодок' },
+    'AI 0092-7': { km:390000, date:addDays(-70), text:'ТО, полный объём' },
+    'AI 7743-7': { km:285000, date:addDays(-12), text:'ТО, полный объём' },
+    'AI 3310-7': { km:358000, date:addDays(-95), text:'ТО, полный объём + замена ремня ГРМ' },
+    'AI 6604-7': { km:90000,  date:addDays(-30), text:'Гарантийное ТО-1 у дилера' }
+  };
+
+  /* ---------------- mock: регламент ТО ---------------- */
+  var REG = [
+    { plate:'AI 3310-7', kind:'ТО — полный объём',                  everyKm:15000, lastKm:358000 },
+    { plate:'AI 3310-7', kind:'Тормозные колодки, передние',        everyKm:30000, lastKm:347000 },
+    { plate:'AI 3310-7', kind:'Замена салонного фильтра',           everyKm:20000, lastKm:358000 },
+    { plate:'AI 3310-7', kind:'Сезонная замена шин (лето → зима)',  everyDays:182, lastDate:addDays(-150) },
+
+    { plate:'AI 5821-7', kind:'ТО — полный объём',                  everyKm:15000, lastKm:255000 },
+    { plate:'AI 5821-7', kind:'Замена масла ДВС и фильтров',        everyKm:10000, lastKm:262000 },
+    { plate:'AI 5821-7', kind:'Сезонная замена шин (лето → зима)',  everyDays:182, lastDate:addDays(-150) },
+
+    { plate:'AI 1234-7', kind:'ТО — полный объём',                  everyKm:15000, lastKm:335000 },
+    { plate:'AI 1234-7', kind:'Замена тормозной жидкости',          everyDays:730, lastDate:addDays(-672) },
+    { plate:'AI 1234-7', kind:'Сезонная замена шин (лето → зима)',  everyDays:182, lastDate:addDays(-150) },
+
+    { plate:'AI 7743-7', kind:'ТО — полный объём',                  everyKm:15000, lastKm:285000 },
+    { plate:'AI 7743-7', kind:'Ремень ГРМ + ролики',               everyKm:90000, lastKm:210000 },
+    { plate:'AI 7743-7', kind:'Сезонная замена шин (лето → зима)',  everyDays:182, lastDate:addDays(-150) },
+
+    { plate:'AI 6604-7', kind:'Гарантийное ТО-2 (дилер)',           everyKm:15000, lastKm:90000 },
+    { plate:'AI 6604-7', kind:'Сезонная замена шин (лето → зима)',  everyDays:182, lastDate:addDays(-150) },
+
+    { plate:'AI 0092-7', kind:'ТО — полный объём',                  everyKm:15000, lastKm:390000 }
+  ];
+
+  function regState(it){
+    var v = vehByPlate(it.plate);
+    if (it.everyKm != null) {
+      var due = it.lastKm + it.everyKm;
+      var remain = due - v.odo;                        // + осталось км, − просрочено
+      var estDays = remain / DAILY_KM;
+      return {
+        overdue: remain < 0,
+        soon: remain >= 0 && remain < 1500,
+        main: remain < 0 ? ('просрочено на ' + fmtKm(-remain) + ' км') : ('через ' + fmtKm(remain) + ' км'),
+        sub: (remain < 0 ? 'выполнить немедленно' : ('ориентировочно ' + Math.max(1, Math.round(estDays)) + ' дн')) +
+             ' · каждые ' + fmtKm(it.everyKm) + ' км · на одометре ' + fmtKm(due) + ' км',
+        sortKey: estDays
+      };
+    } else {
+      var dd = shiftDate(it.lastDate, it.everyDays);
+      var rd = daysUntil(dd);
+      return {
+        overdue: rd < 0,
+        soon: rd >= 0 && rd < 14,
+        main: rd < 0 ? ('просрочено на ' + (-rd) + ' дн') : ('через ' + rd + ' дн'),
+        sub: 'по регламенту до ' + fmtDate(dd) + ' · интервал ' + it.everyDays + ' дн',
+        sortKey: rd
+      };
+    }
+  }
+
+  /* ---------------- mock: заявки / неисправности ---------------- */
+  /* источник «водитель» — приходит из driver.html (кнопка «Поломка» на рейсе), «выпуск на линию» —
+     заведено механиком при отказе в выпуске, «плановый осмотр» — найдено при ТО/осмотре парка */
+  var DEFECTS = [
+    { id:'D-1042', plate:'AI 0092-7', opened:addDays(-2), source:'водитель', reporter:'Павел Шпак',
+      ctx:'рейс M4 08:45 Минск → Могилёв',
+      title:'Пробуксовка сцепления, педаль проваливается',
+      detail:'При переключении на 3–4 передачу обороты растут, скорость не набирается. В салоне запах гари. Рейс прерван в Червене, пассажиры пересажены.',
+      priority:'критично', status:'в работе', parts:'Комплект сцепления LUK (диск + корзина + выжимной подшипник)', downtime:3,
+      log:[
+        { t:addDays(-2), who:'Диспетчер', text:'Рейс снят, ТС отбуксировано в парк' },
+        { t:addDays(-1), who:'Механик', text:'Диагностика: критический износ ведомого диска, замена комплекта сцепления' },
+        { t:addDays(-1), who:'Механик', text:'Заказан комплект LUK, поставка 1–2 дня, ТС выведено из наряда' }
+      ] },
+    { id:'D-1048', plate:'AI 6604-7', opened:addDays(0), source:'водитель', reporter:'Игорь Русак',
+      ctx:'выезд из парка, рейс M6 08:45 Минск → Гродно',
+      title:'Стук в передней подвеске справа на неровностях',
+      detail:'Появился сегодня утром. На скорости от 60 км/ч по ямам чёткий металлический стук спереди справа. Подозрение на стойку стабилизатора или опору амортизатора.',
+      priority:'критично', status:'новая', parts:'', downtime:0, log:[] },
+    { id:'D-1049', plate:'AI 3310-7', opened:addDays(-1), source:'плановый осмотр', reporter:'Механик',
+      ctx:'плановый осмотр парка',
+      title:'Не работает отопитель салона',
+      detail:'Печка не подаёт тёплый воздух ни на одном режиме. Кран отопителя открывается, вероятно неисправен моторчик вентилятора печки.',
+      priority:'плановая', status:'в работе', parts:'Моторчик вентилятора отопителя салона', downtime:0,
+      log:[ { t:addDays(-1), who:'Механик', text:'Заказан моторчик отопителя, до поставки ТС на коротких дневных рейсах' } ] },
+    { id:'D-1039', plate:'AI 5821-7', opened:addDays(-4), source:'водитель', reporter:'Алексей Дайнеко',
+      ctx:'рейс M5 Минск → Гомель',
+      title:'Скол на лобовом стекле со стороны пассажира',
+      detail:'Прилетел камень на трассе М5. Скол около 5 мм, вне зоны обзора водителя, трещина не расходится.',
+      priority:'плановая', status:'в работе', parts:'Ремонт скола у подрядчика', downtime:0,
+      log:[ { t:addDays(-3), who:'Механик', text:'Записаны на ремонт скола на четверг, эксплуатацию допускаю' } ] },
+    { id:'D-1051', plate:'AI 7743-7', opened:addDays(0), source:'водитель', reporter:'Павел Шпак',
+      ctx:'рейс M4 06:20 Минск → Могилёв',
+      title:'Задняя пассажирская дверь закрывается со второго раза',
+      detail:'Нижний фиксатор замка подклинивает. В мороз будет хуже — просьба посмотреть петли и личинку замка.',
+      priority:'плановая', status:'новая', parts:'', downtime:0, log:[] },
+    { id:'D-1030', plate:'AI 1234-7', opened:addDays(-6), closed:addDays(-5), source:'плановый осмотр', reporter:'Механик',
+      ctx:'предрейсовый осмотр',
+      title:'Небольшой люфт рулевого колеса',
+      detail:'Люфт на грани нормы, взят на контроль.',
+      priority:'плановая', status:'устранено', parts:'—', downtime:0,
+      log:[
+        { t:addDays(-6), who:'Механик', text:'Подтяжка рулевого редуктора, проверка наконечников' },
+        { t:addDays(-5), who:'Механик', text:'Повторная проверка на подъёмнике — люфт в норме, заявка закрыта' }
+      ] }
+  ];
+  var defectSeq = 1051;
+  function nextDefectId(){ defectSeq++; return 'D-' + defectSeq; }
+  function defectById(id){ for(var i=0;i<DEFECTS.length;i++) if(DEFECTS[i].id===id) return DEFECTS[i]; return null; }
+  function openDefectsFor(plate){ return DEFECTS.filter(function(d){ return d.plate===plate && d.status!=='устранено' && d.status!=='отклонено'; }); }
+  function driverAlertsToday(){ return DEFECTS.filter(function(d){ return d.source==='водитель' && daysUntil(d.opened)===0; }).length; }
+
+  /* ---------------- mock: наряд на сегодня (выпуск на линию) ---------------- */
+  var CHECKLIST = [
+    'Тормозная система и стояночный тормоз',
+    'Рулевое управление, отсутствие люфта',
+    'Шины: давление, износ, отсутствие порезов',
+    'Внешние световые приборы и указатели',
+    'Стеклоочистители и омыватель',
+    'Ремни безопасности всех посадочных мест',
+    'Аптечка, огнетушитель, знак аварийной остановки',
+    'Отопитель салона, отсутствие посторонних запахов',
+    'Уровни: масло ДВС, охлаждающая и тормозная жидкость',
+    'Чистота салона и стёкол, зеркала, тахограф'
+  ];
+  var SHIFTS = [
+    { plate:'AI 1234-7', driver:'Сергей Ковалёв', first:'06:20 · M1 Минск → Брест', trips:2,
+      insp:{ status:'допущен', time:'05:38', odo:341987, waybill:'ПЛ-000418', note:'' } },
+    { plate:'AI 7743-7', driver:'Павел Шпак', first:'06:20 · M4 Минск → Могилёв', trips:3,
+      insp:{ status:'допущен', time:'05:44', odo:288300, waybill:'ПЛ-000419', note:'Долит омыватель' } },
+    { plate:'AI 5821-7', driver:'Алексей Дайнеко', first:'08:45 · M5 Минск → Гомель', trips:2, insp:null },
+    { plate:'AI 6604-7', driver:'Игорь Русак', first:'08:45 · M6 Минск → Гродно', trips:2,
+      insp:{ status:'не допущен', time:'07:05', odo:96120, waybill:null,
+             note:'Стук в передней подвеске справа. На линию не выпускать до устранения.', defectId:'D-1048' } },
+    { plate:'AI 3310-7', driver:'Не назначен', first:'14:15 · M3 Минск → Витебск', trips:1, insp:null }
+  ];
+  function shiftByPlate(p){ for(var i=0;i<SHIFTS.length;i++) if(SHIFTS[i].plate===p) return SHIFTS[i]; return null; }
+  var waybillSeq = 419;
+  function nextWaybill(){ waybillSeq++; return 'ПЛ-000' + waybillSeq; }
+
+  /* ================================================================
+     RENDER
+     ================================================================ */
+  var ICONS = {
+    warn:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4 3 19h18L12 4Z"/><path d="M12 10v4"/><path d="M12 17h.01"/></svg>',
+    info:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>'
+  };
+  var currentTab = 'release';
+  var defectFilter = 'all';
+
+  function vehStatusChip(v){
+    if (v.status === 'в строю') return '<span class="chip st-ok">в строю</span>';
+    if (v.status === 'в ремонте') return '<span class="chip st-bad">в ремонте</span>';
+    return '<span class="chip st-warn">ожидает з/ч</span>';
+  }
+  function docState(d){
+    var n = daysUntil(d);
+    if (n < 0) return { cls:'bad', text:'просрочен ' + (-n) + ' дн', rank:2 };
+    if (n <= 30) return { cls:'warn', text:'осталось ' + n + ' дн', rank:1 };
+    return { cls:'ok', text:'действует', rank:0 };
+  }
+  function docsWorst(v){
+    var worst = { rank:-1 };
+    Object.keys(v.docs).forEach(function(k){
+      var s = docState(v.docs[k]);
+      if (s.rank > worst.rank) worst = { rank:s.rank, k:k, s:s };
+    });
+    return worst;
+  }
+  function toState(v){
+    var items = REG.filter(function(r){ return r.plate === v.plate; }).map(regState);
+    var overdue = items.some(function(s){ return s.overdue; });
+    var soon = items.some(function(s){ return s.soon; });
+    // ближайшее по километражу ТО — для строки в карточке
+    var kmItems = REG.filter(function(r){ return r.plate === v.plate && r.everyKm != null; });
+    var nearest = null;
+    kmItems.forEach(function(r){
+      var due = r.lastKm + r.everyKm, remain = due - v.odo;
+      if (nearest === null || remain < nearest.remain) nearest = { remain:remain };
+    });
+    return { overdue:overdue, soon:soon, nearestKm: nearest ? nearest.remain : null };
+  }
+
+  /* ---------- TAB 1: выпуск на линию ---------- */
+  function renderRelease(){
+    var passed = SHIFTS.filter(function(s){ return s.insp && s.insp.status === 'допущен'; }).length;
+    var pending = SHIFTS.filter(function(s){ return !s.insp; }).length;
+    var rejected = SHIFTS.filter(function(s){ return s.insp && s.insp.status === 'не допущен'; }).length;
+    var inRepair = FLEET.filter(function(v){ return v.status !== 'в строю'; }).length;
+    var alerts = driverAlertsToday();
+
+    var h = '';
+    h += '<h1 class="title">Выпуск на линию</h1>';
+    h += '<p class="subline">' + DOW[today.getDay()] + ', ' + fmtDateLong(today) + ' · наряд на ' + SHIFTS.length + ' машин</p>';
+
+    h += '<div class="stat-row">' +
+      '<div class="stat-card"><div class="stat-num ok">' + passed + '</div><div class="stat-label">Допущено</div></div>' +
+      '<div class="stat-card"><div class="stat-num ' + (pending ? 'warn' : '') + '">' + pending + '</div><div class="stat-label">Ждут осмотра</div></div>' +
+      '<div class="stat-card"><div class="stat-num ' + (rejected ? 'bad' : '') + '">' + rejected + '</div><div class="stat-label">Не допущено</div></div>' +
+      '<div class="stat-card"><div class="stat-num ' + (inRepair ? 'bad' : '') + '">' + inRepair + '</div><div class="stat-label">Вне строя</div></div>' +
+      '</div>';
+
+    if (alerts > 0) {
+      h += '<div class="note-banner nb-bad">' + ICONS.warn +
+        '<span>Сегодня от водителей поступило сообщений о поломке: <b>' + alerts + '</b>. Проверьте вкладку «Заявки».</span></div>';
+    }
+
+    SHIFTS.forEach(function(s){
+      var v = vehByPlate(s.plate);
+      var lb = '', statusHtml = '', actionHint = '';
+      if (!s.insp) {
+        lb = 'lb-warn';
+        statusHtml = '<span class="chip st-mut">ожидает осмотра</span>';
+        actionHint = 'нажмите, чтобы провести осмотр';
+      } else if (s.insp.status === 'допущен') {
+        lb = 'lb-ok';
+        statusHtml = '<span class="chip st-ok">допущен ' + s.insp.time + '</span>';
+        actionHint = s.insp.waybill + ' · одометр ' + fmtKm(s.insp.odo) + ' км' + (s.insp.note ? ' · ' + esc(s.insp.note) : '');
+      } else {
+        lb = 'lb-bad';
+        statusHtml = '<span class="chip st-bad">не допущен</span>';
+        actionHint = esc(s.insp.note);
+      }
+      h += '<div class="card tap ' + lb + '" data-insp="' + s.plate + '">' +
+        '<div class="card-top"><span class="plate">' + s.plate + '</span>' +
+          '<span class="grow"></span>' + statusHtml + '</div>' +
+        '<div class="card-title">' + esc(s.driver) + '</div>' +
+        '<div class="card-line">' + v.model + ' · ' + v.seats + ' мест · первый рейс <b>' + esc(s.first) + '</b>, всего ' + s.trips + '</div>' +
+        '<div class="card-line' + (s.insp && s.insp.status === 'не допущен' ? ' bad' : '') + '"><b>' + actionHint + '</b></div>' +
+        '</div>';
+    });
+
+    // машины вне наряда
+    var idle = FLEET.filter(function(v){ return !shiftByPlate(v.plate); });
+    if (idle.length) {
+      h += '<div class="section-label">Не в наряде сегодня</div>';
+      idle.forEach(function(v){
+        h += '<div class="card tap" data-veh="' + v.plate + '">' +
+          '<div class="card-top"><span class="plate">' + v.plate + '</span><span class="grow"></span>' + vehStatusChip(v) + '</div>' +
+          '<div class="card-line">' + v.model + (v.repairNote ? ' · ' + esc(v.repairNote) : '') + '</div></div>';
+      });
+    }
+
+    $('tabContent').innerHTML = h;
+    $('tabContent').querySelectorAll('[data-insp]').forEach(function(el){
+      el.addEventListener('click', function(){ openInspect(el.dataset.insp); });
+    });
+    $('tabContent').querySelectorAll('[data-veh]').forEach(function(el){
+      el.addEventListener('click', function(){ openVehicle(el.dataset.veh); });
+    });
+  }
+
+  /* ---------- TAB 2: автопарк ---------- */
+  function renderFleet(){
+    var h = '';
+    h += '<h1 class="title">Автопарк</h1>';
+    h += '<p class="subline">' + FLEET.length + ' единиц · ' +
+      FLEET.filter(function(v){ return v.status === 'в строю'; }).length + ' в строю</p>';
+
+    FLEET.forEach(function(v){
+      var to = toState(v);
+      var lb = to.overdue ? 'lb-bad' : (to.soon ? 'lb-warn' : '');
+      var toLine, toCls = '';
+      if (to.nearestKm == null) { toLine = 'нет регламента'; }
+      else if (to.nearestKm < 0) { toLine = 'ТО просрочено на ' + fmtKm(-to.nearestKm) + ' км'; toCls = 'bad'; }
+      else if (to.nearestKm < 1500) { toLine = 'ТО через ' + fmtKm(to.nearestKm) + ' км'; toCls = 'warn'; }
+      else { toLine = 'ТО через ' + fmtKm(to.nearestKm) + ' км'; }
+
+      var w = docsWorst(v);
+      var docLine, docCls = '';
+      if (w.rank === 2) { docLine = 'документ просрочен: ' + w.k; docCls = 'bad'; if (!lb) lb = 'lb-bad'; }
+      else if (w.rank === 1) { docLine = w.k + ' — ' + w.s.text; docCls = 'warn'; if (!lb) lb = 'lb-warn'; }
+      else { docLine = 'все документы действуют'; }
+
+      var open = openDefectsFor(v.plate).length;
+
+      h += '<div class="card tap ' + lb + '" data-veh="' + v.plate + '">' +
+        '<div class="card-top"><span class="plate">' + v.plate + '</span>' +
+          '<span class="grow"></span>' + vehStatusChip(v) + '</div>' +
+        '<div class="card-title">' + v.model + '</div>' +
+        '<div class="card-line">' + v.year + ' г. · ' + v.seats + ' мест · пробег <b class="mono">' + fmtKm(v.odo) + ' км</b></div>' +
+        '<div class="card-line ' + toCls + '"><b>' + toLine + '</b></div>' +
+        '<div class="card-line ' + docCls + '">Документы: <b>' + docLine + '</b></div>' +
+        (open ? '<div class="card-line">Открытых заявок: <b>' + open + '</b></div>' : '') +
+        (v.repairNote ? '<div class="card-line warn"><b>' + esc(v.repairNote) + '</b></div>' : '') +
+        '</div>';
+    });
+
+    $('tabContent').innerHTML = h;
+    $('tabContent').querySelectorAll('[data-veh]').forEach(function(el){
+      el.addEventListener('click', function(){ openVehicle(el.dataset.veh); });
+    });
+  }
+
+  /* ---------- TAB 3: заявки / неисправности ---------- */
+  var DEF_FILTERS = [
+    { key:'all', label:'Все' },
+    { key:'новая', label:'Новые' },
+    { key:'в работе', label:'В работе' },
+    { key:'критично', label:'Критичные' },
+    { key:'устранено', label:'Закрытые' }
+  ];
+  function renderDefects(){
+    var openCnt = DEFECTS.filter(function(d){ return d.status === 'новая' || d.status === 'в работе'; }).length;
+    var critCnt = DEFECTS.filter(function(d){ return d.priority === 'критично' && d.status !== 'устранено' && d.status !== 'отклонено'; }).length;
+
+    var h = '';
+    h += '<div class="row-between"><h1 class="title" style="margin:0;">Заявки</h1>' +
+      '<button class="btn btn-secondary btn-sm" id="addDefectBtn">+ Завести</button></div>';
+    h += '<p class="subline">Открыто ' + openCnt + ' · критичных ' + critCnt + '</p>';
+
+    h += '<div class="filter-chips">';
+    DEF_FILTERS.forEach(function(f){
+      h += '<button class="filter-chip' + (defectFilter === f.key ? ' active' : '') + '" data-f="' + f.key + '">' + f.label + '</button>';
+    });
+    h += '</div>';
+
+    var list = DEFECTS.slice().sort(function(a, b){
+      var rank = { 'новая':0, 'в работе':1, 'устранено':2, 'отклонено':2 };
+      if (rank[a.status] !== rank[b.status]) return rank[a.status] - rank[b.status];
+      return b.opened - a.opened;
+    });
+    if (defectFilter === 'критично') list = list.filter(function(d){ return d.priority === 'критично'; });
+    else if (defectFilter === 'новая') list = list.filter(function(d){ return d.status === 'новая'; });
+    else if (defectFilter === 'в работе') list = list.filter(function(d){ return d.status === 'в работе'; });
+    else if (defectFilter === 'устранено') list = list.filter(function(d){ return d.status === 'устранено' || d.status === 'отклонено'; });
+
+    if (!list.length) {
+      h += '<div class="empty-state">В этой категории заявок нет.</div>';
+    } else {
+      list.forEach(function(d){
+        var lb = d.status === 'устранено' || d.status === 'отклонено' ? 'lb-ok' : (d.priority === 'критично' ? 'lb-bad' : 'lb-warn');
+        var stChip = d.status === 'новая' ? 'st-warn' : (d.status === 'в работе' ? 'st-mut' : 'st-ok');
+        var prChip = d.priority === 'критично' ? 'st-bad' : 'st-mut';
+        var srcText = d.source === 'водитель' ? ('от водителя ' + esc(d.reporter) + ', ' + esc(d.ctx))
+          : (d.source === 'выпуск на линию' ? 'заведено при выпуске на линию' : 'найдено при плановом осмотре');
+        h += '<div class="card tap ' + lb + '" data-def="' + d.id + '">' +
+          '<div class="card-top"><span class="badge">' + d.id + '</span><span class="plate">' + d.plate + '</span>' +
+            '<span class="grow"></span><span class="chip ' + prChip + '">' + d.priority + '</span></div>' +
+          '<div class="card-title">' + esc(d.title) + '</div>' +
+          '<div class="card-line">' + srcText + '</div>' +
+          '<div class="card-line">' + fmtDate(d.opened) + ' · <span class="chip ' + stChip + '">' + d.status + '</span>' +
+            (d.downtime ? ' · простой ' + d.downtime + ' дн' : '') + '</div>' +
+          '</div>';
+      });
+    }
+
+    $('tabContent').innerHTML = h;
+    $('addDefectBtn').addEventListener('click', function(){ openDefectForm(null); });
+    $('tabContent').querySelectorAll('[data-f]').forEach(function(el){
+      el.addEventListener('click', function(){ defectFilter = el.dataset.f; haptic('light'); renderDefects(); });
+    });
+    $('tabContent').querySelectorAll('[data-def]').forEach(function(el){
+      el.addEventListener('click', function(){ openDefect(el.dataset.def); });
+    });
+  }
+
+  /* ---------- TAB 4: регламент ТО ---------- */
+  function renderReg(){
+    var rows = REG.map(function(it){ return { it:it, s:regState(it) }; })
+      .sort(function(a, b){ return a.s.sortKey - b.s.sortKey; });
+    var overdue = rows.filter(function(r){ return r.s.overdue; }).length;
+    var soon = rows.filter(function(r){ return r.s.soon; }).length;
+
+    var h = '';
+    h += '<h1 class="title">Регламент ТО</h1>';
+    h += '<p class="subline">' + rows.length + ' позиций по ' + FLEET.length + ' машинам</p>';
+    h += '<div class="stat-row">' +
+      '<div class="stat-card"><div class="stat-num ' + (overdue ? 'bad' : 'ok') + '">' + overdue + '</div><div class="stat-label">Просрочено</div></div>' +
+      '<div class="stat-card"><div class="stat-num ' + (soon ? 'warn' : '') + '">' + soon + '</div><div class="stat-label">Подходит срок</div></div>' +
+      '<div class="stat-card"><div class="stat-num">' + (rows.length - overdue - soon) + '</div><div class="stat-label">В графике</div></div>' +
+      '</div>';
+
+    rows.forEach(function(r, i){
+      var lb = r.s.overdue ? 'lb-bad' : (r.s.soon ? 'lb-warn' : 'lb-ok');
+      var vcls = r.s.overdue ? 'val-bad' : (r.s.soon ? 'val-warn' : '');
+      h += '<div class="card tap ' + lb + '" data-reg="' + REG.indexOf(r.it) + '">' +
+        '<div class="card-top"><span class="plate">' + r.it.plate + '</span>' +
+          '<span class="grow"></span><span class="' + vcls + '" style="font-weight:700; font-size:12.5px;">' + r.s.main + '</span></div>' +
+        '<div class="card-title" style="font-size:13.5px;">' + esc(r.it.kind) + '</div>' +
+        '<div class="card-line">' + r.s.sub + '</div>' +
+        '</div>';
+    });
+
+    $('tabContent').innerHTML = h;
+    $('tabContent').querySelectorAll('[data-reg]').forEach(function(el){
+      el.addEventListener('click', function(){ openRegDone(+el.dataset.reg); });
+    });
+  }
+
+  /* ================================================================
+     PANEL (со стеком экранов)
+     ================================================================ */
+  var panelStack = [];
+  function pushPanel(render){ panelStack.push(render); paintPanel(); openPanelEl(); }
+  function paintPanel(){ if (panelStack.length) panelStack[panelStack.length - 1](); }
+  function popPanel(){
+    panelStack.pop();
+    if (panelStack.length) paintPanel();
+    else closePanelEl();
+  }
+  function openPanelEl(){
+    $('panelOverlay').classList.add('open');
+    $('panel').classList.add('open');
+    if (tg && tg.BackButton) { try { tg.BackButton.show(); } catch(e){} }
+  }
+  function closePanelEl(){
+    panelStack = [];
+    $('panelOverlay').classList.remove('open');
+    $('panel').classList.remove('open');
+    if (tg && tg.BackButton) { try { tg.BackButton.hide(); } catch(e){} }
+    renderTab();
+  }
+  $('panelClose').addEventListener('click', function(){ panelStack.length > 1 ? popPanel() : closePanelEl(); });
+  $('panelOverlay').addEventListener('click', closePanelEl);
+  if (tg && tg.BackButton) tg.BackButton.onClick(function(){ panelStack.length > 1 ? popPanel() : closePanelEl(); });
+
+  function setPanel(title, bodyHtml){
+    $('panelTitle').textContent = title;
+    $('panelBody').innerHTML = bodyHtml;
+    $('panelBody').scrollTop = 0;
+  }
+
+  /* ---------- панель: осмотр / выпуск на линию ---------- */
+  function openInspect(plate){ pushPanel(function(){ renderInspect(plate); }); }
+  function renderInspect(plate){
+    var s = shiftByPlate(plate), v = vehByPlate(plate);
+
+    if (s.insp) {
+      // уже осмотрен — карточка результата
+      var done = s.insp;
+      var body = '';
+      body += '<p class="panel-lead">' + v.model + ' · ' + esc(s.driver) + ' · ' + esc(s.first) + '</p>';
+      body += '<div class="card ' + (done.status === 'допущен' ? 'lb-ok' : 'lb-bad') + '">' +
+        '<div class="card-top"><span class="chip ' + (done.status === 'допущен' ? 'st-ok' : 'st-bad') + '">' + done.status + '</span>' +
+          '<span class="grow"></span><span class="card-line" style="margin:0;">' + done.time + '</span></div>' +
+        '<div class="kv"><span class="kv-k">Одометр</span><span class="kv-v mono">' + fmtKm(done.odo) + ' км</span></div>' +
+        (done.waybill ? '<div class="kv"><span class="kv-k">Путевой лист</span><span class="kv-v mono">' + done.waybill + '</span></div>' : '') +
+        (done.note ? '<div class="kv"><span class="kv-k">Замечание</span><span class="kv-v">' + esc(done.note) + '</span></div>' : '') +
+        (done.defectId ? '<div class="kv"><span class="kv-k">Заявка</span><span class="kv-v">' + done.defectId + '</span></div>' : '') +
+        '</div>';
+      if (done.defectId) {
+        body += '<button class="btn btn-secondary btn-block" id="insLinkDef" style="margin-bottom:10px;">Открыть заявку ' + done.defectId + '</button>';
+      }
+      body += '<button class="btn btn-secondary btn-block" id="insReopen">Провести осмотр заново</button>';
+      setPanel(plate + ' · осмотр', body);
+      var ld = document.getElementById('insLinkDef');
+      if (ld) ld.addEventListener('click', function(){ openDefect(done.defectId); });
+      $('insReopen').addEventListener('click', function(){ s.insp = null; renderInspect(plate); });
+      return;
+    }
+
+    // форма осмотра
+    var b = '';
+    b += '<p class="panel-lead">' + v.model + ' · ' + v.year + ' г. · ' + esc(s.driver) + '<br>Первый рейс: ' + esc(s.first) + '</p>';
+    b += '<div class="field odo-field"><label>Пробег по одометру, км</label>' +
+      '<input type="text" inputmode="numeric" id="inspOdo" value="' + v.odo + '"></div>';
+    b += '<div class="section-label">Контроль технического состояния</div>';
+    b += '<div class="card" style="padding:2px 13px;">';
+    CHECKLIST.forEach(function(item, i){
+      b += '<div class="chk-row" data-i="' + i + '">' +
+        '<span class="chk-label">' + esc(item) + '</span>' +
+        '<div class="seg">' +
+          '<button type="button" class="seg-btn on" data-v="ok">Норма</button>' +
+          '<button type="button" class="seg-btn" data-v="bad">Замечание</button>' +
+        '</div></div>';
+    });
+    b += '</div>';
+    b += '<div class="field" id="inspNoteWrap" style="display:none;"><label>Что выявлено</label>' +
+      '<textarea id="inspNote" placeholder="Опишите неисправность — по ней будет создана заявка"></textarea></div>';
+    b += '<div class="btn-row">' +
+      '<button class="btn btn-danger" id="inspReject">Не допускать</button>' +
+      '<button class="btn btn-ok" id="inspPass">Допустить к рейсу</button>' +
+      '</div>';
+    setPanel(plate + ' · осмотр', b);
+
+    var flags = CHECKLIST.map(function(){ return 'ok'; });
+    function refreshNote(){
+      var anyBad = flags.indexOf('bad') !== -1;
+      $('inspNoteWrap').style.display = anyBad ? 'block' : 'none';
+    }
+    $('panelBody').querySelectorAll('.chk-row').forEach(function(row){
+      var i = +row.dataset.i;
+      row.querySelectorAll('.seg-btn').forEach(function(btn){
+        btn.addEventListener('click', function(){
+          flags[i] = btn.dataset.v;
+          row.querySelectorAll('.seg-btn').forEach(function(x){ x.classList.toggle('on', x.dataset.v === flags[i]); });
+          haptic('light');
+          refreshNote();
+        });
+      });
+    });
+
+    $('inspPass').addEventListener('click', function(){
+      var odo = parseInt(($('inspOdo').value || '').replace(/\D/g, ''), 10) || v.odo;
+      var anyBad = flags.indexOf('bad') !== -1;
+      var note = ($('inspNote') && $('inspNote').value || '').trim();
+      if (anyBad && !note) { alertAsync('Опишите выявленное замечание.'); return; }
+      if (odo < v.odo) { alertAsync('Пробег не может быть меньше текущего (' + fmtKm(v.odo) + ' км).'); return; }
+      v.odo = odo;
+      var wb = nextWaybill();
+      s.insp = { status:'допущен', time:nowHM(), odo:odo, waybill:wb, note: anyBad ? note : '' };
+      if (anyBad) {
+        var d = makeDefect(plate, note, 'плановая', 'выпуск на линию');
+        s.insp.defectId = d.id;
+        s.insp.note = note + ' (заявка ' + d.id + ')';
+      }
+      haptic('success');
+      popPanel();
+      renderTab();
+    });
+
+    $('inspReject').addEventListener('click', function(){
+      var note = ($('inspNote') && $('inspNote').value || '').trim();
+      if (!note) { alertAsync('Укажите причину отказа в выпуске.'); return; }
+      var odo = parseInt(($('inspOdo').value || '').replace(/\D/g, ''), 10) || v.odo;
+      if (odo > v.odo) v.odo = odo;
+      var d = makeDefect(plate, note, 'критично', 'выпуск на линию');
+      s.insp = { status:'не допущен', time:nowHM(), odo:odo, waybill:null, note:note, defectId:d.id };
+      haptic('warning');
+      popPanel();
+      renderTab();
+    });
+  }
+
+  function makeDefect(plate, title, priority, source){
+    var d = {
+      id: nextDefectId(), plate: plate, opened: new Date(), source: source,
+      reporter: 'Механик', ctx: source === 'выпуск на линию' ? 'предрейсовый осмотр' : 'плановый осмотр',
+      title: title, detail: title, priority: priority, status: 'новая',
+      parts: '', downtime: 0, log: []
+    };
+    DEFECTS.push(d);
+    return d;
+  }
+
+  /* ---------- панель: карточка ТС ---------- */
+  function openVehicle(plate){ pushPanel(function(){ renderVehicle(plate); }); }
+  function renderVehicle(plate){
+    var v = vehByPlate(plate);
+    var to = toState(v);
+    var svc = LAST_SERVICE[plate];
+    var open = openDefectsFor(plate);
+    var expSoon = Object.keys(v.docs).filter(function(k){ return docState(v.docs[k]).rank > 0; }).length;
+
+    var b = '';
+    b += '<p class="panel-lead">' + v.model + ' · ' + v.year + ' г. · ' + v.seats + ' мест ' + vehStatusChip(v) + '</p>';
+    if (v.repairNote) b += '<div class="note-banner nb-warn">' + ICONS.warn + '<span>' + esc(v.repairNote) + '</span></div>';
+
+    b += '<div class="stat-row">' +
+      '<div class="stat-card"><div class="stat-num mono" style="font-size:15px;">' + fmtKm(v.odo) + '</div><div class="stat-label">Пробег, км</div></div>' +
+      '<div class="stat-card"><div class="stat-num ' + (to.nearestKm != null && to.nearestKm < 0 ? 'bad' : (to.nearestKm != null && to.nearestKm < 1500 ? 'warn' : '')) + '" style="font-size:15px;">' +
+        (to.nearestKm == null ? '—' : (to.nearestKm < 0 ? '−' + fmtKm(-to.nearestKm) : fmtKm(to.nearestKm))) + '</div><div class="stat-label">До ТО, км</div></div>' +
+      '<div class="stat-card"><div class="stat-num ' + (open.length ? 'warn' : '') + '" style="font-size:15px;">' + open.length + '</div><div class="stat-label">Заявок</div></div>' +
+      '<div class="stat-card"><div class="stat-num ' + (expSoon ? 'warn' : '') + '" style="font-size:15px;">' + expSoon + '</div><div class="stat-label">Док. к продл.</div></div>' +
+      '</div>';
+
+    b += '<div class="section-label">Документы</div><div class="card">';
+    Object.keys(v.docs).forEach(function(k){
+      var st = docState(v.docs[k]);
+      b += '<div class="kv"><span class="kv-k">' + k + '</span>' +
+        '<span class="kv-v"><span class="mono">' + fmtDate(v.docs[k]) + '</span> ' +
+        '<span class="chip st-' + (st.cls === 'ok' ? 'ok' : (st.cls === 'warn' ? 'warn' : 'bad')) + '">' + st.text + '</span></span></div>';
+    });
+    b += '</div>';
+
+    b += '<div class="section-label">Регламент ТО</div>';
+    var regItems = REG.map(function(it, idx){ return { it:it, idx:idx, s:regState(it) }; })
+      .filter(function(r){ return r.it.plate === plate; })
+      .sort(function(a, b){ return a.s.sortKey - b.s.sortKey; });
+    b += '<div class="card">';
+    regItems.forEach(function(r){
+      var vcls = r.s.overdue ? 'val-bad' : (r.s.soon ? 'val-warn' : '');
+      b += '<div class="kv" data-reg="' + r.idx + '" style="cursor:pointer;">' +
+        '<span class="kv-k">' + esc(r.it.kind) + '</span>' +
+        '<span class="kv-v ' + vcls + '">' + r.s.main + '</span></div>';
+    });
+    b += '</div>';
+
+    b += '<div class="section-label">Открытые заявки</div>';
+    if (!open.length) {
+      b += '<div class="card"><div class="card-line" style="margin:0;">Открытых заявок нет.</div></div>';
+    } else {
+      open.forEach(function(d){
+        b += '<div class="card tap ' + (d.priority === 'критично' ? 'lb-bad' : 'lb-warn') + '" data-def="' + d.id + '">' +
+          '<div class="card-top"><span class="badge">' + d.id + '</span><span class="grow"></span>' +
+            '<span class="chip ' + (d.status === 'новая' ? 'st-warn' : 'st-mut') + '">' + d.status + '</span></div>' +
+          '<div class="card-title" style="font-size:13.5px;">' + esc(d.title) + '</div></div>';
+      });
+    }
+
+    b += '<div class="section-label">История</div><div class="card" style="padding:14px 13px;">';
+    var tl = [];
+    if (svc) tl.push({ t:svc.date, text:svc.text, meta:'на ' + fmtKm(svc.km) + ' км' });
+    DEFECTS.filter(function(d){ return d.plate === plate; }).forEach(function(d){
+      tl.push({ t:d.opened, text:'Заявка ' + d.id + ': ' + d.title, meta: d.status + (d.closed ? ' · закрыта ' + fmtDate(d.closed) : '') });
+    });
+    tl.sort(function(a, b){ return b.t - a.t; });
+    tl.slice(0, 6).forEach(function(e){
+      b += '<div class="tl-item"><div class="tl-dot"></div><div class="tl-body">' +
+        '<div class="tl-text">' + esc(e.text) + '</div>' +
+        '<div class="tl-meta">' + fmtDate(e.t) + ' · ' + esc(e.meta) + '</div></div></div>';
+    });
+    b += '</div>';
+
+    b += '<div style="height:8px;"></div>';
+    if (v.status === 'в строю') {
+      b += '<button class="btn btn-danger btn-block" id="vehRepair" style="margin-bottom:9px;">Отправить в ремонт</button>';
+    } else {
+      b += '<button class="btn btn-ok btn-block" id="vehBack" style="margin-bottom:9px;">Вернуть в строй</button>';
+    }
+    b += '<button class="btn btn-secondary btn-block" id="vehAddDefect">Завести неисправность</button>';
+
+    setPanel(plate, b);
+
+    $('panelBody').querySelectorAll('[data-def]').forEach(function(el){
+      el.addEventListener('click', function(){ openDefect(el.dataset.def); });
+    });
+    $('panelBody').querySelectorAll('[data-reg]').forEach(function(el){
+      el.addEventListener('click', function(){ openRegDone(+el.dataset.reg); });
+    });
+    var rp = $('vehRepair'); if (rp) rp.addEventListener('click', function(){
+      confirmAsync('Отправить ' + plate + ' в ремонт? Машина будет снята с нарядов.').then(function(ok){
+        if (!ok) return;
+        v.status = 'в ремонте';
+        var sh = shiftByPlate(plate);
+        if (sh && (!sh.insp || sh.insp.status !== 'не допущен')) sh.insp = { status:'не допущен', time:nowHM(), odo:v.odo, waybill:null, note:'Снят в ремонт механиком' };
+        haptic('warning'); renderVehicle(plate);
+      });
+    });
+    var bk = $('vehBack'); if (bk) bk.addEventListener('click', function(){
+      v.status = 'в строю'; v.repairNote = null; haptic('success'); renderVehicle(plate);
+    });
+    $('vehAddDefect').addEventListener('click', function(){ openDefectForm(plate); });
+  }
+
+  /* ---------- панель: заявка ---------- */
+  function openDefect(id){ pushPanel(function(){ renderDefect(id); }); }
+  function renderDefect(id){
+    var d = defectById(id);
+    if (!d) { setPanel('Заявка', '<div class="empty-state">Заявка не найдена.</div>'); return; }
+    var v = vehByPlate(d.plate);
+    var srcText = d.source === 'водитель' ? ('Сообщил водитель ' + esc(d.reporter) + ' · ' + esc(d.ctx))
+      : (d.source === 'выпуск на линию' ? 'Заведено при выпуске на линию' : 'Найдено при плановом осмотре');
+
+    var b = '';
+    b += '<div class="card-top" style="margin-bottom:10px;">' +
+      '<span class="plate">' + d.plate + '</span>' +
+      '<span class="chip ' + (d.priority === 'критично' ? 'st-bad' : 'st-mut') + '">' + d.priority + '</span>' +
+      '<span class="chip ' + (d.status === 'новая' ? 'st-warn' : (d.status === 'в работе' ? 'st-mut' : 'st-ok')) + '">' + d.status + '</span>' +
+      '</div>';
+    b += '<div class="card-title" style="font-size:16px; margin-bottom:6px;">' + esc(d.title) + '</div>';
+    b += '<p class="panel-lead">' + srcText + '<br>Открыта ' + fmtDate(d.opened) + (d.closed ? ' · закрыта ' + fmtDate(d.closed) : '') + '</p>';
+    b += '<div class="card"><div class="card-line" style="margin:0; color:var(--ink);">' + esc(d.detail) + '</div></div>';
+
+    b += '<div class="section-label">Журнал работ</div><div class="card" style="padding:14px 13px;">';
+    if (!d.log.length) {
+      b += '<div class="card-line" style="margin:0;">Записей пока нет.</div>';
+    } else {
+      d.log.forEach(function(e){
+        b += '<div class="tl-item"><div class="tl-dot"></div><div class="tl-body">' +
+          '<div class="tl-text">' + esc(e.text) + '</div>' +
+          '<div class="tl-meta">' + fmtDate(e.t) + ' · ' + esc(e.who) + '</div></div></div>';
+      });
+    }
+    b += '</div>';
+
+    if (d.parts) b += '<div class="card"><div class="kv"><span class="kv-k">Запчасти / работы</span><span class="kv-v">' + esc(d.parts) + '</span></div>' +
+      (d.downtime ? '<div class="kv"><span class="kv-k">Плановый простой</span><span class="kv-v">' + d.downtime + ' дн</span></div>' : '') + '</div>';
+
+    if (d.status !== 'устранено' && d.status !== 'отклонено') {
+      b += '<div class="section-label">Добавить в журнал</div>';
+      b += '<div class="field"><label>Комментарий / выполненные работы</label><textarea id="defComment" placeholder="Что сделано или что планируется"></textarea></div>';
+      b += '<div class="field"><label>Запчасти / расходники</label><input type="text" id="defParts" value="' + esc(d.parts) + '"></div>';
+      b += '<div class="field"><label>Плановый простой ТС, дней</label><input type="text" inputmode="numeric" id="defDowntime" value="' + (d.downtime || 0) + '"></div>';
+      b += '<button class="btn btn-secondary btn-block" id="defSaveNote" style="margin-bottom:14px;">Сохранить запись</button>';
+
+      b += '<div class="btn-row">';
+      if (d.status === 'новая') {
+        b += '<button class="btn btn-danger" id="defReject">Отклонить</button>' +
+             '<button class="btn btn-primary" id="defWork">Взять в работу</button>';
+      } else {
+        b += '<button class="btn btn-secondary" id="defReject">Отклонить</button>' +
+             '<button class="btn btn-ok" id="defDone">Устранено</button>';
+      }
+      b += '</div>';
+    } else {
+      b += '<button class="btn btn-secondary btn-block" id="defReopen">Открыть повторно</button>';
+    }
+    b += '<div style="height:8px;"></div>';
+    b += '<button class="btn btn-secondary btn-block" id="defVeh">Открыть карточку ' + d.plate + '</button>';
+
+    setPanel(d.id, b);
+
+    function collectNote(){
+      var c = ($('defComment') && $('defComment').value || '').trim();
+      var p = ($('defParts') && $('defParts').value || '').trim();
+      var dt = parseInt(($('defDowntime') && $('defDowntime').value || '').replace(/\D/g, ''), 10) || 0;
+      d.parts = p; d.downtime = dt;
+      if (c) d.log.push({ t: new Date(), who: 'Механик', text: c });
+      return c;
+    }
+    var sn = $('defSaveNote'); if (sn) sn.addEventListener('click', function(){
+      var c = collectNote();
+      if (!c && !d.parts) { alertAsync('Добавьте комментарий или укажите запчасти.'); return; }
+      haptic('success'); renderDefect(id);
+    });
+    var wk = $('defWork'); if (wk) wk.addEventListener('click', function(){
+      collectNote();
+      d.status = 'в работе';
+      d.log.push({ t: new Date(), who: 'Механик', text: 'Заявка взята в работу' });
+      if (d.priority === 'критично' && vehByPlate(d.plate).status === 'в строю') vehByPlate(d.plate).status = 'в ремонте';
+      haptic('success'); renderDefect(id); renderTabSilently();
+    });
+    var dn = $('defDone'); if (dn) dn.addEventListener('click', function(){
+      collectNote();
+      d.status = 'устранено'; d.closed = new Date();
+      d.log.push({ t: new Date(), who: 'Механик', text: 'Неисправность устранена, заявка закрыта' });
+      var v2 = vehByPlate(d.plate);
+      if (!openDefectsFor(d.plate).length && v2.status !== 'в строю') { v2.status = 'в строю'; v2.repairNote = null; }
+      haptic('success'); popPanel(); renderTab();
+    });
+    var rj = $('defReject'); if (rj) rj.addEventListener('click', function(){
+      confirmAsync('Отклонить заявку ' + d.id + '?').then(function(ok){
+        if (!ok) return;
+        collectNote();
+        d.status = 'отклонено'; d.closed = new Date();
+        d.log.push({ t: new Date(), who: 'Механик', text: 'Заявка отклонена (не подтвердилось / не требует вмешательства)' });
+        haptic('warning'); popPanel(); renderTab();
+      });
+    });
+    var ro = $('defReopen'); if (ro) ro.addEventListener('click', function(){
+      d.status = 'в работе'; d.closed = null;
+      d.log.push({ t: new Date(), who: 'Механик', text: 'Заявка открыта повторно' });
+      haptic('light'); renderDefect(id);
+    });
+    $('defVeh').addEventListener('click', function(){ openVehicle(d.plate); });
+  }
+
+  /* ---------- панель: новая заявка ---------- */
+  function openDefectForm(plate){ pushPanel(function(){ renderDefectForm(plate); }); }
+  function renderDefectForm(plate){
+    var opts = FLEET.map(function(v){
+      return '<option value="' + v.plate + '"' + (v.plate === plate ? ' selected' : '') + '>' + v.plate + ' · ' + v.model + '</option>';
+    }).join('');
+    var b = '';
+    b += '<p class="panel-lead">Заявка по результатам осмотра или обращения водителя.</p>';
+    b += '<div class="field"><label>Машина</label><select id="ndPlate">' + opts + '</select></div>';
+    b += '<div class="field"><label>Что неисправно</label><input type="text" id="ndTitle" placeholder="Напр.: течь антифриза из-под патрубка"></div>';
+    b += '<div class="field"><label>Подробности</label><textarea id="ndDetail" placeholder="Где, когда проявляется, что уже проверено"></textarea></div>';
+    b += '<div class="field"><label>Приоритет</label><select id="ndPriority">' +
+      '<option value="плановая">Плановая — эксплуатацию можно продолжать</option>' +
+      '<option value="критично">Критично — снять с линии</option></select></div>';
+    b += '<button class="btn btn-primary btn-block" id="ndSave">Создать заявку</button>';
+    setPanel('Новая заявка', b);
+
+    $('ndSave').addEventListener('click', function(){
+      var title = ($('ndTitle').value || '').trim();
+      if (!title) { alertAsync('Укажите, что неисправно.'); return; }
+      var p = $('ndPlate').value;
+      var d = {
+        id: nextDefectId(), plate: p, opened: new Date(), source: 'плановый осмотр', reporter: 'Механик',
+        ctx: 'плановый осмотр', title: title, detail: ($('ndDetail').value || '').trim() || title,
+        priority: $('ndPriority').value, status: 'новая', parts: '', downtime: 0, log: []
+      };
+      DEFECTS.push(d);
+      if (d.priority === 'критично' && vehByPlate(p).status === 'в строю') vehByPlate(p).status = 'в ремонте';
+      haptic('success');
+      popPanel();
+      renderTab();
+    });
+  }
+
+  /* ---------- панель: отметить регламент выполненным ---------- */
+  function openRegDone(idx){ pushPanel(function(){ renderRegDone(idx); }); }
+  function renderRegDone(idx){
+    var it = REG[idx], v = vehByPlate(it.plate), st = regState(it);
+    var b = '';
+    b += '<p class="panel-lead">' + it.plate + ' · ' + v.model + '<br>' + esc(it.kind) + ' — ' + st.main + '</p>';
+    b += '<div class="field odo-field"><label>Пробег на момент работ, км</label>' +
+      '<input type="text" inputmode="numeric" id="rgOdo" value="' + v.odo + '"></div>';
+    b += '<div class="field"><label>Дата выполнения</label><input type="date" id="rgDate" value="' +
+      today.getFullYear() + '-' + ('0' + (today.getMonth() + 1)).slice(-2) + '-' + ('0' + today.getDate()).slice(-2) + '"></div>';
+    b += '<div class="field"><label>Запчасти / расходники</label><input type="text" id="rgParts" placeholder="Напр.: масло 5W-30 8 л, фильтр масляный, фильтр салона"></div>';
+    b += '<div class="field"><label>Исполнитель</label><input type="text" id="rgWho" value="Механик"></div>';
+    b += '<button class="btn btn-ok btn-block" id="rgSave">Отметить выполненным</button>';
+    setPanel('Выполнение ТО', b);
+
+    $('rgSave').addEventListener('click', function(){
+      var odo = parseInt(($('rgOdo').value || '').replace(/\D/g, ''), 10) || v.odo;
+      if (odo > v.odo) v.odo = odo;
+      var dv = $('rgDate').value ? new Date($('rgDate').value) : new Date();
+      if (it.everyKm != null) it.lastKm = odo;
+      if (it.everyDays != null) it.lastDate = dv;
+      LAST_SERVICE[it.plate] = { km: odo, date: dv, text: it.kind + ($('rgParts').value ? ' (' + $('rgParts').value.trim() + ')' : '') };
+      haptic('success');
+      popPanel();
+      renderTab();
+    });
+  }
+
+  /* ================================================================
+     TAB SWITCHING
+     ================================================================ */
+  function renderTab(){
+    if (currentTab === 'release') renderRelease();
+    else if (currentTab === 'fleet') renderFleet();
+    else if (currentTab === 'defects') renderDefects();
+    else if (currentTab === 'reg') renderReg();
+    refreshTabBadges();
+  }
+  // используется, когда панель остаётся открытой, но данные под ней поменялись
+  function renderTabSilently(){ refreshTabBadges(); }
+
+  function refreshTabBadges(){
+    var nDef = DEFECTS.filter(function(d){ return d.status === 'новая'; }).length;
+    var nRel = SHIFTS.filter(function(s){ return !s.insp; }).length;
+    document.querySelectorAll('.tab-btn').forEach(function(btn){
+      var old = btn.querySelector('.tb-dot');
+      if (old) old.remove();
+      var need = (btn.dataset.tab === 'defects' && nDef > 0) || (btn.dataset.tab === 'release' && nRel > 0);
+      if (need) {
+        var dot = document.createElement('span');
+        dot.className = 'tb-dot';
+        btn.appendChild(dot);
+      }
+    });
+  }
+
+  document.querySelectorAll('.tab-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+      btn.classList.add('active');
+      currentTab = btn.dataset.tab;
+      haptic('light');
+      $('tabContent').scrollTop = 0;
+      renderTab();
+    });
+  });
+
+  renderTab();
+})();
+</script>
+</body>
+</html>
