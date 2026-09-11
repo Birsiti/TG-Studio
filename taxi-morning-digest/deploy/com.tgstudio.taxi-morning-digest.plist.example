@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Автозапуск бота на macOS через launchd — процесс будет подниматься при
+  входе в систему и перезапускаться, если упадёт.
+
+  Установка:
+    1. Скопировать этот файл в ~/Library/LaunchAgents/com.tgstudio.taxi-morning-digest.plist
+       (убрать .example из имени).
+    2. Заменить ЗАМЕНИ_НА_ПУТЬ ниже на реальный путь до папки проекта
+       (например /Users/denis/Desktop/taxi-morning-digest) и, если нужно,
+       путь до node (узнать командой `which node`).
+    3. launchctl load ~/Library/LaunchAgents/com.tgstudio.taxi-morning-digest.plist
+    4. Логи будут писаться в out.log / err.log внутри папки проекта.
+
+  Остановить:  launchctl unload ~/Library/LaunchAgents/com.tgstudio.taxi-morning-digest.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.tgstudio.taxi-morning-digest</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/node</string>
+    <string>ЗАМЕНИ_НА_ПУТЬ/taxi-morning-digest/src/index.js</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>ЗАМЕНИ_НА_ПУТЬ/taxi-morning-digest</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>ЗАМЕНИ_НА_ПУТЬ/taxi-morning-digest/out.log</string>
+  <key>StandardErrorPath</key>
+  <string>ЗАМЕНИ_НА_ПУТЬ/taxi-morning-digest/err.log</string>
+</dict>
+</plist>
