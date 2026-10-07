@@ -1,0 +1,171 @@
+/* изменено 2026-10-08 02:48 */
+/* ============================================================
+   ВЕРСТА — фирменный слой поверх kit/base.css.
+   Характер: трасса и посадочный талон. Асфальт + сигнальный оранжевый,
+   узкий Oswald как на дорожных указателях, табло отправлений
+   моноширинным, осевая разметка пунктиром, линия остановок.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=Golos+Text:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+:root{
+  --font-display:'Oswald', 'Golos Text', sans-serif;
+  --font-body:'Golos Text', system-ui, sans-serif;
+  --font-mono:'JetBrains Mono', ui-monospace, monospace;
+  --display-weight:600;
+  --display-case:uppercase;
+  --display-track:.02em;
+  --r-xl:20px; --r-lg:14px; --r-md:10px; --r-sm:8px;
+  --btn-radius:10px; --chip-radius:8px;
+  --lane:repeating-linear-gradient(90deg, var(--line-2) 0 14px, transparent 14px 24px);
+}
+:root[data-theme="light"]{
+  --bg:#EDF0F3; --surface:#FFFFFF; --surface-2:#E7EBEF; --surface-3:#DAE0E6;
+  --ink:#111820; --ink-2:#4F5B67; --ink-3:#8692A0;
+  --line:#DCE2E8; --line-2:#C3CCD5;
+  --accent:#D9480F; --accent-2:#BB3D0B; --accent-ink:#FFFFFF; --accent-soft:rgba(217,72,15,.10);
+  --road:#1C232D; --road-ink:#F4F6F8;
+  --ok:#1B7F4E; --ok-soft:rgba(27,127,78,.12);
+  --warn:#B26A00; --warn-soft:rgba(178,106,0,.12);
+  --danger:#D02F3A; --danger-soft:rgba(208,47,58,.10);
+  --shadow-1:0 1px 2px rgba(17,24,32,.06);
+  --shadow-2:0 18px 40px rgba(17,24,32,.18);
+}
+:root[data-theme="dark"]{
+  --bg:#0D1015; --surface:#161B22; --surface-2:#1E242D; --surface-3:#272E38;
+  --ink:#EEF1F5; --ink-2:#97A1AE; --ink-3:#5F6977;
+  --line:#232A33; --line-2:#323B46;
+  --accent:#FF7A45; --accent-2:#F2652C; --accent-ink:#1A0D06; --accent-soft:rgba(255,122,69,.14);
+  --road:#1E242D; --road-ink:#EEF1F5;
+  --ok:#3CC487; --ok-soft:rgba(60,196,135,.14);
+  --warn:#F2B13B; --warn-soft:rgba(242,177,59,.14);
+  --danger:#FF5F6B; --danger-soft:rgba(255,95,107,.14);
+  --shadow-1:none;
+  --shadow-2:0 20px 48px rgba(0,0,0,.6);
+}
+
+.brand-mark{ background:var(--accent); color:var(--accent-ink); border-radius:8px; }
+.brand-name{ font-size:20px; letter-spacing:.12em; }
+.page-title{ font-size:32px; }
+.section-title{ font-size:20px; }
+.stat-value{ font-family:var(--font-mono); font-weight:600; font-size:24px; }
+.lane{ height:3px; background:var(--lane); border-radius:2px; margin:18px 0; }
+
+/* код маршрута — как знак трассы М1 */
+.rcode{ display:inline-flex; align-items:center; justify-content:center; min-width:38px; height:26px; padding:0 7px; border-radius:5px; background:#C8102E; color:#fff; font-family:var(--font-display); font-weight:600; font-size:16px; letter-spacing:.04em; box-shadow:inset 0 0 0 2px rgba(255,255,255,.85), 0 0 0 1px #C8102E; flex:none; }
+.rcode.sm{ min-width:32px; height:22px; font-size:14px; }
+
+/* герой: откуда/куда */
+.route-card{ background:var(--road); color:var(--road-ink); border-radius:var(--r-xl); padding:16px; position:relative; overflow:hidden; }
+.route-card::after{ content:""; position:absolute; left:16px; right:16px; bottom:10px; height:3px; background:repeating-linear-gradient(90deg, rgba(255,255,255,.35) 0 14px, transparent 14px 24px); }
+.route-card h1{ font-size:30px; color:#fff; }
+.pick{ display:flex; align-items:center; gap:12px; width:100%; min-height:60px; padding:8px 12px; border-radius:12px; background:rgba(255,255,255,.07); color:inherit; text-align:left; }
+.pick + .pick{ margin-top:8px; }
+.pick:active{ background:rgba(255,255,255,.12); }
+.pick-dot{ width:12px; height:12px; border-radius:50%; border:3px solid var(--accent); flex:none; }
+.pick-dot.to{ background:var(--accent); }
+.pick-label{ display:block; font-size:13px; color:rgba(238,241,245,.65); text-transform:uppercase; letter-spacing:.08em; }
+.pick-value{ display:block; font-family:var(--font-display); font-size:22px; font-weight:500; text-transform:uppercase; letter-spacing:.03em; }
+.pick-value.is-empty{ color:rgba(238,241,245,.45); }
+.swap{ position:absolute; right:22px; top:84px; width:44px; height:44px; border-radius:50%; background:var(--accent); color:var(--accent-ink); display:grid; place-items:center; z-index:1; box-shadow:0 0 0 4px var(--road); }
+.swap:active{ transform:rotate(180deg); transition:transform .3s; }
+
+/* табло рейсов */
+.board{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); overflow:hidden; box-shadow:var(--shadow-1); }
+.dep{ display:grid; grid-template-columns:auto 1fr auto; gap:4px 14px; align-items:center; width:100%; text-align:left; padding:14px; border-bottom:1px solid var(--line); }
+.dep:last-child{ border-bottom:0; }
+.dep:active{ background:var(--surface-2); }
+.dep-time{ font-family:var(--font-mono); font-weight:700; font-size:24px; line-height:1; }
+.dep-arr{ font-family:var(--font-mono); font-size:14px; color:var(--ink-2); }
+.dep-mid{ display:flex; flex-direction:column; gap:4px; min-width:0; }
+.dep-dur{ font-size:14px; color:var(--ink-2); }
+.dep-seats{ font-size:14px; font-weight:600; color:var(--ok); }
+.dep-seats.low{ color:var(--warn); }
+.dep-seats.none{ color:var(--danger); }
+.dep-price{ font-family:var(--font-mono); font-weight:700; font-size:18px; text-align:right; white-space:nowrap; }
+.dep-price small{ display:block; font-size:13px; color:var(--ink-2); font-weight:500; font-family:var(--font-body); }
+.dep.is-off{ opacity:.45; }
+
+/* линия остановок */
+.stops{ list-style:none; margin:0; padding:0; }
+.stop{ position:relative; display:flex; gap:14px; align-items:center; width:100%; min-height:60px; padding:6px 0 6px 0; text-align:left; }
+.stop-rail{ position:relative; width:22px; align-self:stretch; flex:none; }
+.stop-rail::before{ content:""; position:absolute; left:10px; top:0; bottom:0; width:3px; background:var(--line-2); }
+.stop:first-child .stop-rail::before{ top:50%; }
+.stop:last-child .stop-rail::before{ bottom:50%; }
+.stop-dot{ position:absolute; left:4px; top:50%; width:15px; height:15px; margin-top:-7.5px; border-radius:50%; background:var(--surface); border:3px solid var(--line-2); }
+.stop.in-ride .stop-rail::before{ background:var(--accent); }
+.stop.is-a .stop-dot, .stop.is-b .stop-dot{ border-color:var(--accent); background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); }
+.stop.in-ride .stop-dot{ border-color:var(--accent); }
+.stop-main{ flex:1; min-width:0; }
+.stop-name{ font-weight:600; display:block; }
+.stop-time{ font-family:var(--font-mono); font-size:14px; color:var(--ink-2); display:block; }
+.stop-tag{ font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--accent); }
+.stop:disabled{ opacity:.4; }
+
+/* удержание места */
+.hold{ display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:var(--r-md); background:var(--accent-soft); color:var(--accent); font-weight:600; }
+.hold b{ font-family:var(--font-mono); margin-left:auto; }
+.hold.is-warn{ background:var(--danger-soft); color:var(--danger); }
+
+/* посадочный талон */
+.pass{ background:var(--surface); border-radius:var(--r-xl); overflow:hidden; box-shadow:var(--shadow-2); text-align:left; }
+.pass-top{ background:var(--road); color:var(--road-ink); padding:16px 18px 18px; }
+.pass-cities{ display:flex; align-items:flex-end; justify-content:space-between; gap:12px; margin-top:12px; }
+.pass-city{ font-family:var(--font-display); font-size:26px; font-weight:600; text-transform:uppercase; line-height:1; }
+.pass-city small{ display:block; font-family:var(--font-mono); font-size:22px; color:var(--accent); margin-top:6px; }
+.pass-arrow{ flex:1; height:2px; background:repeating-linear-gradient(90deg, rgba(255,255,255,.4) 0 8px, transparent 8px 14px); margin-bottom:22px; }
+.pass-cut{ position:relative; border-top:2px dashed var(--line-2); margin:0 18px; }
+.pass-cut::before, .pass-cut::after{ content:""; position:absolute; top:-12px; width:22px; height:22px; border-radius:50%; background:var(--bg); }
+.pass-cut::before{ left:-30px; } .pass-cut::after{ right:-30px; }
+.pass-body{ padding:8px 18px 16px; }
+.pass-code{ display:flex; justify-content:space-between; align-items:center; padding:14px 0 4px; }
+.pass-code b{ font-family:var(--font-mono); font-size:28px; letter-spacing:.12em; }
+.pass.is-off{ filter:grayscale(.8); opacity:.75; }
+
+/* таймлайн поездки */
+.ride{ list-style:none; margin:0; padding:0; }
+.ride li{ position:relative; padding:0 0 16px 30px; }
+.ride li::before{ content:""; position:absolute; left:6px; top:5px; width:14px; height:14px; border-radius:50%; border:3px solid var(--line-2); background:var(--surface); }
+.ride li::after{ content:""; position:absolute; left:12px; top:22px; bottom:2px; width:2px; background:var(--line); }
+.ride li:last-child::after{ display:none; }
+.ride li.done::before{ background:var(--ok); border-color:var(--ok); }
+.ride li.cur::before{ border-color:var(--accent); background:var(--accent); box-shadow:0 0 0 5px var(--accent-soft); animation:pulse 1.6s ease-in-out infinite; }
+.ride li.bad::before{ background:var(--danger); border-color:var(--danger); }
+.ride small{ display:block; color:var(--ink-2); font-size:14px; }
+@keyframes pulse{ 50%{ box-shadow:0 0 0 9px transparent; } }
+
+/* заполненность */
+.fill{ height:8px; border-radius:99px; background:var(--surface-2); overflow:hidden; }
+.fill i{ display:block; height:100%; border-radius:inherit; background:var(--ok); }
+.fill i.mid{ background:var(--warn); }
+.fill i.full{ background:var(--danger); }
+.trip-row .row-title{ display:flex; align-items:center; gap:8px; }
+.alert-strip{ display:flex; align-items:center; gap:10px; padding:12px 14px; border-radius:var(--r-md); font-weight:600; }
+.alert-strip.late{ background:var(--warn-soft); color:var(--warn); }
+.alert-strip.break{ background:var(--danger-soft); color:var(--danger); }
+
+/* водитель */
+.big-action{ width:100%; min-height:72px; border-radius:var(--r-lg); font-family:var(--font-display); font-size:22px; font-weight:600; letter-spacing:.06em; text-transform:uppercase; display:flex; align-items:center; justify-content:center; gap:12px; }
+.big-action.go{ background:var(--accent); color:var(--accent-ink); }
+.big-action.finish{ background:var(--ok); color:#fff; }
+.big-action.done{ background:var(--surface-2); color:var(--ink-2); }
+.big-action .ic{ width:28px; height:28px; }
+.pax{ display:flex; gap:10px; align-items:center; }
+.pax-acts{ display:flex; gap:6px; flex:none; }
+.pax-acts .icon-btn{ border:1px solid var(--line-2); border-radius:10px; }
+.pax-acts .icon-btn.is-on{ background:var(--ok); border-color:var(--ok); color:#fff; }
+.pax-acts .icon-btn.is-no{ background:var(--danger); border-color:var(--danger); color:#fff; }
+
+/* механик */
+.plate-tag{ display:inline-flex; align-items:center; height:28px; padding:0 8px; border-radius:5px; border:2px solid var(--ink); font-family:var(--font-mono); font-weight:700; font-size:15px; letter-spacing:.04em; background:var(--surface); color:var(--ink); white-space:nowrap; }
+.lb-ok{ box-shadow:inset 4px 0 0 var(--ok); }
+.lb-warn{ box-shadow:inset 4px 0 0 var(--warn); }
+.lb-bad{ box-shadow:inset 4px 0 0 var(--danger); }
+.checks{ display:flex; flex-direction:column; gap:2px; }
+.checks label{ display:flex; gap:12px; align-items:center; min-height:48px; padding:4px 0; border-bottom:1px solid var(--line); font-size:16px; }
+.checks input{ width:22px; height:22px; accent-color:var(--ok); flex:none; }
+.doc-row{ display:flex; justify-content:space-between; gap:12px; padding:10px 0; border-bottom:1px dashed var(--line); }
+.doc-row:last-child{ border-bottom:0; }
+.log{ list-style:none; margin:0; padding:0; }
+.log li{ padding:10px 0; border-bottom:1px solid var(--line); font-size:15px; }
+.log li small{ display:block; color:var(--ink-2); font-size:14px; }
