@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-08 02:30 -->
+<!-- изменено 2026-10-08 02:57 -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -248,13 +248,14 @@
           <span class="svc-check">${icon('check')}</span></button>`; })}
       `) : html`<div class="skel" style="height:96px;margin-top:12px"></div><div class="skel" style="height:96px;margin-top:8px"></div><div class="skel" style="height:96px;margin-top:8px"></div>`}
     </div>`;
-    Kit.on(view, 'click', '[data-svc]', (e, el)=>{
-      const id = el.dataset.svc;
-      S.picked = S.picked.includes(id) ? S.picked.filter(x=>x !== id) : S.picked.concat(id);
-      el.classList.toggle('is-on', S.picked.includes(id));
-      haptic('select'); updateBar();
-    });
   }
+  Kit.on(view, 'click', '[data-svc]', (e, el)=>{
+    if(S.step !== 2) return;
+    const id = el.dataset.svc;
+    S.picked = S.picked.includes(id) ? S.picked.filter(x=>x !== id) : S.picked.concat(id);
+    el.classList.toggle('is-on', S.picked.includes(id));
+    haptic('select'); updateBar();
+  });
 
   /* ============ ШАГ 3 — ДАТА И ВРЕМЯ ============ */
   function dayOpen(k){

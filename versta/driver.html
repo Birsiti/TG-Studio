@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-08 02:48 -->
+<!-- изменено 2026-10-08 02:57 -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -38,12 +38,14 @@
     const r = await api('getDrivers');
     view.innerHTML = html`<div class="screen"><div class="page-head"><h1 class="page-title">Кто за рулём?</h1><p class="page-sub">В демо выберите водителя. В рабочем боте кабинет откроется сразу по Telegram-аккаунту.</p></div>
       <div class="list">${(r.drivers || []).map(d=>html`<button class="row" type="button" data-d="${d.id}"><span class="avatar">${Kit.initials(d.name)}</span><span class="row-main"><span class="row-title">${d.name}</span><span class="row-sub">${d.tripsToday ? 'Сегодня ' + d.tripsToday + ' ' + Kit.plural(d.tripsToday, 'рейс', 'рейса', 'рейсов') : 'Сегодня выходной'}</span></span>${icon('right', 'row-chev')}</button>`)}</div></div>`;
-    Kit.on(view, 'click', '[data-d]', (e, el)=>{
-      const d = (r.drivers || []).find(x=>x.id === el.dataset.d);
-      me = {id:d.id, name:d.name}; try{ localStorage.setItem('versta-driver', JSON.stringify(me)); }catch(e){}
-      haptic('select'); renderList();
-    });
+    DRIVERS = r.drivers || [];
   }
+  let DRIVERS = [];
+  Kit.on(view, 'click', '[data-d]', (e, el)=>{
+    const d = DRIVERS.find(x=>x.id === el.dataset.d); if(!d) return;
+    me = {id:d.id, name:d.name}; try{ localStorage.setItem('versta-driver', JSON.stringify(me)); }catch(e){}
+    haptic('select'); renderList();
+  });
   $('#who').addEventListener('click', ()=>{ me = null; try{ localStorage.removeItem('versta-driver'); }catch(e){} renderPick(); });
 
   /* ============ МОИ РЕЙСЫ ============ */
@@ -60,8 +62,8 @@
     view.innerHTML = html`<div class="screen"><div class="page-head"><h1 class="page-title">Мои рейсы</h1><p class="page-sub">${D.dowLong(D.today()).replace(/^./, c=>c.toUpperCase())}, ${D.long(D.today())}</p></div>
       ${trips.length ? '' : html`<div class="empty">${icon('calendar')}<div class="empty-title">Рейсов нет</div>На сегодня и завтра вы не назначены</div>`}
       ${block('Сегодня', today)}${block('Завтра', tomorrow)}</div>`;
-    Kit.on(view, 'click', '[data-t]', (e, el)=>{ openId = el.dataset.t; Kit.back.push(closeTrip); renderTrip(); });
   }
+  Kit.on(view, 'click', '[data-t]', (e, el)=>{ if(openId) return; openId = el.dataset.t; Kit.back.push(closeTrip); renderTrip(); });
   function closeTrip(){ Kit.back.pop(closeTrip); openId = null; renderList(); }
 
   /* ============ РЕЙС ============ */
