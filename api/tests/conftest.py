@@ -1,4 +1,4 @@
-# изменено 2026-10-08 02:15
+# изменено 2026-10-08 02:30
 import os
 import sys
 import tempfile
@@ -27,17 +27,17 @@ def client():
         yield c
 
 
-def call(client, bot, action, user="web-testuser01", **payload):
+def call(tc, bot, action, /, user="web-testuser01", **payload):
     body = {"action": action, **payload}
     if user is not None:
         body["userId"] = user
     import json
-    r = client.post(f"/api/{bot}", content=json.dumps(body), headers={"Content-Type": "text/plain;charset=utf-8"})
+    r = tc.post(f"/api/{bot}", content=json.dumps(body), headers={"Content-Type": "text/plain;charset=utf-8"})
     return r.json()
 
 
 @pytest.fixture
 def api(client):
-    def _f(bot, action, user="web-testuser01", **payload):
+    def _f(bot, action, /, user="web-testuser01", **payload):
         return call(client, bot, action, user=user, **payload)
     return _f

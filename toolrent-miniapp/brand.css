@@ -1,0 +1,169 @@
+/* изменено 2026-10-08 02:30 */
+/* ============================================================
+   ПРОКАТ-ИНСТРУМЕНТ — фирменный слой поверх kit/base.css.
+   Характер: склад и стройплощадка. Сигнальный жёлтый + графит,
+   узкий IBM Plex Sans Condensed капслоком, бирки инвентаря с номерами,
+   прямые углы, полосы «осторожно».
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap');
+
+:root{
+  --font-display:'IBM Plex Sans Condensed', 'IBM Plex Sans', sans-serif;
+  --font-body:'IBM Plex Sans', system-ui, sans-serif;
+  --font-mono:'IBM Plex Mono', ui-monospace, monospace;
+  --display-weight:700;
+  --display-case:uppercase;
+  --display-track:.01em;
+  --r-xl:10px; --r-lg:6px; --r-md:4px; --r-sm:3px;
+  --btn-radius:4px; --chip-radius:4px;
+  --hazard:#FFC20E;
+  --stripes:repeating-linear-gradient(-45deg, #FFC20E 0 10px, #16161A 10px 20px);
+}
+:root[data-theme="light"]{
+  --bg:#EFEDE7; --surface:#FFFFFF; --surface-2:#E9E6DE; --surface-3:#DDD9CE;
+  --ink:#16161A; --ink-2:#55534D; --ink-3:#8D8A82;
+  --line:#DCD8CE; --line-2:#C4BFB2;
+  --accent:#16161A; --accent-2:#000000; --accent-ink:#FFC20E; --accent-soft:rgba(22,22,26,.07);
+  --ok:#1F7A3A; --ok-soft:rgba(31,122,58,.12);
+  --warn:#A85F00; --warn-soft:rgba(255,194,14,.28);
+  --danger:#C62F24; --danger-soft:rgba(198,47,36,.10);
+  --shadow-1:0 1px 0 rgba(22,22,26,.06);
+  --shadow-2:0 16px 40px rgba(22,22,26,.22);
+}
+:root[data-theme="dark"]{
+  --bg:#121214; --surface:#1B1B1F; --surface-2:#242429; --surface-3:#2E2E34;
+  --ink:#F1EFEA; --ink-2:#A7A49C; --ink-3:#6E6C66;
+  --line:#2A2A30; --line-2:#3A3A42;
+  --accent:#FFC20E; --accent-2:#E5AC00; --accent-ink:#16161A; --accent-soft:rgba(255,194,14,.14);
+  --ok:#52C178; --ok-soft:rgba(82,193,120,.14);
+  --warn:#FFC20E; --warn-soft:rgba(255,194,14,.16);
+  --danger:#FF6A5C; --danger-soft:rgba(255,106,92,.14);
+  --shadow-1:none;
+  --shadow-2:0 18px 44px rgba(0,0,0,.6);
+}
+
+/* главная кнопка всегда сигнально-жёлтая с чёрным текстом */
+.btn-primary{ background:var(--hazard); color:#16161A; }
+.btn-primary:active{ background:#E5AC00; }
+.btn.btn-primary.is-busy::after{ border-color:#16161A; border-right-color:transparent; }
+.row-icon{ background:var(--hazard); color:#16161A; border-radius:4px; }
+.tabbar button.is-on{ color:var(--ink); }
+.tabbar button.is-on .ic{ color:var(--ink); background:var(--hazard); border-radius:4px; padding:2px; box-sizing:content-box; width:22px; height:22px; margin:-2px; }
+:root[data-theme="light"] .section-link, :root[data-theme="light"] .link-btn{ color:var(--ink); text-decoration:underline; text-decoration-color:var(--hazard); text-decoration-thickness:3px; text-underline-offset:4px; }
+.stat-value{ font-family:var(--font-mono); font-weight:600; letter-spacing:-.02em; }
+.section-title{ font-size:18px; }
+.page-title{ font-size:30px; line-height:1.05; }
+.eyebrow{ font-family:var(--font-mono); letter-spacing:.08em; }
+.brand-mark{ background:var(--hazard); color:#16161A; border-radius:4px; }
+.brand-name{ font-size:17px; letter-spacing:.04em; }
+.pill{ border-radius:3px; text-transform:uppercase; letter-spacing:.04em; font-size:13px; font-family:var(--font-mono); font-weight:600; }
+.pill::before{ border-radius:1px; }
+
+/* полоса «осторожно» */
+.hazard-strip{ height:8px; background:var(--stripes); border-radius:2px; }
+
+/* герой каталога */
+.yard{ position:relative; background:#16161A; color:#F1EFEA; border-radius:var(--r-xl); padding:18px 16px 16px; overflow:hidden; }
+.yard::after{ content:""; position:absolute; right:-46px; top:-46px; width:124px; height:124px; background:var(--stripes); opacity:.9; transform:rotate(0deg); border-radius:50%; -webkit-mask:radial-gradient(circle, transparent 42px, #000 43px); mask:radial-gradient(circle, transparent 42px, #000 43px); }
+.yard h1{ font-size:26px; line-height:1.05; max-width:74%; position:relative; z-index:1; }
+.yard p{ color:#B9B6AE; margin-top:8px; max-width:80%; }
+.yard .facts{ display:flex; gap:16px; margin-top:14px; font-family:var(--font-mono); font-size:14px; color:#F1EFEA; }
+.yard .facts b{ color:var(--hazard); font-weight:600; }
+
+/* карточка-бирка инструмента */
+.tools{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:10px; }
+.tool{ position:relative; display:flex; flex-direction:column; text-align:left; background:var(--surface); border:1px solid var(--line-2); border-radius:6px; padding:12px; min-height:208px; box-shadow:var(--shadow-1); }
+.tool:active{ transform:scale(.98); }
+.tool::before{ content:""; position:absolute; top:10px; right:10px; width:10px; height:10px; border-radius:50%; border:2px solid var(--line-2); background:var(--bg); }
+.tool-art{ height:76px; display:grid; place-items:center; margin:4px 0 10px; color:var(--ink); background:linear-gradient(var(--surface-2), var(--surface-2)) padding-box; border-radius:4px; }
+.tool-art svg{ width:58px; height:58px; }
+.tool-name{ font-family:var(--font-display); font-weight:700; text-transform:uppercase; font-size:16px; line-height:1.15; letter-spacing:.01em; flex:1; }
+.tool-specs{ font-size:13px; color:var(--ink-2); margin-top:4px; line-height:1.3; }
+.tool-foot{ display:flex; align-items:flex-end; justify-content:space-between; gap:6px; margin-top:10px; padding-top:10px; border-top:1px dashed var(--line-2); }
+.tool-price{ font-family:var(--font-mono); font-weight:600; font-size:17px; line-height:1; white-space:nowrap; }
+.tool-price small{ font-size:13px; color:var(--ink-2); font-weight:500; }
+.tool-free{ font-family:var(--font-mono); font-size:13px; color:var(--ok); white-space:nowrap; }
+.tool-free.none{ color:var(--danger); }
+.tool-free.last{ color:var(--warn); }
+
+/* деталь */
+.detail-art{ height:150px; display:grid; place-items:center; background:var(--surface-2); border-radius:6px; position:relative; overflow:hidden; }
+.detail-art svg{ width:104px; height:104px; color:var(--ink); }
+.detail-art img{ width:100%; height:100%; object-fit:cover; }
+.detail-art .hazard-strip{ position:absolute; left:0; right:0; bottom:0; border-radius:0; }
+.spec-grid{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:14px; }
+.spec{ background:var(--surface-2); border-radius:4px; padding:10px 12px; }
+.spec .k{ font-size:13px; color:var(--ink-2); font-family:var(--font-mono); text-transform:uppercase; letter-spacing:.06em; }
+.spec .v{ font-family:var(--font-mono); font-weight:600; font-size:18px; margin-top:2px; }
+
+/* визард */
+.wiz-head{ display:flex; align-items:center; gap:12px; padding:8px 0 4px; }
+.wiz-tool{ display:flex; align-items:center; gap:12px; background:var(--surface); border:1px solid var(--line-2); border-radius:6px; padding:10px 12px; }
+.wiz-tool svg{ width:36px; height:36px; flex:none; }
+.leds{ display:flex; gap:6px; margin-top:14px; }
+.leds i{ flex:1; height:6px; border-radius:1px; background:var(--line-2); }
+.leds i.is-done{ background:var(--hazard); }
+.leds i.is-cur{ background:var(--ink); }
+.option{ display:flex; gap:12px; align-items:center; width:100%; text-align:left; padding:14px; min-height:64px; border-radius:6px; border:1.5px solid var(--line-2); background:var(--surface); }
+.option + .option{ margin-top:8px; }
+.option .row-icon{ width:40px; height:40px; }
+.option.is-on{ border-color:var(--ink); box-shadow:inset 4px 0 0 var(--hazard); }
+.option-title{ display:block; font-weight:700; }
+.option-sub{ display:block; font-size:14px; color:var(--ink-2); }
+.avail{ display:flex; align-items:center; gap:10px; margin-top:12px; padding:12px 14px; border-radius:4px; font-family:var(--font-mono); font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:.04em; background:var(--ok-soft); color:var(--ok); }
+.avail.warn{ background:var(--warn-soft); color:var(--warn); }
+.avail.bad{ background:var(--danger-soft); color:var(--danger); }
+.avail .ic{ width:20px; height:20px; }
+.receipt{ background:var(--surface); border:1px solid var(--line-2); border-radius:6px; padding:4px 16px; font-family:var(--font-mono); }
+.receipt .kv{ border-bottom-style:dashed; }
+.receipt .kv .k{ font-size:14px; }
+.receipt-total{ display:flex; justify-content:space-between; align-items:baseline; padding:14px 0 12px; border-top:2px solid var(--ink); margin-top:4px; }
+.receipt-total b{ font-size:24px; }
+
+/* бирка-билет брони */
+.tag{ position:relative; background:var(--surface); border:1.5px solid var(--ink); border-radius:6px; overflow:hidden; text-align:left; }
+.tag-head{ background:var(--hazard); color:#16161A; padding:12px 16px; display:flex; justify-content:space-between; align-items:center; font-family:var(--font-mono); font-weight:600; }
+.tag-head b{ font-size:22px; letter-spacing:.02em; }
+.tag-body{ padding:6px 16px 14px; }
+.tag-hole{ position:absolute; top:14px; right:50%; width:12px; height:12px; border-radius:50%; background:var(--bg); border:1.5px solid var(--ink); transform:translateX(50%); }
+
+/* таймлайн статуса */
+.timeline{ list-style:none; margin:10px 0 0; padding:0; }
+.timeline li{ position:relative; padding:0 0 14px 26px; font-size:15px; }
+.timeline li::before{ content:""; position:absolute; left:6px; top:6px; width:10px; height:10px; border-radius:2px; background:var(--line-2); }
+.timeline li::after{ content:""; position:absolute; left:10px; top:18px; bottom:0; width:2px; background:var(--line); }
+.timeline li:last-child::after{ display:none; }
+.timeline li.done::before{ background:var(--ink); }
+.timeline li.cur::before{ background:var(--hazard); box-shadow:0 0 0 3px var(--warn-soft); }
+.timeline li.bad::before{ background:var(--danger); }
+.timeline small{ display:block; color:var(--ink-2); font-size:14px; }
+
+/* парк единиц */
+.units{ display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:6px; margin-top:10px; }
+.unit{ min-height:46px; border-radius:4px; font-family:var(--font-mono); font-weight:600; font-size:15px; border:1.5px solid var(--line-2); background:var(--surface); color:var(--ink); }
+.unit.free{ border-color:var(--ok); color:var(--ok); }
+.unit.rented{ background:var(--ink); border-color:var(--ink); color:var(--surface); }
+:root[data-theme="dark"] .unit.rented{ background:var(--hazard); border-color:var(--hazard); color:#16161A; }
+.unit.repair{ background:repeating-linear-gradient(-45deg, var(--warn-soft) 0 6px, transparent 6px 12px); border-color:var(--warn); color:var(--warn); }
+.unit.add{ border-style:dashed; color:var(--ink-2); }
+.unit.is-on{ outline:3px solid var(--hazard); outline-offset:1px; }
+.legend{ display:flex; flex-wrap:wrap; gap:12px; font-size:14px; color:var(--ink-2); }
+.legend i{ display:inline-block; width:12px; height:12px; border-radius:2px; vertical-align:-1px; margin-right:6px; border:1.5px solid var(--line-2); }
+.legend .l-free{ border-color:var(--ok); }
+.legend .l-rented{ background:var(--ink); border-color:var(--ink); }
+:root[data-theme="dark"] .legend .l-rented{ background:var(--hazard); border-color:var(--hazard); }
+.legend .l-repair{ border-color:var(--warn); background:var(--warn-soft); }
+.photo-row{ display:flex; gap:8px; flex-wrap:wrap; margin-top:8px; }
+.photo-row img{ width:64px; height:64px; object-fit:cover; border-radius:4px; border:1px solid var(--line-2); }
+.photo-btn{ position:relative; display:flex; align-items:center; justify-content:center; gap:8px; min-height:52px; border:1.5px dashed var(--line-2); border-radius:4px; color:var(--ink-2); font-weight:600; }
+.photo-btn input{ position:absolute; inset:0; opacity:0; }
+.meter{ height:10px; background:var(--surface-2); border-radius:2px; overflow:hidden; margin-top:8px; }
+.meter i{ display:block; height:100%; background:var(--hazard); }
+.meter i.hi{ background:var(--ok); }
+.meter i.lo{ background:var(--ink-3); }
+
+/* графики — графит и сигнальный жёлтый */
+.bar-fill{ background:var(--surface-3); box-shadow:inset 0 3px 0 var(--ink); border-radius:2px; }
+.bar.is-hi .bar-fill{ background:var(--hazard); box-shadow:none; }
+.rank-fill{ background:var(--hazard); }
+.rank-track{ border-radius:2px; }
