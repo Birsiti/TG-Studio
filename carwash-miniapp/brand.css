@@ -1,0 +1,148 @@
+/* изменено 2026-10-08 02:15 */
+/* ============================================================
+   БЛЕСК — фирменный слой автомойки поверх kit/base.css.
+   Характер: глянец и вода. Глубокий петроль-навигатор + аква,
+   широкий округлый Unbounded в заголовках, номера и цены — моно.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Unbounded:wght@500;600;700&family=Manrope:wght@500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+:root{
+  --font-display:'Unbounded', 'Manrope', system-ui, sans-serif;
+  --font-body:'Manrope', system-ui, sans-serif;
+  --font-mono:'JetBrains Mono', ui-monospace, monospace;
+  --display-weight:600;
+  --display-track:-0.02em;
+  --r-xl:28px; --r-lg:20px; --r-md:16px; --r-sm:12px;
+  --btn-radius:16px;
+}
+:root[data-theme="light"]{
+  --bg:#EDF2F5; --surface:#FFFFFF; --surface-2:#E8EEF2; --surface-3:#DCE5EA;
+  --ink:#0B1F2C; --ink-2:#4F6573; --ink-3:#8399A6;
+  --line:#DDE5EA; --line-2:#C7D3DA;
+  --accent:#00788A; --accent-2:#005F6E; --accent-ink:#FFFFFF; --accent-soft:rgba(0,150,170,.12);
+  --aqua:#19C3D3; --navy:#0B2B3D; --navy-2:#0F4559;
+  --ok:#11845B; --ok-soft:rgba(17,132,91,.12);
+  --warn:#B66A00; --warn-soft:rgba(182,106,0,.12);
+  --danger:#D23B48; --danger-soft:rgba(210,59,72,.10);
+  --shadow-1:0 1px 2px rgba(11,31,44,.05), 0 2px 8px rgba(11,31,44,.04);
+  --shadow-2:0 18px 40px rgba(11,31,44,.18);
+}
+:root[data-theme="dark"]{
+  --bg:#071620; --surface:#0E2230; --surface-2:#132C3C; --surface-3:#1A3748;
+  --ink:#E9F4F8; --ink-2:#93AEBC; --ink-3:#5F7E8E;
+  --line:#183242; --line-2:#244457;
+  --accent:#35D2DF; --accent-2:#1FB8C6; --accent-ink:#05232B; --accent-soft:rgba(53,210,223,.14);
+  --aqua:#35D2DF; --navy:#0B2B3D; --navy-2:#0F4559;
+  --ok:#3CC98E; --ok-soft:rgba(60,201,142,.14);
+  --warn:#F0A945; --warn-soft:rgba(240,169,69,.14);
+  --danger:#FF6B77; --danger-soft:rgba(255,107,119,.14);
+  --shadow-1:none;
+  --shadow-2:0 20px 48px rgba(0,0,0,.55);
+}
+
+.brand-mark{ background:linear-gradient(150deg, var(--aqua), #0A7F94); color:#fff; border-radius:12px 12px 12px 4px; }
+.brand-name{ font-size:18px; letter-spacing:.04em; }
+
+/* ---------- глянцевая «витрина» с номером ---------- */
+.gloss{
+  position:relative; overflow:hidden; border-radius:var(--r-xl);
+  background:radial-gradient(120% 90% at 85% -10%, rgba(25,195,211,.55), transparent 55%),
+             linear-gradient(160deg, var(--navy-2), var(--navy) 70%);
+  color:#E9F7FA; padding:20px 18px 18px;
+}
+.gloss::after{
+  content:""; position:absolute; inset:-40% -60%; pointer-events:none;
+  background:linear-gradient(115deg, transparent 42%, rgba(255,255,255,.16) 50%, transparent 58%);
+  transform:translateX(-30%); animation:sheen 5.5s var(--ease) infinite;
+}
+@keyframes sheen{ 0%,55%{ transform:translateX(-35%); } 100%{ transform:translateX(35%); } }
+.gloss .eyebrow{ color:rgba(233,247,250,.7); }
+.gloss-title{ font-family:var(--font-display); font-weight:600; font-size:24px; line-height:1.15; margin-top:6px; letter-spacing:-.02em; }
+.gloss-sub{ color:rgba(233,247,250,.72); margin-top:6px; font-size:15px; }
+
+/* белорусский номерной знак */
+.plate{
+  display:flex; align-items:stretch; height:58px; margin-top:16px;
+  background:#FBFCFD; color:#0B1F2C; border-radius:8px; border:2.5px solid #0B1F2C;
+  box-shadow:0 0 0 2px #FBFCFD, 0 10px 24px rgba(0,0,0,.35);
+}
+.plate-flag{ width:34px; flex:none; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px; background:#0F3F99; color:#fff; border-radius:4px 0 0 4px; font-family:var(--font-mono); font-weight:700; font-size:12px; }
+.plate-flag i{ display:block; width:18px; height:8px; background:linear-gradient(#D22630 66%, #2E8540 66%); border-radius:1px; }
+.plate-num{ flex:1; display:flex; align-items:center; justify-content:center; padding:0 10px; font-family:var(--font-mono); font-weight:700; font-size:28px; letter-spacing:.06em; min-width:0; }
+.plate-num.is-empty{ color:#A8B4BC; }
+
+/* класс авто — плитки */
+.classes{ display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:8px; }
+.class-tile{ min-height:84px; border-radius:var(--r-md); border:1px solid var(--line-2); background:var(--surface); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px; padding:8px 4px; font-weight:700; font-size:14px; }
+.class-tile span{ display:block; width:100%; text-align:center; }
+.class-tile svg{ width:44px; height:22px; color:var(--ink-2); }
+.class-tile.is-on{ border-color:var(--accent); background:var(--accent-soft); color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+.class-tile.is-on svg{ color:var(--accent); }
+.class-tile:active{ transform:scale(.96); }
+
+/* мои машины */
+.car-chip{ display:flex; flex-direction:column; justify-content:center; min-height:56px; padding:6px 14px; border-radius:var(--r-md); border:1px solid var(--line-2); background:var(--surface); flex:none; text-align:left; }
+.car-chip b{ font-family:var(--font-mono); font-size:16px; letter-spacing:.03em; }
+.car-chip span{ font-size:14px; color:var(--ink-2); white-space:nowrap; }
+.car-chip.is-on{ border-color:var(--accent); box-shadow:inset 0 0 0 1px var(--accent); }
+
+/* подсказки марки/модели */
+.suggest{ position:relative; }
+.suggest-list{ position:absolute; left:0; right:0; top:calc(100% + 6px); z-index:20; background:var(--surface); border:1px solid var(--line-2); border-radius:var(--r-md); box-shadow:var(--shadow-2); overflow:hidden; }
+.suggest-list button{ display:block; width:100%; text-align:left; min-height:48px; padding:0 14px; border-bottom:1px solid var(--line); font-weight:600; }
+.suggest-list button:last-child{ border-bottom:0; }
+.suggest-list button:active{ background:var(--surface-2); }
+
+/* услуги */
+.svc{ display:flex; gap:12px; align-items:flex-start; width:100%; text-align:left; padding:14px; border-radius:var(--r-lg); background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-1); transition:border-color .15s, background-color .15s; }
+.svc + .svc{ margin-top:8px; }
+.svc-main{ flex:1; min-width:0; }
+.svc-main > span{ display:block; }
+.svc-name{ font-weight:700; font-size:16px; line-height:1.3; }
+.svc-desc{ font-size:14px; color:var(--ink-2); margin-top:4px; line-height:1.4; }
+.svc-price{ font-family:var(--font-mono); font-weight:600; font-size:16px; margin-top:8px; color:var(--ink); }
+.svc-check{ width:28px; height:28px; border-radius:50%; border:2px solid var(--line-2); flex:none; display:grid; place-items:center; color:transparent; margin-top:1px; }
+.svc-check .ic{ width:16px; height:16px; stroke-width:3; }
+.svc.is-on{ border-color:var(--accent); background:linear-gradient(0deg, var(--accent-soft), var(--accent-soft)), var(--surface); }
+.svc.is-on .svc-check{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.svc:active{ transform:scale(.99); }
+.cat-title{ display:flex; align-items:center; gap:10px; margin:22px 0 10px; }
+.cat-title .row-icon{ width:36px; height:36px; }
+.cat-title h3{ font-size:17px; }
+
+/* слоты по частям дня */
+.slot-group + .slot-group{ margin-top:16px; }
+.slot-group .eyebrow{ margin-bottom:8px; }
+
+/* «билет» записи */
+.ticket{ position:relative; border-radius:var(--r-xl); background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-1); overflow:hidden; text-align:left; }
+.ticket-top{ padding:18px; background:linear-gradient(160deg, var(--navy-2), var(--navy)); color:#E9F7FA; }
+.ticket-top .plate{ margin-top:12px; height:50px; }
+.ticket-top .plate-num{ font-size:24px; }
+.ticket-when{ font-family:var(--font-display); font-weight:600; font-size:22px; letter-spacing:-.02em; }
+.ticket-cut{ position:relative; height:0; border-top:2px dashed var(--line-2); margin:0 18px; }
+.ticket-cut::before, .ticket-cut::after{ content:""; position:absolute; top:-12px; width:22px; height:22px; border-radius:50%; background:var(--bg); }
+.ticket-cut::before{ left:-30px; } .ticket-cut::after{ right:-30px; }
+.ticket-body{ padding:8px 18px 16px; }
+.ticket-total{ display:flex; justify-content:space-between; align-items:baseline; padding-top:12px; }
+.ticket-total b{ font-family:var(--font-display); font-weight:600; font-size:22px; }
+.ticket-id{ font-family:var(--font-mono); font-size:14px; color:var(--ink-3); margin-top:6px; }
+
+/* админ / владелец */
+.slot-admin{ min-height:48px; border-radius:var(--r-sm); border:1px solid var(--line-2); font-family:var(--font-mono); font-weight:600; font-size:16px; background:var(--surface); }
+.slot-admin.st-booked{ background:var(--accent-soft); border-color:transparent; color:var(--accent); }
+.slot-admin.st-blocked{ background:repeating-linear-gradient(135deg, var(--surface-2) 0 6px, var(--surface-3) 6px 12px); color:var(--ink-3); border-color:transparent; }
+.bay{ display:flex; gap:12px; align-items:center; }
+.bay-lamp{ width:12px; height:12px; border-radius:50%; flex:none; box-shadow:0 0 0 4px var(--surface-2); }
+.bay-lamp.free{ background:var(--ok); box-shadow:0 0 0 4px var(--ok-soft); }
+.bay-lamp.busy{ background:var(--accent); box-shadow:0 0 0 4px var(--accent-soft); }
+.bay-lamp.repair{ background:var(--warn); box-shadow:0 0 0 4px var(--warn-soft); }
+.hours-row{ display:flex; align-items:center; gap:10px; min-height:56px; border-bottom:1px solid var(--line); }
+.hours-row:last-child{ border-bottom:0; }
+.hours-row .d{ width:34px; font-weight:700; }
+.hours-row .input{ min-height:44px; padding:0 8px; font-family:var(--font-mono); text-align:center; }
+.time-input{ width:84px; flex:none; }
+.hours-row > span[data-fit]{ flex:1; min-width:0; }
+.stock-bar{ display:block; height:6px; border-radius:99px; background:var(--surface-2); margin-top:8px; overflow:hidden; }
+.stock-bar i{ display:block; height:100%; border-radius:inherit; background:var(--ok); }
+.stock-bar i.low{ background:var(--danger); }
