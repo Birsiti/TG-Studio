@@ -5,3 +5,8 @@
 node_modules/
 dist/
 .astro/
+
+# API: базы SQLite и кэш
+api/data/
+__pycache__/
+.pytest_cache/
