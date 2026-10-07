@@ -1,3 +1,8 @@
+<!-- изменено 2026-10-08 02:15 -->
+> **АРХИВ.** С 2026-10-08 мойка работает на новом API (`api/bots/carwash.py`,
+> FastAPI + SQLite, https://api.tg-studio.xyz/api/carwash). Этот документ и
+> `Code.gs` оставлены для истории — Google Таблицу не удалять.
+
 # Бэкенд мойки — установка
 
 Один Apps Script + одна Google-таблица на одну мойку. Обслуживает все три Mini App (client/admin/owner) через единый `api(action, payload)`.
