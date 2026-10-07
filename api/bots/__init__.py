@@ -1,6 +1,7 @@
-# изменено 2026-10-08 02:30
+# изменено 2026-10-08 02:48
 """Реестр ботов: имя в URL /api/<имя> → объект Bot."""
 from bots.carwash import bot as carwash
 from bots.toolrent import bot as toolrent
+from bots.versta import bot as versta
 
-BOTS = {b.name: b for b in (carwash, toolrent)}
+BOTS = {b.name: b for b in (carwash, toolrent, versta)}

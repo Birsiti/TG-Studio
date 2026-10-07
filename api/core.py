@@ -1,4 +1,4 @@
-# изменено 2026-10-08 02:15
+# изменено 2026-10-08 02:48
 """Общее ядро API студии: SQLite на бота, реестр action, валидация,
 лимиты строк, демо-сид и ежедневное «освежение» демо-данных.
 
@@ -54,7 +54,7 @@ def iso_now() -> str:
 
 
 def new_id(prefix: str) -> str:
-    return f"{prefix}-{secrets.token_hex(3).upper()}"
+    return f"{prefix}-{secrets.token_hex(5).upper()}"
 
 
 def hm_to_min(hm: str) -> int:
