@@ -1,4 +1,4 @@
-/* изменено 2026-10-08 02:30 */
+/* изменено 2026-10-08 02:57 */
 /* ============================================================
    kit/base.css — общие компоненты Mini App студии TG-Studio.
    Всё на CSS-переменных: цвета, шрифты и форма задаются в brand.css
@@ -242,6 +242,7 @@ input[type=time]::-webkit-calendar-picker-indicator{ display:none; }
 .field-row > .field{ flex:1; min-width:0; }
 .phone-field{ display:flex; align-items:center; gap:8px; min-height:52px; padding:0 14px; border-radius:var(--r-md); background:var(--surface); border:1px solid var(--line-2); transition:border-color .15s, box-shadow .15s; }
 .phone-prefix{ font-family:var(--font-mono); font-weight:600; color:var(--ink-2); flex:none; font-size:16px; }
+.phone-input:focus, .phone-input:focus-visible{ outline:none; }
 .phone-input{ flex:1; min-width:0; min-height:50px; border:0; background:transparent; font-family:var(--font-mono); font-size:16px; color:var(--ink); padding:0; }
 .check{ display:flex; gap:12px; align-items:flex-start; min-height:var(--tap); padding:6px 0; font-size:14px; color:var(--ink-2); line-height:1.4; }
 .check input{ width:22px; height:22px; margin:0; flex:none; accent-color:var(--accent); }

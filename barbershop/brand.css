@@ -1,0 +1,127 @@
+/* изменено 2026-10-08 02:57 */
+/* ============================================================
+   БРИТВА — фирменный слой барбершопа поверх kit/base.css.
+   Характер: классический мужской салон. Слоновая кость, бычья кровь
+   и латунь; антиква Cormorant Garamond в заголовках, Jost в тексте,
+   тонкие латунные линейки, полосы барберского столба.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Jost:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap');
+
+:root{
+  --font-display:'Cormorant Garamond', Georgia, serif;
+  --font-body:'Jost', system-ui, sans-serif;
+  --font-mono:'JetBrains Mono', ui-monospace, monospace;
+  --display-weight:700;
+  --display-track:0;
+  --r-xl:4px; --r-lg:4px; --r-md:3px; --r-sm:2px;
+  --btn-radius:2px; --chip-radius:2px;
+  --pole:repeating-linear-gradient(-55deg, #7A1E2C 0 7px, #FBF6EC 7px 14px, #1D2A44 14px 21px, #FBF6EC 21px 28px);
+}
+:root[data-theme="light"]{
+  --bg:#F3EDE2; --surface:#FFFCF6; --surface-2:#EFE7DA; --surface-3:#E4D9C7;
+  --ink:#1F1712; --ink-2:#6A5B4E; --ink-3:#9E8F80;
+  --line:#E3D8C6; --line-2:#CDBEA6;
+  --accent:#7A1E2C; --accent-2:#62161F; --accent-ink:#FBF3E6; --accent-soft:rgba(122,30,44,.09);
+  --brass:#A8823F;
+  --ok:#3F6B3A; --ok-soft:rgba(63,107,58,.12);
+  --warn:#9A6516; --warn-soft:rgba(154,101,22,.12);
+  --danger:#B02A33; --danger-soft:rgba(176,42,51,.10);
+  --shadow-1:0 1px 0 rgba(31,23,18,.05);
+  --shadow-2:0 18px 44px rgba(31,23,18,.22);
+}
+:root[data-theme="dark"]{
+  --bg:#110E0C; --surface:#1A1614; --surface-2:#231E1B; --surface-3:#2E2723;
+  --ink:#F2E9DA; --ink-2:#A89A88; --ink-3:#6E6256;
+  --line:#2B2420; --line-2:#3D342E;
+  --accent:#C9A46A; --accent-2:#B48E55; --accent-ink:#1A120C; --accent-soft:rgba(201,164,106,.13);
+  --brass:#C9A46A;
+  --ok:#86B37C; --ok-soft:rgba(134,179,124,.14);
+  --warn:#E0A955; --warn-soft:rgba(224,169,85,.14);
+  --danger:#E26D6D; --danger-soft:rgba(226,109,109,.14);
+  --shadow-1:none;
+  --shadow-2:0 20px 50px rgba(0,0,0,.6);
+}
+
+body{ letter-spacing:.005em; }
+h1, h2, h3, .day-num, .stat-value, .price-val, .brand-name, .portrait, .page-title, .section-title, .sheet-title{ font-variant-numeric:lining-nums; font-feature-settings:'lnum' 1; }
+.brand-mark{ background:var(--surface); color:var(--accent); border:1.5px solid var(--brass); border-radius:50%; }
+.brand-name{ font-family:var(--font-display); font-size:24px; letter-spacing:.18em; font-weight:700; }
+.brand-role{ letter-spacing:.06em; }
+.page-title{ font-size:36px; font-weight:700; }
+.page-title em, .section-title em{ font-style:italic; color:var(--accent); }
+.section-title{ font-size:24px; }
+.sheet-title{ font-size:26px; }
+.eyebrow{ letter-spacing:.18em; font-size:13px; color:var(--brass); }
+.btn{ text-transform:uppercase; letter-spacing:.12em; font-size:15px; font-weight:600; }
+.card, .list, .stat{ border-color:var(--line-2); }
+.stat-value{ font-family:var(--font-display); font-size:32px; font-weight:700; }
+.pill{ border-radius:2px; letter-spacing:.04em; }
+.chip{ letter-spacing:.02em; }
+
+/* латунная линейка с ромбом */
+.rule{ display:flex; align-items:center; gap:10px; color:var(--brass); margin:22px 0 14px; }
+.rule::before, .rule::after{ content:""; flex:1; height:1px; background:currentColor; opacity:.6; }
+.rule i{ width:7px; height:7px; transform:rotate(45deg); border:1.5px solid currentColor; }
+.pole{ height:6px; background:var(--pole); }
+
+/* шапка-афиша */
+.marquee{ position:relative; text-align:center; padding:26px 18px 22px; border:1.5px solid var(--brass); background:var(--surface); }
+.marquee::before{ content:""; position:absolute; inset:5px; border:1px solid var(--line-2); pointer-events:none; }
+.marquee h1{ font-size:40px; line-height:1; letter-spacing:.02em; }
+.marquee p{ color:var(--ink-2); margin-top:8px; }
+.marquee .since{ font-family:var(--font-display); font-style:italic; color:var(--brass); font-size:18px; }
+
+/* быстрая запись */
+.quick{ display:flex; align-items:center; gap:14px; width:100%; text-align:left; padding:16px; background:var(--accent); color:var(--accent-ink); border-radius:2px; }
+.quick .ic{ width:28px; height:28px; }
+.quick b{ display:block; font-family:var(--font-display); font-size:22px; }
+.quick span{ display:block; opacity:.85; font-size:15px; }
+
+/* мастер */
+.barber{ display:flex; gap:14px; align-items:center; width:100%; text-align:left; padding:14px; background:var(--surface); border:1px solid var(--line-2); }
+.barber + .barber{ margin-top:10px; }
+.barber:active{ background:var(--surface-2); }
+.portrait{ width:64px; height:64px; border-radius:50%; flex:none; display:grid; place-items:center; font-family:var(--font-display); font-weight:700; font-size:24px; color:#FBF6EC; position:relative; box-shadow:0 0 0 2px var(--surface), 0 0 0 3.5px var(--brass); }
+.portrait.lg{ width:96px; height:96px; font-size:36px; }
+.barber-name{ display:block; font-family:var(--font-display); font-size:22px; font-weight:700; line-height:1.1; }
+.barber-spec{ display:block; color:var(--ink-2); font-size:15px; margin-top:2px; }
+.barber-meta{ display:flex; gap:12px; margin-top:6px; font-size:14px; color:var(--ink-2); flex-wrap:wrap; }
+.barber-meta b{ color:var(--brass); font-weight:600; }
+.stars{ color:var(--brass); display:inline-flex; gap:1px; vertical-align:-2px; }
+.stars .ic{ width:14px; height:14px; fill:currentColor; }
+
+/* прайс как в меню салона */
+.price-list{ background:var(--surface); border:1px solid var(--line-2); padding:6px 16px; }
+.price{ display:flex; align-items:baseline; gap:8px; width:100%; text-align:left; padding:12px 0; border-bottom:1px solid var(--line); min-height:56px; }
+.price:last-child{ border-bottom:0; }
+.price-name{ font-weight:600; font-size:17px; }
+.price-dots{ flex:1; border-bottom:1.5px dotted var(--line-2); transform:translateY(-4px); min-width:12px; }
+.price-val{ font-family:var(--font-display); font-weight:700; font-size:22px; white-space:nowrap; }
+.price-sub{ display:block; color:var(--ink-2); font-size:14px; margin-top:2px; }
+.price.is-on .price-name, .price.is-on .price-val{ color:var(--accent); }
+.price.is-on{ box-shadow:inset 3px 0 0 var(--accent); padding-left:10px; }
+
+/* слоты */
+.slot{ border-radius:2px; }
+.day{ border-radius:2px; }
+.day-num{ font-family:var(--font-display); font-size:24px; }
+
+/* «чек» записи */
+.receipt{ background:var(--surface); border:1.5px solid var(--brass); padding:20px 18px; position:relative; text-align:center; }
+.receipt::before{ content:""; position:absolute; inset:5px; border:1px solid var(--line-2); pointer-events:none; }
+.receipt h2{ font-size:30px; }
+.receipt .when{ font-family:var(--font-display); font-size:24px; font-style:italic; color:var(--accent); margin-top:6px; }
+.receipt .kv{ text-align:left; }
+
+/* админ: шкала дня */
+.chairs{ display:grid; gap:10px; }
+.chair{ background:var(--surface); border:1px solid var(--line-2); padding:12px 14px; display:flex; gap:12px; align-items:center; width:100%; text-align:left; }
+.chair .portrait{ width:44px; height:44px; font-size:18px; }
+.load{ height:6px; background:var(--surface-2); margin-top:6px; }
+.load i{ display:block; height:100%; background:var(--accent); }
+.timeline{ list-style:none; margin:0; padding:0; }
+.timeline li{ position:relative; padding:0 0 14px 24px; }
+.timeline li::before{ content:""; position:absolute; left:4px; top:6px; width:10px; height:10px; transform:rotate(45deg); border:1.5px solid var(--line-2); background:var(--surface); }
+.timeline li.done::before{ background:var(--brass); border-color:var(--brass); }
+.timeline li.cur::before{ background:var(--accent); border-color:var(--accent); }
+.timeline small{ display:block; color:var(--ink-2); font-size:14px; }
