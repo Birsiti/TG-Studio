@@ -1,4 +1,4 @@
-/* изменено 2026-10-08 02:15 */
+/* изменено 2026-10-08 02:30 */
 /* ============================================================
    kit/base.css — общие компоненты Mini App студии TG-Studio.
    Всё на CSS-переменных: цвета, шрифты и форма задаются в brand.css
@@ -84,6 +84,7 @@ img,svg{ display:block; }
 h1,h2,h3,h4{ margin:0; font-family:var(--font-display); font-weight:var(--display-weight); text-transform:var(--display-case); letter-spacing:var(--display-track); line-height:1.15; }
 p{ margin:0; }
 .ic{ width:22px; height:22px; flex:none; }
+.ic.ic-inline{ display:inline-block; width:18px; height:18px; vertical-align:-3px; margin-right:4px; }
 .mono{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
 .num{ font-variant-numeric:tabular-nums; }
 .muted{ color:var(--ink-2); }
@@ -113,6 +114,7 @@ p{ margin:0; }
 .brand-mark{ width:36px; height:36px; border-radius:var(--r-sm); background:var(--accent); color:var(--accent-ink); display:grid; place-items:center; flex:none; }
 .brand-mark .ic{ width:20px; height:20px; }
 .brand-text{ min-width:0; display:flex; flex-direction:column; }
+.brand-name, .brand-role{ white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .brand-name{ font-family:var(--font-display); font-weight:var(--display-weight); text-transform:var(--display-case); letter-spacing:var(--display-track); font-size:19px; line-height:1.1; }
 .brand-role{ font-size:14px; color:var(--ink-2); line-height:1.2; }
 .topbar-actions{ display:flex; align-items:center; gap:4px; flex:none; }
@@ -216,8 +218,9 @@ button.row:active, a.row:active, .row.is-tap:active{ background:var(--surface-2)
 .chip .ic{ width:18px; height:18px; }
 .chip input{ position:absolute; opacity:0; pointer-events:none; }
 .seg{ display:flex; padding:4px; gap:4px; background:var(--surface-2); border-radius:calc(var(--btn-radius) + 2px); }
-.seg button{ flex:1; min-height:var(--tap); border-radius:var(--btn-radius); font-weight:600; font-size:16px; color:var(--ink-2); white-space:nowrap; padding:0 8px; }
+.seg button{ flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; min-height:var(--tap); border-radius:var(--btn-radius); font-weight:600; font-size:16px; color:var(--ink-2); white-space:nowrap; padding:0 8px; }
 .seg.seg-grid{ display:grid; grid-template-columns:1fr 1fr; }
+.seg button .ic{ width:18px; height:18px; }
 .seg button.is-on{ background:var(--surface); color:var(--ink); box-shadow:var(--shadow-1); }
 
 /* ============ ПОЛЯ ============ */

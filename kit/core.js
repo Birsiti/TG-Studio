@@ -1,4 +1,4 @@
-// изменено 2026-10-08 02:15
+// изменено 2026-10-08 02:30
 /* ============================================================
    kit/core.js — общий рантайм всех Mini App студии TG-Studio.
 
@@ -158,6 +158,10 @@
     return new Raw(out);
   }
   function raw(s){ return new Raw(String(s)); }
+  // Слова с дефисом («GBH 2-26», «Nano-комплекс») не рвём на переносе строки
+  function nobr(s){
+    return new Raw(esc(s).replace(/\S*-\S*/g, function(w){ return '<span class="nowrap">' + w + '</span>'; }));
+  }
 
   function $(sel, ctx){ return (ctx || document).querySelector(sel); }
   function $$(sel, ctx){ return Array.prototype.slice.call((ctx || document).querySelectorAll(sel)); }
@@ -409,7 +413,7 @@
     wrap.className = 'sheet-wrap';
     wrap.innerHTML = '<div class="sheet-scrim"></div><div class="sheet ' + (opts.className || '') + '" role="dialog" aria-modal="true">' +
       '<div class="sheet-grip"></div>' +
-      (opts.title ? '<div class="sheet-head"><div class="sheet-titles"><div class="sheet-title">' + esc(opts.title) + '</div>' + (opts.sub ? '<div class="sheet-sub">' + esc(opts.sub) + '</div>' : '') + '</div><button class="icon-btn sheet-x" type="button" aria-label="Закрыть">' + icon('x') + '</button></div>' : '') +
+      (opts.title ? '<div class="sheet-head"><div class="sheet-titles"><div class="sheet-title">' + nobr(opts.title).s + '</div>' + (opts.sub ? '<div class="sheet-sub">' + esc(opts.sub) + '</div>' : '') + '</div><button class="icon-btn sheet-x" type="button" aria-label="Закрыть">' + icon('x') + '</button></div>' : '') +
       '<div class="sheet-body"></div>' +
       (opts.actions ? '<div class="sheet-actions">' + toHtml(opts.actions) + '</div>' : '') +
       '</div>';
@@ -524,7 +528,9 @@
      Элементы с [data-fit] не переносятся (nowrap) — если текст не влез,
      шрифт уменьшается до data-fit-min (по умолчанию 12px). */
   function fit(el){
-    el.style.fontSize = '';
+    // исходный размер (в т.ч. заданный инлайном) запоминаем один раз
+    if(el.dataset.fitBase === undefined) el.dataset.fitBase = el.style.fontSize || '';
+    el.style.fontSize = el.dataset.fitBase;
     if(!el.clientWidth || el.scrollWidth <= el.clientWidth + 0.5) return;
     var base = parseFloat(getComputedStyle(el).fontSize);
     var min = parseFloat(el.getAttribute('data-fit')) || 12;
@@ -694,7 +700,7 @@
     haptic: haptic, back: back, sheet: sheet, toast: toast, confirm: confirmAsync,
     theme: {choice: themeChoice, resolved: resolvedTheme, set: setTheme, button: themeButton},
     phone: phone, date: date, num: num, money: money, moneyRange: moneyRange, plural: plural,
-    html: html, raw: raw, esc: esc, $: $, $$: $$, on: on,
+    html: html, raw: raw, nobr: nobr, esc: esc, $: $, $$: $$, on: on,
     icon: icon, ICONS: ICONS, fit: fit, fitAll: fitAll,
     createApi: createApi, tabs: tabs, chart: chart, csv: csv,
     busy: busy, openLink: openLink, uid: uid, initials: initials, debounce: debounce, ready: ready,

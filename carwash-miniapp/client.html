@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-08 02:15 -->
+<!-- изменено 2026-10-08 02:30 -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -164,7 +164,7 @@
           <label class="field suggest"><span class="field-label">Модель</span><input class="input" id="model" autocomplete="off" placeholder="Sportage" value="${S.car.model}"></label>
         </div>
         <span class="field-label">Класс — от него зависит цена</span>
-        <div class="classes" id="classes">${CLASSES.map(c=>html`<button type="button" class="class-tile${S.car.carClass === c.id ? ' is-on' : ''}" data-cls="${c.id}"><svg viewBox="0 0 48 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">${Kit.raw(c.svg)}</svg><span data-fit="11">${c.label}</span></button>`)}</div>
+        <div class="classes" id="classes">${CLASSES.map(c=>html`<button type="button" class="class-tile${S.car.carClass === c.id ? ' is-on' : ''}" data-cls="${c.id}"><svg viewBox="0 0 48 22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round">${Kit.raw(c.svg)}</svg><span data-fit="12">${c.label}</span></button>`)}</div>
       </div>
     </div>`;
     const num = $('#num');
@@ -367,8 +367,8 @@
       </div>
       <div class="ticket-cut"></div>
       <div class="ticket-body">
-        <div class="kv"><span class="k">Авто</span><span class="v">${(b.car.brand + ' ' + b.car.model).trim() || '—'}</span></div>
-        <div class="kv"><span class="k">Услуги</span><span class="v">${b.services.join(', ')}</span></div>
+        ${(b.car.brand + b.car.model).trim() ? html`<div class="kv"><span class="k">Авто</span><span class="v">${(b.car.brand + ' ' + b.car.model).trim()}</span></div>` : ''}
+        <div class="kv"><span class="k">Услуги</span><span class="v">${Kit.nobr(b.services.join(', '))}</span></div>
         <div class="kv"><span class="k">Клиент</span><span class="v">${b.contact.name}</span></div>
         <div class="kv"><span class="k">Статус</span><span class="v"><span class="pill ${STATUS_PILL[b.status] || ''}">${b.status}</span></span></div>
         <div class="ticket-total"><span class="muted">Итого</span><b>${moneyRange(b.priceMin, b.priceMax)}</b></div>
