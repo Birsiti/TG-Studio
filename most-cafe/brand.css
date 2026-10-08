@@ -1,0 +1,123 @@
+/* изменено 2026-10-08 03:10 */
+/* ============================================================
+   МОСТ — фирменный слой кафе поверх kit/base.css.
+   Характер: белорусско-китайский фьюжн «там, где встречаются два
+   вкуса». Рисовая бумага, киноварь и нефрит, мягкий Rubik в
+   заголовках, Onest в тексте, красная печать-логотип, тарелки-иконки,
+   арка моста.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@500;600;700&family=Onest:wght@400;500;600;700&display=swap');
+
+:root{
+  --font-display:'Rubik', 'Onest', system-ui, sans-serif;
+  --font-body:'Onest', system-ui, sans-serif;
+  --font-mono:'Onest', system-ui, sans-serif;
+  --display-weight:700;
+  --display-track:-0.01em;
+  --r-xl:26px; --r-lg:20px; --r-md:16px; --r-sm:12px;
+  --btn-radius:999px; --chip-radius:999px;
+}
+:root[data-theme="light"]{
+  --bg:#FAF4EA; --surface:#FFFFFF; --surface-2:#F4ECDF; --surface-3:#EADFCD;
+  --ink:#2A1D17; --ink-2:#6E5D52; --ink-3:#A39183;
+  --line:#EFE4D4; --line-2:#DDCDB7;
+  --accent:#C2382B; --accent-2:#A62D22; --accent-ink:#FFF8F0; --accent-soft:rgba(194,56,43,.10);
+  --jade:#2F7D6B; --jade-soft:rgba(47,125,107,.12);
+  --ok:#2F7D6B; --ok-soft:rgba(47,125,107,.12);
+  --warn:#B9770E; --warn-soft:rgba(185,119,14,.12);
+  --danger:#C2382B; --danger-soft:rgba(194,56,43,.10);
+  --shadow-1:0 2px 10px rgba(42,29,23,.06);
+  --shadow-2:0 20px 48px rgba(42,29,23,.2);
+}
+:root[data-theme="dark"]{
+  --bg:#17110E; --surface:#221A16; --surface-2:#2B221D; --surface-3:#372C26;
+  --ink:#F8EEE4; --ink-2:#B3A194; --ink-3:#7A6A5E;
+  --line:#33281F; --line-2:#463A30;
+  --accent:#F06A4E; --accent-2:#E0553A; --accent-ink:#1F0D07; --accent-soft:rgba(240,106,78,.15);
+  --jade:#5EC2A8; --jade-soft:rgba(94,194,168,.14);
+  --ok:#5EC2A8; --ok-soft:rgba(94,194,168,.14);
+  --warn:#F2B347; --warn-soft:rgba(242,179,71,.14);
+  --danger:#F06A4E; --danger-soft:rgba(240,106,78,.15);
+  --shadow-1:none;
+  --shadow-2:0 20px 50px rgba(0,0,0,.55);
+}
+.num, .price, .money{ font-variant-numeric:tabular-nums; }
+/* печать-логотип */
+.seal{ width:40px; height:40px; border-radius:8px; background:var(--accent); color:var(--accent-ink); display:grid; place-items:center; font-family:"Noto Serif SC","Songti SC","SimSun",serif; font-size:24px; font-weight:700; transform:rotate(-4deg); box-shadow:inset 0 0 0 2px rgba(255,255,255,.35); flex:none; }
+.brand-name{ font-size:21px; letter-spacing:.06em; }
+.page-title{ font-size:30px; }
+/* арка моста */
+.arch{ height:22px; margin:6px 0 2px; background:radial-gradient(120% 220% at 50% 210%, transparent 62%, var(--line-2) 63%, var(--line-2) 66%, transparent 67%) center/100% 100% no-repeat; }
+.hello{ background:var(--surface); border-radius:var(--r-xl); padding:18px; box-shadow:var(--shadow-1); position:relative; overflow:hidden; }
+.hello::after{ content:"桥"; position:absolute; right:-6px; bottom:-28px; font-size:120px; line-height:1; font-family:"Noto Serif SC","Songti SC",serif; color:var(--accent); opacity:.07; pointer-events:none; }
+.hello h1{ font-size:26px; line-height:1.15; }
+.hello-meta{ display:flex; flex-wrap:wrap; gap:8px 14px; margin-top:10px; color:var(--ink-2); font-size:15px; }
+.open-dot{ display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--jade); margin-right:6px; box-shadow:0 0 0 4px var(--jade-soft); vertical-align:1px; }
+.open-dot.closed{ background:var(--ink-3); box-shadow:none; }
+/* хиты */
+.hits{ display:flex; gap:10px; overflow-x:auto; scrollbar-width:none; margin:0 calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l)); padding:4px var(--gutter-r) 8px var(--gutter-l); }
+.hits::-webkit-scrollbar{ display:none; }
+.hit{ flex:none; width:150px; text-align:left; background:var(--surface); border-radius:var(--r-lg); padding:12px; box-shadow:var(--shadow-1); display:flex; flex-direction:column; gap:6px; }
+.hit .plate{ width:64px; height:64px; }
+.hit .plate svg{ width:38px; height:38px; }
+.hit b{ font-size:15px; line-height:1.25; }
+.hit .price{ font-family:var(--font-display); font-weight:600; color:var(--accent); }
+/* тарелка-иконка */
+.plate{ width:56px; height:56px; border-radius:50%; flex:none; display:grid; place-items:center; color:var(--accent); background:radial-gradient(circle at 50% 50%, var(--surface) 52%, var(--surface-2) 54%, var(--surface-2) 100%); box-shadow:inset 0 0 0 1px var(--line-2); }
+.plate svg{ width:32px; height:32px; }
+/* блюдо */
+.dish{ display:flex; gap:12px; align-items:center; padding:12px 0; border-bottom:1px solid var(--line); }
+.dish:last-child{ border-bottom:0; }
+.dish-main{ flex:1; min-width:0; text-align:left; display:block; }
+.dish-name{ display:block; font-weight:600; font-size:16px; line-height:1.3; }
+.dish-cn{ display:block; font-size:13px; color:var(--ink-3); margin-top:1px; }
+.dish-desc{ display:block; font-size:14px; color:var(--ink-2); margin-top:2px; }
+.dish-price{ display:block; font-family:var(--font-display); font-weight:600; margin-top:6px; }
+.dish.is-out{ opacity:.45; }
+.tag-hit{ display:inline-block; font-size:12px; font-weight:700; letter-spacing:.06em; color:var(--accent); background:var(--accent-soft); border-radius:6px; padding:2px 6px; margin-left:6px; vertical-align:2px; }
+.add{ width:var(--tap); height:var(--tap); border-radius:50%; background:var(--accent); color:var(--accent-ink); display:grid; place-items:center; flex:none; }
+.add:active{ transform:scale(.9); }
+.add .ic{ width:22px; height:22px; stroke-width:2.4; }
+.qty{ display:flex; align-items:center; gap:2px; background:var(--accent-soft); border-radius:999px; flex:none; }
+.qty button{ width:var(--tap); height:var(--tap); border-radius:50%; display:grid; place-items:center; color:var(--accent); }
+.qty b{ min-width:20px; text-align:center; font-family:var(--font-display); }
+.cat-head{ position:sticky; top:60px; z-index:5; background:var(--bg); padding:14px 0 6px; font-family:var(--font-display); font-weight:700; font-size:20px; }
+.menu-card{ background:var(--surface); border-radius:var(--r-lg); padding:0 14px; box-shadow:var(--shadow-1); }
+/* корзина-«пилюля» */
+.cartbar{ display:flex; align-items:center; gap:12px; width:100%; min-height:56px; padding:0 8px 0 20px; border-radius:999px; background:var(--accent); color:var(--accent-ink); font-weight:600; box-shadow:0 10px 24px rgba(194,56,43,.3); }
+.cartbar .count{ min-width:28px; height:28px; border-radius:14px; background:var(--accent-ink); color:var(--accent); display:grid; place-items:center; font-weight:700; font-size:15px; }
+.cartbar .sum{ margin-left:auto; font-family:var(--font-display); font-size:18px; padding-right:12px; }
+.line{ display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line); }
+.totals .kv{ border-bottom:0; padding:6px 0; }
+.totals .grand{ font-family:var(--font-display); font-size:22px; font-weight:700; }
+.geo{ display:flex; gap:12px; align-items:center; padding:12px 14px; border-radius:var(--r-md); background:var(--jade-soft); color:var(--jade); font-weight:600; }
+.geo.bad{ background:var(--danger-soft); color:var(--danger); }
+.lang-btn{ font-family:"Noto Serif SC", serif; font-weight:700; font-size:17px; }
+/* статус заказа */
+.steps-v{ list-style:none; margin:0; padding:0; }
+.steps-v li{ position:relative; padding:0 0 16px 32px; }
+.steps-v li::before{ content:""; position:absolute; left:4px; top:2px; width:18px; height:18px; border-radius:50%; border:2px solid var(--line-2); background:var(--surface); }
+.steps-v li::after{ content:""; position:absolute; left:12px; top:22px; bottom:0; width:2px; background:var(--line); }
+.steps-v li:last-child::after{ display:none; }
+.steps-v li.done::before{ background:var(--jade); border-color:var(--jade); }
+.steps-v li.cur::before{ background:var(--accent); border-color:var(--accent); box-shadow:0 0 0 5px var(--accent-soft); }
+.order-num{ font-family:var(--font-display); font-size:44px; font-weight:700; color:var(--accent); letter-spacing:.02em; }
+/* админ: канбан */
+.lane{ margin-top:18px; }
+.lane-head{ display:flex; align-items:center; gap:8px; font-family:var(--font-display); font-weight:700; font-size:18px; margin-bottom:8px; }
+.lane-head .count{ min-width:26px; height:26px; border-radius:13px; display:grid; place-items:center; background:var(--surface-2); font-size:14px; }
+.ticket{ background:var(--surface); border-radius:var(--r-lg); padding:12px 14px; box-shadow:var(--shadow-1); border-left:4px solid var(--line-2); }
+.ticket + .ticket{ margin-top:8px; }
+.ticket.st-new{ border-left-color:var(--accent); }
+.ticket.st-preparing{ border-left-color:var(--warn); }
+.ticket.st-ready{ border-left-color:var(--jade); }
+.ticket-top{ display:flex; align-items:center; gap:8px; }
+.ticket-top b{ font-family:var(--font-display); font-size:18px; }
+.ticket-items{ font-size:15px; color:var(--ink-2); margin-top:4px; }
+.accepting{ display:flex; align-items:center; gap:12px; padding:12px 14px; border-radius:var(--r-md); background:var(--surface); box-shadow:var(--shadow-1); }
+.icon-pick{ display:grid; grid-template-columns:repeat(6, minmax(0,1fr)); gap:6px; }
+.icon-pick button{ aspect-ratio:1; min-height:44px; border-radius:12px; border:1px solid var(--line-2); display:grid; place-items:center; color:var(--ink-2); }
+.icon-pick button svg{ width:30px; height:30px; }
+.icon-pick button.is-on{ border-color:var(--accent); color:var(--accent); background:var(--accent-soft); }
+.split{ display:flex; height:12px; border-radius:6px; overflow:hidden; background:var(--surface-2); }
+.split i{ display:block; height:100%; }
