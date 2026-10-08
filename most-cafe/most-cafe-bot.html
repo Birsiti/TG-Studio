@@ -1,1321 +1,294 @@
+<!-- изменено 2026-10-08 03:10 -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<title>МОСТ — демо бот кафе</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@600;700;800;900&family=Work+Sans:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="palettes.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>МОСТ — кафе</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="../kit/core.js"></script>
+<link rel="stylesheet" href="../kit/base.css">
+<link rel="stylesheet" href="brand.css">
+<script src="dishes.js"></script>
+<script src="mock.js"></script>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="topbar">
+    <div class="brand"><div class="seal">桥</div><div class="brand-text"><span class="brand-name">МОСТ</span><span class="brand-role" id="tagline"></span></div></div>
+    <div class="topbar-actions">
+      <button class="icon-btn lang-btn" id="lang" type="button" aria-label="Язык">中</button>
+      <button class="icon-btn" id="hist" type="button" aria-label="Мои заказы"><span id="histIc"></span><span class="dot-badge" id="histDot" hidden></span></button>
+      <button class="icon-btn" type="button" data-theme-toggle aria-label="Оформление"></button>
+    </div>
+  </header>
+  <main id="view"></main>
+</div>
+<div class="actionbar" id="bar" hidden><div class="actionbar-inner"><button class="cartbar" type="button" id="cartBtn"><span id="cartLbl"></span><span class="count" id="cartCnt">0</span><span class="sum" id="cartSum"></span></button></div></div>
+
 <script>
 (function(){
-  var tg = window.Telegram && window.Telegram.WebApp;
-  var saved = null;
-  try { saved = localStorage.getItem('mostcafe_theme_override'); } catch(e){}
-  var scheme = saved || ((tg && tg.colorScheme) ? tg.colorScheme
-    : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-  document.documentElement.setAttribute('data-theme', scheme);
+  "use strict";
+  const {html, icon, $, $$, haptic} = Kit;
+  const money = Dish.money;
+  const api = Kit.createApi({bot:'most', mock: window.MostMock});
+  const L = {
+    ru:{tag:'там, где встречаются два вкуса', open:'Открыто до', closed:'Сейчас закрыто · откроемся в', eta:'готовим за ~{m} мин', search:'Найти блюдо', hits:'Хиты', cart:'Корзина', yourOrder:'Ваш заказ',
+      empty:'Пока пусто — выберите что-нибудь из меню', pickup:'Самовывоз', delivery:'Доставка', when:'Когда забрать', now:'Как можно скорее', in15:'Через 15 мин', in30:'Через 30 мин',
+      geoBtn:'Поделиться геопозицией', geoWait:'Определяем местоположение…', geoOk:'До вас {km} км · доставка {fee} · ~{eta} мин', geoFar:'Слишком далеко — укажите адрес или выберите самовывоз', geoErr:'Не удалось определить местоположение',
+      address:'Адрес доставки', addressPh:'Улица, дом, подъезд, этаж', phone:'Телефон для курьера', note:'Комментарий', notePh:'Например: без сахара, позвонить у входа',
+      promo:'Промокод', apply:'Применить', promoOk:'Скидка {p}% применена', promoBad:'Промокод не найден', items:'Блюда', discount:'Скидка', fee:'Доставка', total:'Итого',
+      checkout:'Оформить заказ', add:'Добавить', out:'Нет в наличии', hit:'ХИТ', history:'Мои заказы', noHistory:'Вы ещё ничего не заказывали', repeat:'Повторить заказ',
+      thanks:'Заказ принят', readyAt:'Будет готов к {t}', courierAt:'Курьер будет у вас к {t}', where:'Заберите на стойке «Мост», 1 этаж', st_new:'Заказ принят', st_preparing:'Готовим',
+      st_ready_p:'Готов — ждём на стойке', st_ready_d:'Курьер выехал', st_done_p:'Выдан', st_done_d:'Доставлен', st_cancelled:'Отменён', more:'Ещё заказ', paused:'Кафе временно не принимает заказы',
+      call:'Позвонить в кафе', manualFee:'По адресу — {fee}, точнее посчитаем по геопозиции', nothing:'Ничего не нашлось'},
+    cn:{tag:'两种风味相遇的地方', open:'营业至', closed:'暂停营业 · 开门时间', eta:'约{m}分钟出餐', search:'搜索菜品', hits:'热门', cart:'购物车', yourOrder:'我的订单',
+      empty:'购物车是空的，去看看菜单吧', pickup:'自取', delivery:'外送', when:'取餐时间', now:'尽快', in15:'15分钟后', in30:'30分钟后',
+      geoBtn:'分享定位', geoWait:'正在定位…', geoOk:'距离 {km} 公里 · 配送费 {fee} · 约{eta}分钟', geoFar:'距离过远，请填写地址或选择自取', geoErr:'无法获取定位',
+      address:'配送地址', addressPh:'街道、门牌、单元、楼层', phone:'配送联系电话', note:'订单备注', notePh:'例如：不要糖，到店请致电',
+      promo:'优惠码', apply:'使用', promoOk:'已优惠 {p}%', promoBad:'优惠码无效', items:'菜品', discount:'优惠', fee:'配送费', total:'合计',
+      checkout:'提交订单', add:'加入', out:'售罄', hit:'热门', history:'我的订单', noHistory:'暂无历史订单', repeat:'再次下单',
+      thanks:'订单已接受', readyAt:'{t} 前可取餐', courierAt:'骑手约 {t} 送达', where:'请到「Мост」前台取餐，1楼', st_new:'订单已接受', st_preparing:'制作中',
+      st_ready_p:'可以取餐', st_ready_d:'骑手已出发', st_done_p:'已取餐', st_done_d:'已送达', st_cancelled:'已取消', more:'再下一单', paused:'餐厅暂停接单',
+      call:'致电餐厅', manualFee:'按地址配送 {fee}，分享定位可更准确', nothing:'未找到相关菜品'}
+  };
+  let lang = 'ru';
+  try{ lang = localStorage.getItem('most-lang') === 'cn' ? 'cn' : 'ru'; }catch(e){}
+  const t = (k, v)=> String(L[lang][k] || k).replace(/\{(\w+)\}/g, (_, x)=> v && v[x] != null ? v[x] : '');
+  const nm = o=> (lang === 'cn' && o.cn) ? o.cn : o.ru;
+
+  $('#histIc').innerHTML = icon('receipt');
+  const view = $('#view'), bar = $('#bar');
+  const S = {cats:[], items:[], cfg:null, cat:'all', q:'', cart:[], type:'pickup', when:'now', geo:null, geoState:'idle', geoInfo:null, address:'', phone:'', note:'', promo:null, last:null};
+  try{ const c = JSON.parse(localStorage.getItem('most-cart') || 'null'); if(c) S.cart = c; const pr = JSON.parse(localStorage.getItem('most-prof') || 'null'); if(pr){ S.phone = pr.phone || ''; S.address = pr.address || ''; } }catch(e){}
+  const item = id=> S.items.find(i=>i.id === id);
+  function saveCart(){ try{ localStorage.setItem('most-cart', JSON.stringify(S.cart)); }catch(e){} }
+  function unit(it, mods){ let u = it.price; (it.modifiers || []).forEach(g=>{ const o = g.options.find(x=>x.id === (mods || {})[g.id]) || g.options[0]; u += o.price; }); return Math.round(u * 100) / 100; }
+  const cartCount = ()=> S.cart.reduce((a, l)=>a + l.qty, 0);
+  const cartSum = ()=> S.cart.reduce((a, l)=>{ const it = item(l.itemId); return a + (it ? unit(it, l.mods) * l.qty : 0); }, 0);
+  const qtyOf = id=> S.cart.filter(l=>l.itemId === id).reduce((a, l)=>a + l.qty, 0);
+
+  function applyLang(){
+    document.documentElement.lang = lang === 'cn' ? 'zh' : 'ru';
+    $('#lang').textContent = lang === 'cn' ? 'RU' : '中';
+    $('#tagline').textContent = t('tag');
+  }
+  $('#lang').addEventListener('click', ()=>{ lang = lang === 'ru' ? 'cn' : 'ru'; try{ localStorage.setItem('most-lang', lang); }catch(e){} haptic('select'); applyLang(); renderMenu(); updateBar(); });
+
+  /* ============ МЕНЮ ============ */
+  function dishRow(it){
+    const q = qtyOf(it.id), simple = !(it.modifiers || []).length;
+    return html`<div class="dish${it.inStock ? '' : ' is-out'}">
+      <button type="button" class="dish-main" data-open="${it.id}" style="display:flex;gap:12px;align-items:center">${Dish.plate(it.icon)}
+        <span style="min-width:0"><span class="dish-name">${Kit.nobr(nm(it.name))}${it.hit ? html`<span class="tag-hit">${t('hit')}</span>` : ''}</span>${lang === 'ru' && it.name.cn ? html`<span class="dish-cn">${it.name.cn}</span>` : ''}
+        <span class="dish-desc">${nm(it.desc)}</span><span class="dish-price">${it.inStock ? money(it.price) : t('out')}</span></span></button>
+      ${!it.inStock ? '' : q && simple ? html`<span class="qty"><button type="button" data-dec="${it.id}" aria-label="Меньше">${icon('minus')}</button><b>${q}</b><button type="button" data-inc="${it.id}" aria-label="Больше">${icon('plus')}</button></span>`
+        : html`<button type="button" class="add" data-${simple ? 'inc' : 'open'}="${it.id}" aria-label="${t('add')}">${q ? html`<b>${q}</b>` : icon('plus')}</button>`}
+    </div>`;
+  }
+  function renderMenu(){
+    if(!S.cfg){ view.innerHTML = '<div class="skel" style="height:140px;margin-top:8px"></div><div class="skel" style="height:300px;margin-top:16px"></div>'; return; }
+    const c = S.cfg, q = S.q.trim().toLowerCase();
+    const match = it=> !q || (it.name.ru + ' ' + it.name.cn + ' ' + it.desc.ru).toLowerCase().includes(q);
+    const cats = S.cats.filter(cat=> S.cat === 'all' || S.cat === cat.id);
+    const hits = S.items.filter(i=>i.hit && i.inStock);
+    view.innerHTML = html`<div class="screen">
+      <section class="hello" style="margin-top:6px"><h1>${lang === 'cn' ? '桥 · 白俄与中国的味道' : 'Белорусская кухня встречает китайскую'}</h1>
+        <div class="hello-meta"><span><span class="open-dot${c.openNow ? '' : ' closed'}"></span>${c.openNow ? t('open') + ' ' + c.workHours.to : t('closed') + ' ' + c.workHours.from}</span><span>${t('eta', {m:c.pickupEtaNow})}</span><span>${c.address}</span></div>
+        ${c.accepting === false ? html`<div class="geo bad" style="margin-top:12px">${icon('pause')}${t('paused')}</div>` : ''}</section>
+      <div class="arch"></div>
+      <div class="search"><span>${icon('search')}</span><input class="input" id="q" type="search" placeholder="${t('search')}" value="${S.q}" autocomplete="off"></div>
+      ${!q && hits.length ? html`<div class="section"><div class="eyebrow" style="margin-bottom:8px">${t('hits')}</div><div class="hits">${hits.map(it=>html`<button type="button" class="hit" data-open="${it.id}">${Dish.plate(it.icon)}<b>${Kit.nobr(nm(it.name))}</b><span class="price">${money(it.price)}</span></button>`)}</div></div>` : ''}
+      <div class="chips scroll section" id="cats"><button type="button" class="chip${S.cat === 'all' ? ' is-on' : ''}" data-cat="all">${lang === 'cn' ? '全部' : 'Всё меню'}</button>${S.cats.map(cat=>html`<button type="button" class="chip${S.cat === cat.id ? ' is-on' : ''}" data-cat="${cat.id}">${nm(cat)}</button>`)}</div>
+      <div id="menu">${cats.map(cat=>{ const list = S.items.filter(i=>i.cat === cat.id && match(i)); return list.length ? html`<div class="cat-head">${nm(cat)}</div><div class="menu-card">${list.map(dishRow)}</div>` : ''; })}
+        ${S.items.some(match) ? '' : html`<div class="empty">${icon('search')}<div class="empty-title">${t('nothing')}</div></div>`}</div>
+      <p class="hint" style="text-align:center;margin-top:20px"><a href="tel:${c.phone}">${t('call')}</a></p>
+    </div>`;
+    const qi = $('#q');
+    qi.addEventListener('input', Kit.debounce(()=>{ S.q = qi.value; const pos = qi.selectionStart; renderMenu(); const n = $('#q'); n.focus(); try{ n.setSelectionRange(pos, pos); }catch(e){} }, 250));
+    updateBar();
+  }
+  Kit.on(view, 'click', '[data-cat]', (e, el)=>{ S.cat = el.dataset.cat; haptic('select'); renderMenu(); });
+  Kit.on(view, 'click', '[data-open]', (e, el)=>{ const it = item(+el.dataset.open); if(it && it.inStock) openDish(it); });
+  Kit.on(view, 'click', '[data-inc]', (e, el)=>{ addLine(+el.dataset.inc, {}, 1); });
+  Kit.on(view, 'click', '[data-dec]', (e, el)=>{ addLine(+el.dataset.dec, {}, -1); });
+  function addLine(id, mods, d){
+    const key = JSON.stringify(mods || {});
+    let l = S.cart.find(x=>x.itemId === id && JSON.stringify(x.mods || {}) === key);
+    if(!l && d > 0){ l = {itemId:id, mods:mods || {}, qty:0}; S.cart.push(l); }
+    if(!l) return;
+    l.qty = Math.max(0, Math.min(20, l.qty + d));
+    S.cart = S.cart.filter(x=>x.qty > 0);
+    haptic(d > 0 ? 'light' : 'select'); saveCart();
+    if(!document.body.classList.contains('has-sheet')) renderMenu(); else updateBar();
+  }
+  function updateBar(){
+    const n = cartCount();
+    bar.hidden = !n; $('#app').classList.toggle('has-actionbar', !!n);
+    $('#cartLbl').textContent = t('cart'); $('#cartCnt').textContent = n; $('#cartSum').textContent = money(cartSum());
+  }
+
+  function openDish(it){
+    const mods = {}; (it.modifiers || []).forEach(g=> mods[g.id] = g.options[0].id);
+    let qty = 1;
+    const sh = Kit.sheet({title:nm(it.name), sub:nm(it.desc), body:'', actions:html`<button class="btn btn-primary" type="button" data-add></button>`});
+    const draw = ()=>{
+      sh.body.innerHTML = html`<div style="display:flex;justify-content:center;margin:4px 0 12px">${Dish.plate(it.icon, '')}</div>
+        ${(it.modifiers || []).map(g=>html`<div class="field"><span class="field-label">${nm(g.label)}</span><div class="chips" data-g="${g.id}">${g.options.map(o=>html`<button type="button" class="chip${mods[g.id] === o.id ? ' is-on' : ''}" data-o="${o.id}">${nm(o.label)}${o.price ? ' +' + Kit.num(o.price, 2) : ''}</button>`)}</div></div>`)}
+        <div style="display:flex;justify-content:center;margin-top:8px"><div class="stepper-num"><button type="button" data-q="-1" aria-label="Меньше">${icon('minus')}</button><output>${qty}</output><button type="button" data-q="1" aria-label="Больше">${icon('plus')}</button></div></div>`;
+      sh.$('[data-add]').textContent = t('add') + ' · ' + money(unit(it, mods) * qty);
+    };
+    draw();
+    sh.body.addEventListener('click', e=>{
+      const o = e.target.closest('[data-o]'); if(o){ mods[o.closest('[data-g]').dataset.g] = o.dataset.o; haptic('select'); draw(); return; }
+      const q = e.target.closest('[data-q]'); if(q){ qty = Math.max(1, Math.min(20, qty + +q.dataset.q)); haptic('select'); draw(); }
+    });
+    sh.$('[data-add]').addEventListener('click', ()=>{ addLine(it.id, mods, qty); sh.close(); renderMenu(); Kit.toast(nm(it.name) + ' · ' + money(unit(it, mods) * qty), 'ok'); });
+  }
+
+  /* ============ КОРЗИНА ============ */
+  $('#cartBtn').addEventListener('click', openCart);
+  function openCart(){
+    const sh = Kit.sheet({title:t('yourOrder'), body:'', actions:html`<button class="btn btn-primary" type="button" data-go>${t('checkout')}</button>`});
+    let quote = null;
+    const drawGeo = ()=>{
+      const box = sh.$('#geoBox'); if(!box) return;
+      if(S.geoState === 'wait') box.innerHTML = html`<div class="geo">${Kit.raw('<span class="spinner" style="width:20px;height:20px;border-width:2px"></span>')}${t('geoWait')}</div>`;
+      else if(S.geoState === 'ok' && S.geoInfo) box.innerHTML = html`<div class="geo">${icon('pin')}${t('geoOk', {km:Kit.num(S.geoInfo.distanceKm, 1), fee:money(S.geoInfo.deliveryFee), eta:S.geoInfo.eta})}</div>`;
+      else if(S.geoState === 'far') box.innerHTML = html`<div class="geo bad">${icon('alert')}${t('geoFar')}</div>`;
+      else box.innerHTML = html`<button class="btn btn-soft btn-block" type="button" id="geoBtn">${icon('pin')}${t('geoBtn')}</button>${S.geoState === 'err' ? html`<p class="hint" style="margin-top:6px;color:var(--danger)">${t('geoErr')}</p>` : ''}`;
+      const b = sh.$('#geoBtn'); if(b) b.addEventListener('click', requestGeo);
+    };
+    const requestGeo = ()=>{
+      S.geoState = 'wait'; drawGeo();
+      const done = (lat, lng)=>{ S.geo = {lat, lng}; recalc(); };
+      const fail = ()=>{ S.geoState = 'err'; S.geo = null; drawGeo(); };
+      const lm = Kit.tg && Kit.tg.LocationManager;
+      if(Kit.inTelegram && lm && Kit.tg.isVersionAtLeast && Kit.tg.isVersionAtLeast('8.0')){
+        try{ lm.init(()=>{ lm.getLocation(loc=>{ loc ? done(loc.latitude, loc.longitude) : fail(); }); }); return; }catch(e){}
+      }
+      if(navigator.geolocation) navigator.geolocation.getCurrentPosition(p=>done(p.coords.latitude, p.coords.longitude), fail, {timeout:10000});
+      else fail();
+    };
+    const payload = ()=>({lines:S.cart, type:S.type, pickupTime:S.when, geo:S.type === 'delivery' ? S.geo : null, address:S.type === 'delivery' ? S.address : '',
+      phone:S.phone, note:S.note, promo:S.promo ? S.promo.code : '', lang});
+    const recalc = async ()=>{
+      if(!S.cart.length) return draw();
+      const r = await api('quote', payload());
+      if(r.ok){ quote = r; if(S.type === 'delivery' && S.geo){ S.geoState = 'ok'; S.geoInfo = r; } }
+      else if(r.error === 'out_of_zone'){ S.geoState = 'far'; S.geo = null; quote = null; }
+      else quote = null;
+      drawTotals(); drawGeo();
+    };
+    const drawTotals = ()=>{
+      const box = sh.$('#totals'); if(!box) return;
+      const sub = quote ? quote.subtotal : cartSum();
+      box.innerHTML = html`<div class="kv"><span class="k">${t('items')}</span><span class="v">${money(sub)}</span></div>
+        ${quote && quote.discount ? html`<div class="kv"><span class="k">${t('discount')} ${S.promo.percent}%</span><span class="v" style="color:var(--ok)">−${money(quote.discount)}</span></div>` : ''}
+        ${S.type === 'delivery' ? html`<div class="kv"><span class="k">${t('fee')}</span><span class="v">${quote && (S.geo || S.address.trim().length >= 5) ? money(quote.deliveryFee) : '—'}</span></div>` : ''}
+        <div class="kv"><span class="k grand">${t('total')}</span><span class="v grand">${money(quote ? quote.total : sub)}</span></div>`;
+      const ok = S.cart.length && (S.type === 'pickup' || ((S.geo || S.address.trim().length >= 5) && /^\+375\d{9}$/.test(S.phone) && S.geoState !== 'far')) && S.cfg.accepting !== false;
+      sh.$('[data-go]').disabled = !ok;
+    };
+    const draw = ()=>{
+      if(!S.cart.length){ sh.body.innerHTML = html`<div class="empty">${icon('bowl')}<div class="empty-title">${t('empty')}</div></div>`; sh.$('[data-go]').disabled = true; return; }
+      sh.body.innerHTML = html`
+        <div>${S.cart.map((l, i)=>{ const it = item(l.itemId); if(!it) return ''; const ml = (it.modifiers || []).map(g=>{ const o = g.options.find(x=>x.id === l.mods[g.id]); return o && (o.price || o !== g.options[0]) ? nm(o.label) : ''; }).filter(Boolean);
+          return html`<div class="line">${Dish.plate(it.icon)}<div style="flex:1;min-width:0"><b style="display:block">${nm(it.name)}</b><span class="hint">${ml.join(', ')}${ml.length ? ' · ' : ''}${money(unit(it, l.mods))}</span></div>
+            <span class="qty"><button type="button" data-l="${i}" data-d="-1" aria-label="Меньше">${icon('minus')}</button><b>${l.qty}</b><button type="button" data-l="${i}" data-d="1" aria-label="Больше">${icon('plus')}</button></span></div>`; })}</div>
+        <div class="seg section" id="type"><button type="button" data-t="pickup" class="${S.type === 'pickup' ? 'is-on' : ''}">${t('pickup')}</button><button type="button" data-t="delivery" class="${S.type === 'delivery' ? 'is-on' : ''}">${t('delivery')}</button></div>
+        ${S.type === 'pickup' ? html`<div class="field section"><span class="field-label">${t('when')}</span><div class="chips" id="when">${[['now', t('now')], ['15', t('in15')], ['30', t('in30')]].map(([k, l])=>html`<button type="button" class="chip${S.when === k ? ' is-on' : ''}" data-w="${k}">${l}</button>`)}</div></div>`
+          : html`<div class="section" id="geoBox"></div>
+            <label class="field section"><span class="field-label">${t('address')}</span><input class="input" id="addr" maxlength="160" placeholder="${t('addressPh')}" value="${S.address}"></label>
+            ${!S.geo ? html`<p class="hint" style="margin:-6px 0 12px">${t('manualFee', {fee:money(S.cfg.manualDeliveryFee)})}</p>` : ''}
+            <div class="field"><span class="field-label">${t('phone')}</span>${Kit.phone.field('ph', S.phone)}</div>`}
+        <label class="field"><span class="field-label">${t('note')}</span><input class="input" id="note" maxlength="200" placeholder="${t('notePh')}" value="${S.note}"></label>
+        <div class="field"><span class="field-label">${t('promo')}</span><div class="field-row"><input class="input" id="promo" maxlength="20" placeholder="MOST10" value="${S.promo ? S.promo.code : ''}" style="text-transform:uppercase"><button class="btn btn-ghost" type="button" id="promoBtn" style="flex:none">${t('apply')}</button></div>
+          ${S.promo ? html`<p class="hint" style="color:var(--ok);margin-top:6px">${t('promoOk', {p:S.promo.percent})}</p>` : ''}</div>
+        <div class="card card-flat totals" id="totals"></div>`;
+      drawGeo(); drawTotals();
+      const ph = sh.$('#ph'); if(ph){ Kit.phone.bind(ph); ph.addEventListener('input', ()=>{ S.phone = Kit.phone.value(ph); drawTotals(); }); }
+      const ad = sh.$('#addr'); if(ad) ad.addEventListener('input', Kit.debounce(()=>{ S.address = ad.value; recalc(); }, 400));
+      sh.$('#note').addEventListener('input', e=>{ S.note = e.target.value; });
+      sh.$('#promoBtn').addEventListener('click', async ()=>{
+        const code = sh.$('#promo').value.trim(); if(!code) return;
+        const r = await api('checkPromo', {code});
+        if(!r.ok){ S.promo = null; Kit.toast(t('promoBad'), 'error'); } else { S.promo = {code:r.code, percent:r.percent}; haptic('success'); }
+        draw(); recalc();
+      });
+    };
+    sh.body.addEventListener('click', e=>{
+      const d = e.target.closest('[data-d]'); if(d){ const l = S.cart[+d.dataset.l]; if(l){ l.qty = Math.max(0, Math.min(20, l.qty + +d.dataset.d)); S.cart = S.cart.filter(x=>x.qty > 0); saveCart(); haptic('select'); updateBar(); draw(); recalc(); } return; }
+      const ty = e.target.closest('[data-t]'); if(ty){ S.type = ty.dataset.t; haptic('select'); draw(); recalc(); return; }
+      const w = e.target.closest('[data-w]'); if(w){ S.when = w.dataset.w; haptic('select'); draw(); }
+    });
+    sh.$('[data-go]').addEventListener('click', async ()=>{
+      const go = sh.$('[data-go]');
+      Kit.busy(go, true);
+      const r = await api('createOrder', payload());
+      Kit.busy(go, false);
+      if(!r.ok){ Kit.toast(r.error === 'out_of_stock' ? (r.message || 'Позиция закончилась') : r.error === 'paused' ? t('paused') : r.error === 'out_of_zone' ? t('geoFar') : (r.message || 'Не получилось оформить'), 'error'); if(r.error === 'out_of_stock') load(); return; }
+      haptic('success');
+      try{ localStorage.setItem('most-prof', JSON.stringify({phone:S.phone, address:S.address})); localStorage.setItem('most-unseen', '1'); }catch(e){}
+      S.cart = []; S.promo = null; S.note = ''; saveCart(); updateBar(); sh.close();
+      showOrder(r.order, true); renderMenu(); updateDot();
+    });
+    draw(); recalc();
+  }
+
+  /* ============ СТАТУС ЗАКАЗА ============ */
+  let pollTimer = null;
+  function stepsHtml(o){
+    if(o.status === 'cancelled') return html`<ul class="steps-v"><li class="done">${t('st_new')}</li><li class="cur">${t('st_cancelled')}</li></ul>`;
+    const st = ['new', 'preparing', 'ready', 'done'], cur = st.indexOf(o.status);
+    const lbl = [t('st_new'), t('st_preparing'), o.type === 'pickup' ? t('st_ready_p') : t('st_ready_d'), o.type === 'pickup' ? t('st_done_p') : t('st_done_d')];
+    return html`<ul class="steps-v">${lbl.map((l, i)=>html`<li class="${i < cur || (i === cur && i === 3) ? 'done' : i === cur ? 'cur' : ''}">${l}</li>`)}</ul>`;
+  }
+  function showOrder(o, fresh){
+    clearInterval(pollTimer);
+    const ready = new Date(o.readyAt).toTimeString().slice(0, 5);
+    const sh = Kit.sheet({title:fresh ? t('thanks') : '№ ' + o.num, body:'', actions:html`<button class="btn btn-ghost" type="button" data-again>${t('repeat')}</button><button class="btn btn-primary" type="button" data-x>${fresh ? t('more') : 'OK'}</button>`,
+      onClose:()=> clearInterval(pollTimer)});
+    const draw = (o)=>{
+      sh.body.innerHTML = html`<div style="text-align:center"><div class="eyebrow">${lang === 'cn' ? '订单号' : 'Номер заказа'}</div><div class="order-num">№ ${o.num}</div>
+        <p style="font-weight:600;margin-top:4px">${o.type === 'pickup' ? t('readyAt', {t:ready}) : t('courierAt', {t:ready})}</p><p class="hint">${o.type === 'pickup' ? t('where') : o.address}</p></div>
+        <div class="card card-flat section">${stepsHtml(o)}</div>
+        <div class="section">${o.lines.map(l=>html`<div class="kv"><span class="k">${l.qty} × ${lang === 'cn' && l.cn ? l.cn : l.n}</span><span class="v">${money(l.unit * l.qty)}</span></div>`)}
+          ${o.deliveryFee ? html`<div class="kv"><span class="k">${t('fee')}</span><span class="v">${money(o.deliveryFee)}</span></div>` : ''}
+          ${o.discount ? html`<div class="kv"><span class="k">${t('discount')}</span><span class="v">−${money(o.discount)}</span></div>` : ''}
+          <div class="kv"><span class="k"><b>${t('total')}</b></span><span class="v">${money(o.total)}</span></div></div>`;
+    };
+    draw(o);
+    sh.$('[data-x]').addEventListener('click', sh.close);
+    sh.$('[data-again]').addEventListener('click', ()=>{ repeat(o); sh.close(); });
+    if(['new', 'preparing', 'ready'].indexOf(o.status) > -1){
+      pollTimer = setInterval(async ()=>{ const r = await api('getOrder', {id:o.id}); if(r.ok && r.order.status !== o.status){ o = r.order; draw(o); haptic('light'); } }, 15000);
+    }
+  }
+  function repeat(o){
+    o.lines.forEach(l=>{ const it = item(l.itemId); if(it && it.inStock) addLine(l.itemId, l.mods || {}, l.qty); });
+    Kit.toast(lang === 'cn' ? '已加入购物车' : 'Добавили в корзину', 'ok'); renderMenu();
+  }
+  function updateDot(){ let on = false; try{ on = localStorage.getItem('most-unseen') === '1'; }catch(e){} $('#histDot').hidden = !on; }
+  $('#hist').addEventListener('click', async ()=>{
+    try{ localStorage.removeItem('most-unseen'); }catch(e){} updateDot();
+    const sh = Kit.sheet({title:t('history'), body:html`<div class="skel" style="height:72px"></div>`});
+    const r = await api('getMyOrders');
+    const list = r.orders || [];
+    const stl = s=> ({new:'pill-accent', preparing:'pill-warn', ready:'pill-ok', done:'pill-muted', cancelled:'pill-muted'})[s];
+    const stt = (o)=> o.status === 'ready' ? (o.type === 'pickup' ? t('st_ready_p') : t('st_ready_d')) : o.status === 'done' ? (o.type === 'pickup' ? t('st_done_p') : t('st_done_d')) : t('st_' + o.status);
+    sh.body.innerHTML = list.length ? html`<div class="list">${list.map(o=>html`<button class="row" type="button" data-o="${o.id}"><span class="row-main"><span class="row-title">№ ${o.num} · ${money(o.total)}</span><span class="row-sub">${Kit.date.label(o.createdAt.slice(0, 10))}, ${new Date(o.createdAt).toTimeString().slice(0, 5)} · ${o.lines.map(l=>lang === 'cn' && l.cn ? l.cn : l.n.split(' (')[0]).join(', ')}</span></span><span class="row-end"><span class="pill ${stl(o.status)}">${stt(o)}</span></span></button>`)}</div>`
+      : html`<div class="empty">${icon('receipt')}<div class="empty-title">${t('noHistory')}</div></div>`;
+    Kit.on(sh.body, 'click', '[data-o]', (e, el)=>{ const o = list.find(x=>x.id === el.dataset.o); sh.close(); setTimeout(()=>showOrder(o, false), 280); });
+  });
+
+  async function load(){
+    const r = await api('getMenu');
+    if(r.ok){ S.cats = r.categories; S.items = r.items; S.cfg = r.config; S.cart = S.cart.filter(l=>{ const it = item(l.itemId); return it && it.inStock; }); }
+    renderMenu();
+  }
+  applyLang(); updateDot(); renderMenu(); load();
 })();
 </script>
-<style>
-  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-  html,body{margin:0; padding:0;}
-  body{
-    background:var(--bg); color:var(--ink); font-family:var(--font-body);
-    min-height:100vh; display:flex; justify-content:center;
-  }
-  body[data-lang="cn"] .i18n{font-family:var(--font-cn);}
-  .app{
-    width:100%; max-width:480px; min-height:100vh;
-    background:var(--bg); position:relative; padding-bottom:calc(112px + env(safe-area-inset-bottom));
-  }
-
-  /* ---------- Header ---------- */
-  .topbar{
-    position:relative; padding:calc(20px + env(safe-area-inset-top)) 20px 30px; overflow:hidden;
-    background:linear-gradient(100deg, var(--jade) 0%, var(--jade) 48%, var(--honey) 52%, var(--honey) 100%);
-    color:#fff;
-  }
-  .topbar-row{ display:flex; align-items:flex-start; justify-content:space-between; gap:10px; }
-  .brand{display:flex; align-items:center; gap:11px; max-width:62%;}
-  .brand-mark{
-    width:44px; height:44px; flex:none; border-radius:50%;
-    background:var(--seal); border:2px dashed rgba(255,255,255,0.6);
-    display:flex; align-items:center; justify-content:center;
-    font-family:var(--font-cn); font-weight:700; font-size:19px; color:#fff;
-    transform:rotate(-6deg);
-  }
-  h1.brand-name{
-    font-family:var(--font-display); font-weight:800; font-size:22px; letter-spacing:0.02em;
-    margin:0; line-height:1.08; text-transform:uppercase;
-  }
-  .tagline{margin:4px 0 0; font-size:12.5px; color:rgba(255,255,255,0.88); font-weight:500; line-height:1.3;}
-  .header-actions{display:flex; align-items:center; gap:8px; flex:none;}
-  .icon-btn{
-    width:44px; height:44px; border-radius:50%; flex:none;
-    background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.4);
-    color:#fff; font-size:18px; cursor:pointer;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .icon-btn:active{background:rgba(255,255,255,0.3);}
-  .lang-toggle{
-    background:rgba(255,255,255,0.16); border:1px solid rgba(255,255,255,0.4);
-    color:#fff; font-family:var(--font-body); font-weight:700; font-size:13px;
-    padding:0 14px; height:44px; border-radius:22px; cursor:pointer; flex:none;
-  }
-  .lang-toggle:active{background:rgba(255,255,255,0.3);}
-
-  .status-bar{
-    margin-top:18px; display:inline-flex; align-items:center; gap:8px;
-    font-size:12.5px; font-weight:700; color:var(--ink);
-    background:rgba(251,247,238,0.95); padding:9px 14px; border-radius:20px;
-    box-shadow:0 4px 14px rgba(0,0,0,0.16);
-  }
-  .status-dot{width:7px; height:7px; border-radius:50%; background:#4f8f45; flex:none;}
-  .status-bar .divider{color:var(--ink-soft);}
-
-  /* ---------- Search ---------- */
-  .search-wrap{padding:16px 20px 0;}
-  .search-input{
-    width:100%; border:1px solid var(--line); border-radius:14px; padding:13px 16px;
-    font-family:var(--font-body); font-size:14.5px; background:var(--surface); color:var(--ink);
-  }
-  .search-input:focus{outline:2px solid var(--jade); outline-offset:1px;}
-  .search-input::placeholder{color:var(--ink-soft);}
-
-  /* ---------- Tabs ---------- */
-  .tabs{ display:flex; gap:8px; overflow-x:auto; padding:16px 20px 4px; scrollbar-width:none; }
-  .tabs::-webkit-scrollbar{display:none;}
-  .tab{
-    flex:none; font-family:var(--font-body); font-weight:700; font-size:13.5px;
-    padding:11px 16px; border-radius:20px; min-height:44px;
-    background:var(--surface); color:var(--ink-soft); border:1px solid var(--line);
-    cursor:pointer; white-space:nowrap;
-  }
-  .tab.active{background:var(--jade); color:#fff; border-color:var(--jade);}
-
-  /* ---------- Menu ---------- */
-  .menu{padding:10px 20px 4px; display:flex; flex-direction:column; gap:10px;}
-  .item{
-    background:var(--surface); border:1px solid var(--line); border-radius:16px;
-    padding:14px; display:flex; gap:12px; align-items:center; cursor:pointer;
-  }
-  .item.out{opacity:0.55;}
-  .item-thumb{
-    width:52px; height:52px; border-radius:12px; flex:none; position:relative;
-    display:flex; align-items:center; justify-content:center; font-size:22px;
-    background:var(--surface-2);
-  }
-  .hit-badge{
-    position:absolute; top:-7px; right:-9px;
-    background:var(--seal); color:#fff; font-size:9px; font-weight:800;
-    letter-spacing:0.02em; text-transform:uppercase;
-    padding:3px 6px; border-radius:20px; border:1.5px dashed rgba(255,255,255,0.75);
-    transform:rotate(-9deg); white-space:nowrap;
-  }
-  .item-body{flex:1; min-width:0;}
-  .item-name{font-weight:700; font-size:15px; margin:0 0 3px;}
-  .item-desc{font-size:13px; color:var(--ink-soft); margin:0 0 6px; line-height:1.4;}
-  .item-price{font-family:var(--font-display); font-weight:700; font-size:13.5px; color:var(--jade-deep);}
-  .item-outstock-tag{font-size:11.5px; font-weight:800; color:var(--seal); text-transform:uppercase; letter-spacing:0.03em;}
-  .item-add{
-    flex:none; width:44px; height:44px; border-radius:50%; border:none;
-    background:var(--ink); color:var(--surface); font-size:20px; font-weight:700; cursor:pointer;
-    display:flex; align-items:center; justify-content:center;
-  }
-  .item-stepper{ flex:none; display:flex; align-items:center; gap:6px; background:var(--ink); border-radius:22px; padding:5px; }
-  .item-stepper button{ width:36px; height:36px; border-radius:50%; border:none; background:rgba(251,247,238,0.15); color:var(--surface); font-size:17px; font-weight:700; cursor:pointer; }
-  .item-stepper span{color:var(--surface); font-weight:700; font-size:13.5px; min-width:16px; text-align:center;}
-  .item-qty-badge{
-    flex:none; min-width:36px; height:36px; padding:0 10px; border-radius:20px; background:var(--jade); color:#fff;
-    font-weight:800; font-size:13.5px; display:flex; align-items:center; justify-content:center;
-  }
-
-  .section-title{
-    font-family:var(--font-display); font-weight:700; font-size:12px; text-transform:uppercase;
-    letter-spacing:0.08em; color:var(--ink-soft); margin:14px 4px 2px;
-  }
-  .search-empty{padding:30px 4px; text-align:center; color:var(--ink-soft); font-size:13.5px;}
-
-  /* ---------- Cart pill ---------- */
-  .cart-pill{
-    position:fixed; left:50%; transform:translateX(-50%); bottom:calc(18px + env(safe-area-inset-bottom)); z-index:20;
-    width:calc(100% - 40px); max-width:440px; background:var(--ink); color:var(--surface);
-    border:none; border-radius:18px; padding:15px 18px;
-    display:none; align-items:center; justify-content:space-between;
-    font-family:var(--font-body); font-weight:700; font-size:14.5px;
-    box-shadow:0 10px 30px rgba(0,0,0,0.25); cursor:pointer;
-  }
-  .cart-pill.show{display:flex;}
-  .cart-pill .count{
-    background:var(--honey-light); color:#2a2116; border-radius:50%; width:22px; height:22px;
-    display:inline-flex; align-items:center; justify-content:center; font-size:12px; margin-right:8px;
-  }
-
-  /* ---------- Sheets ---------- */
-  .overlay{ position:fixed; inset:0; background:rgba(20,18,16,0.55); opacity:0; pointer-events:none; transition:opacity .25s; z-index:30; }
-  .overlay.show{opacity:1; pointer-events:auto;}
-  .sheet{
-    position:fixed; left:50%; bottom:0; transform:translate(-50%,100%); width:100%; max-width:480px;
-    background:var(--surface); border-radius:24px 24px 0 0; padding:20px 20px calc(26px + env(safe-area-inset-bottom));
-    z-index:31; transition:transform .3s ease; max-height:86vh; overflow-y:auto;
-  }
-  .sheet.show{transform:translate(-50%,0);}
-  .sheet-handle{width:36px; height:4px; border-radius:3px; background:var(--line); margin:0 auto 16px;}
-  .sheet-title{font-family:var(--font-display); font-weight:700; font-size:17.5px; margin:0 0 14px;}
-
-  .cart-row{display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--line);}
-  .cart-row:last-of-type{border-bottom:none;}
-  .cart-row-name{flex:1; font-weight:700; font-size:14px;}
-  .cart-row-mods{font-size:12px; color:var(--ink-soft); margin-top:2px;}
-  .cart-row-price{font-size:13px; color:var(--ink-soft); margin-top:2px;}
-  .cart-row .item-stepper{background:var(--surface-2);}
-  .cart-row .item-stepper button{background:rgba(43,36,29,0.08); color:var(--ink);}
-  .cart-row .item-stepper span{color:var(--ink);}
-
-  .subtotal-row{display:flex; justify-content:space-between; font-size:13.5px; color:var(--ink-soft); margin-top:10px; font-weight:600;}
-  .subtotal-row.discount{color:var(--jade-deep);}
-
-  .cart-total{ display:flex; justify-content:space-between; align-items:baseline; margin:12px 0 4px; padding-top:12px; border-top:2px solid var(--ink); }
-  .cart-total .label{font-size:13.5px; color:var(--ink-soft); font-weight:600;}
-  .cart-total .value{font-family:var(--font-display); font-weight:800; font-size:20px;}
-
-  .pickup-row{margin:16px 0 6px;}
-  .pickup-label{font-size:12.5px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;}
-  .pickup-opts{display:flex; gap:8px; flex-wrap:wrap;}
-  .pickup-opt{ padding:11px 15px; min-height:44px; border-radius:14px; border:1px solid var(--line); background:var(--surface-2); font-size:13.5px; font-weight:700; cursor:pointer; }
-  .pickup-opt.active{background:var(--jade); color:#fff; border-color:var(--jade);}
-
-  .promo-row{display:flex; gap:8px;}
-  .promo-row .text-input{margin-top:0; flex:1;}
-  .promo-apply-btn{
-    flex:none; height:44px; padding:0 18px; border-radius:12px; border:none;
-    background:var(--ink); color:var(--surface); font-family:var(--font-body); font-weight:700; font-size:13px; cursor:pointer;
-  }
-  .promo-status{font-size:12.5px; margin-top:8px; font-weight:700;}
-
-  .btn-primary{
-    width:100%; margin-top:18px; background:var(--jade); color:var(--surface);
-    border:none; border-radius:16px; padding:16px; min-height:52px;
-    font-family:var(--font-body); font-weight:800; font-size:15px; cursor:pointer;
-  }
-  .btn-primary:disabled{opacity:0.4;}
-  .btn-secondary{
-    width:100%; background:var(--surface-2); color:var(--ink); border:1px dashed var(--honey);
-    border-radius:14px; padding:13px; min-height:44px; font-family:var(--font-body); font-weight:700; font-size:14px;
-    cursor:pointer; display:flex; align-items:center; justify-content:center; gap:8px;
-  }
-  .btn-secondary:active{background:var(--surface);}
-  .btn-ghost{ width:100%; margin-top:10px; min-height:44px; background:transparent; color:var(--ink-soft); border:none; padding:10px; font-family:var(--font-body); font-weight:700; font-size:13.5px; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; }
-
-  .empty-cart{padding:30px 4px; text-align:center; color:var(--ink-soft); font-size:14px;}
-
-  /* ---------- Geo box ---------- */
-  .geo-box{ background:var(--surface-2); border-radius:14px; padding:13px 14px; margin-top:10px; font-size:13px; }
-  .geo-line{display:flex; align-items:center; gap:8px; font-weight:700; color:var(--ink); margin-bottom:2px;}
-  .geo-detail{display:flex; justify-content:space-between; font-size:12.5px; color:var(--ink-soft); padding:4px 0;}
-  .geo-detail:not(:last-child){border-bottom:1px dashed var(--line);}
-  .geo-warn{color:var(--seal); font-weight:700;}
-  .geo-retry{ margin-top:8px; min-height:38px; background:transparent; border:1px solid var(--ink-soft); color:var(--ink); border-radius:10px; padding:7px 12px; font-size:12.5px; font-weight:700; cursor:pointer; }
-  .spin{ display:inline-block; width:11px; height:11px; border-radius:50%; border:2px solid rgba(43,36,29,0.25); border-top-color:var(--ink); animation:spin 0.8s linear infinite; }
-  @keyframes spin{ to{ transform:rotate(360deg); } }
-
-  .text-input{ width:100%; border:1px solid var(--line); border-radius:12px; padding:13px 14px; font-family:var(--font-body); font-size:14px; background:var(--surface); margin-top:8px; color:var(--ink); }
-  .text-input:focus{outline:2px solid var(--jade); outline-offset:1px;}
-  .text-input::placeholder{color:var(--ink-soft);}
-
-  .success-icon{
-    width:58px; height:58px; border-radius:50%; background:var(--jade);
-    border:2px dashed rgba(255,255,255,0.55);
-    display:flex; align-items:center; justify-content:center; margin:4px auto 14px;
-    color:#fff; font-size:26px;
-  }
-  .success-order{ text-align:center; font-family:var(--font-display); font-weight:800; font-size:24px; letter-spacing:0.02em; margin-bottom:6px; }
-  .success-sub{text-align:center; color:var(--ink-soft); font-size:13.5px; margin-bottom:2px;}
-
-  /* ---------- Order status timeline (success sheet) ---------- */
-  .status-timeline{
-    background:var(--surface-2); border-radius:16px; padding:16px 16px 2px; margin:18px 0 4px; text-align:left;
-  }
-  .status-block{display:flex; gap:12px;}
-  .status-rail{width:14px; display:flex; flex-direction:column; align-items:center; flex:none;}
-  .status-dot{
-    width:11px; height:11px; border-radius:50%; background:var(--surface); border:2px solid var(--ink-soft);
-    margin-top:2px; flex:none; position:relative;
-  }
-  .status-dot.done{border-color:var(--jade); background:var(--jade);}
-  .status-dot.current{border-color:var(--honey); background:var(--honey);}
-  .status-dot.current::after{
-    content:''; position:absolute; inset:-4px; border-radius:50%; background:var(--honey-tint);
-    animation:statusPulse 1.4s ease-in-out infinite; z-index:-1;
-  }
-  @keyframes statusPulse{0%,100%{opacity:.2} 50%{opacity:.65}}
-  .status-line{width:2px; flex:1; background:var(--line); margin-top:2px; min-height:16px;}
-  .status-block.done .status-line{background:var(--jade);}
-  .status-block:last-child .status-line{display:none;}
-  .status-content{flex:1; padding-bottom:14px; min-width:0;}
-  .status-title{font-size:13px; font-weight:700; color:var(--ink-soft);}
-  .status-block.done .status-title, .status-block.current .status-title{color:var(--ink);}
-
-  /* ---------- Item detail sheet ---------- */
-  .detail-header{display:flex; gap:14px; align-items:flex-start; margin-bottom:6px;}
-  .detail-thumb{ width:64px; height:64px; border-radius:16px; flex:none; background:var(--surface-2); display:flex; align-items:center; justify-content:center; font-size:28px; }
-  .detail-name{font-family:var(--font-display); font-weight:700; font-size:17px; margin:0 0 4px;}
-  .detail-desc{font-size:13.5px; color:var(--ink-soft); line-height:1.4; margin:0;}
-  .modifier-group{margin-top:16px;}
-  .modifier-title{font-size:12.5px; color:var(--ink-soft); font-weight:700; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;}
-  .modifier-opts{display:flex; gap:8px; flex-wrap:wrap;}
-  .modifier-opt{ padding:10px 14px; min-height:44px; border-radius:14px; border:1px solid var(--line); background:var(--surface-2); font-size:13px; font-weight:700; cursor:pointer; }
-  .modifier-opt.active{background:var(--jade); color:#fff; border-color:var(--jade);}
-  .detail-qty-row{display:flex; align-items:center; justify-content:space-between; margin-top:18px;}
-  .detail-qty-row .item-stepper{background:var(--surface-2);}
-  .detail-qty-row .item-stepper button{background:rgba(43,36,29,0.08); color:var(--ink);}
-  .detail-qty-row .item-stepper span{color:var(--ink);}
-  .detail-total{font-family:var(--font-display); font-weight:800; font-size:16px;}
-  .outstock-note{margin-top:14px; padding:12px 14px; border-radius:12px; background:var(--surface-2); color:var(--seal); font-weight:700; font-size:13px;}
-
-  /* ---------- History sheet ---------- */
-  .history-row{ border:1px solid var(--line); border-radius:16px; padding:14px; margin-bottom:10px; }
-  .history-top{display:flex; justify-content:space-between; align-items:baseline; margin-bottom:4px;}
-  .history-id{font-family:var(--font-display); font-weight:700; font-size:14px;}
-  .history-date{font-size:11.5px; color:var(--ink-soft);}
-  .history-items{font-size:13px; color:var(--ink-soft); line-height:1.4; margin-bottom:10px;}
-  .history-bottom{display:flex; justify-content:space-between; align-items:center;}
-  .history-total{font-family:var(--font-display); font-weight:800; font-size:14.5px; color:var(--jade-deep);}
-  .repeat-btn{ border:none; border-radius:12px; padding:10px 14px; min-height:40px; background:var(--jade); color:#fff; font-family:var(--font-body); font-weight:700; font-size:12.5px; cursor:pointer; }
-</style>
-</head>
-<body data-lang="ru">
-
-<div class="app">
-  <div class="topbar">
-    <div class="topbar-row">
-      <div class="brand">
-        <div class="brand-mark">桥</div>
-        <div>
-          <h1 class="brand-name i18n" data-i18n="brandName">Мост</h1>
-          <p class="tagline i18n" data-i18n="tagline">там, где встречаются два вкуса</p>
-        </div>
-      </div>
-      <div class="header-actions">
-        <button class="icon-btn" id="historyBtn" aria-label="История заказов">🧾</button>
-        <button class="icon-btn" id="themeToggle" aria-label="Переключить тему">🌙</button>
-        <button class="lang-toggle" id="langToggle">中文</button>
-      </div>
-    </div>
-    <div class="status-bar">
-      <span class="status-dot"></span>
-      <span class="i18n" data-i18n="statusOpen">Открыто · до 20:00</span>
-      <span class="divider">·</span>
-      <span class="i18n" data-i18n="etaText">заказ будет готов за 12 мин</span>
-    </div>
-  </div>
-
-  <div class="search-wrap">
-    <input type="search" class="search-input i18n-placeholder" id="menuSearch" data-i18n-ph="searchPlaceholder" placeholder="Найти блюдо…">
-  </div>
-
-  <nav class="tabs" id="tabs"></nav>
-  <main class="menu" id="menuList"></main>
-</div>
-
-<button class="cart-pill" id="cartPill">
-  <span><span class="count" id="cartCount">0</span><span class="i18n" id="cartLabel" data-i18n="cartLabel">Корзина</span></span>
-  <span id="cartTotal">0,00 BYN</span>
-</button>
-
-<div class="overlay" id="overlay"></div>
-
-<div class="sheet" id="detailSheet">
-  <div class="sheet-handle"></div>
-  <div id="detailBody"></div>
-</div>
-
-<div class="sheet" id="cartSheet">
-  <div class="sheet-handle"></div>
-  <h2 class="sheet-title i18n" data-i18n="cartTitle">Ваш заказ</h2>
-  <div id="cartRows"></div>
-
-  <div class="pickup-row">
-    <div class="pickup-label i18n" data-i18n="orderTypeLabel">Как получить</div>
-    <div class="pickup-opts" id="orderTypeOpts"></div>
-  </div>
-
-  <div id="pickupSection">
-    <div class="pickup-row">
-      <div class="pickup-label i18n" data-i18n="pickupLabel">Когда забрать</div>
-      <div class="pickup-opts" id="pickupOpts"></div>
-    </div>
-    <button class="btn-ghost" id="callCafeBtn">📞 <span class="i18n" data-i18n="callCafeBtn">Позвонить в кафе</span></button>
-  </div>
-
-  <div id="deliverySection" style="display:none;">
-    <div class="pickup-row">
-      <div class="pickup-label i18n" data-i18n="deliveryLabel">Адрес доставки</div>
-      <button class="btn-secondary" id="shareLocationBtn">📍 <span class="i18n" data-i18n="shareLocationBtn">Поделиться геопозицией</span></button>
-      <div class="geo-box" id="geoBox" style="display:none;"></div>
-      <div class="pickup-label i18n" style="margin-top:14px;" data-i18n="manualAddressLabel">Или укажите адрес вручную</div>
-      <input type="text" class="text-input i18n-placeholder" id="manualAddressInput" data-i18n-ph="manualAddressPlaceholder">
-    </div>
-    <div class="pickup-row">
-      <div class="pickup-label i18n" data-i18n="phoneLabel">Телефон для курьера</div>
-      <input type="tel" class="text-input i18n-placeholder" id="phoneInput" data-i18n-ph="phonePlaceholder" inputmode="tel">
-    </div>
-  </div>
-
-  <div class="pickup-row">
-    <div class="pickup-label i18n" data-i18n="noteLabel">Комментарий к заказу</div>
-    <input type="text" class="text-input i18n-placeholder" id="orderNoteInput" data-i18n-ph="notePlaceholder" maxlength="140">
-  </div>
-
-  <div class="pickup-row">
-    <div class="pickup-label i18n" data-i18n="promoLabel">Промокод</div>
-    <div class="promo-row">
-      <input type="text" class="text-input i18n-placeholder" id="promoInput" data-i18n-ph="promoPlaceholder">
-      <button class="promo-apply-btn i18n" id="applyPromoBtn" data-i18n="promoApplyBtn">Применить</button>
-    </div>
-    <div class="promo-status" id="promoStatus" style="display:none;"></div>
-  </div>
-
-  <div class="subtotal-row" id="itemsSubtotalLine" style="display:none;">
-    <span class="i18n" data-i18n="itemsLabel">Товары</span>
-    <span id="itemsSubtotalValue"></span>
-  </div>
-  <div class="subtotal-row discount" id="discountLine" style="display:none;">
-    <span class="i18n" data-i18n="discountLabel">Скидка</span>
-    <span id="discountValue"></span>
-  </div>
-  <div class="subtotal-row" id="deliveryFeeLine" style="display:none;">
-    <span class="i18n" data-i18n="deliveryFeeLabel">Доставка</span>
-    <span id="deliveryFeeValue"></span>
-  </div>
-
-  <div class="cart-total">
-    <span class="label i18n" data-i18n="totalLabel">Итого</span>
-    <span class="value" id="sheetTotal">0,00 BYN</span>
-  </div>
-
-  <button class="btn-primary i18n" id="checkoutBtn" data-i18n="checkoutBtn">Оформить заказ</button>
-  <button class="btn-ghost i18n" id="closeCartBtn" data-i18n="continueBtn">Продолжить выбор</button>
-</div>
-
-<div class="sheet" id="successSheet">
-  <div class="sheet-handle"></div>
-  <div class="success-icon">✓</div>
-  <div class="success-order" id="orderNumber">М-014</div>
-  <p class="success-sub" id="successReady">Заказ будет готов к 12:47</p>
-  <p class="success-sub" id="successWhere">Заберите на стойке «Мост», 1 этаж</p>
-  <div class="status-timeline" id="orderStatusTimeline"></div>
-  <button class="btn-primary i18n" id="newOrderBtn" data-i18n="newOrderBtn">Новый заказ</button>
-</div>
-
-<div class="sheet" id="historySheet">
-  <div class="sheet-handle"></div>
-  <h2 class="sheet-title i18n" data-i18n="historyTitle">Мои заказы</h2>
-  <div id="historyList"></div>
-  <button class="btn-ghost i18n" id="closeHistoryBtn" data-i18n="continueBtn">Продолжить выбор</button>
-</div>
-
-<script>
-/* ============================================================ CONFIG ============================================================ */
-const DEMO_CONFIG = {
-  businessName: 'Мост',
-  phone: '+375291234567',
-  address: 'просп. Независимости, 58, 1 этаж',
-  coords: { lat:53.9628, lng:28.0295 },
-  workHours: { from:'08:00', to:'20:00' },
-  pickupEtaMin: 12,
-  deliveryZones: [ {maxKm:1.5, fee:3.00, eta:15}, {maxKm:4, fee:5.50, eta:25}, {maxKm:8, fee:8.00, eta:35} ],
-  apiUrl: 'PASTE_APPS_SCRIPT_URL_HERE'
-};
-
-/* ============================================================ Telegram WebApp ============================================================ */
-const tg = window.Telegram ? window.Telegram.WebApp : null;
-
-function haptic(style){
-  if(!tg || !tg.HapticFeedback) return;
-  try{
-    if(['success','error','warning'].includes(style)) tg.HapticFeedback.notificationOccurred(style);
-    else tg.HapticFeedback.impactOccurred(style || 'light');
-  }catch(e){}
-}
-
-function confirmAsync(message){
-  return new Promise((resolve)=>{
-    if(tg && tg.showConfirm && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')){
-      try{ tg.showConfirm(message, (ok)=>resolve(ok)); return; }catch(e){}
-    }
-    resolve(window.confirm(message));
-  });
-}
-
-const THEME_KEY = 'mostcafe_theme_override';
-
-function resolveTheme(){
-  let saved = null;
-  try{ saved = localStorage.getItem(THEME_KEY); }catch(e){}
-  if(saved) return saved;
-  return (tg && tg.colorScheme) ? tg.colorScheme
-    : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-}
-
-function applyTheme(scheme, persist){
-  document.documentElement.setAttribute('data-theme', scheme);
-  if(persist){ try{ localStorage.setItem(THEME_KEY, scheme); }catch(e){} }
-  const btn = document.getElementById('themeToggle');
-  if(btn) btn.textContent = scheme === 'dark' ? '☀️' : '🌙';
-  if(tg){
-    try{
-      const s = getComputedStyle(document.documentElement);
-      tg.setHeaderColor && tg.setHeaderColor(s.getPropertyValue('--jade').trim());
-      tg.setBackgroundColor && tg.setBackgroundColor(s.getPropertyValue('--bg').trim());
-    }catch(e){}
-  }
-}
-
-function applyTelegramTheme(){ applyTheme(resolveTheme(), false); }
-
-function toggleTheme(){
-  const next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-  applyTheme(next, true);
-  haptic('light');
-}
-
-function initTelegram(){
-  applyTheme(resolveTheme(), false);
-  const themeBtn = document.getElementById('themeToggle');
-  if(themeBtn) themeBtn.onclick = toggleTheme;
-  if(!tg) return;
-  try{
-    tg.ready(); tg.expand();
-    applyTelegramTheme();
-    tg.onEvent && tg.onEvent('themeChanged', ()=>{
-      let saved = null;
-      try{ saved = localStorage.getItem(THEME_KEY); }catch(e){}
-      if(!saved) applyTelegramTheme();
-    });
-    if(tg.isVersionAtLeast && tg.isVersionAtLeast('7.7')){ try{ tg.disableVerticalSwipes(); }catch(e){} }
-    tg.BackButton && tg.BackButton.onClick(closeSheets);
-  }catch(e){}
-}
-
-function syncBackButton(anyOpen){
-  if(!tg || !tg.BackButton) return;
-  try{ anyOpen ? tg.BackButton.show() : tg.BackButton.hide(); }catch(e){}
-}
-
-function openLinkOrNavigate(url){
-  if(tg && tg.openLink){ try{ tg.openLink(url); return; }catch(e){} }
-  window.location.href = url;
-}
-
-/* ---------------- Data ---------------- */
-const CATEGORIES = [
-  { id:'fusion', ru:'Фьюжн', cn:'融合' },
-  { id:'coffee', ru:'Кофе', cn:'咖啡' },
-  { id:'lunch',  ru:'Обед', cn:'午餐' },
-  { id:'bakery', ru:'Выпечка', cn:'烘焙' },
-  { id:'drinks', ru:'Напитки', cn:'饮品' },
-];
-
-const MOD_MILK = { id:'milk', label:{ru:'Молоко', cn:'奶'}, options:[
-  { id:'regular', label:{ru:'Обычное', cn:'普通'}, price:0 },
-  { id:'oat', label:{ru:'Овсяное', cn:'燕麦'}, price:0.60 },
-  { id:'soy', label:{ru:'Соевое', cn:'豆奶'}, price:0.60 },
-]};
-
-let ITEMS = [
-  { id:16, cat:'fusion', icon:'🥟', price:6.50, hit:true,  inStock:true, name:{ru:'Пян-се с курицей', cn:'鸡肉蒸包'}, desc:{ru:'паровая булка, сычуаньский соус', cn:'四川风味酱汁'} },
-  { id:17, cat:'fusion', icon:'🍙', price:7.20, hit:false, inStock:true, name:{ru:'Онигири с копчёной сельдью', cn:'熏鲱鱼饭团'}, desc:{ru:'рис, нори, беларусский акцент', cn:'米饭配紫菜'} },
-  { id:18, cat:'fusion', icon:'🥔', price:8.90, hit:true,  inStock:true, name:{ru:'Драники, соус чили-мёд', cn:'辣蜜土豆饼'}, desc:{ru:'хрустящие, к обеду или перекусу', cn:'香脆可口'},
-    modifiers:[{ id:'sauce', label:{ru:'Соус', cn:'酱料'}, options:[
-      { id:'chilihoney', label:{ru:'Чили-мёд', cn:'辣蜜酱'}, price:0 },
-      { id:'sourcream', label:{ru:'Сметана', cn:'酸奶油'}, price:0 },
-    ]}] },
-  { id:19, cat:'fusion', icon:'🥟', price:7.50, hit:false, inStock:false, name:{ru:'Момо, картофель-грибы', cn:'土豆蘑菇饺子'}, desc:{ru:'на пару, соевый соус', cn:'清蒸配酱油'} },
-
-  { id:1, cat:'coffee', icon:'☕', price:3.80, hit:false, inStock:true, name:{ru:'Эспрессо', cn:'浓缩咖啡'}, desc:{ru:'двойная порция', cn:'双份'} },
-  { id:2, cat:'coffee', icon:'☕', price:4.50, hit:false, inStock:true, name:{ru:'Американо', cn:'美式咖啡'}, desc:{ru:'классический, без молока', cn:'不加奶'} },
-  { id:3, cat:'coffee', icon:'☕', price:6.20, hit:true,  inStock:true, name:{ru:'Капучино', cn:'卡布奇诺'}, desc:{ru:'мягкая молочная пенка', cn:'细腻奶泡'}, modifiers:[MOD_MILK] },
-  { id:4, cat:'coffee', icon:'☕', price:6.50, hit:false, inStock:true, name:{ru:'Латте', cn:'拿铁'}, desc:{ru:'обычное, овсяное или соевое', cn:'可选普通/燕麦/豆奶'}, modifiers:[MOD_MILK] },
-  { id:5, cat:'coffee', icon:'☕', price:7.80, hit:false, inStock:true, name:{ru:'Раф на овсяном', cn:'燕麦生椰拿铁'}, desc:{ru:'ванильный сироп', cn:'香草糖浆'},
-    modifiers:[{ id:'syrup', label:{ru:'Сироп', cn:'糖浆'}, options:[
-      { id:'vanilla', label:{ru:'Ваниль', cn:'香草'}, price:0 },
-      { id:'caramel', label:{ru:'Карамель', cn:'焦糖'}, price:0 },
-      { id:'hazelnut', label:{ru:'Лесной орех', cn:'榛子'}, price:0 },
-    ]}] },
-
-  { id:6, cat:'lunch', icon:'🍲', price:12.50, hit:true,  inStock:true, name:{ru:'Бизнес-ланч №1', cn:'商务套餐 1号'}, desc:{ru:'борщ · котлета · гречка', cn:'甜菜汤·肉饼·荞麦'} },
-  { id:7, cat:'lunch', icon:'🍜', price:12.90, hit:false, inStock:true, name:{ru:'Бизнес-ланч №2', cn:'商务套餐 2号'}, desc:{ru:'суп-лапша · курица · рис', cn:'鸡肉汤面·米饭'} },
-  { id:8, cat:'lunch', icon:'🥗', price:9.40,  hit:false, inStock:true, name:{ru:'Салат с курицей', cn:'鸡肉沙拉'}, desc:{ru:'свежие овощи, гриль', cn:'新鲜蔬菜·烤鸡'} },
-  { id:9, cat:'lunch', icon:'🥪', price:7.90,  hit:false, inStock:true, name:{ru:'Тёплый сэндвич', cn:'热三明治'}, desc:{ru:'ветчина, сыр, томат', cn:'火腿·奶酪·番茄'} },
-
-  { id:10, cat:'bakery', icon:'🥐', price:4.90, hit:false, inStock:true, name:{ru:'Круассан', cn:'牛角包'}, desc:{ru:'классический сливочный', cn:'黄油经典款'} },
-  { id:11, cat:'bakery', icon:'🍰', price:6.90, hit:false, inStock:false, name:{ru:'Чизкейк', cn:'芝士蛋糕'}, desc:{ru:'нью-йоркский', cn:'纽约风味'} },
-  { id:12, cat:'bakery', icon:'🍪', price:3.20, hit:false, inStock:true, name:{ru:'Овсяное печенье', cn:'燕麦饼干'}, desc:{ru:'с изюмом', cn:'含葡萄干'} },
-
-  { id:13, cat:'drinks', icon:'💧', price:2.50, hit:false, inStock:true, name:{ru:'Вода негазированная', cn:'矿泉水'}, desc:{ru:'0,5 л', cn:'0.5升'} },
-  { id:14, cat:'drinks', icon:'🍵', price:3.50, hit:false, inStock:true, name:{ru:'Чай чёрный / улун', cn:'红茶/乌龙茶'}, desc:{ru:'листовой', cn:'茶叶冲泡'} },
-  { id:15, cat:'drinks', icon:'🍋', price:5.90, hit:false, inStock:true, name:{ru:'Домашний лимонад', cn:'自制柠檬水'}, desc:{ru:'мята, имбирь', cn:'薄荷·姜'},
-    modifiers:[{ id:'sweet', label:{ru:'Сладость', cn:'甜度'}, options:[
-      { id:'normal', label:{ru:'Обычная', cn:'正常'}, price:0 },
-      { id:'less', label:{ru:'Меньше сахара', cn:'少糖'}, price:0 },
-    ]}] },
-];
-
-const PROMO_CODES = { MOST10: { percent:10 } };
-
-const I18N = {
-  ru:{
-    brandName:'Мост', tagline:'там, где встречаются два вкуса',
-    statusOpen:'Открыто · до 20:00', etaText:'заказ будет готов за 12 мин',
-    cartLabel:'Корзина', cartTitle:'Ваш заказ', totalLabel:'Итого', itemsLabel:'Товары',
-    pickupLabel:'Когда забрать', checkoutBtn:'Оформить заказ', continueBtn:'Продолжить выбор',
-    newOrderBtn:'Новый заказ', emptyCart:'Пока пусто — выберите что-нибудь из меню',
-    pickupNow:'Как можно скорее', pickup15:'через 15 мин', pickup30:'через 30 мин',
-    orderTypeLabel:'Как получить', pickupTab:'Самовывоз', deliveryTab:'Доставка',
-    deliveryLabel:'Адрес доставки', deliveryFeeLabel:'Доставка',
-    shareLocationBtn:'Поделиться геопозицией', locatingText:'Определяем местоположение…',
-    geoSuccessText:'Геопозиция получена', distanceLabel:'Расстояние', deliveryEtaLabel:'Время доставки',
-    minUnit:'мин', kmUnit:'км', hitLabel:'ХИТ',
-    outOfZoneText:'Слишком далеко — доставка недоступна. Укажите адрес вручную или выберите самовывоз.',
-    geoErrorText:'Не удалось определить местоположение', geoRetryBtn:'Повторить',
-    manualAddressLabel:'Или укажите адрес вручную', manualAddressPlaceholder:'ул. Индустриальная, 5',
-    successReadyPickup:'Заказ будет готов к', successReadyDelivery:'Курьер будет у вас к',
-    successWherePickup:'Заберите на стойке «Мост», 1 этаж',
-    successWhereGeo:'Курьер едет по вашей геопозиции',
-    successWhereManual:'Адрес доставки: ',
-    statusNewText:'Заказ принят', statusPreparingText:'Готовится',
-    statusReadyPickupText:'Готов к выдаче', statusReadyDeliveryText:'Курьер выехал',
-    statusDonePickupText:'Заказ выдан', statusDoneDeliveryText:'Доставлено',
-    searchPlaceholder:'Найти блюдо…', searchResultsTitle:'Результаты поиска', searchEmptyText:'Ничего не найдено',
-    noteLabel:'Комментарий к заказу', notePlaceholder:'Например: без сахара, позвонить у входа',
-    phoneLabel:'Телефон для курьера', phonePlaceholder:'+375 29 000-00-00',
-    promoLabel:'Промокод', promoApplyBtn:'Применить', promoPlaceholder:'MOST10',
-    promoAppliedText:'Промокод применён: −{p}%', promoInvalidText:'Промокод не найден', discountLabel:'Скидка',
-    historyTitle:'Мои заказы', historyEmpty:'Вы ещё не оформляли заказы', repeatBtn:'Повторить заказ',
-    outOfStockLabel:'Нет в наличии', addToCartBtn:'Добавить', callCafeBtn:'Позвонить в кафе',
-  },
-  cn:{
-    brandName:'桥 Мост', tagline:'两种风味相遇的地方',
-    statusOpen:'营业中 · 至20:00', etaText:'预计12分钟取餐',
-    cartLabel:'购物车', cartTitle:'我的订单', totalLabel:'合计', itemsLabel:'商品',
-    pickupLabel:'取餐时间', checkoutBtn:'提交订单', continueBtn:'继续选购',
-    newOrderBtn:'再下一单', emptyCart:'购物车是空的，去看看菜单吧',
-    pickupNow:'尽快', pickup15:'15分钟后', pickup30:'30分钟后',
-    orderTypeLabel:'取餐方式', pickupTab:'自取', deliveryTab:'外送',
-    deliveryLabel:'配送地址', deliveryFeeLabel:'配送费',
-    shareLocationBtn:'分享定位', locatingText:'正在定位…',
-    geoSuccessText:'已获取定位', distanceLabel:'距离', deliveryEtaLabel:'预计送达',
-    minUnit:'分钟', kmUnit:'公里', hitLabel:'热门',
-    outOfZoneText:'距离过远，暂不支持外送。请手动填写地址或选择自取。',
-    geoErrorText:'无法获取定位', geoRetryBtn:'重试',
-    manualAddressLabel:'或手动填写地址', manualAddressPlaceholder:'工业街5号',
-    successReadyPickup:'预计取餐时间', successReadyDelivery:'预计送达时间',
-    successWherePickup:'请到「Мост」前台取餐，1楼',
-    successWhereGeo:'骑手正根据您的定位配送',
-    successWhereManual:'配送地址：',
-    statusNewText:'订单已接受', statusPreparingText:'制作中',
-    statusReadyPickupText:'可以取餐', statusReadyDeliveryText:'骑手已出发',
-    statusDonePickupText:'已取餐', statusDoneDeliveryText:'已送达',
-    searchPlaceholder:'搜索菜品…', searchResultsTitle:'搜索结果', searchEmptyText:'未找到相关菜品',
-    noteLabel:'订单备注', notePlaceholder:'例如：不要糖，到店请致电',
-    phoneLabel:'配送联系电话', phonePlaceholder:'+375 29 000-00-00',
-    promoLabel:'优惠码', promoApplyBtn:'使用', promoPlaceholder:'MOST10',
-    promoAppliedText:'优惠码已应用：−{p}%', promoInvalidText:'优惠码无效', discountLabel:'优惠',
-    historyTitle:'我的订单', historyEmpty:'暂无历史订单', repeatBtn:'再次下单',
-    outOfStockLabel:'售罄', addToCartBtn:'加入购物车', callCafeBtn:'致电餐厅',
-  }
-};
-
-/* ============================================================ api(action, payload) ============================================================ */
-function api(action, payload){
-  return new Promise((resolve)=>{
-    switch(action){
-      case 'getMenu':
-        resolve({ ok:true, categories:CATEGORIES, items:ITEMS });
-        break;
-      case 'createOrder': {
-        orderSeq += 1;
-        const orderId = 'М-0' + orderSeq;
-        const record = Object.assign({ id:orderId, createdAt:Date.now() }, payload);
-        try{
-          const list = JSON.parse(localStorage.getItem('mostCafeOrders') || '[]');
-          list.unshift(record);
-          localStorage.setItem('mostCafeOrders', JSON.stringify(list.slice(0, 20)));
-        }catch(e){}
-        resolve({ ok:true, orderId });
-        break;
-      }
-      case 'getMyOrders': {
-        let list = [];
-        try{ list = JSON.parse(localStorage.getItem('mostCafeOrders') || '[]'); }catch(e){}
-        resolve({ ok:true, orders:list });
-        break;
-      }
-      default:
-        resolve({ ok:false });
-    }
-  });
-}
-
-const CAFE_COORDS = DEMO_CONFIG.coords;
-
-/* ---------------- State ---------------- */
-let lang = 'ru';
-let activeCat = 'fusion';
-let searchQuery = '';
-let cart = []; // { itemId, mods:{groupId:optionId}, qty }
-let orderType = 'pickup';
-let pickupChoice = 'now';
-let orderSeq = 13;
-let geo = { status:'idle', distanceKm:null, fee:0, etaMin:null, zone:true };
-let appliedPromo = null;
-let detailItem = null;
-let detailMods = {};
-let detailQty = 1;
-
-/* ---------------- Helpers ---------------- */
-function t(key){ return I18N[lang][key] || key; }
-function fmt(n){ return n.toFixed(2).replace('.', ',') + ' BYN'; }
-
-function haversineKm(lat1, lng1, lat2, lng2){
-  const R = 6371;
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLng = (lng2 - lng1) * Math.PI / 180;
-  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-}
-
-function deliveryTier(km){
-  for(const z of DEMO_CONFIG.deliveryZones){ if(km <= z.maxKm) return { fee:z.fee, eta:z.eta, zone:true }; }
-  return { fee:0, eta:0, zone:false };
-}
-
-/* ---------------- Static i18n ---------------- */
-function applyStaticI18n(){
-  document.body.setAttribute('data-lang', lang);
-  document.querySelectorAll('[data-i18n]').forEach(el=>{
-    const key = el.getAttribute('data-i18n');
-    if(I18N[lang][key] !== undefined) el.textContent = I18N[lang][key];
-  });
-  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
-    const key = el.getAttribute('data-i18n-ph');
-    if(I18N[lang][key] !== undefined) el.placeholder = I18N[lang][key];
-  });
-  document.getElementById('langToggle').textContent = lang === 'ru' ? '中文' : 'RU';
-}
-
-/* ---------------- Menu ---------------- */
-function renderTabs(){
-  const wrap = document.getElementById('tabs');
-  wrap.innerHTML = '';
-  if(searchQuery.trim().length > 0){ wrap.style.display = 'none'; return; }
-  wrap.style.display = 'flex';
-  CATEGORIES.forEach(c=>{
-    const btn = document.createElement('button');
-    btn.className = 'tab' + (c.id === activeCat ? ' active' : '');
-    btn.textContent = lang === 'ru' ? c.ru : c.cn;
-    btn.onclick = ()=>{ activeCat = c.id; haptic('light'); renderTabs(); renderMenu(); };
-    wrap.appendChild(btn);
-  });
-}
-
-function qtyOf(itemId){ return cart.filter(l=>l.itemId===itemId).reduce((s,l)=>s+l.qty,0); }
-
-function lineUnitPrice(item, mods){
-  let price = item.price;
-  (item.modifiers||[]).forEach(g=>{
-    const chosen = (mods && mods[g.id]) || g.options[0].id;
-    const opt = g.options.find(o=>o.id===chosen);
-    if(opt) price += opt.price;
-  });
-  return price;
-}
-
-function matchesSearch(item, q){
-  const hay = (item.name.ru + ' ' + item.name.cn + ' ' + item.desc.ru + ' ' + item.desc.cn).toLowerCase();
-  return hay.includes(q);
-}
-
-function renderMenu(){
-  const wrap = document.getElementById('menuList');
-  wrap.innerHTML = '';
-  const q = searchQuery.trim().toLowerCase();
-
-  let list;
-  if(q.length > 0){
-    list = ITEMS.filter(i=>matchesSearch(i, q));
-    const title = document.createElement('div');
-    title.className = 'section-title';
-    title.textContent = t('searchResultsTitle');
-    wrap.appendChild(title);
-    if(list.length === 0){
-      const empty = document.createElement('div');
-      empty.className = 'search-empty';
-      empty.textContent = t('searchEmptyText');
-      wrap.appendChild(empty);
-      return;
-    }
-  } else {
-    const cat = CATEGORIES.find(c=>c.id===activeCat);
-    const title = document.createElement('div');
-    title.className = 'section-title';
-    title.textContent = lang === 'ru' ? cat.ru : cat.cn;
-    wrap.appendChild(title);
-    list = ITEMS.filter(i=>i.cat===activeCat);
-  }
-
-  list.forEach(item=>{
-    const row = document.createElement('div');
-    row.className = 'item' + (item.inStock ? '' : ' out');
-    const q2 = qtyOf(item.id);
-    const hasMods = (item.modifiers||[]).length > 0;
-    row.innerHTML = `
-      <div class="item-thumb">${item.icon}${item.hit ? `<span class="hit-badge">${t('hitLabel')}</span>` : ''}</div>
-      <div class="item-body">
-        <p class="item-name">${item.name[lang]}</p>
-        <p class="item-desc">${item.desc[lang]}</p>
-        ${item.inStock ? `<span class="item-price">${fmt(item.price)}</span>` : `<span class="item-outstock-tag">${t('outOfStockLabel')}</span>`}
-      </div>
-    `;
-    row.onclick = ()=> openDetailSheet(item);
-
-    const control = document.createElement('div');
-    if(!item.inStock){
-      if(q2 > 0){ control.className = 'item-qty-badge'; control.textContent = q2; }
-    } else if(hasMods){
-      if(q2 > 0){ control.className = 'item-qty-badge'; control.textContent = q2; }
-    } else {
-      if(q2 > 0){
-        control.className = 'item-stepper';
-        control.innerHTML = `<button data-act="minus">–</button><span>${q2}</span><button data-act="plus">+</button>`;
-        control.querySelector('[data-act="minus"]').onclick = (e)=>{ e.stopPropagation(); changeQtyPlain(item, -1); };
-        control.querySelector('[data-act="plus"]').onclick = (e)=>{ e.stopPropagation(); changeQtyPlain(item, 1); };
-      } else {
-        control.innerHTML = `<button class="item-add">+</button>`;
-        control.querySelector('.item-add').onclick = (e)=>{ e.stopPropagation(); changeQtyPlain(item, 1); };
-      }
-    }
-    row.appendChild(control);
-    wrap.appendChild(row);
-  });
-}
-
-function changeQtyPlain(item, delta){
-  let line = cart.find(l=>l.itemId===item.id && Object.keys(l.mods).length===0);
-  if(!line){
-    if(delta > 0) cart.push({ itemId:item.id, mods:{}, qty:1 });
-  } else {
-    line.qty += delta;
-    if(line.qty <= 0) cart = cart.filter(l=>l!==line);
-  }
-  haptic('light');
-  renderMenu();
-  updateCartPill();
-  renderCartSheet();
-}
-
-function changeLineQty(line, delta){
-  line.qty += delta;
-  if(line.qty <= 0) cart = cart.filter(l=>l!==line);
-  haptic('light');
-  renderMenu();
-  updateCartPill();
-  renderCartSheet();
-}
-
-function cartItemsTotal(){
-  return cart.reduce((sum,line)=>{
-    const item = ITEMS.find(i=>i.id===line.itemId);
-    return sum + lineUnitPrice(item, line.mods) * line.qty;
-  }, 0);
-}
-
-function cartCountValue(){ return cart.reduce((s,l)=>s+l.qty,0); }
-
-function promoDiscount(){ return appliedPromo ? cartItemsTotal() * appliedPromo.percent / 100 : 0; }
-
-function currentDeliveryFee(){
-  if(orderType !== 'delivery') return 0;
-  if(geo.status === 'success' && geo.zone) return geo.fee;
-  const manual = document.getElementById('manualAddressInput');
-  if(manual && manual.value.trim().length > 0) return 6.00;
-  return 0;
-}
-
-function grandTotal(){ return Math.max(0, cartItemsTotal() - promoDiscount()) + currentDeliveryFee(); }
-
-function updateCartPill(){
-  const pill = document.getElementById('cartPill');
-  const count = cartCountValue();
-  document.getElementById('cartCount').textContent = count;
-  document.getElementById('cartTotal').textContent = fmt(cartItemsTotal());
-  pill.classList.toggle('show', count > 0);
-}
-
-/* ---------------- Item detail sheet ---------------- */
-function openDetailSheet(item){
-  detailItem = item;
-  detailMods = {};
-  (item.modifiers||[]).forEach(g=>{ detailMods[g.id] = g.options[0].id; });
-  detailQty = 1;
-  renderDetailSheet();
-  openSheet(document.getElementById('detailSheet'));
-}
-
-function detailUnitPrice(){
-  return lineUnitPrice(detailItem, detailMods);
-}
-
-function renderDetailSheet(){
-  const body = document.getElementById('detailBody');
-  const item = detailItem;
-  let html = `
-    <div class="detail-header">
-      <div class="detail-thumb">${item.icon}</div>
-      <div>
-        <p class="detail-name">${item.name[lang]}</p>
-        <p class="detail-desc">${item.desc[lang]}</p>
-      </div>
-    </div>
-  `;
-  if(!item.inStock){
-    html += `<div class="outstock-note">${t('outOfStockLabel')}</div>`;
-    body.innerHTML = html;
-    return;
-  }
-  (item.modifiers||[]).forEach(g=>{
-    html += `<div class="modifier-group"><div class="modifier-title">${g.label[lang]}</div><div class="modifier-opts" data-group="${g.id}">`;
-    g.options.forEach(o=>{
-      const active = detailMods[g.id] === o.id;
-      const priceSuffix = o.price > 0 ? ` (+${fmt(o.price)})` : '';
-      html += `<button type="button" class="modifier-opt${active?' active':''}" data-opt="${o.id}">${o.label[lang]}${priceSuffix}</button>`;
-    });
-    html += `</div></div>`;
-  });
-  html += `
-    <div class="detail-qty-row">
-      <div class="item-stepper">
-        <button data-act="minus">–</button><span id="detailQtyValue">${detailQty}</span><button data-act="plus">+</button>
-      </div>
-      <span class="detail-total" id="detailTotalValue">${fmt(detailUnitPrice()*detailQty)}</span>
-    </div>
-    <button class="btn-primary" id="detailAddBtn">${t('addToCartBtn')}</button>
-  `;
-  body.innerHTML = html;
-
-  body.querySelectorAll('.modifier-opt').forEach(btn=>{
-    btn.onclick = ()=>{
-      const groupId = btn.parentElement.getAttribute('data-group');
-      detailMods[groupId] = btn.getAttribute('data-opt');
-      haptic('light');
-      renderDetailSheet();
-    };
-  });
-  const qtyWrap = body.querySelector('.detail-qty-row .item-stepper');
-  qtyWrap.querySelector('[data-act="minus"]').onclick = ()=>{ if(detailQty>1){ detailQty--; haptic('light'); renderDetailSheet(); } };
-  qtyWrap.querySelector('[data-act="plus"]').onclick = ()=>{ detailQty++; haptic('light'); renderDetailSheet(); };
-  document.getElementById('detailAddBtn').onclick = confirmAddDetail;
-}
-
-function confirmAddDetail(){
-  const item = detailItem;
-  const key = JSON.stringify(detailMods);
-  let line = cart.find(l=>l.itemId===item.id && JSON.stringify(l.mods)===key);
-  if(line) line.qty += detailQty;
-  else cart.push({ itemId:item.id, mods:Object.assign({}, detailMods), qty:detailQty });
-  haptic('success');
-  closeSheets();
-  renderMenu();
-  updateCartPill();
-  renderCartSheet();
-}
-
-/* ---------------- Order type ---------------- */
-function renderOrderTypeOpts(){
-  const wrap = document.getElementById('orderTypeOpts');
-  wrap.innerHTML = '';
-  const opts = [ {id:'pickup', key:'pickupTab'}, {id:'delivery', key:'deliveryTab'} ];
-  opts.forEach(o=>{
-    const btn = document.createElement('button');
-    btn.className = 'pickup-opt' + (orderType === o.id ? ' active' : '');
-    btn.textContent = t(o.key);
-    btn.onclick = ()=>{
-      orderType = o.id;
-      haptic('light');
-      document.getElementById('pickupSection').style.display = orderType === 'pickup' ? 'block' : 'none';
-      document.getElementById('deliverySection').style.display = orderType === 'delivery' ? 'block' : 'none';
-      renderOrderTypeOpts();
-      renderCartSheet();
-    };
-    wrap.appendChild(btn);
-  });
-}
-
-function renderPickupOpts(){
-  const wrap = document.getElementById('pickupOpts');
-  const opts = [ {id:'now', key:'pickupNow'}, {id:'15', key:'pickup15'}, {id:'30', key:'pickup30'} ];
-  wrap.innerHTML = '';
-  opts.forEach(o=>{
-    const btn = document.createElement('button');
-    btn.className = 'pickup-opt' + (pickupChoice === o.id ? ' active' : '');
-    btn.textContent = t(o.key);
-    btn.onclick = ()=>{ pickupChoice = o.id; haptic('light'); renderPickupOpts(); };
-    wrap.appendChild(btn);
-  });
-}
-
-/* ---------------- Geolocation ---------------- */
-function renderGeoBox(){
-  const box = document.getElementById('geoBox');
-  if(geo.status === 'idle'){ box.style.display = 'none'; return; }
-  box.style.display = 'block';
-
-  if(geo.status === 'locating'){
-    box.innerHTML = `<div class="geo-line"><span class="spin"></span> ${t('locatingText')}</div>`;
-    return;
-  }
-  if(geo.status === 'error'){
-    box.innerHTML = `
-      <div class="geo-line geo-warn">⚠ ${t('geoErrorText')}</div>
-      <button class="geo-retry" id="geoRetryBtn">${t('geoRetryBtn')}</button>
-    `;
-    document.getElementById('geoRetryBtn').onclick = requestGeolocation;
-    return;
-  }
-  if(geo.status === 'success' && !geo.zone){
-    box.innerHTML = `<div class="geo-line geo-warn">⚠ ${t('outOfZoneText')}</div>`;
-    return;
-  }
-  if(geo.status === 'success' && geo.zone){
-    box.innerHTML = `
-      <div class="geo-line">📍 ${t('geoSuccessText')}</div>
-      <div class="geo-detail"><span>${t('distanceLabel')}</span><span>${geo.distanceKm.toFixed(1)} ${t('kmUnit')}</span></div>
-      <div class="geo-detail"><span>${t('deliveryFeeLabel')}</span><span>${fmt(geo.fee)}</span></div>
-      <div class="geo-detail"><span>${t('deliveryEtaLabel')}</span><span>~${geo.etaMin} ${t('minUnit')}</span></div>
-    `;
-  }
-}
-
-function requestGeolocation(){
-  if(!navigator.geolocation){
-    geo = { status:'error', distanceKm:null, fee:0, etaMin:null, zone:true };
-    renderGeoBox(); renderCartSheet();
-    return;
-  }
-  geo.status = 'locating';
-  renderGeoBox();
-  navigator.geolocation.getCurrentPosition(
-    (pos)=>{
-      const km = haversineKm(CAFE_COORDS.lat, CAFE_COORDS.lng, pos.coords.latitude, pos.coords.longitude);
-      const tier = deliveryTier(km);
-      geo = { status:'success', distanceKm:km, fee:tier.fee, etaMin:tier.eta, zone:tier.zone };
-      haptic(tier.zone ? 'success' : 'warning');
-      renderGeoBox(); renderCartSheet();
-    },
-    ()=>{
-      geo = { status:'error', distanceKm:null, fee:0, etaMin:null, zone:true };
-      haptic('error');
-      renderGeoBox(); renderCartSheet();
-    },
-    { enableHighAccuracy:true, timeout:8000 }
-  );
-}
-
-document.getElementById('shareLocationBtn').onclick = requestGeolocation;
-document.getElementById('callCafeBtn').onclick = ()=> openLinkOrNavigate('tel:' + DEMO_CONFIG.phone);
-
-/* ---------------- Promo ---------------- */
-function applyPromoCode(){
-  const input = document.getElementById('promoInput');
-  const code = input.value.trim().toUpperCase();
-  const status = document.getElementById('promoStatus');
-  status.style.display = 'block';
-  const promo = PROMO_CODES[code];
-  if(promo){
-    appliedPromo = { code, percent:promo.percent };
-    status.textContent = t('promoAppliedText').replace('{p}', promo.percent);
-    status.style.color = 'var(--jade-deep)';
-    haptic('success');
-  } else {
-    appliedPromo = null;
-    status.textContent = t('promoInvalidText');
-    status.style.color = 'var(--seal)';
-    haptic('error');
-  }
-  renderCartSheet();
-}
-document.getElementById('applyPromoBtn').onclick = applyPromoCode;
-
-/* ---------------- Cart sheet ---------------- */
-function renderCartSheet(){
-  const rows = document.getElementById('cartRows');
-  rows.innerHTML = '';
-  if(cart.length === 0){
-    rows.innerHTML = `<div class="empty-cart">${t('emptyCart')}</div>`;
-  } else {
-    cart.forEach(line=>{
-      const item = ITEMS.find(i=>i.id===line.itemId);
-      const modsText = (item.modifiers||[]).map(g=>{
-        const opt = g.options.find(o=>o.id===line.mods[g.id]);
-        return opt ? opt.label[lang] : null;
-      }).filter(Boolean).join(' · ');
-      const row = document.createElement('div');
-      row.className = 'cart-row';
-      row.innerHTML = `
-        <div>
-          <div class="cart-row-name">${item.name[lang]}</div>
-          ${modsText ? `<div class="cart-row-mods">${modsText}</div>` : ''}
-          <div class="cart-row-price">${fmt(lineUnitPrice(item, line.mods))}</div>
-        </div>
-      `;
-      const stepper = document.createElement('div');
-      stepper.className = 'item-stepper';
-      stepper.innerHTML = `<button data-act="minus">–</button><span>${line.qty}</span><button data-act="plus">+</button>`;
-      stepper.querySelector('[data-act="minus"]').onclick = ()=>changeLineQty(line, -1);
-      stepper.querySelector('[data-act="plus"]').onclick = ()=>changeLineQty(line, 1);
-      row.appendChild(stepper);
-      rows.appendChild(row);
-    });
-  }
-
-  renderPickupOpts();
-  renderGeoBox();
-
-  const fee = currentDeliveryFee();
-  const discount = promoDiscount();
-  document.getElementById('itemsSubtotalLine').style.display = (orderType === 'delivery' && cart.length>0) ? 'flex' : 'none';
-  document.getElementById('itemsSubtotalValue').textContent = fmt(cartItemsTotal());
-  document.getElementById('discountLine').style.display = discount > 0 ? 'flex' : 'none';
-  document.getElementById('discountValue').textContent = '−' + fmt(discount);
-  document.getElementById('deliveryFeeLine').style.display = (orderType === 'delivery' && fee > 0) ? 'flex' : 'none';
-  document.getElementById('deliveryFeeValue').textContent = fmt(fee);
-  document.getElementById('sheetTotal').textContent = fmt(grandTotal());
-
-  let canCheckout = cart.length > 0;
-  if(orderType === 'delivery'){
-    const manualFilled = document.getElementById('manualAddressInput').value.trim().length > 0;
-    const geoOk = geo.status === 'success' && geo.zone;
-    const phoneOk = document.getElementById('phoneInput').value.replace(/\D/g,'').length >= 7;
-    canCheckout = canCheckout && (manualFilled || geoOk) && phoneOk;
-  }
-  document.getElementById('checkoutBtn').disabled = !canCheckout;
-}
-
-document.getElementById('manualAddressInput').addEventListener('input', renderCartSheet);
-document.getElementById('phoneInput').addEventListener('input', renderCartSheet);
-
-/* ---------------- History sheet ---------------- */
-async function openHistorySheet(){
-  const res = await api('getMyOrders');
-  const wrap = document.getElementById('historyList');
-  wrap.innerHTML = '';
-  if(!res.orders || res.orders.length === 0){
-    wrap.innerHTML = `<div class="empty-cart">${t('historyEmpty')}</div>`;
-  } else {
-    res.orders.forEach(rec=>{
-      const itemsText = rec.lines.map(l=>{
-        const item = ITEMS.find(i=>i.id===l.itemId);
-        return item ? `${l.qty}× ${item.name[lang]}` : '';
-      }).filter(Boolean).join(', ');
-      const d = new Date(rec.createdAt);
-      const dateStr = String(d.getDate()).padStart(2,'0')+'.'+String(d.getMonth()+1).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
-      const row = document.createElement('div');
-      row.className = 'history-row';
-      row.innerHTML = `
-        <div class="history-top"><span class="history-id">${rec.id}</span><span class="history-date">${dateStr}</span></div>
-        <div class="history-items">${itemsText}</div>
-        <div class="history-bottom">
-          <span class="history-total">${fmt(rec.total)}</span>
-          <button class="repeat-btn">${t('repeatBtn')}</button>
-        </div>
-      `;
-      row.querySelector('.repeat-btn').onclick = ()=> repeatOrder(rec);
-      wrap.appendChild(row);
-    });
-  }
-  openSheet(document.getElementById('historySheet'));
-}
-
-function repeatOrder(rec){
-  cart = rec.lines.filter(l=>ITEMS.some(i=>i.id===l.itemId)).map(l=>({ itemId:l.itemId, mods:Object.assign({}, l.mods), qty:l.qty }));
-  orderType = rec.orderType || 'pickup';
-  document.getElementById('pickupSection').style.display = orderType === 'pickup' ? 'block' : 'none';
-  document.getElementById('deliverySection').style.display = orderType === 'delivery' ? 'block' : 'none';
-  renderOrderTypeOpts();
-  renderMenu();
-  updateCartPill();
-  renderCartSheet();
-  haptic('success');
-  closeSheets();
-  openSheet(document.getElementById('cartSheet'));
-}
-
-document.getElementById('historyBtn').onclick = openHistorySheet;
-document.getElementById('closeHistoryBtn').onclick = closeSheets;
-
-/* ---------------- Search ---------------- */
-document.getElementById('menuSearch').addEventListener('input', (e)=>{
-  searchQuery = e.target.value;
-  renderTabs();
-  renderMenu();
-});
-
-/* ---------------- Sheets ---------------- */
-const overlay = document.getElementById('overlay');
-const ALL_SHEETS = ['detailSheet','cartSheet','successSheet','historySheet'].map(id=>document.getElementById(id));
-
-function openSheet(sheet){
-  overlay.classList.add('show');
-  sheet.classList.add('show');
-  syncBackButton(true);
-}
-function closeSheets(){
-  overlay.classList.remove('show');
-  ALL_SHEETS.forEach(s=>s.classList.remove('show'));
-  syncBackButton(false);
-  clearOrderStatusTimer();
-}
-
-/* ---------------- Order status timeline (success sheet) ---------------- */
-const ORDER_STATUS_STEPS = [
-  { delay:0,  key:'statusNewText' },
-  { delay:12, key:'statusPreparingText' },
-  { delay:35, key:function(type){ return type === 'pickup' ? 'statusReadyPickupText' : 'statusReadyDeliveryText'; } },
-  { delay:60, key:function(type){ return type === 'pickup' ? 'statusDonePickupText' : 'statusDoneDeliveryText'; } },
-];
-let orderStatusInterval = null;
-let activeOrderStartedAt = null;
-let activeOrderType = 'pickup';
-
-function clearOrderStatusTimer(){
-  if(orderStatusInterval){ clearInterval(orderStatusInterval); orderStatusInterval = null; }
-}
-function currentOrderStatusIndex(){
-  const elapsed = Math.floor((Date.now() - activeOrderStartedAt) / 1000);
-  let idx = 0;
-  for(let i=0;i<ORDER_STATUS_STEPS.length;i++){ if(elapsed >= ORDER_STATUS_STEPS[i].delay) idx = i; }
-  return idx;
-}
-function stepLabel(step){
-  const key = typeof step.key === 'function' ? step.key(activeOrderType) : step.key;
-  return t(key);
-}
-function renderOrderStatusTimeline(){
-  const wrap = document.getElementById('orderStatusTimeline');
-  if(!wrap) return;
-  const curIdx = currentOrderStatusIndex();
-  wrap.innerHTML = ORDER_STATUS_STEPS.map((step,i)=>{
-    const blockCls = i<curIdx ? 'done' : (i===curIdx ? 'current' : '');
-    const dotCls = i<curIdx ? 'done' : (i===curIdx ? 'current' : '');
-    return `<div class="status-block ${blockCls}"><div class="status-rail"><div class="status-dot ${dotCls}"></div><div class="status-line"></div></div>`+
-      `<div class="status-content"><div class="status-title">${stepLabel(step)}</div></div></div>`;
-  }).join('');
-}
-function startOrderStatusTimer(orderTypeArg, startedAt){
-  clearOrderStatusTimer();
-  activeOrderType = orderTypeArg;
-  activeOrderStartedAt = startedAt;
-  renderOrderStatusTimeline();
-  if(currentOrderStatusIndex() >= ORDER_STATUS_STEPS.length-1) return;
-  orderStatusInterval = setInterval(()=>{
-    renderOrderStatusTimeline();
-    if(currentOrderStatusIndex() >= ORDER_STATUS_STEPS.length-1) clearOrderStatusTimer();
-  }, 2000);
-}
-
-document.getElementById('cartPill').onclick = ()=>{ renderCartSheet(); openSheet(document.getElementById('cartSheet')); };
-document.getElementById('closeCartBtn').onclick = closeSheets;
-overlay.onclick = closeSheets;
-
-document.getElementById('checkoutBtn').onclick = async ()=>{
-  if(document.getElementById('checkoutBtn').disabled) return;
-
-  let mins;
-  if(orderType === 'pickup'){
-    mins = pickupChoice === 'now' ? DEMO_CONFIG.pickupEtaMin : parseInt(pickupChoice, 10);
-  } else {
-    mins = (geo.status === 'success' && geo.zone) ? geo.etaMin : 35;
-  }
-  const ready = new Date(Date.now() + mins*60000);
-  const hh = String(ready.getHours()).padStart(2,'0');
-  const mm = String(ready.getMinutes()).padStart(2,'0');
-
-  const manualAddress = document.getElementById('manualAddressInput').value.trim();
-  const note = document.getElementById('orderNoteInput').value.trim();
-  const phone = document.getElementById('phoneInput').value.trim();
-
-  const payload = {
-    lines: cart.map(l=>({ itemId:l.itemId, mods:l.mods, qty:l.qty })),
-    orderType, pickupChoice, note, phone,
-    address: orderType === 'delivery' ? ((geo.status==='success' && geo.zone) ? t('successWhereGeo') : manualAddress) : null,
-    promo: appliedPromo ? appliedPromo.code : null,
-    total: grandTotal(),
-  };
-  const res = await api('createOrder', payload);
-
-  document.getElementById('orderNumber').textContent = res.orderId;
-  const readyLabel = orderType === 'pickup' ? t('successReadyPickup') : t('successReadyDelivery');
-  document.getElementById('successReady').textContent = `${readyLabel} ${hh}:${mm}`;
-
-  let whereText;
-  if(orderType === 'pickup'){
-    whereText = t('successWherePickup');
-  } else if(geo.status === 'success' && geo.zone){
-    whereText = t('successWhereGeo');
-  } else {
-    whereText = t('successWhereManual') + manualAddress;
-  }
-  document.getElementById('successWhere').textContent = whereText;
-  startOrderStatusTimer(orderType, Date.now());
-
-  haptic('success');
-  cart = [];
-  geo = { status:'idle', distanceKm:null, fee:0, etaMin:null, zone:true };
-  appliedPromo = null;
-  document.getElementById('manualAddressInput').value = '';
-  document.getElementById('phoneInput').value = '';
-  document.getElementById('orderNoteInput').value = '';
-  document.getElementById('promoInput').value = '';
-  document.getElementById('promoStatus').style.display = 'none';
-  updateCartPill();
-  document.getElementById('cartSheet').classList.remove('show');
-  openSheet(document.getElementById('successSheet'));
-};
-
-document.getElementById('newOrderBtn').onclick = ()=>{
-  closeSheets();
-  orderType = 'pickup';
-  document.getElementById('pickupSection').style.display = 'block';
-  document.getElementById('deliverySection').style.display = 'none';
-  renderOrderTypeOpts();
-  renderMenu();
-  renderCartSheet();
-};
-
-/* ---------------- Lang toggle ---------------- */
-document.getElementById('langToggle').onclick = ()=>{
-  lang = lang === 'ru' ? 'cn' : 'ru';
-  haptic('light');
-  applyStaticI18n();
-  renderTabs();
-  renderMenu();
-  renderOrderTypeOpts();
-  updateCartPill();
-  renderCartSheet();
-  if(activeOrderStartedAt !== null) renderOrderStatusTimeline();
-};
-
-/* ---------------- Init ---------------- */
-initTelegram();
-applyStaticI18n();
-renderTabs();
-renderMenu();
-renderOrderTypeOpts();
-updateCartPill();
-</script>
-
 </body>
 </html>
