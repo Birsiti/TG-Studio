@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-08 02:15 -->
+<!-- изменено 2026-10-08 03:22 -->
 # API студии TG-Studio
 
 Один процесс на Python 3.12 (FastAPI + SQLite) обслуживает все демо-боты
@@ -57,6 +57,26 @@ GET  /health           {"ok": true, "time": ..., "bots": [...]}
 | `TGS_RATE_ALL` | `120` | Запросов в минуту с IP |
 | `TGS_RATE_WRITE` | `30` | Изменяющих запросов в минуту с IP |
 | `TGS_LEADS_WEBHOOK` | `https://tg-studio-leads.birsiti.workers.dev` | Куда пересылать заявки studio (пусто — не пересылать) |
+| `TGS_STUDIO_KEY` | пусто | Ключ владельца: реальные заявки видны только в `dashboard.html?key=<ключ>` (без ключа — демо-заявки) |
+
+## Заявки TG-Studio (studio)
+
+`order-bot.html` вызывает `createLead`: заявка пишется в `studio.db`, ответ
+уходит клиенту сразу, а после него сервер POST-ом шлёт тот же JSON
+(`name, phone, business, task, budget, tg_id`) на воркер уведомлений —
+уведомления в Telegram продолжают приходить как раньше. Если воркер не
+ответил `{"ok":true}`, заявка остаётся в базе с `forwarded=0` (видно в
+дашборде). Если сам API недоступен, order-bot шлёт заявку на воркер
+напрямую (как раньше), так что лиды не теряются.
+
+Реальные заявки содержат телефоны, поэтому `getLeads`/`setLeadStatus`
+без ключа работают только с демо-заявками. Задайте `TGS_STUDIO_KEY`
+(длинная случайная строка, например `openssl rand -hex 16`) и откройте
+один раз `https://birsiti.github.io/TG-Studio/dashboard.html?key=<ключ>` —
+ключ запомнится в этом браузере/Telegram.
+
+Аутрич (`getDashboard`, `updateConfig`, `getCompanies`) — на демо-данных:
+старый бэкенд на Apps Script отключён.
 
 ## Структура
 
@@ -93,7 +113,10 @@ tests/           pytest (FastAPI TestClient) — на каждого бота
        <string>server:app</string><string>--host</string><string>127.0.0.1</string>
        <string>--port</string><string>8097</string><string>--proxy-headers</string>
      </array>
-     <key>EnvironmentVariables</key><dict><key>TGS_DATA_DIR</key><string>/Users/USER/tg-studio-data</string></dict>
+     <key>EnvironmentVariables</key><dict>
+       <key>TGS_DATA_DIR</key><string>/Users/USER/tg-studio-data</string>
+       <key>TGS_STUDIO_KEY</key><string>ВАШ-СЛУЧАЙНЫЙ-КЛЮЧ</string>
+     </dict>
      <key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
      <key>StandardOutPath</key><string>/Users/USER/Library/Logs/tgs-api.log</string>
      <key>StandardErrorPath</key><string>/Users/USER/Library/Logs/tgs-api.log</string>
