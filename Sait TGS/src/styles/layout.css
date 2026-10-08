@@ -1,0 +1,71 @@
+/* изменено 2026-10-08 03:34 */
+/* ---------- ШАПКА ---------- */
+#siteHeader{ position:fixed; top:0; left:0; right:0; z-index:100; transition:background-color .3s, border-color .3s, box-shadow .3s; border-bottom:1px solid transparent; }
+#siteHeader::before{ content:""; position:absolute; top:0; left:0; right:0; height:3px; background:var(--rail); background-size:200% 100%; animation:rail 8s linear infinite; }
+@keyframes rail{ to{ background-position:-200% 0; } }
+#siteHeader.is-scrolled{ background:color-mix(in srgb, var(--bg) 86%, transparent); -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); border-bottom-color:var(--line); }
+.nav{ display:flex; align-items:center; gap:24px; height:72px; }
+.brand{ display:flex; align-items:center; gap:12px; flex:none; }
+.brand-mark{ width:36px; height:36px; border-radius:10px; }
+.brand-name{ font-family:var(--font-display); font-weight:700; font-size:19px; letter-spacing:.04em; line-height:1.05; color:var(--ink); }
+.brand-name span{ display:block; font-family:var(--font-mono); font-size:10.5px; font-weight:500; letter-spacing:.12em; color:var(--ink-3); margin-top:3px; }
+.nav-links{ display:none; gap:4px; margin-left:auto; }
+.nav-links a{ display:inline-flex; align-items:center; min-height:44px; padding:0 12px; border-radius:10px; font-size:15px; font-weight:500; color:var(--ink-2); transition:color .2s, background-color .2s; }
+.nav-links a:hover, .nav-links a[aria-current="page"]{ color:var(--ink); background:var(--surface-2); }
+.nav-right{ display:flex; align-items:center; gap:8px; margin-left:auto; }
+@media (min-width:1080px){ .nav-links{ display:flex; } .nav-right{ margin-left:8px; } }
+.nav-right .btn{ display:none; }
+@media (min-width:640px){ .nav-right .btn{ display:inline-flex; } }
+
+.icon-btn{ width:44px; height:44px; border-radius:12px; display:grid; place-items:center; color:var(--ink-2); border:1px solid var(--line); background:var(--surface); transition:color .2s, border-color .2s; }
+.icon-btn:hover{ color:var(--accent); border-color:var(--accent); }
+
+/* панель темы: Авто / Тёмная / Светлая — закрывается сама после выбора */
+.theme-wrap{ position:relative; }
+.theme-panel{ position:absolute; top:calc(100% + 8px); right:0; min-width:190px; padding:6px; border-radius:14px; background:var(--surface); border:1px solid var(--line-2); box-shadow:var(--shadow-2);
+  opacity:0; visibility:hidden; transform:translateY(-6px) scale(.98); transform-origin:top right; transition:opacity .18s, transform .18s var(--ease), visibility .18s; z-index:120; }
+.theme-panel.is-open{ opacity:1; visibility:visible; transform:none; }
+.theme-opt{ display:flex; align-items:center; gap:10px; width:100%; min-height:44px; padding:0 12px; border-radius:10px; font-size:15px; font-weight:500; color:var(--ink-2); text-align:left; }
+.theme-opt:hover{ background:var(--surface-2); color:var(--ink); }
+.theme-opt[aria-checked="true"]{ color:var(--accent); background:var(--accent-soft); }
+.theme-opt svg{ flex:none; }
+
+.burger{ width:44px; height:44px; border-radius:12px; border:1px solid var(--line); background:var(--surface); display:grid; place-items:center; }
+.burger span, .burger span::before, .burger span::after{ display:block; width:18px; height:2px; border-radius:2px; background:var(--ink); position:relative; transition:transform .25s var(--ease), opacity .2s; }
+.burger span::before, .burger span::after{ content:""; position:absolute; left:0; }
+.burger span::before{ top:-6px; } .burger span::after{ top:6px; }
+.burger[aria-expanded="true"] span{ background:transparent; }
+.burger[aria-expanded="true"] span::before{ transform:translateY(6px) rotate(45deg); }
+.burger[aria-expanded="true"] span::after{ transform:translateY(-6px) rotate(-45deg); }
+@media (min-width:1080px){ .burger{ display:none; } }
+
+.mobile-menu{ position:fixed; top:72px; left:0; right:0; bottom:0; background:var(--bg); opacity:0; visibility:hidden; transform:translateY(-8px); transition:opacity .2s, transform .25s var(--ease), visibility .2s; overflow-y:auto; }
+.mobile-menu.is-open{ opacity:1; visibility:visible; transform:none; }
+.mobile-menu-inner{ padding:16px var(--gutter) 40px; }
+.mobile-menu li a{ display:flex; align-items:center; justify-content:space-between; min-height:60px; border-bottom:1px solid var(--line); font-family:var(--font-display); font-size:24px; font-weight:600; color:var(--ink); }
+.mobile-menu li a::after{ content:"→"; font-family:var(--font-mono); font-size:18px; color:var(--accent); }
+.mobile-menu .btn{ width:100%; margin-top:24px; }
+@media (min-width:1080px){ .mobile-menu{ display:none; } }
+
+/* ---------- ХЛЕБНЫЕ КРОШКИ ---------- */
+.breadcrumbs{ position:relative; z-index:1; padding-top:96px; }
+.breadcrumbs ol{ display:flex; flex-wrap:wrap; gap:6px 10px; font-family:var(--font-mono); font-size:13px; color:var(--ink-3); }
+.breadcrumbs li{ display:flex; align-items:center; gap:10px; }
+.breadcrumbs li + li::before{ content:"/"; color:var(--line-2); }
+.breadcrumbs a{ color:var(--ink-2); min-height:32px; display:inline-flex; align-items:center; }
+.breadcrumbs a:hover{ color:var(--accent); }
+.breadcrumbs [aria-current]{ color:var(--ink-3); max-width:60ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
+/* ---------- ПОДВАЛ ---------- */
+footer{ position:relative; z-index:1; border-top:1px solid var(--line); background:var(--bg-2); padding:56px 0 40px; }
+.foot-top{ display:grid; gap:32px; }
+@media (min-width:860px){ .foot-top{ grid-template-columns:1.3fr 1fr 1fr; } }
+.foot-brand{ display:flex; align-items:center; gap:12px; font-family:var(--font-display); font-weight:700; font-size:19px; color:var(--ink); }
+.foot-brand img{ width:32px; height:32px; border-radius:9px; }
+.foot-about{ margin-top:12px; max-width:380px; font-size:15px; }
+.foot-col h4{ font-family:var(--font-mono); font-size:12.5px; font-weight:600; color:var(--ink-3); letter-spacing:.08em; text-transform:uppercase; margin-bottom:10px; }
+.foot-links{ display:flex; flex-direction:column; }
+.foot-links a{ display:inline-flex; align-items:center; min-height:40px; color:var(--ink-2); font-size:15px; }
+.foot-links a:hover{ color:var(--accent); }
+.foot-row{ display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; margin-top:40px; padding-top:20px; border-top:1px solid var(--line); }
+.copy{ font-family:var(--font-mono); font-size:12.5px; color:var(--ink-3); }

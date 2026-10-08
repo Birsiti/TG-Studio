@@ -1,15 +1,10 @@
-/* Single entry point for the site's CSS — split by section so each part is
-   easy to find. Order doesn't matter for the cascade here: every section
-   below only defines its own classes, none of them overlap. */
+/* изменено 2026-10-08 03:34 */
+/* Единая точка входа стилей сайта.
+   base.css   — токены тем (тёмная/светлая), типографика, кнопки, общие блоки
+   layout.css — шапка, меню, панель темы, хлебные крошки, подвал
+   home.css   — секции главной
+   pages.css  — внутренние страницы: услуги, кейсы, новости, prose */
 @import './base.css';
-@import './header.css';
-@import './hero.css';
-@import './services.css';
-@import './showcase.css';
-@import './why.css';
-@import './process.css';
-@import './contact.css';
-@import './faq.css';
-@import './footer.css';
-@import './subpages.css';
-@import './news.css';
+@import './layout.css';
+@import './home.css';
+@import './pages.css';

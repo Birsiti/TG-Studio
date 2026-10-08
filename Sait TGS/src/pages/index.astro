@@ -1,7 +1,8 @@
 ---
+// изменено 2026-10-08 03:34
 import { Picture } from 'astro:assets';
 import { getCollection } from 'astro:content';
-import { Send, Inbox, Check, Smartphone, Filter, RefreshCw, Cpu, ChevronRight, ChevronLeft, ChevronDown } from '@lucide/astro';
+import { Send, Inbox, Check, Smartphone, Filter, RefreshCw, Cpu, ChevronRight, ChevronLeft, ChevronDown, ArrowUpRight, Droplets, Drill, Bus, Scissors, Coffee, Bot } from '@lucide/astro';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import heroPhone from '../images/hero-phone-figma.jpg';
 import caseClient from '../images/case-blesk-client.jpg';
@@ -37,6 +38,29 @@ const services = [
     desc: 'Диалоговые ассистенты, обработка обращений и генерация ответов на базе языковых моделей.',
     icon: Cpu,
   },
+];
+
+const DEMO_BASE = 'https://birsiti.github.io/TG-Studio/';
+// Живые демо: у каждой ниши своё лицо — цвета карточек взяты из brand.css ботов.
+const demos = [
+  { name: 'БЛЕСК', niche: 'Автомойка', icon: Droplets, bg: '#0E2A33', ink: '#E6F7F9', accent: '#3FD0E0',
+    desc: 'Запись на мойку по свободным боксам, смены мойщиков с начислениями, выручка и топ услуг.',
+    roles: [['Клиент', 'carwash-miniapp/client.html'], ['Админ', 'carwash-miniapp/admin.html'], ['Владелец', 'carwash-miniapp/owner.html']] },
+  { name: 'ПРОКАТ', niche: 'Аренда инструмента', icon: Drill, bg: '#16161A', ink: '#F1EFEA', accent: '#FFC20E', stripes: true,
+    desc: 'Каталог с бронью по датам и доставкой, выдача и приёмка по бирке, загрузка парка и просрочки.',
+    roles: [['Клиент', 'toolrent-miniapp/client.html'], ['Админ', 'toolrent-miniapp/admin.html'], ['Владелец', 'toolrent-miniapp/owner.html']] },
+  { name: 'ВЕРСТА', niche: 'Маршрутные перевозки', icon: Bus, bg: '#1C2024', ink: '#F2F2F0', accent: '#FF7A45',
+    desc: 'Билеты с выбором места, рейсы и водители, путевые листы у механика, платформа для перевозчиков.',
+    roles: [['Пассажир', 'versta/client.html'], ['Диспетчер', 'versta/admin.html'], ['Водитель', 'versta/driver.html'], ['Механик', 'versta/mechanic.html'], ['Владелец', 'versta/owner.html'], ['Платформа', 'versta/platform.html']] },
+  { name: 'БРИТВА', niche: 'Барбершоп', icon: Scissors, bg: '#F3ECE0', ink: '#2B1A17', accent: '#7A1F2B',
+    desc: 'Запись к мастеру на сетке 20 минут, кресла в реальном времени, проценты мастерам и загрузка.',
+    roles: [['Клиент', 'barbershop/barbershop-client.html'], ['Админ', 'barbershop/barbershop-admin.html'], ['Владелец', 'barbershop/barbershop-owner.html']] },
+  { name: 'МОСТ', niche: 'Кафе и доставка', icon: Coffee, bg: '#FAF4EA', ink: '#2A1D17', accent: '#C2382B', seal: '桥',
+    desc: 'Меню на русском и китайском, самовывоз ко времени, доставка по геопозиции, канбан заказов.',
+    roles: [['Гость', 'most-cafe/most-cafe-bot.html'], ['Кафе', 'most-cafe/most-cafe-admin.html']] },
+  { name: 'TG-STUDIO', niche: 'Бот самой студии', icon: Bot, bg: '#0D1013', ink: '#E9EFF4', accent: '#2AABEE',
+    desc: 'Заявка в студию с пересылкой в Telegram и аутрич-дашборд: рассылка по нишам, ответы, лиды.',
+    roles: [['Заявка', 'order-bot.html'], ['Дашборд', 'dashboard.html']] },
 ];
 
 const faqItems = [
@@ -83,48 +107,90 @@ const faqLd = {
       <div class="wrap hero-grid">
         <div class="hero-copy">
           <div class="eyebrow">Без скачивания · прямо в Telegram</div>
-          <h1>Приложение для вашего бизнеса, <em>которое живёт в Telegram</em></h1>
+          <h1>Приложение для вашего бизнеса, <em>которое живёт в&nbsp;Telegram</em></h1>
           <p class="lead">Клиент пишет вам в чат, нажимает кнопку — и открывается форма записи, каталог или оплата. Ставить ничего не нужно: это работает как обычная переписка, но с автоматизацией внутри.</p>
           <div class="hero-cta">
             <a href="#contact" class="btn btn-primary">
-              <Send size={16} color="#070f18" strokeWidth={2} aria-hidden="true" />
+              <Send size={18} strokeWidth={2} aria-hidden="true" />
               Обсудить проект
             </a>
-            <a href="#process" class="btn btn-ghost">Как мы работаем</a>
+            <a href="#demo" class="btn btn-ghost">Открыть живые демо</a>
           </div>
-          <div class="hero-stats">
-            <div><strong>5</strong><span>этапов запуска</span></div>
-            <div><strong>24/7</strong><span>работа бота</span></div>
-            <div class="is-outcome"><strong>∞</strong><span>заявок без потери</span></div>
-          </div>
+          <dl class="hero-stats">
+            <div><dt>6</dt><dd>живых демо по нишам</dd></div>
+            <div><dt>24/7</dt><dd>бот принимает заявки</dd></div>
+            <div class="is-outcome"><dt>0</dt><dd>установок у клиента</dd></div>
+          </dl>
         </div>
 
-        <div class="hero-art">
-          <div class="hero-badge">
-            <div class="hero-photo">
+        <div class="hero-art" aria-hidden="false">
+          <div class="chat" aria-hidden="true">
+            <div class="bubble in">Хочу помыть машину в субботу</div>
+            <div class="bubble out">Выберите удобное время — свободные боксы уже в приложении<span class="bubble-btn">Открыть запись</span></div>
+          </div>
+          <div class="phone">
+            <div class="phone-screen">
               <Picture
                 src={heroPhone}
                 formats={['avif', 'webp']}
-                alt="Экран подтверждения записи в мини-приложении БЛЕСК — реальный проект TG-Studio"
+                alt="Выбор услуг в мини-приложении автомойки БЛЕСК — проект TG-Studio"
                 width={620}
-                height={1100}
+                height={1099}
                 loading="eager"
                 fetchpriority="high"
               />
             </div>
-            <div class="hero-float-card fc1">
-              <div class="dot-ico" aria-hidden="true">
-                <Inbox size={14} color="#fff" strokeWidth={2} />
-              </div>
-              <div class="fc-text"><strong>Новая заявка</strong><span>только что</span></div>
-            </div>
-            <div class="hero-float-card fc2">
-              <div class="dot-ico" aria-hidden="true">
-                <Check size={14} color="#fff" strokeWidth={2.4} />
-              </div>
-              <div class="fc-text"><strong>Оплата получена</strong><span>Mini App</span></div>
-            </div>
           </div>
+          <div class="hero-float-card fc1">
+            <div class="dot-ico" aria-hidden="true"><Inbox size={16} strokeWidth={2} /></div>
+            <div class="fc-text"><strong>Новая заявка</strong><span>только что</span></div>
+          </div>
+          <div class="hero-float-card fc2">
+            <div class="dot-ico" aria-hidden="true"><Check size={16} strokeWidth={2.4} /></div>
+            <div class="fc-text"><strong>Оплата получена</strong><span>Mini App</span></div>
+          </div>
+        </div>
+      </div>
+      <div class="ticker" aria-hidden="true">
+        <div class="ticker-track">
+          {[0, 1].map(() => (
+            <span>Автомойки <i>/</i> Барбершопы <i>/</i> Кафе и доставка <i>/</i> Прокат <i>/</i> Перевозки <i>/</i> Салоны красоты <i>/</i> Сервисные центры <i>/</i> Курсы и школы <i>/</i></span>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- DEMOS -->
+    <section class="demos" id="demo">
+      <div class="wrap">
+        <div class="section-head reveal">
+          <div class="eyebrow"><span class="idx">01</span> Живые демо</div>
+          <h2>Откройте и потрогайте — каждое со своим лицом</h2>
+          <p>Шесть рабочих мини-приложений под разные ниши. У каждого свой фирменный стиль, роли клиента, администратора и владельца и общий сервер с базой данных. Открываются прямо в браузере.</p>
+        </div>
+        <div class="demo-grid reveal-stagger reveal">
+          {demos.map(d => (
+            <article class={`demo-card${d.stripes ? ' has-stripes' : ''}`} style={`--d-bg:${d.bg};--d-ink:${d.ink};--d-accent:${d.accent}`}>
+              <div class="demo-top">
+                <span class="demo-icon"><d.icon size={22} strokeWidth={1.8} aria-hidden="true" /></span>
+                {d.seal && <span class="demo-seal" aria-hidden="true">{d.seal}</span>}
+                <span class="demo-niche">{d.niche}</span>
+              </div>
+              <h3>{d.name}</h3>
+              <p>{d.desc}</p>
+              <div class="demo-roles">
+                {d.roles.map(([label, href]) => (
+                  <a href={DEMO_BASE + href} target="_blank" rel="noopener">{label}<ArrowUpRight size={14} strokeWidth={2} aria-hidden="true" /></a>
+                ))}
+              </div>
+            </article>
+          ))}
+        </div>
+        <div class="case-demo reveal">
+          <a href="https://t.me/tg_studio_BY_bot" target="_blank" rel="noopener" class="btn btn-ghost">
+            <Send size={18} strokeWidth={1.8} aria-hidden="true" />
+            Все демо в боте студии
+          </a>
         </div>
       </div>
     </section>
@@ -133,23 +199,18 @@ const faqLd = {
     <section class="services" id="services">
       <div class="wrap">
         <div class="section-head reveal">
-          <div class="eyebrow">Услуги</div>
+          <div class="eyebrow"><span class="idx">02</span> Услуги</div>
           <h2>Что мы строим</h2>
           <p>Каждое решение считаем с точки зрения результата — заявок, продаж и времени, которое оно экономит, а не количества функций.</p>
         </div>
-
-        <div class="service-grid reveal-stagger reveal">
+        <div class="service-list reveal-stagger reveal">
           {services.map((s, i) => (
-            <div class={`card${i === 0 ? ' is-featured' : ''}`}>
-              <div class="card-icon">
-                <s.icon size={i === 0 ? 26 : 22} color="#2aabee" strokeWidth={1.6} aria-hidden="true" />
-              </div>
-              <h3>{s.title}</h3>
-              <p>{s.desc}</p>
-              <a href={s.href} class="card-link">Подробнее
-                <ChevronRight size={12} strokeWidth={2.2} aria-hidden="true" />
-              </a>
-            </div>
+            <a href={s.href} class="service-row">
+              <span class="service-num mono">0{i + 1}</span>
+              <span class="service-icon"><s.icon size={24} strokeWidth={1.6} aria-hidden="true" /></span>
+              <span class="service-body"><h3>{s.title}</h3><p>{s.desc}</p></span>
+              <span class="service-go" aria-hidden="true"><ArrowUpRight size={22} strokeWidth={1.8} /></span>
+            </a>
           ))}
         </div>
       </div>
@@ -159,7 +220,7 @@ const faqLd = {
     <section class="showcase" id="advantages">
       <div class="wrap">
         <div class="section-head reveal">
-          <div class="eyebrow">Простыми словами</div>
+          <div class="eyebrow"><span class="idx">03</span> Простыми словами</div>
           <h2>Один бот — три разных экрана</h2>
           <p>Клиент видит запись, администратор — смену, владелец — цифры. Всё в одном месте, прямо в Telegram, без скачивания и установки. Это живые скриншоты кейса БЛЕСК — листайте стрелками или нажмите на карточку.</p>
         </div>
@@ -168,31 +229,31 @@ const faqLd = {
           <div class="fan-track" id="fanTrack" role="group" tabindex="0" aria-roledescription="карусель" aria-label="Экраны мини-приложения БЛЕСК, используйте стрелки влево-вправо">
             <button type="button" class="phone-card" data-index="0" aria-label="Слайд 1 из 3: Клиент — экран подтверждения записи. Показать в центре">
               <div class="fan-photo">
-                <Picture src={caseClient} formats={['avif', 'webp']} alt="Экран подтверждения записи клиента в мини-приложении БЛЕСК" width={700} height={1291} loading="lazy" />
+                <Picture src={caseClient} formats={['avif', 'webp']} alt="Экран подтверждения записи клиента в мини-приложении БЛЕСК" width={700} height={1290} loading="lazy" />
                 <div class="fan-photo-label">Клиент<span>Подтверждение записи</span></div>
               </div>
             </button>
             <button type="button" class="phone-card" data-index="1" aria-label="Слайд 2 из 3: Администратор — кто на смене и записи на сегодня. Показать в центре">
               <div class="fan-photo">
-                <Picture src={caseAdmin} formats={['avif', 'webp']} alt="Экран администратора: кто на смене и записи на сегодня в мини-приложении БЛЕСК" width={700} height={1286} loading="lazy" />
-                <div class="fan-photo-label">Администратор<span>Кто на смене сегодня</span></div>
+                <Picture src={caseAdmin} formats={['avif', 'webp']} alt="Экран администратора: кто на смене и записи на сегодня в мини-приложении БЛЕСК" width={700} height={1290} loading="lazy" />
+                <div class="fan-photo-label">Администратор<span>Записи и смена на сегодня</span></div>
               </div>
             </button>
             <button type="button" class="phone-card" data-index="2" aria-label="Слайд 3 из 3: Владелец — выручка и топ услуг. Показать в центре">
               <div class="fan-photo">
-                <Picture src={caseOwner} formats={['avif', 'webp']} alt="Экран владельца: выручка и топ услуг в мини-приложении БЛЕСК" width={700} height={1283} loading="lazy" />
-                <div class="fan-photo-label">Владелец<span>Выручка и статистика</span></div>
+                <Picture src={caseOwner} formats={['avif', 'webp']} alt="Экран владельца: выручка и топ услуг в мини-приложении БЛЕСК" width={700} height={1290} loading="lazy" />
+                <div class="fan-photo-label">Владелец<span>Выручка, средний чек, фонд оплаты</span></div>
               </div>
             </button>
           </div>
 
           <div class="fan-controls">
             <button type="button" class="fan-nav" id="fanPrev" aria-label="Предыдущий слайд">
-              <ChevronLeft size={18} strokeWidth={2} aria-hidden="true" />
+              <ChevronLeft size={20} strokeWidth={2} aria-hidden="true" />
             </button>
             <div class="fan-dots" id="fanDots"></div>
             <button type="button" class="fan-nav" id="fanNext" aria-label="Следующий слайд">
-              <ChevronRight size={18} strokeWidth={2} aria-hidden="true" />
+              <ChevronRight size={20} strokeWidth={2} aria-hidden="true" />
             </button>
           </div>
           <p class="fan-caption" id="fanCaption" aria-live="polite">Клиент</p>
@@ -201,7 +262,7 @@ const faqLd = {
         <div class="case-demo reveal">
           <a href="/keysy/blesk" class="btn btn-primary">Читать кейс БЛЕСК целиком</a>
           <a href="https://t.me/tg_studio_BY_bot" target="_blank" rel="noopener" class="btn btn-ghost">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M21 4L2.5 11.5L9 13.5M21 4L14.5 21L9 13.5M21 4L9 13.5" stroke="#2aabee" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            <Send size={18} strokeWidth={1.8} aria-hidden="true" />
             Попробовать живой пример в Telegram
           </a>
         </div>
@@ -212,22 +273,22 @@ const faqLd = {
     <section id="why">
       <div class="wrap">
         <div class="section-head reveal">
-          <div class="eyebrow">Результат</div>
+          <div class="eyebrow"><span class="idx">04</span> Результат</div>
           <h2>Что это даёт бизнесу</h2>
         </div>
-        <div class="why-grid reveal">
+        <div class="why-grid reveal-stagger reveal">
           <div class="why-item">
-            <span class="num mono">01</span>
+            <span class="num mono">[01]</span>
             <h3>Ни одна заявка не теряется</h3>
             <p>Проектируем архитектуру так, чтобы бот выдерживал рост нагрузки и не терял обращения клиентов даже в пиковые дни.</p>
           </div>
           <div class="why-item">
-            <span class="num mono">02</span>
+            <span class="num mono">[02]</span>
             <h3>Быстрый запуск без сдвига сроков</h3>
             <p>Называем реалистичную дату старта и укладываемся в неё — бот начинает приносить заявки, а не месяцами висит в разработке.</p>
           </div>
           <div class="why-item">
-            <span class="num mono">03</span>
+            <span class="num mono">[03]</span>
             <h3>Интерфейс, которому доверяют</h3>
             <p>Понятный сценарий и аккуратный дизайн повышают конверсию из диалога в заявку уже с первого сообщения.</p>
           </div>
@@ -239,16 +300,16 @@ const faqLd = {
     <section class="process" id="process">
       <div class="wrap">
         <div class="section-head reveal">
-          <div class="eyebrow">Как мы работаем</div>
+          <div class="eyebrow"><span class="idx">05</span> Как мы работаем</div>
           <h2>Пять шагов от заявки до запуска</h2>
         </div>
-        <div class="timeline reveal">
-          <div class="step"><div class="step-dot">01</div><div class="step-body"><h3>Заявка</h3><p>Оставляете контакты и коротко описываете задачу.</p></div></div>
-          <div class="step"><div class="step-dot">02</div><div class="step-body"><h3>Анализ и проектирование</h3><p>Разбираем процесс бизнеса и продумываем сценарии, архитектуру и интеграции.</p></div></div>
-          <div class="step"><div class="step-dot">03</div><div class="step-body"><h3>Разработка и тестирование</h3><p>Пишем и тестируем бота итерациями, показываем прогресс на каждом шаге.</p></div></div>
-          <div class="step"><div class="step-dot">04</div><div class="step-body"><h3>Оплата</h3><p>Фиксируем смету заранее, оплата — поэтапно по мере готовности.</p></div></div>
-          <div class="step"><div class="step-dot">05</div><div class="step-body"><h3>Сопровождение</h3><p>Запускаем бота, обучаем команду и остаёмся на связи после старта.</p></div></div>
-        </div>
+        <ol class="timeline reveal-stagger reveal">
+          <li class="step"><div class="step-dot">01</div><div class="step-body"><h3>Заявка</h3><p>Оставляете контакты и коротко описываете задачу.</p></div></li>
+          <li class="step"><div class="step-dot">02</div><div class="step-body"><h3>Анализ и проектирование</h3><p>Разбираем процесс бизнеса и продумываем сценарии, архитектуру и интеграции.</p></div></li>
+          <li class="step"><div class="step-dot">03</div><div class="step-body"><h3>Разработка и тестирование</h3><p>Пишем и тестируем бота итерациями, показываем прогресс на каждом шаге.</p></div></li>
+          <li class="step"><div class="step-dot">04</div><div class="step-body"><h3>Оплата</h3><p>Фиксируем смету заранее, оплата — поэтапно по мере готовности.</p></div></li>
+          <li class="step"><div class="step-dot">05</div><div class="step-body"><h3>Сопровождение</h3><p>Запускаем бота, обучаем команду и остаёмся на связи после старта.</p></div></li>
+        </ol>
       </div>
     </section>
 
@@ -257,7 +318,7 @@ const faqLd = {
       <section class="related-block">
         <div class="wrap">
           <div class="section-head reveal">
-            <div class="eyebrow">Новости</div>
+            <div class="eyebrow"><span class="idx">06</span> Новости</div>
             <h2>Разбираем кейсы и делимся практикой</h2>
             <p>Статьи о ботах, Mini Apps и ИИ — из проектов TG-Studio.</p>
           </div>
@@ -282,9 +343,9 @@ const faqLd = {
 
     <!-- FAQ -->
     <section id="faq">
-      <div class="wrap">
+      <div class="wrap faq-wrap">
         <div class="section-head reveal">
-          <div class="eyebrow">Вопросы</div>
+          <div class="eyebrow"><span class="idx">07</span> Вопросы</div>
           <h2>Отвечаем до старта проекта</h2>
         </div>
         <div class="faq-list reveal">
@@ -292,7 +353,7 @@ const faqLd = {
             <div class="faq-item" data-open="false">
               <button class="faq-q" aria-expanded="false">
                 {item.q}
-                <ChevronDown class="chev" size={16} strokeWidth={2} aria-hidden="true" />
+                <ChevronDown class="chev" size={20} strokeWidth={2} aria-hidden="true" />
               </button>
               <div class="faq-a"><div class="faq-a-inner"><p>{item.a}</p></div></div>
             </div>
@@ -305,9 +366,9 @@ const faqLd = {
     <section id="contact">
       <div class="wrap contact-grid">
         <div class="reveal">
-          <div class="eyebrow">Заявка</div>
-          <h2 style="font-size:clamp(26px,3.4vw,36px); font-weight:600; line-height:1.2;">Готовы автоматизировать бизнес?</h2>
-          <p style="margin-top:14px; font-size:15.5px; max-width:440px;">Оставьте контакты — свяжемся в течение дня, обсудим задачу и предложим решение под ваш бюджет.</p>
+          <div class="eyebrow"><span class="idx">08</span> Заявка</div>
+          <h2 class="contact-title">Готовы автоматизировать бизнес?</h2>
+          <p class="contact-lead">Оставьте контакты — свяжемся в течение дня, обсудим задачу и предложим решение под ваш бюджет.</p>
 
           <div class="trust-list">
             <div class="trust-item">
@@ -326,7 +387,7 @@ const faqLd = {
 
           <div class="contact-links">
             <a class="contact-link" href="https://t.me/TG_Studio_BY" target="_blank" rel="noopener">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false"><path d="M21 4L2.5 11.5L9 13.5M21 4L14.5 21L9 13.5M21 4L9 13.5" stroke="#2aabee" stroke-width="1.6" stroke-linejoin="round"/></svg>
+              <Send size={18} strokeWidth={1.8} aria-hidden="true" />
               Написать в Telegram
             </a>
           </div>
@@ -362,7 +423,7 @@ const faqLd = {
             </form>
           </div>
           <div class="success-box" id="successView" role="status" aria-live="polite" tabindex="-1">
-            <div class="dot" aria-hidden="true"></div>
+            <div class="dot" aria-hidden="true"><Check size={26} strokeWidth={2.4} /></div>
             <h4>Заявка принята</h4>
             <p>Свяжемся с вами в ближайшее время — обычно в течение нескольких часов.</p>
             <button type="button" class="btn btn-ghost" id="resetFormBtn">Отправить ещё одну заявку</button>
@@ -500,7 +561,7 @@ const faqLd = {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const hoverCapable = window.matchMedia('(hover: hover) and (pointer: fine)').matches;
   const heroSection = document.querySelector('.hero');
-  const heroArt = document.querySelector('.hero-art');
+  const heroArt = document.querySelector('.hero-art .phone');
   if(heroSection && heroArt && hoverCapable && !reducedMotion){
     heroSection.addEventListener('mousemove', (e)=>{
       const x = (e.clientX / window.innerWidth - 0.5) * 18;

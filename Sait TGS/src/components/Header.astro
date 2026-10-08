@@ -1,13 +1,16 @@
 ---
+// изменено 2026-10-08 03:34
+import { Sun, Moon, SunMoon } from '@lucide/astro';
+
 interface Props {
   currentPath: string;
 }
 const { currentPath } = Astro.props;
 
 const navItems = [
+  { href: '/#demo', label: 'Демо' },
   { href: '/#services', label: 'Услуги' },
   { href: '/#advantages', label: 'Кейсы' },
-  { href: '/#why', label: 'Результат' },
   { href: '/#process', label: 'Процесс' },
   { href: '/novosti', label: 'Новости' },
   { href: '/#faq', label: 'Вопросы' },
@@ -19,7 +22,7 @@ const isCurrent = (href: string) => href.startsWith('/novosti') && currentPath.s
 <header id="siteHeader">
   <div class="wrap nav">
     <a href="/" class="brand" aria-label="TG-Studio — на главную">
-      <img class="brand-mark" src="/assets/logo-icon.png" alt="" aria-hidden="true" width="32" height="32">
+      <img class="brand-mark" src="/assets/logo-icon.png" alt="" aria-hidden="true" width="36" height="36">
       <span class="brand-name">TG-STUDIO<span>TELEGRAM AUTOMATION</span></span>
     </a>
 
@@ -30,6 +33,16 @@ const isCurrent = (href: string) => href.startsWith('/novosti') && currentPath.s
     </nav>
 
     <div class="nav-right">
+      <div class="theme-wrap">
+        <button type="button" class="icon-btn" id="themeBtn" aria-haspopup="true" aria-expanded="false" aria-controls="themePanel" aria-label="Оформление: тема сайта">
+          <Sun size={20} strokeWidth={1.8} aria-hidden="true" />
+        </button>
+        <div class="theme-panel" id="themePanel" role="menu" aria-label="Тема">
+          <button type="button" class="theme-opt" role="menuitemradio" data-theme-opt="auto"><SunMoon size={18} strokeWidth={1.8} aria-hidden="true" />Авто</button>
+          <button type="button" class="theme-opt" role="menuitemradio" data-theme-opt="dark"><Moon size={18} strokeWidth={1.8} aria-hidden="true" />Тёмная</button>
+          <button type="button" class="theme-opt" role="menuitemradio" data-theme-opt="light"><Sun size={18} strokeWidth={1.8} aria-hidden="true" />Светлая</button>
+        </div>
+      </div>
       <a href="/#contact" class="btn btn-primary btn-sm">Обсудить проект</a>
       <button type="button" class="burger" id="menuToggle" aria-expanded="false" aria-controls="mobileMenu" aria-label="Открыть меню">
         <span></span>
@@ -44,6 +57,7 @@ const isCurrent = (href: string) => href.startsWith('/novosti') && currentPath.s
           <li><a href={item.href}>{item.label}</a></li>
         ))}
       </ul>
+      <a href="/#contact" class="btn btn-primary">Обсудить проект</a>
     </div>
   </div>
 </header>

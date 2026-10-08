@@ -1,21 +1,41 @@
 ---
+// изменено 2026-10-08 03:34
+import { CONTACTS } from '../site.config.js';
+const year = new Date().getFullYear();
 ---
 <footer>
   <div class="wrap">
-    <div class="foot-row">
-      <div class="foot-brand">
-        <img class="brand-mark" src="/assets/logo-icon.png" alt="" aria-hidden="true" width="24" height="24">
-        <span>TG-Studio — разработка Telegram-ботов и Mini Apps</span>
+    <div class="foot-top">
+      <div>
+        <div class="foot-brand">
+          <img src="/assets/logo-icon.png" alt="" aria-hidden="true" width="32" height="32">
+          <span>TG-Studio</span>
+        </div>
+        <p class="foot-about">Разработка Telegram-ботов и Mini Apps под задачи бизнеса: запись, заказы, оплата, CRM и аналитика — прямо в Telegram. Минск, Беларусь.</p>
       </div>
-      <nav class="foot-links" aria-label="Ссылки в подвале">
-        <a href="/keysy/blesk">Кейсы</a>
-        <a href="/#services">Услуги</a>
-        <a href="/novosti">Новости</a>
-        <a href="/#process">Процесс</a>
-        <a href="/#faq">Вопросы</a>
-        <a href="/#contact">Контакты</a>
-      </nav>
+      <div class="foot-col">
+        <h4>Студия</h4>
+        <nav class="foot-links" aria-label="Разделы сайта">
+          <a href="/#demo">Живые демо</a>
+          <a href="/keysy/blesk">Кейсы</a>
+          <a href="/#services">Услуги</a>
+          <a href="/#process">Процесс</a>
+          <a href="/novosti">Новости</a>
+          <a href="/#faq">Вопросы</a>
+        </nav>
+      </div>
+      <div class="foot-col">
+        <h4>Связаться</h4>
+        <nav class="foot-links" aria-label="Контакты">
+          <a href={CONTACTS.telegramChannel} target="_blank" rel="noopener">Канал в Telegram</a>
+          <a href={CONTACTS.telegramBot} target="_blank" rel="noopener">Бот студии</a>
+          <a href="/#contact">Оставить заявку</a>
+        </nav>
+      </div>
     </div>
-    <div class="copy" style="margin-top:24px;">© 2026 TG-STUDIO</div>
+    <div class="foot-row">
+      <span class="copy">© {year} TG-STUDIO</span>
+      <span class="copy">// сделано в Минске</span>
+    </div>
   </div>
 </footer>
