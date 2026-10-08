@@ -1,0 +1,109 @@
+/* изменено 2026-10-08 03:22 */
+/* ============================================================
+   TG-Studio — фирменный слой для заявки (order-bot.html) и
+   аутрич-дашборда (dashboard.html) поверх kit/base.css.
+   Характер: инженерная студия. Графит и телеграм-синий, Chakra Petch
+   в заголовках, моноширинные «комментарии» // как в коде, тонкая
+   «силовая шина» сверху, миллиметровка в героях.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+:root{
+  --font-display:'Chakra Petch', 'Inter', sans-serif;
+  --font-body:'Inter', system-ui, sans-serif;
+  --font-mono:'JetBrains Mono', ui-monospace, monospace;
+  --display-weight:700;
+  --display-track:0;
+  --r-xl:18px; --r-lg:14px; --r-md:12px; --r-sm:8px;
+  --btn-radius:12px; --chip-radius:10px;
+  --tg:#2AABEE;
+  --rail:linear-gradient(90deg, #2AABEE, #6FE3FF 45%, #2AABEE 70%, #1B6FA8);
+}
+:root[data-theme="light"]{
+  --bg:#F1F4F7; --surface:#FFFFFF; --surface-2:#EAEEF2; --surface-3:#DEE4EA;
+  --ink:#121820; --ink-2:#55606C; --ink-3:#8B96A1;
+  --line:#E0E5EA; --line-2:#C9D1D9;
+  --accent:#1588C9; --accent-2:#0F6FA6; --accent-ink:#FFFFFF; --accent-soft:rgba(21,136,201,.11);
+  --ok:#14866D; --ok-soft:rgba(20,134,109,.12);
+  --warn:#B36A00; --warn-soft:rgba(179,106,0,.12);
+  --danger:#D0414B; --danger-soft:rgba(208,65,75,.10);
+  --info:#1588C9; --info-soft:rgba(21,136,201,.10);
+  --grid:rgba(21,136,201,.07);
+  --shadow-1:0 1px 2px rgba(18,24,32,.05), 0 2px 6px rgba(18,24,32,.04);
+  --shadow-2:0 18px 44px rgba(18,24,32,.18);
+}
+:root[data-theme="dark"]{
+  --bg:#0D1013; --surface:#151A1F; --surface-2:#1C2228; --surface-3:#252C33;
+  --ink:#E9EFF4; --ink-2:#91A0AD; --ink-3:#5D6A76;
+  --line:#232A31; --line-2:#323B44;
+  --accent:#2AABEE; --accent-2:#1B8FCB; --accent-ink:#03121C; --accent-soft:rgba(42,171,238,.14);
+  --ok:#3CC7A5; --ok-soft:rgba(60,199,165,.14);
+  --warn:#F0A93B; --warn-soft:rgba(240,169,59,.14);
+  --danger:#F0656E; --danger-soft:rgba(240,101,110,.14);
+  --info:#2AABEE; --info-soft:rgba(42,171,238,.14);
+  --grid:rgba(42,171,238,.06);
+  --shadow-1:none;
+  --shadow-2:0 20px 50px rgba(0,0,0,.6);
+}
+/* силовая шина */
+.rail{ position:fixed; top:0; left:0; right:0; height:3px; background:var(--rail); background-size:200% 100%; z-index:60; animation:rail 6s linear infinite; }
+@keyframes rail{ to{ background-position:-200% 0; } }
+@media (prefers-reduced-motion: reduce){ .rail{ animation:none; } }
+.brand-mark{ background:var(--accent); color:var(--accent-ink); border-radius:10px; }
+.brand-mark svg{ width:22px; height:22px; }
+.comment{ font-family:var(--font-mono); font-size:13px; font-weight:600; color:var(--accent); letter-spacing:0; }
+.comment::before{ content:"// "; opacity:.6; }
+.mono, .num{ font-family:var(--font-mono); font-variant-numeric:tabular-nums; }
+/* герой с миллиметровкой */
+.hero{ position:relative; border-radius:var(--r-xl); padding:20px 18px; background:
+  linear-gradient(var(--grid) 1px, transparent 1px) 0 0/16px 16px,
+  linear-gradient(90deg, var(--grid) 1px, transparent 1px) 0 0/16px 16px, var(--surface);
+  box-shadow:var(--shadow-1); border:1px solid var(--line); overflow:hidden; }
+.hero h1{ font-size:28px; line-height:1.12; margin-top:8px; }
+.hero p{ color:var(--ink-2); margin-top:8px; font-size:16px; line-height:1.45; }
+.hero-meta{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+.tag{ display:inline-flex; align-items:center; gap:6px; min-height:30px; padding:0 10px; border-radius:8px; background:var(--surface-2); color:var(--ink-2); font-size:14px; font-weight:500; }
+.tag .ic{ width:16px; height:16px; color:var(--accent); }
+.live-dot{ width:8px; height:8px; border-radius:50%; background:var(--ok); box-shadow:0 0 0 4px var(--ok-soft); flex:none; }
+/* форма заявки */
+.form-card{ overflow:hidden; background:var(--surface); border-radius:var(--r-xl); padding:18px 16px 6px; border:1px solid var(--line); box-shadow:var(--shadow-1); }
+.req{ color:var(--accent); }
+.field-error{ color:var(--danger); font-size:14px; margin-top:6px; }
+.field.is-bad .input, .field.is-bad .textarea, .field.is-bad .phone-field{ border-color:var(--danger); box-shadow:0 0 0 3px var(--danger-soft); }
+.counter{ font-family:var(--font-mono); font-size:12px; color:var(--ink-3); text-align:right; margin-top:4px; }
+/* шаги «что дальше» */
+.next{ list-style:none; padding:0; margin:0; counter-reset:n; }
+.next li{ counter-increment:n; display:flex; gap:12px; align-items:flex-start; padding:10px 0; border-bottom:1px dashed var(--line-2); }
+.next li:last-child{ border-bottom:0; }
+.next li::before{ content:"0" counter(n); font-family:var(--font-mono); font-weight:700; color:var(--accent); min-width:26px; padding-top:1px; }
+.next b{ display:block; }
+.next span{ display:block; color:var(--ink-2); font-size:15px; margin-top:2px; }
+/* демо-плитки */
+.demos{ display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:8px; }
+.demo{ display:flex; flex-direction:column; gap:6px; padding:12px; min-height:84px; border-radius:var(--r-lg); background:var(--surface); border:1px solid var(--line); text-decoration:none; color:var(--ink); }
+.demo .ic{ width:22px; height:22px; color:var(--accent); }
+.demo b{ font-family:var(--font-display); font-size:16px; }
+.demo span{ font-size:13px; color:var(--ink-2); }
+.demo:active{ transform:scale(.98); }
+/* дашборд */
+.meter{ display:flex; align-items:flex-end; gap:6px; }
+.meter b{ font-family:var(--font-mono); font-size:44px; line-height:1; font-weight:700; }
+.meter span{ font-family:var(--font-mono); font-size:20px; color:var(--ink-3); padding-bottom:4px; }
+.progress{ height:10px; border-radius:5px; background:var(--surface-2); overflow:hidden; margin-top:12px; }
+.progress i{ display:block; height:100%; background:var(--rail); border-radius:5px; }
+.progress.is-paused i{ background:var(--ink-3); }
+.niche{ padding:10px 0; border-bottom:1px solid var(--line); }
+.niche:last-child{ border-bottom:0; }
+.niche-top{ display:flex; gap:8px; align-items:baseline; }
+.niche-top b{ flex:1; min-width:0; font-weight:600; }
+.niche-top .mono{ font-size:14px; color:var(--ink-2); }
+.niche .progress{ height:6px; margin-top:8px; }
+.log{ display:flex; gap:10px; align-items:center; padding:10px 0; border-bottom:1px solid var(--line); }
+.log:last-child{ border-bottom:0; }
+.log-main{ flex:1; min-width:0; }
+.log-main b{ display:block; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.log-main span{ display:block; font-family:var(--font-mono); font-size:13px; color:var(--ink-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.log time{ font-family:var(--font-mono); font-size:13px; color:var(--ink-3); flex:none; }
+.made-by{ display:flex; justify-content:center; margin:28px 0 8px; }
+.made-by a{ display:inline-flex; align-items:center; gap:8px; min-height:40px; padding:0 16px; border-radius:999px; background:var(--accent); color:var(--accent-ink); font-weight:600; font-size:14px; text-decoration:none; }
+.made-by svg{ width:16px; height:16px; }

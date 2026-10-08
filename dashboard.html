@@ -1,291 +1,190 @@
+<!-- изменено 2026-10-08 03:22 -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
-<title>TG-Studio · Аутрич</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>TG-Studio — аутрич</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script>
-(function(){
-  var tg = window.Telegram && window.Telegram.WebApp;
-  var scheme = (tg && tg.colorScheme) ? tg.colorScheme
-    : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-  document.documentElement.setAttribute('data-theme', scheme);
-})();
-</script>
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
-
-:root{
-  --radius:14px; --radius-sm:10px;
-  --safe-top: env(safe-area-inset-top, 0px);
-  --safe-bottom: env(safe-area-inset-bottom, 0px);
-}
-:root[data-theme="dark"]{
-  --bg:#111417; --surface:#1A1E22; --surface-2:#20252A; --surface-3:#262B31;
-  --ink:#EDEFF0; --ink-soft:#8C949C; --ink-faint:#565D64;
-  --accent:#2AABEE; --accent-dark:#1B8FCB; --accent-soft:rgba(42,171,238,.14);
-  --ok:#38A89D; --ok-soft:rgba(56,168,157,.14);
-  --danger:#E5626A; --danger-soft:rgba(229,98,106,.12);
-  --line:#2A2F35; --line-strong:#3A414A;
-}
-:root[data-theme="light"]{
-  --bg:#F4F6F8; --surface:#FFFFFF; --surface-2:#EEF1F4; --surface-3:#E4E8EC;
-  --ink:#171A1D; --ink-soft:#5B6570; --ink-faint:#98A1AA;
-  --accent:#2AABEE; --accent-dark:#1B8FCB; --accent-soft:rgba(42,171,238,.12);
-  --ok:#2E9B8F; --ok-soft:rgba(46,155,143,.12);
-  --danger:#D6505A; --danger-soft:rgba(214,80,90,.10);
-  --line:#E2E6EA; --line-strong:#CDD3D9;
-}
-*{box-sizing:border-box;}
-body{margin:0; background:var(--bg); color:var(--ink); font-family:'Inter',sans-serif; padding-top:calc(16px + var(--safe-top)); padding-bottom:calc(16px + var(--safe-bottom)); padding-left:16px; padding-right:16px;}
-h1{font-family:'Chakra Petch',sans-serif; font-size:20px; font-weight:700; margin:0 0 8px;}
-.sub{color:var(--ink-soft); font-size:13px; margin:0 0 24px;}
-.mono{font-family:'JetBrains Mono',monospace;}
-.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px; margin-bottom:16px;}
-.today-row{display:flex; align-items:center; justify-content:space-between;}
-.today-big{font-family:'JetBrains Mono',monospace; font-size:32px; font-weight:700;}
-.today-label{color:var(--ink-soft); font-size:12px; text-transform:uppercase; letter-spacing:.04em;}
-.badge{display:inline-flex; align-items:center; gap:8px; font-size:12px; font-weight:600; padding:8px 16px; border-radius:999px;}
-.badge.ok{background:var(--ok-soft); color:var(--ok);}
-.badge.paused{background:var(--danger-soft); color:var(--danger);}
-.grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
-.stat-num{font-family:'JetBrains Mono',monospace; font-size:22px; font-weight:700;}
-.stat-label{color:var(--ink-soft); font-size:12px; margin-top:0;}
-.bars{display:flex; align-items:flex-end; gap:3px; height:60px; margin-top:8px;}
-.bar{flex:1; background:var(--accent-soft); border-radius:3px 3px 0 0; position:relative; min-height:2px;}
-.bar.today{background:var(--accent);}
-.niche-row{display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line);}
-.niche-row:last-child{border-bottom:none;}
-.niche-name{font-weight:600; font-size:14px;}
-.niche-count{font-family:'JetBrains Mono',monospace; color:var(--ink-soft); font-size:13px;}
-.log-row{display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--line); gap:8px;}
-.log-row:last-child{border-bottom:none;}
-.log-company{font-size:13px; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
-.log-status{font-family:'JetBrains Mono',monospace; font-size:11px; padding:2px 8px; border-radius:999px; flex:none;}
-.log-status.sent{background:var(--ok-soft); color:var(--ok);}
-.log-status.bounced{background:var(--danger-soft); color:var(--danger);}
-.log-status.failed{background:var(--danger-soft); color:var(--danger);}
-.pause-btn{width:100%; min-height:44px; border-radius:var(--radius-sm); border:1px solid var(--line-strong); background:var(--surface-2); color:var(--ink); font-family:'Inter',sans-serif; font-weight:600; font-size:14px;}
-.pause-btn.is-paused{background:var(--ok-soft); border-color:var(--ok); color:var(--ok);}
-.pause-btn:disabled{opacity:.5;}
-.badge{cursor:pointer;}
-.made-by-badge{
-  display:flex; align-items:center; justify-content:center;
-  margin:24px auto 8px; padding:8px 16px;
-  background:var(--accent); border-radius:999px; width:fit-content;
-}
-.made-by-badge a{ font-size:13px; font-weight:600; color:#fff; text-decoration:none; display:flex; align-items:center; gap:8px; }
-.made-by-badge svg{ display:block; flex:none; }
-.made-by-year{ font-family:'JetBrains Mono',monospace; opacity:.85; }
-.section-title{font-size:13px; font-weight:600; color:var(--ink-soft); text-transform:uppercase; letter-spacing:.04em; margin:0 0 8px;}
-.empty{color:var(--ink-faint); font-size:13px; text-align:center; padding:24px 0;}
-.skeleton{opacity:.4;}
-</style>
+<script src="kit/core.js"></script>
+<link rel="stylesheet" href="kit/base.css">
+<link rel="stylesheet" href="studio/brand.css">
+<script src="studio/mock.js"></script>
 </head>
 <body>
+<div class="rail"></div>
+<div class="app has-tabbar">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark" id="mark"></div><div class="brand-text"><span class="brand-name">TG-Studio</span><span class="brand-role">Аутрич и заявки</span></div></div>
+    <div class="topbar-actions"><button class="icon-btn" type="button" id="reload" aria-label="Обновить"></button><button class="icon-btn" type="button" data-theme-toggle aria-label="Оформление"></button></div>
+  </header>
 
-<h1>TG-Studio · Аутрич</h1>
-<p class="sub">Дашборд рассылки TG-Studio</p>
+  <section data-panel="outreach" hidden>
+    <div class="page-head"><span class="comment">рассылка по нишам</span><h1 class="page-title">Аутрич</h1></div>
+    <div id="oBody"></div>
+  </section>
 
-<div class="card" id="todayCard">
-  <div class="today-row">
-    <div>
-      <div class="today-label">Сегодня</div>
-      <div class="today-big mono"><span id="sentToday">—</span>/<span id="dailyLimit">—</span></div>
-    </div>
-    <span class="badge ok" id="statusBadge">загрузка…</span>
-  </div>
+  <section data-panel="leads" hidden>
+    <div class="page-head"><span class="comment">из order-bot</span><h1 class="page-title">Заявки</h1><p class="page-sub" id="lSub"></p></div>
+    <div class="chips scroll" id="lf"></div>
+    <div class="section" id="lList"></div>
+  </section>
+
+  <section data-panel="base" hidden>
+    <div class="page-head"><span class="comment">кому пишем</span><h1 class="page-title">База</h1><p class="page-sub" id="bSub"></p></div>
+    <div class="search"><span id="sIc"></span><input class="input" id="q" type="search" placeholder="Компания или e-mail" autocomplete="off"></div>
+    <div class="chips scroll" id="bn" style="margin-top:12px"></div>
+    <div class="seg section" id="bs"><button type="button" data-s="all" class="is-on">Все</button><button type="button" data-s="queued">В очереди</button><button type="button" data-s="replied">Ответили</button></div>
+    <div class="section" id="bList"></div>
+  </section>
+
+  <div class="made-by"><a href="https://t.me/tg_studio_BY_bot" target="_blank" rel="noopener" id="madeBy"></a></div>
 </div>
-
-<div class="card">
-  <div class="grid">
-    <div><div class="stat-num" id="sentTotal">—</div><div class="stat-label">Всего отправлено</div></div>
-    <div><div class="stat-num" id="leadsTotal">—</div><div class="stat-label">Лидов в базе</div></div>
-    <div><div class="stat-num" id="bounceRate">—</div><div class="stat-label">Bounce rate</div></div>
-    <div><div class="stat-num" id="repliedCount">—</div><div class="stat-label">Ответили</div></div>
-  </div>
-</div>
-
-<div class="card">
-  <div class="section-title">Отправки за 14 дней</div>
-  <div class="bars" id="bars14"></div>
-</div>
-
-<div class="card">
-  <div class="section-title">По нишам</div>
-  <div id="nicheList"><div class="empty">нет данных</div></div>
-</div>
-
-<div class="card">
-  <div class="section-title">Последние отправки</div>
-  <div id="logList"><div class="empty">нет данных</div></div>
-</div>
-
-<div class="card">
-  <button class="pause-btn" id="pauseBtn">Пауза кампании</button>
-</div>
-
-<div class="made-by-badge">
-  <a href="https://t.me/tg_studio_BY_bot" target="_blank">
-    <svg width="16" height="16" viewBox="0 0 240 240" xmlns="http://www.w3.org/2000/svg"><path fill="#fff" d="M100 157l-4 56c6 0 8-3 12-6l27-26 57 42c10 6 18 3 21-9l38-178c4-15-5-21-16-17L14 103c-15 6-15 14-3 18l46 14 106-67c5-3 10-1 6 2z"/></svg>
-    TG-Studio <span class="made-by-year" id="madeByYear"></span>
-  </a>
-</div>
+<nav class="tabbar"><div class="tabbar-inner">
+  <button type="button" data-tab="outreach"><span data-ic="send"></span>Аутрич</button>
+  <button type="button" data-tab="leads"><span data-ic="message"></span>Заявки<span class="dot-badge" id="leadDot" hidden></span></button>
+  <button type="button" data-tab="base"><span data-ic="list"></span>База</button>
+</div></nav>
 
 <script>
-const tg = window.Telegram ? window.Telegram.WebApp : null;
+(function(){
+  "use strict";
+  const {html, icon, $, $$, date: D, haptic} = Kit;
+  const api = Kit.createApi({bot:'studio', mock: window.StudioMock});
+  $('#mark').innerHTML = icon('send'); $('#reload').innerHTML = icon('refresh'); $('#sIc').outerHTML = String(icon('search'));
+  $$('[data-ic]').forEach(el=> el.outerHTML = String(icon(el.dataset.ic)));
+  $('#madeBy').innerHTML = html`${icon('send')}TG-Studio · ${new Date().getFullYear()}`;
+  const N = n=> Kit.num(n);
+  /* ключ владельца: dashboard.html?key=… — без него сервер показывает только демо-заявки */
+  let KEY = '';
+  try{ const k = new URLSearchParams(location.search).get('key'); if(k){ localStorage.setItem('tgs-studio-key', k); history.replaceState(null, '', location.pathname); } KEY = localStorage.getItem('tgs-studio-key') || ''; }catch(e){}
+  const withKey = p=> Object.assign(KEY ? {key:KEY} : {}, p || {});
+  const hm = ts=> String(ts).slice(11, 16);
+  const when = ts=>{ const d = String(ts).slice(0, 10); return d === D.today() ? 'сегодня ' + hm(ts) : d === D.add(D.today(), -1) ? 'вчера ' + hm(ts) : d.slice(8, 10) + '.' + d.slice(5, 7) + ' ' + hm(ts); };
+  const ST = {sent:['отправлено', 'pill-muted'], bounced:['bounce', 'pill-danger'], replied:['ответ', 'pill-ok'], queued:['в очереди', 'pill-info']};
+  const stPill = s=> html`<span class="pill ${(ST[s] || ST.sent)[1]}">${(ST[s] || ST.sent)[0]}</span>`;
 
-const API_URL = 'https://script.google.com/macros/s/AKfycbyT7ySv44TkI5Oh4DmnfbY8sRoFf6KvU7RDOB6Na2yOLvQ58Qby3bCmF_NinVNEWaoQTw/exec';
-
-function haptic(style) {
-  if (tg && tg.HapticFeedback) {
-    if (["success","error","warning"].includes(style)) tg.HapticFeedback.notificationOccurred(style);
-    else tg.HapticFeedback.impactOccurred(style || "light");
+  /* ============ АУТРИЧ ============ */
+  let dash = null;
+  async function loadDash(){
+    const r = await api('getDashboard', withKey({logLimit:15}));
+    if(r.ok){ dash = r; $('#leadDot').hidden = !r.stats.inboundNew; }
+    renderDash();
   }
-}
-
-function applyTelegramTheme(){
-  const scheme = (tg && tg.colorScheme) ? tg.colorScheme
-    : (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-  document.documentElement.setAttribute('data-theme', scheme);
-  if (tg) {
-    const s = getComputedStyle(document.documentElement);
-    try { tg.setHeaderColor(s.getPropertyValue("--surface").trim()); tg.setBackgroundColor(s.getPropertyValue("--bg").trim()); } catch(e) {}
+  function renderDash(){
+    const box = $('#oBody');
+    if(!dash){ box.innerHTML = '<div class="skel" style="height:150px"></div><div class="skel" style="height:180px;margin-top:12px"></div>'; return; }
+    const s = dash.stats, pct = Math.min(100, Math.round(s.sentToday / Math.max(1, s.dailyLimit) * 100));
+    box.innerHTML = html`
+      <div class="hero">
+        <div style="display:flex;align-items:center;gap:8px"><span class="eyebrow" style="flex:1">Сегодня</span>
+          ${s.paused ? html`<span class="pill pill-danger">на паузе</span>` : html`<span class="pill pill-ok">идёт рассылка</span>`}</div>
+        <div class="meter" style="margin-top:8px"><b>${s.sentToday}</b><span>/ ${s.dailyLimit}</span></div>
+        <div class="progress${s.paused ? ' is-paused' : ''}"><i style="width:${pct}%"></i></div>
+        <p class="hint" style="margin-top:8px">Письма уходят с 9:00 до 18:00, кроме воскресенья. В очереди ${N(s.queued)} компаний.</p>
+      </div>
+      <div class="stats section">
+        <div class="stat"><div class="stat-label">Всего отправлено</div><div class="stat-value num">${N(s.sentTotal)}</div></div>
+        <div class="stat is-accent"><div class="stat-label">Ответили</div><div class="stat-value num">${s.replied}</div><div class="stat-delta">${Kit.num(s.replyRatePct, 1)}% от писем</div></div>
+        <div class="stat"><div class="stat-label">Bounce rate</div><div class="stat-value num">${Kit.num(s.bounceRatePct, 1)}%</div></div>
+        <div class="stat"><div class="stat-label">Компаний в базе</div><div class="stat-value num">${N(s.companiesTotal)}</div></div>
+      </div>
+      ${s.inboundNew ? html`<button class="row card section" type="button" data-go="leads" style="width:100%"><span class="row-icon">${icon('message')}</span><span class="row-main"><span class="row-title">Новых заявок: ${s.inboundNew}</span><span class="row-sub">из order-bot — ждут звонка</span></span><span class="row-chev">${icon('right')}</span></button>` : ''}
+      <div class="card section"><div class="section-head"><span class="section-title">Отправки за 14 дней</span></div>
+        ${Kit.chart.bars(s.daily.map((d, i)=>({label:i % 2 && i !== 13 ? '' : String(D.day(d.date)), value:d.count})), {highlightLast:true})}</div>
+      <div class="card section"><div class="section-head"><span class="section-title">По нишам</span><span class="hint">отправлено / всего</span></div>
+        ${s.byNiche.map(n=>html`<button type="button" class="niche" data-niche="${n.niche}" style="display:block;width:100%;text-align:left"><span class="niche-top"><b>${n.niche}</b><span class="mono">${n.sent}/${n.total}</span></span>
+          <span class="progress" style="display:block"><i style="width:${Math.round(n.sent / Math.max(1, n.total) * 100)}%"></i></span>
+          <span class="hint" style="display:block;margin-top:4px">ответили ${n.replied}</span></button>`)}</div>
+      <div class="card section"><div class="section-head"><span class="section-title">Последние отправки</span></div>
+        ${dash.log.length ? dash.log.map(l=>html`<div class="log"><div class="log-main"><b>${l.company}</b><span>${l.email}</span><span>${l.niche} · ${when(l.ts)}</span></div>${stPill(l.status)}</div>`) : html`<div class="empty-mini">Пока пусто</div>`}</div>
+      <div class="card section"><div class="section-head"><span class="section-title">Лимит писем в день</span></div>
+        <div style="display:flex;align-items:center;gap:12px"><div class="stepper-num"><button type="button" data-lim="-5" aria-label="Меньше">${icon('minus')}</button><output id="lim">${s.dailyLimit}</output><button type="button" data-lim="5" aria-label="Больше">${icon('plus')}</button></div>
+          <p class="hint" style="flex:1">Больше 60 в день — риск попасть в спам.</p></div></div>
+      <button class="btn ${s.paused ? 'btn-primary' : 'btn-danger-soft'} btn-block section" type="button" id="pause">${icon(s.paused ? 'play' : 'pause')}${s.paused ? 'Возобновить кампанию' : 'Пауза кампании'}</button>`;
   }
-}
-
-function confirmAsync(message){
-  return new Promise((resolve)=>{
-    if (tg && tg.showConfirm && tg.isVersionAtLeast && tg.isVersionAtLeast('6.2')) {
-      try { tg.showConfirm(message, resolve); return; } catch(e) {}
-    }
-    resolve(window.confirm(message));
+  const oBody = $('#oBody');
+  Kit.on(oBody, 'click', '#pause', async (e, el)=>{
+    const p = !dash.stats.paused;
+    if(!await Kit.confirm(p ? 'Поставить рассылку на паузу?' : 'Возобновить рассылку?', p ? 'Пауза' : 'Возобновить', p)) return;
+    Kit.busy(el, true);
+    const r = await api('updateConfig', {paused:p});
+    Kit.busy(el, false);
+    if(r.ok){ haptic(p ? 'warning' : 'success'); Kit.toast(p ? 'Рассылка на паузе' : 'Рассылка возобновлена', 'ok'); loadDash(); }
   });
-}
+  const saveLimit = Kit.debounce(async v=>{ const r = await api('updateConfig', {dailyLimit:v}); if(r.ok){ dash.stats.dailyLimit = v; Kit.toast('Лимит: ' + v + ' писем в день', 'ok'); renderDash(); } }, 700);
+  Kit.on(oBody, 'click', '[data-lim]', (e, el)=>{ const o = $('#lim'); const v = Math.max(5, Math.min(200, +o.textContent + +el.dataset.lim)); o.textContent = v; haptic('select'); saveLimit(v); });
+  Kit.on(oBody, 'click', '[data-go]', ()=> tabs.show('leads'));
+  Kit.on(oBody, 'click', '[data-niche]', (e, el)=>{ B.niche = el.dataset.niche; tabs.show('base'); });
 
-function initTelegram() {
-  if (!tg) return;
-  tg.ready(); tg.expand();
-  applyTelegramTheme();
-  tg.onEvent && tg.onEvent('themeChanged', applyTelegramTheme);
-  if (tg.isVersionAtLeast && tg.isVersionAtLeast('7.7')) { try { tg.disableVerticalSwipes(); } catch(e) {} }
-}
-
-async function callApi(action, payload) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: JSON.stringify({ action, payload: payload || {}, init_data: tg ? tg.initData : '' })
-  });
-  const json = await res.json();
-  if (!json.ok) {
-    const debugText = json.debug ? ' :: ' + JSON.stringify(json.debug) : '';
-    throw new Error((json.error || 'API error') + debugText);
+  /* ============ ЗАЯВКИ ============ */
+  const LS = {new:['Новая', 'pill-accent'], contacted:['В работе', 'pill-warn'], won:['Клиент', 'pill-ok'], lost:['Отказ', 'pill-muted']};
+  const L = {filter:'all', list:null, counts:{}};
+  async function loadLeads(){ const r = await api('getLeads', withKey({status:L.filter})); if(r.ok){ L.list = r.leads; L.counts = r.counts; L.owner = r.owner; } renderLeads(); }
+  function renderLeads(){
+    const total = Object.values(L.counts).reduce((a, b)=>a + b, 0);
+    $('#lSub').textContent = total ? total + ' ' + Kit.plural(total, 'заявка', 'заявки', 'заявок') + ' · новых ' + (L.counts.new || 0) : '';
+    $('#leadDot').hidden = !(L.counts.new);
+    $('#lf').innerHTML = html`<button type="button" class="chip${L.filter === 'all' ? ' is-on' : ''}" data-f="all">Все</button>${Object.keys(LS).map(k=>html`<button type="button" class="chip${L.filter === k ? ' is-on' : ''}" data-f="${k}">${LS[k][0]} · ${L.counts[k] || 0}</button>`)}`;
+    const box = $('#lList');
+    if(!L.list){ box.innerHTML = '<div class="skel" style="height:240px"></div>'; return; }
+    const demoNote = L.owner === false && api.mode() === 'live' ? html`<p class="hint" style="margin-bottom:12px">${icon('lock', 'ic-inline')}Показаны демо-заявки. Реальные видны по ссылке владельца с ключом.</p>` : '';
+    box.innerHTML = demoNote + (L.list.length ? html`<div class="list">${L.list.map(l=>html`<button class="row" type="button" data-l="${l.id}"><span class="avatar">${Kit.initials(l.name)}</span>
+      <span class="row-main"><span class="row-title">${l.name}${l.business ? ' · ' + l.business : ''}</span><span class="row-sub">${when(l.createdAt)} · ${l.task}</span></span>
+      <span class="row-end"><span class="pill ${LS[l.status][1]}">${LS[l.status][0]}</span></span></button>`)}</div>`
+      : html`<div class="empty">${icon('message')}<div class="empty-title">Заявок нет</div><div class="empty-sub">Новые заявки из order-bot появятся здесь</div></div>`);
   }
-  return json.data;
-}
-
-function escapeHtml(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-
-function renderBars(daily) {
-  const wrap = document.getElementById('bars14');
-  wrap.innerHTML = '';
-  const entries = Object.entries(daily);
-  const max = Math.max(1, ...entries.map(e => e[1]));
-  const todayKey = entries[entries.length - 1][0];
-  entries.forEach(([date, count]) => {
-    const bar = document.createElement('div');
-    bar.className = 'bar' + (date === todayKey ? ' today' : '');
-    bar.style.height = Math.max(2, (count / max) * 60) + 'px';
-    bar.title = date + ': ' + count;
-    wrap.appendChild(bar);
-  });
-}
-
-function renderNiches(byNiche) {
-  const wrap = document.getElementById('nicheList');
-  const keys = Object.keys(byNiche || {});
-  if (!keys.length) { wrap.innerHTML = '<div class="empty">нет данных</div>'; return; }
-  wrap.innerHTML = keys.map(k => {
-    const v = byNiche[k];
-    return '<div class="niche-row"><span class="niche-name">' + escapeHtml(k) + '</span>' +
-      '<span class="niche-count">' + escapeHtml(v.sent) + ' / ' + escapeHtml(v.total) + '</span></div>';
-  }).join('');
-}
-
-function renderLog(items) {
-  const wrap = document.getElementById('logList');
-  if (!items || !items.length) { wrap.innerHTML = '<div class="empty">пока пусто</div>'; return; }
-  wrap.innerHTML = items.map(l => {
-    const status = (l.status || 'sent');
-    const label = status === 'sent' ? 'sent' : status === 'bounced' ? 'bounce' : status;
-    return '<div class="log-row"><span class="log-company">' + escapeHtml(l.email || l.lead_id || '—') + '</span>' +
-      '<span class="log-status ' + escapeHtml(status) + '">' + escapeHtml(label) + '</span></div>';
-  }).join('');
-}
-
-let currentPaused = false;
-
-async function loadAll() {
-  try {
-    const { stats, log } = await callApi('getDashboard', { log_limit: 15 });
-    document.getElementById('sentToday').textContent = stats.sent_today;
-    document.getElementById('dailyLimit').textContent = stats.daily_limit;
-    document.getElementById('sentTotal').textContent = stats.sent_total;
-    document.getElementById('leadsTotal').textContent = stats.leads_total;
-    document.getElementById('bounceRate').textContent = stats.bounce_rate_pct + '%';
-    document.getElementById('repliedCount').textContent = (stats.by_status && stats.by_status.replied) || 0;
-
-    currentPaused = String(stats.config.paused).toUpperCase() === 'TRUE';
-    const badge = document.getElementById('statusBadge');
-    badge.textContent = currentPaused ? 'на паузе' : 'активна';
-    badge.className = 'badge ' + (currentPaused ? 'paused' : 'ok');
-
-    const pauseBtn = document.getElementById('pauseBtn');
-    pauseBtn.textContent = currentPaused ? 'Возобновить кампанию' : 'Пауза кампании';
-    pauseBtn.classList.toggle('is-paused', currentPaused);
-
-    renderBars(stats.daily_sends_14d);
-    renderNiches(stats.by_niche);
-    renderLog(log);
-  } catch (e) {
-    window.__lastError = e.message;
-    document.getElementById('statusBadge').textContent = 'ошибка · тап для деталей';
-    document.getElementById('statusBadge').className = 'badge paused';
+  Kit.on($('#lf'), 'click', '[data-f]', (e, el)=>{ L.filter = el.dataset.f; haptic('select'); L.list = null; renderLeads(); loadLeads(); });
+  Kit.on($('#lList'), 'click', '[data-l]', (e, el)=> openLead(L.list.find(x=>x.id === el.dataset.l)));
+  function openLead(l){
+    let st = l.status;
+    const sh = Kit.sheet({title:l.name, sub:when(l.createdAt) + (l.business ? ' · ' + l.business : ''), body:html`
+      <div class="card card-flat"><div class="eyebrow">Задача</div><p style="margin-top:6px;white-space:pre-wrap">${l.task}</p></div>
+      <div class="section"><div class="kv"><span class="k">Телефон</span><span class="v mono">${Kit.phone.pretty(l.phone)}</span></div><div class="kv"><span class="k">Бюджет</span><span class="v">${l.budget}</span></div>
+        <div class="kv"><span class="k">Уведомление</span><span class="v">${l.forwarded ? 'ушло в Telegram' : 'не доставлено'}</span></div></div>
+      <div class="btn-row section"><a class="btn btn-soft" href="tel:${l.phone}">${icon('phone')}Позвонить</a>${l.tgId ? html`<a class="btn btn-soft" href="tg://user?id=${l.tgId}">${icon('send')}Telegram</a>` : ''}</div>
+      <div class="field section"><span class="field-label">Статус</span><div class="seg seg-grid" id="ls" style="grid-template-columns:repeat(2, minmax(0,1fr))">${Object.keys(LS).map(k=>html`<button type="button" data-st="${k}" class="${k === st ? 'is-on' : ''}">${LS[k][0]}</button>`)}</div></div>
+      <label class="field"><span class="field-label">Заметка</span><textarea class="textarea" id="ln" rows="2" maxlength="300" placeholder="Например: перезвонить в пятницу">${l.note}</textarea></label>`,
+      actions:html`<button class="btn btn-primary" type="button" data-save>Сохранить</button>`});
+    Kit.on(sh.$('#ls'), 'click', '[data-st]', (e, el)=>{ st = el.dataset.st; $$('#ls button', sh.el).forEach(b=>b.classList.toggle('is-on', b === el)); haptic('select'); });
+    sh.$('[data-save]').addEventListener('click', async ()=>{
+      const r = await api('setLeadStatus', withKey({id:l.id, status:st, note:sh.$('#ln').value.trim()}));
+      if(!r.ok){ Kit.toast('Не сохранилось', 'error'); return; }
+      haptic('success'); sh.close(); loadLeads();
+    });
   }
-}
 
-document.getElementById('statusBadge').addEventListener('click', () => {
-  if (window.__lastError) { alert(window.__lastError); window.__lastError = null; return; }
-  loadAll();
-});
-
-document.getElementById('pauseBtn').addEventListener('click', async () => {
-  const ok = await confirmAsync(currentPaused ? 'Возобновить рассылку?' : 'Поставить рассылку на паузу?');
-  if (!ok) return;
-  const btn = document.getElementById('pauseBtn');
-  btn.disabled = true;
-  try {
-    await callApi('updateConfig', { paused: currentPaused ? 'FALSE' : 'TRUE' });
-    haptic('success');
-    await loadAll();
-  } catch (e) {
-    haptic('error');
-  } finally {
-    btn.disabled = false;
+  /* ============ БАЗА ============ */
+  const B = {niche:'', status:'all', q:''};
+  async function loadBase(){
+    $('#bList').innerHTML = '<div class="skel" style="height:240px"></div>';
+    const r = await api('getCompanies', {niche:B.niche, status:B.status, q:B.q});
+    renderNiches();
+    const list = r.companies || [];
+    $('#bSub').textContent = (B.niche || 'Все ниши') + (list.length >= 60 ? ' · первые 60' : ' · ' + list.length);
+    $('#bList').innerHTML = list.length ? html`<div class="list">${list.map(c=>html`<div class="row"><span class="row-main"><span class="row-title">${c.company}</span><span class="row-sub mono">${c.email}</span>
+      <span class="row-sub">${c.niche}${c.sentAt ? ' · ' + when(c.sentAt) : ''}</span></span><span class="row-end">${stPill(c.status)}</span></div>`)}</div>`
+      : html`<div class="empty">${icon('search')}<div class="empty-title">Ничего не нашлось</div></div>`;
   }
-});
+  function renderNiches(){
+    const ns = dash ? dash.stats.byNiche.map(n=>n.niche) : [];
+    $('#bn').innerHTML = html`<button type="button" class="chip${!B.niche ? ' is-on' : ''}" data-n="">Все ниши</button>${ns.map(n=>html`<button type="button" class="chip${B.niche === n ? ' is-on' : ''}" data-n="${n}">${n}</button>`)}`;
+  }
+  Kit.on($('#bn'), 'click', '[data-n]', (e, el)=>{ B.niche = el.dataset.n; haptic('select'); loadBase(); });
+  Kit.on($('#bs'), 'click', '[data-s]', (e, el)=>{ B.status = el.dataset.s; $$('#bs button').forEach(b=>b.classList.toggle('is-on', b === el)); haptic('select'); loadBase(); });
+  $('#q').addEventListener('input', Kit.debounce(()=>{ B.q = $('#q').value.trim(); loadBase(); }, 350));
 
-initTelegram();
-document.getElementById('madeByYear').textContent = '· ' + new Date().getFullYear();
-loadAll();
+  /* ============ СТАРТ ============ */
+  let current = 'outreach';
+  const tabs = Kit.tabs({onChange(tab){
+    current = tab;
+    if(tab === 'outreach'){ renderDash(); loadDash(); }
+    if(tab === 'leads'){ renderLeads(); loadLeads(); }
+    if(tab === 'base'){ (dash ? Promise.resolve() : loadDash()).then(loadBase); }
+  }});
+  $('#reload').addEventListener('click', ()=>{ haptic('light'); tabs.show(current); });
+  setInterval(()=>{ if(current === 'outreach' && !document.hidden) loadDash(); }, 60000);
+})();
 </script>
 </body>
 </html>
