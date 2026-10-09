@@ -1,4 +1,4 @@
-// изменено 2026-10-10 01:43
+// изменено 2026-10-10 01:50
 // Запускается после `astro build`: собирает dist/llms-full.txt — полный текст
 // страниц услуг и кейсов в Markdown для нейросетей (формат llmstxt.org).
 // Текст берётся из уже собранного HTML (<main>), поэтому всегда совпадает с сайтом.
@@ -92,3 +92,21 @@ const out = head + '\n---\n\n' + body + '\n\n---\n\n' + faqMd() + `
 `;
 writeFileSync(path.join(dist, 'llms-full.txt'), out);
 console.log('llms-full.txt written: ' + (pages.length + cases.length) + ' pages, ' + out.length + ' chars');
+
+// llms.txt: раздел «Новости» пересобирается из src/content/news, чтобы новая
+// статья попадала в список без ручной правки public/llms.txt.
+const newsDir = path.join(root, 'src', 'content', 'news');
+const fm = (raw, key) => (raw.match(new RegExp('^' + key + ':\\s*"?(.*?)"?\\s*$', 'm')) || [])[1] || '';
+const news = readdirSync(newsDir)
+  .filter(f => f.endsWith('.md'))
+  .map(f => {
+    const raw = readFileSync(path.join(newsDir, f), 'utf-8');
+    return { slug: f.replace(/\.md$/, ''), title: fm(raw, 'title'), description: fm(raw, 'description'), date: fm(raw, 'date') };
+  })
+  .filter(n => n.title)
+  .sort((a, b) => b.date.localeCompare(a.date));
+const llmsPath = path.join(dist, 'llms.txt');
+const newsMd = '## Новости\n\n' + news.map(n => `- [${n.title}](${SITE_URL}/novosti/${n.slug}): ${n.description}`).join('\n') + '\n\n';
+const llms = readFileSync(llmsPath, 'utf-8').replace(/## Новости\n[\s\S]*?\n(?=## )/, newsMd);
+writeFileSync(llmsPath, llms);
+console.log('llms.txt news: ' + news.length + ' articles');
