@@ -1,7 +1,9 @@
 ---
+// изменено 2026-10-10 01:43
 import { getCollection, render } from 'astro:content';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { SITE_URL, BRAND } from '../../site.config.js';
 
 export async function getStaticPaths() {
   const posts = await getCollection('news');
@@ -30,8 +32,24 @@ const relatedService = SERVICE_LINKS[entry.data.relatedService];
 
 const wordCount = (entry.body ?? '').trim().split(/\s+/).filter(Boolean).length;
 const readingMinutes = Math.max(1, Math.round(wordCount / 180));
+
+const articleLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: entry.data.title,
+  description: entry.data.description,
+  datePublished: entry.data.date.toISOString().slice(0, 10),
+  inLanguage: 'ru-BY',
+  articleSection: entry.data.category,
+  wordCount,
+  mainEntityOfPage: SITE_URL + path,
+  image: SITE_URL + '/assets/og-image.jpg',
+  author: { '@type': 'Organization', '@id': SITE_URL + '/#organization', name: BRAND.name },
+  publisher: { '@type': 'Organization', '@id': SITE_URL + '/#organization', name: BRAND.name, logo: { '@type': 'ImageObject', url: SITE_URL + '/logo-badge.png' } },
+};
 ---
 <BaseLayout title={`${entry.data.title} | TG-Studio`} description={entry.data.description} path={path}>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(articleLd)} />
   <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: 'Новости', href: '/novosti' }, { label: entry.data.title }]} />
 
   <main id="main-content">

@@ -1,5 +1,5 @@
 ---
-// изменено 2026-10-08 03:34
+// изменено 2026-10-10 01:43
 import { Sun, Moon, SunMoon } from '@lucide/astro';
 
 interface Props {
@@ -8,10 +8,10 @@ interface Props {
 const { currentPath } = Astro.props;
 
 const navItems = [
+  { href: '/#live', label: 'Проекты' },
   { href: '/#demo', label: 'Демо' },
   { href: '/#services', label: 'Услуги' },
   { href: '/#advantages', label: 'Кейсы' },
-  { href: '/#process', label: 'Процесс' },
   { href: '/novosti', label: 'Новости' },
   { href: '/#faq', label: 'Вопросы' },
   { href: '/#contact', label: 'Контакты' },
@@ -23,7 +23,7 @@ const isCurrent = (href: string) => href.startsWith('/novosti') && currentPath.s
   <div class="wrap nav">
     <a href="/" class="brand" aria-label="TG-Studio — на главную">
       <img class="brand-mark" src="/assets/logo-icon.png" alt="" aria-hidden="true" width="36" height="36">
-      <span class="brand-name">TG-STUDIO<span>TELEGRAM AUTOMATION</span></span>
+      <span class="brand-name">TG-STUDIO</span>
     </a>
 
     <nav class="nav-links" aria-label="Основная навигация">

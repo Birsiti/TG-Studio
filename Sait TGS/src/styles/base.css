@@ -1,4 +1,4 @@
-/* изменено 2026-10-08 03:34 */
+/* изменено 2026-10-10 01:43 */
 /* ============================================================
    TG-Studio — база сайта. Характер: инженерная студия.
    Графит и телеграм-синий, чертёжная сетка, моноширинные
@@ -73,7 +73,7 @@ p{ color:var(--ink-2); }
 .nowrap{ white-space:nowrap; }
 
 /* «комментарий» над заголовком */
-.eyebrow{ display:inline-flex; align-items:center; gap:10px; font-family:var(--font-mono); font-size:13px; font-weight:600; color:var(--accent); margin-bottom:16px; }
+.eyebrow{ display:inline-flex; align-items:center; gap:10px; font-family:var(--font-mono); font-size:15.5px; font-weight:600; color:var(--accent); margin-bottom:16px; }
 .eyebrow::before{ content:"//"; opacity:.55; }
 .eyebrow .idx{ color:var(--ink-3); font-weight:500; }
 
@@ -118,13 +118,13 @@ section{ position:relative; padding:72px 0; }
 .btn-primary:disabled{ opacity:.7; cursor:default; transform:none; }
 .btn-ghost{ border-color:var(--line-2); color:var(--ink); background:transparent; }
 .btn-ghost:hover{ border-color:var(--accent); color:var(--accent); }
-.btn-sm{ min-height:44px; padding:0 16px; font-size:15px; }
+.btn-sm{ min-height:44px; padding:0 16px; font-size:15.5px; }
 
 .spinner{ width:16px; height:16px; border-radius:50%; border:2px solid currentColor; border-right-color:transparent; animation:spin .7s linear infinite; flex:none; }
 @keyframes spin{ to{ transform:rotate(360deg); } }
 
 /* метка-«бирка» */
-.tag{ display:inline-flex; align-items:center; gap:6px; min-height:28px; padding:0 10px; border-radius:7px; background:var(--surface-2); border:1px solid var(--line); color:var(--ink-2); font-family:var(--font-mono); font-size:12.5px; font-weight:500; }
+.tag{ display:inline-flex; align-items:center; gap:6px; min-height:28px; padding:0 10px; border-radius:7px; background:var(--surface-2); border:1px solid var(--line); color:var(--ink-2); font-family:var(--font-mono); font-size:15.5px; font-weight:500; }
 .live-dot{ width:8px; height:8px; border-radius:50%; background:var(--ok); box-shadow:0 0 0 4px var(--ok-soft); flex:none; }
 
 @media (prefers-reduced-motion: reduce){

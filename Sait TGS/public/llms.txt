@@ -1,25 +1,67 @@
+<!-- изменено 2026-10-10 01:43 -->
 # TG-Studio
 
-> Разработка Telegram-ботов и Mini Apps под задачи бизнеса: приём заявок, продажи, оплата, интеграция с CRM.
+> Студия из Минска (Беларусь): разрабатывает Telegram-ботов и Mini Apps — приложения внутри Telegram для записи клиентов, заказов, оплаты, CRM и аналитики. Клиенту ничего не нужно устанавливать: всё открывается кнопкой в чате.
 
-TG-Studio — студия, которая делает боты и мини-приложения внутри Telegram: клиент оформляет запись, заказ или оплату прямо в чате, без установки отдельного приложения.
+TG-Studio делает решения «под ключ»: сценарий, дизайн, Mini App с ролями клиента, администратора и владельца, сервер с базой данных, интеграции с CRM и ИИ-ассистентов. Работаем по Беларуси, консультация и оценка бесплатно. Простой бот для заявок запускается за 1–2 недели, проекты с CRM и ИИ оцениваются индивидуально. Стоимость фиксируется в смете до начала работ, оплата поэтапная, после запуска — сопровождение.
 
 ## Услуги
-- Mini Apps — каталог, форма записи, личный кабинет, оплата внутри Telegram
-- Чат-боты для продаж — приём и квалификация заявок, без потери лидов
-- CRM-интеграции — синхронизация с amoCRM, Bitrix24, Google Таблицами
-- ИИ и GPT — диалоговые ассистенты и автоматическая обработка обращений
 
-## Стоимость и сроки
-- Стоимость считаем индивидуально: зависит от сложности сценариев и интеграций. Есть базовый пакет разово плюс небольшая ежемесячная поддержка
-- Простой бот для заявок запускается за 1–2 недели; проекты с CRM/ИИ — по индивидуальной оценке
-- Процесс: заявка → анализ и проектирование → разработка и тестирование → оплата поэтапно → сопровождение после запуска
+- [Mini Apps для Telegram](https://tg-studio.by/mini-apps): приложение для Android и iOS внутри Telegram — каталог, запись, личный кабинет, оплата; без App Store и Google Play
+- [Чат-боты для продаж](https://tg-studio.by/boty): приём заявок круглосуточно, квалификация клиента, передача готового лида менеджеру
+- [CRM-интеграции](https://tg-studio.by/crm-integracii): заявки, статусы и клиентская база синхронизируются с amoCRM, Bitrix24 и Google Таблицами
+- [ИИ и GPT-ассистенты](https://tg-studio.by/ai-gpt): ответы на типовые вопросы своими словами, обработка обращений, передача человеку только сложных случаев
 
-## Пример кейса
-Кейс «БЛЕСК» — мини-приложение для автомойки с тремя ролями в одном боте: клиент видит запись, администратор — смену, владелец — выручку и статистику.
+## Работают сейчас
+
+Собственные проекты студии с живой аудиторией:
+
+- [BY-TAXI.BY](https://by-taxi.by): сайт, канал и приложение в Telegram для такси Беларуси — аренда машин под такси (газ, бензин, электро), индекс цен аренды, вакансии таксопарков, ежедневные итоги. Канал: https://t.me/BY_Taxi
+- [Будни_BY](https://t.me/Budni_BY): Telegram-канал вакансий по Беларуси с автоматическим сбором из десятков источников, очисткой от дублей и разметкой по сферам и городам
+- [Звероферма BY](https://t.me/Zveroferma_BY_Bot): электронная визитка фермерского хозяйства в Telegram — кто мы, что продаём, как заказать и связаться
+
+## Живые демо
+
+Рабочие мини-приложения под разные ниши, открываются в браузере. У каждого свои роли и общий сервер.
+
+- Автомойка «БЛЕСК»: [клиент](https://birsiti.github.io/TG-Studio/carwash-miniapp/client.html), [администратор](https://birsiti.github.io/TG-Studio/carwash-miniapp/admin.html), [владелец](https://birsiti.github.io/TG-Studio/carwash-miniapp/owner.html)
+- Прокат инструмента: [клиент](https://birsiti.github.io/TG-Studio/toolrent-miniapp/client.html), [администратор](https://birsiti.github.io/TG-Studio/toolrent-miniapp/admin.html), [владелец](https://birsiti.github.io/TG-Studio/toolrent-miniapp/owner.html)
+- Маршрутные перевозки «ВЕРСТА»: [пассажир](https://birsiti.github.io/TG-Studio/versta/client.html), [диспетчер](https://birsiti.github.io/TG-Studio/versta/admin.html), [водитель](https://birsiti.github.io/TG-Studio/versta/driver.html), [механик](https://birsiti.github.io/TG-Studio/versta/mechanic.html), [владелец](https://birsiti.github.io/TG-Studio/versta/owner.html), [платформа](https://birsiti.github.io/TG-Studio/versta/platform.html)
+- Барбершоп «БРИТВА»: [клиент](https://birsiti.github.io/TG-Studio/barbershop/barbershop-client.html), [администратор](https://birsiti.github.io/TG-Studio/barbershop/barbershop-admin.html), [владелец](https://birsiti.github.io/TG-Studio/barbershop/barbershop-owner.html)
+- Кафе «МОСТ» (меню на русском и китайском, доставка): [гость](https://birsiti.github.io/TG-Studio/most-cafe/most-cafe-bot.html), [кафе](https://birsiti.github.io/TG-Studio/most-cafe/most-cafe-admin.html)
+- Бот студии: [заявка](https://birsiti.github.io/TG-Studio/order-bot.html), [аутрич-дашборд](https://birsiti.github.io/TG-Studio/dashboard.html)
+
+## Кейс
+
+- [БЛЕСК — Mini App для автомойки с тремя ролями](https://tg-studio.by/keysy/blesk): клиент записывается на свободное время, администратор видит смену и записи, владелец — выручку и статистику в реальном времени
+
+## Страницы сайта
+
+- [Главная](https://tg-studio.by/): услуги, проекты, демо, процесс работы, вопросы и форма заявки
+- [Mini Apps](https://tg-studio.by/mini-apps)
+- [Чат-боты для продаж](https://tg-studio.by/boty)
+- [CRM-интеграции](https://tg-studio.by/crm-integracii)
+- [ИИ и GPT](https://tg-studio.by/ai-gpt)
+- [Кейс БЛЕСК](https://tg-studio.by/keysy/blesk)
+- [Новости и статьи](https://tg-studio.by/novosti)
+
+## Новости
+
+- [Почему бизнес теряет заявки в мессенджерах — и как это чинит бот](https://tg-studio.by/novosti/kak-bot-teryaet-zayavki)
+- [Mini App или сайт: что выбрать для записи клиентов](https://tg-studio.by/novosti/mini-app-ili-sajt)
+- [Личный кабинет в Telegram вместо отдельного приложения](https://tg-studio.by/novosti/lichny-kabinet-v-telegram)
+- [CRM без интеграции — это просто список](https://tg-studio.by/novosti/crm-bez-integracii-eto-spisok)
+- [ИИ-ассистент вместо раздела «Частые вопросы»: когда это оправдано](https://tg-studio.by/novosti/ii-assistent-chastye-voprosy)
+- [Сколько стоит внедрить ИИ-ассистента: из чего складывается цена](https://tg-studio.by/novosti/skolko-stoit-ii-assistent)
 
 ## Контакты
-- Telegram: https://t.me/TG_Studio_BY
-- Демо-бот: https://t.me/tg_studio_BY_bot
-- Сайт: https://tg-studio.by/
-- География: Беларусь
+
+- Telegram-канал студии: [@TG_Studio_BY](https://t.me/TG_Studio_BY)
+- Бот студии с демо и заявкой: https://t.me/tg_studio_BY_bot
+- Заявка на сайте: https://tg-studio.by/#contact
+- География: Минск, вся Беларусь
+
+## Optional
+
+- [Полный текст страниц услуг и кейса](https://tg-studio.by/llms-full.txt)
+- [Карта сайта](https://tg-studio.by/sitemap.xml)

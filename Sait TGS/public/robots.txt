@@ -1,4 +1,52 @@
+# изменено 2026-10-10 01:43
+# Сайт открыт для поисковиков и ИИ-ассистентов. Краткое описание для нейросетей — /llms.txt, полный текст — /llms-full.txt.
+
 User-agent: *
+Allow: /
+
+# OpenAI: обучение, поиск ChatGPT, переходы пользователей ChatGPT
+User-agent: GPTBot
+Allow: /
+
+User-agent: OAI-SearchBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+# Anthropic: Claude
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: Claude-SearchBot
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+# Perplexity
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+# Google: Gemini и ИИ-ответы в поиске
+User-agent: Google-Extended
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+# Яндекс (в т.ч. Алиса и Нейро)
+User-agent: YandexBot
+Allow: /
+
+User-agent: YandexAdditional
+Allow: /
+
+# Microsoft Bing (Copilot)
+User-agent: Bingbot
 Allow: /
 
 Sitemap: https://tg-studio.by/sitemap.xml

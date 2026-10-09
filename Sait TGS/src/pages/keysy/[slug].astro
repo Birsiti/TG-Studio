@@ -1,9 +1,10 @@
 ---
-// изменено 2026-10-08 03:34
+// изменено 2026-10-10 01:43
 import { getCollection, render } from 'astro:content';
 import { Picture } from 'astro:assets';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import Breadcrumbs from '../../components/Breadcrumbs.astro';
+import { SITE_URL, BRAND } from '../../site.config.js';
 import caseClient from '../../images/case-blesk-client.jpg';
 import caseAdmin from '../../images/case-blesk-admin.jpg';
 import caseOwner from '../../images/case-blesk-owner.jpg';
@@ -20,6 +21,20 @@ const { entry } = Astro.props;
 const { Content } = await render(entry);
 const path = `/keysy/${entry.id}`;
 
+const caseLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Article',
+  headline: entry.data.title,
+  description: entry.data.description,
+  datePublished: entry.data.date.toISOString().slice(0, 10),
+  inLanguage: 'ru-BY',
+  about: entry.data.client,
+  mainEntityOfPage: SITE_URL + path,
+  image: SITE_URL + '/assets/og-image.jpg',
+  author: { '@type': 'Organization', '@id': SITE_URL + '/#organization', name: BRAND.name },
+  publisher: { '@type': 'Organization', '@id': SITE_URL + '/#organization', name: BRAND.name, logo: { '@type': 'ImageObject', url: SITE_URL + '/logo-badge.png' } },
+};
+
 const screens = [
   { src: caseClient, alt: 'Экран подтверждения записи клиента в мини-приложении БЛЕСК', label: 'Клиент', caption: 'Подтверждение записи' },
   { src: caseAdmin, alt: 'Экран администратора: кто на смене и записи на сегодня в мини-приложении БЛЕСК', label: 'Администратор', caption: 'Записи и смена на сегодня' },
@@ -27,6 +42,7 @@ const screens = [
 ];
 ---
 <BaseLayout title={`${entry.data.title} | TG-Studio`} description={entry.data.description} path={path}>
+  <script type="application/ld+json" slot="head" set:html={JSON.stringify(caseLd)} />
   <Breadcrumbs items={[{ label: 'Главная', href: '/' }, { label: 'Кейсы', href: '/#advantages' }, { label: entry.data.client }]} />
 
   <main id="main-content">

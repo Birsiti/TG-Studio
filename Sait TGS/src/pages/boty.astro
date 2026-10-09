@@ -1,4 +1,5 @@
 ---
+// изменено 2026-10-10 01:43
 import BaseLayout from '../layouts/BaseLayout.astro';
 import Breadcrumbs from '../components/Breadcrumbs.astro';
 import { SITE_URL, BRAND, GEO } from '../site.config.js';
@@ -13,8 +14,10 @@ const serviceLd = {
   serviceType: 'Разработка чат-ботов для продаж',
   name: 'Чат-боты для продаж',
   description,
-  provider: { '@type': 'Organization', name: BRAND.name, url: SITE_URL + '/' },
-  areaServed: GEO.country,
+  provider: { '@type': 'Organization', '@id': SITE_URL + '/#organization', name: BRAND.name, url: SITE_URL + '/' },
+  areaServed: { '@type': 'Country', name: GEO.countryName },
+  availableLanguage: ['ru'],
+  audience: { '@type': 'BusinessAudience', name: 'Малый и средний бизнес' },
   url: SITE_URL + '/boty',
 };
 ---

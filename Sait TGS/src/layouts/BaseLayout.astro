@@ -1,5 +1,5 @@
 ---
-// изменено 2026-10-08 03:34
+// изменено 2026-10-10 01:43
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro';
 import '../styles/global.css';
@@ -26,17 +26,32 @@ const ogImageUrl = new URL(ogImage, SITE_URL).toString();
 const organizationLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
+  '@id': SITE_URL + '/#organization',
   name: BRAND.name,
   url: SITE_URL + '/',
   logo: SITE_URL + '/logo-badge.png',
   description: BRAND.legalDescription,
   areaServed: GEO.country,
-  sameAs: [CONTACTS.telegramChannel],
+  knowsAbout: ['Telegram-боты', 'Telegram Mini Apps', 'CRM-интеграции', 'ИИ-ассистенты', 'Автоматизация записи клиентов'],
+  contactPoint: [{ '@type': 'ContactPoint', contactType: 'sales', url: CONTACTS.telegramBot, availableLanguage: ['ru'], areaServed: GEO.country }],
+  sameAs: [CONTACTS.telegramChannel, CONTACTS.telegramBot],
+};
+
+const websiteLd = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  '@id': SITE_URL + '/#website',
+  name: BRAND.name,
+  url: SITE_URL + '/',
+  inLanguage: 'ru-BY',
+  publisher: { '@id': SITE_URL + '/#organization' },
 };
 
 const localBusinessLd = {
   '@context': 'https://schema.org',
   '@type': 'LocalBusiness',
+  '@id': SITE_URL + '/#localbusiness',
+  parentOrganization: { '@id': SITE_URL + '/#organization' },
   name: BRAND.name,
   url: SITE_URL + '/',
   image: ogImageUrl,
@@ -47,7 +62,7 @@ const localBusinessLd = {
     addressCountry: GEO.country,
   },
   areaServed: GEO.areaServed,
-  sameAs: [CONTACTS.telegramChannel],
+  sameAs: [CONTACTS.telegramChannel, CONTACTS.telegramBot],
 };
 ---
 <!DOCTYPE html>
@@ -91,6 +106,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <title>{title}</title>
 <meta name="description" content={description}>
 <link rel="canonical" href={canonicalUrl}>
+<link rel="alternate" type="text/markdown" href="/llms.txt" title="Описание сайта для нейросетей">
 <meta name="theme-color" content="#0B0E11" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#F3F5F7" media="(prefers-color-scheme: light)">
 <link rel="icon" href="/logo-badge.png">
@@ -122,6 +138,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
 <script type="application/ld+json" set:html={JSON.stringify(organizationLd)} />
 {includeLocalBusiness && <script type="application/ld+json" set:html={JSON.stringify(localBusinessLd)} />}
+{includeLocalBusiness && <script type="application/ld+json" set:html={JSON.stringify(websiteLd)} />}
 
 <slot name="head" />
 </head>
@@ -141,6 +158,26 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <Footer />
 
 <script is:inline>
+  // слова с дефисом («ИИ-ассистент», «Mini-App») не разрываем между строк
+  (function(){
+    const root = document.body, re = /[^\s]+[-‐][^\s]+/g;
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, { acceptNode: n =>
+      n.parentElement && !n.parentElement.closest('script, style, textarea, .nowrap') && /\S-\S/.test(n.textContent) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT });
+    const nodes = []; while (walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(n => {
+      const frag = document.createDocumentFragment(); let last = 0, m; const t = n.textContent; re.lastIndex = 0;
+      while ((m = re.exec(t))) {
+        frag.append(t.slice(last, m.index));
+        const span = document.createElement('span'); span.className = 'nowrap'; span.textContent = m[0]; frag.append(span);
+        last = m.index + m[0].length;
+      }
+      frag.append(t.slice(last));
+      // во flex/grid-контейнере кусочки текста стали бы отдельными элементами — собираем их в один span
+      if (/flex|grid/.test(getComputedStyle(n.parentElement).display)) { const box = document.createElement('span'); box.append(frag); n.replaceWith(box); }
+      else n.replaceWith(frag);
+    });
+  })();
+
   // scroll reveal
   const revealEls = document.querySelectorAll('.reveal');
   const io = new IntersectionObserver((entries)=>{

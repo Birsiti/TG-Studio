@@ -1,3 +1,4 @@
+# изменено 2026-10-10 01:43
 # Netlify build config for tg-studio.by.
 # The site now needs a build step (Astro SSG) instead of being served as raw
 # static files, so this replaces whatever base/publish directory is set in
@@ -9,3 +10,8 @@
   base = "Sait TGS"
   command = "npm run build"
   publish = "dist"
+
+# Astro 7 требует Node 22.12+; фиксируем мажорную версию, чтобы смена
+# версии по умолчанию на Netlify не сломала сборку.
+[build.environment]
+  NODE_VERSION = "22"
