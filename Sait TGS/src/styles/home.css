@@ -1,4 +1,4 @@
-/* изменено 2026-10-08 03:34 */
+/* изменено 2026-10-10 01:30 */
 /* ---------- ГЕРОЙ ---------- */
 .hero{ padding:128px 0 0; overflow:hidden; }
 @media (min-width:720px){ .hero{ padding:156px 0 0; } }
@@ -183,3 +183,18 @@
 .success-box .dot{ width:64px; height:64px; margin:0 auto 16px; border-radius:50%; display:grid; place-items:center; background:var(--ok-soft); color:var(--ok); }
 .success-box h4{ font-size:26px; }
 .success-box p{ margin:10px auto 20px; max-width:340px; }
+
+/* ---------- РАБОТАЮТ СЕЙЧАС ---------- */
+.live-grid{ display:grid; gap:14px; }
+@media (min-width:880px){ .live-grid{ grid-template-columns:repeat(3, minmax(0,1fr)); } }
+.live-card{ display:flex; flex-direction:column; padding:22px; border-radius:var(--r-xl); background:var(--surface); border:1px solid var(--line); border-top:3px solid var(--accent); }
+.live-top{ display:flex; align-items:center; gap:10px; }
+.live-icon{ width:44px; height:44px; border-radius:12px; display:grid; place-items:center; background:var(--accent-soft); color:var(--accent); flex:none; }
+.live-status{ margin-left:auto; display:inline-flex; align-items:center; gap:7px; font-family:var(--font-mono); font-size:13px; color:var(--ok); }
+.live-dot{ width:8px; height:8px; border-radius:50%; background:var(--ok); box-shadow:0 0 0 4px var(--ok-soft); }
+.live-card h3{ margin-top:18px; font-size:26px; letter-spacing:.02em; }
+.live-kind{ margin-top:4px; font-size:13.5px; color:var(--ink-2); }
+.live-card p{ margin-top:12px; font-size:15.5px; line-height:1.55; color:var(--ink-2); }
+.live-links{ display:flex; flex-wrap:wrap; gap:8px; margin-top:auto; padding-top:20px; }
+.live-links a{ display:inline-flex; align-items:center; gap:4px; min-height:44px; padding:0 14px; border-radius:10px; border:1px solid var(--line-2); font-size:15px; font-weight:600; color:var(--ink); transition:background-color .2s, border-color .2s; }
+.live-links a:hover{ background:var(--accent-soft); border-color:var(--accent); }
