@@ -1,4 +1,4 @@
-// изменено 2026-10-17 11:40
+// изменено 2026-10-17 11:55
 /* Вкладка «Сборка»: заявки на дату и лист с галочками в порядке обхода склада
    (по часовой стрелке от двери). Сейчас — по заявке, со следующей недели — весь маршрут за круг. */
 (function(){
@@ -7,7 +7,6 @@
   const {api, L, W, P, fail} = Cake;
 
   const PK = Cake.pick = {orders:[], points:[], routes:[], places:{}, dates:[], date:'', route:'', mode:'order'};
-  const PICKER_KEY = 'cake-picker';
   const pt = id=> PK.points.find(x=>x.id === id) || {customer:'?', address:''};
   const placeOf = pid=> PK.places[pid] || 0;
   // Порядок круга: по месту, без места — в конце, внутри — по названию
@@ -87,7 +86,7 @@
             <span class="pick-name">${Kit.nobr(P(l.productId).name)}<small>${W(P(l.productId).weightG)}</small></span>
             ${qtyCell(l.qty, l.bonus)}
             <span class="pick-box">${on ? icon('check') : ''}</span></button>`; })}</div>
-        ${done ? html`<div class="kv"><span class="k">Собрал</span><span class="v">${o.picker}${o.boxes != null ? ` · ящиков ${o.boxes}` : ''}</span></div>` : ''}`;
+        ${done && o.boxes != null ? html`<div class="kv"><span class="k">Ящиков</span><span class="v">${o.boxes}</span></div>` : ''}`;
     };
     const sub = ()=> `${p.customer} · ${o.route} · ${o.checked.length} из ${o.lines.length}`;
     const actions = ()=> o.status === 'picked' ? html`<button class="btn btn-ghost btn-block" type="button" data-a="reopen">${icon('restore')}Вернуть в сборку</button>`
@@ -113,18 +112,15 @@
     });
   }
 
+  // Собирает вся смена — кто собрал не спрашиваем; ящики (оборотная тара) — по желанию
   function finish(o, after, all){
-    let saved = ''; try{ saved = localStorage.getItem(PICKER_KEY) || ''; }catch(e){}
-    const sh = Kit.sheet({title:'Сборку осуществил', sub:`Заявка №${o.num}`, body: html`
-      <label class="field"><span class="field-label">ФИО сборщика</span><input class="input" id="pkWho" maxlength="60" value="${saved}" autocomplete="name"></label>
+    const sh = Kit.sheet({title:'Заявка собрана', sub:`№${o.num}`, body: html`
       <label class="field"><span class="field-label">Количество ящиков</span><input class="input" id="pkBoxes" type="number" inputmode="numeric" min="0" placeholder="не обязательно"></label>`,
       actions: html`<button class="btn btn-primary btn-block" type="button" data-ok>${icon('check')}Готово</button>`});
     Kit.on(sh.el, 'click', '[data-ok]', async (e, el)=>{
-      const who = $('#pkWho', sh.el).value.trim(), boxes = $('#pkBoxes', sh.el).value;
-      if(!who){ Kit.toast('Укажите, кто собрал', 'error'); return; }
-      try{ localStorage.setItem(PICKER_KEY, who); }catch(e2){}
+      const boxes = $('#pkBoxes', sh.el).value;
       Kit.busy(el, true);
-      const r = await api('finishPick', Object.assign({id:o.id, picker:who}, boxes !== '' ? {boxes:+boxes} : {}, all ? {all:true} : {}));
+      const r = await api('finishPick', Object.assign({id:o.id}, boxes !== '' ? {boxes:+boxes} : {}, all ? {all:true} : {}));
       Kit.busy(el, false);
       if(!r.ok){ fail(r); return; }
       Object.assign(o, r.order); haptic('success'); Kit.toast(`Заявка №${o.num} собрана`, 'ok'); sh.close(); after();

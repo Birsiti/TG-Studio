@@ -100,5 +100,6 @@ test('сборка: событие «собрано» и текст руково
   const t = texts.pickedForAdmin(o, { customer: 'Белвиллесден ИУП', address: 'пр-т Партизанский, 150А' });
   assert.match(t, /№1103609 · Белвиллесден ИУП/);
   assert.match(t, /50 шт \+ 2 бонус, позиций 2/);
-  assert.match(t, /Собрал: Кобзев · ящиков 6/);
+  assert.match(t, /Собрал: Кобзев\nЯщиков: 6/);
+  assert.doesNotMatch(texts.pickedForAdmin({ ...o, picker: '' }, null), /Собрал/);  // смена собирает вместе
 });

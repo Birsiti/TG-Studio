@@ -36,9 +36,9 @@ def test_pick_cycle(api):
     assert api("cake", "reopenPick", id=o["id"])["order"]["status"] == "new"
     # «Всё уже собрано»: без галочек, одним подтверждением; без сборщика ничего не меняется
     o = order(api, "1103455")
-    assert api("cake", "finishPick", id=o["id"], all=True)["error"] == "bad_request"
+    assert api("cake", "finishPick", id=o["id"], all=True, boxes=-1)["error"] == "bad_request"  # ошибка — ничего не меняется
     assert order(api, "1103455")["checked"] == []
-    done = api("cake", "finishPick", id=o["id"], picker="Кобзев", all=True)["order"]
+    done = api("cake", "finishPick", id=o["id"], all=True)["order"]  # без сборщика — смена собирает вместе
     assert done["status"] == "picked" and sorted(done["checked"]) == sorted(ln["productId"] for ln in o["lines"])
     api("cake", "reopenPick", id=o["id"])
 

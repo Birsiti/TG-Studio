@@ -1,4 +1,4 @@
-// изменено 2026-10-17 03:30
+// изменено 2026-10-17 11:55
 // Тексты сообщений. Обычный текст без разметки — не нужно экранировать.
 
 function weight(g) {
@@ -86,7 +86,7 @@ function pickedForAdmin(o, point) {
   const qty = sum(o.lines, (l) => l.qty);
   const bonus = sum(o.lines, (l) => l.bonus);
   const where = point ? ` · ${point.customer}, ${point.address}` : '';
-  return `Собрана заявка №${o.num}${where}\n${o.route ? o.route + ' · ' : ''}${qty} шт${bonus ? ` + ${bonus} бонус` : ''}, позиций ${o.lines.length}\nСобрал: ${o.picker || '—'}${o.boxes != null ? ` · ящиков ${o.boxes}` : ''}`;
+  return `Собрана заявка №${o.num}${where}\n${o.route ? o.route + ' · ' : ''}${qty} шт${bonus ? ` + ${bonus} бонус` : ''}, позиций ${o.lines.length}${o.picker ? `\nСобрал: ${o.picker}` : ''}${o.boxes != null ? `\nЯщиков: ${o.boxes}` : ''}`;
 }
 
 module.exports = { pickedForAdmin, weight, makeLookup, shippedForDriver, reportedForStore, closedForDriver, digest };

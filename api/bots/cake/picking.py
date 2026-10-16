@@ -1,4 +1,4 @@
-# изменено 2026-10-17 04:00
+# изменено 2026-10-17 11:55
 """Сборка по кругу: заявки точек на дату, лист с галочками, места тортов на складе, точки разгрузки.
 
 Остаток сборка не трогает — торты списываются отгрузкой рейса (trips.py).
@@ -126,7 +126,7 @@ def finish_pick(ctx: Ctx, p: dict) -> dict:
     o = _get_order(ctx.conn, v_id(p, "id"))
     if o["status"] != "new":
         raise ApiError("bad_state", "Заявка уже собрана")
-    picker = v_str(p, "picker", min_len=1, max_len=60)
+    picker = v_str(p, "picker", required=False, max_len=60)  # смена собирает вместе — не обязательно
     boxes = v_int(p, "boxes", lo=0, hi=999, required=False, default=None)
     lines = [ln["productId"] for ln in jload(o["lines"], [])]
     if v_bool(p, "all", default=False):  # «Всё уже собрано» — отметить все строки разом
