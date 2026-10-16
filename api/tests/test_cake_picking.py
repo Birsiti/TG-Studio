@@ -51,10 +51,23 @@ def test_save_order_and_places(api):
     assert r["order"]["checked"] == ["p002"]  # отметка уцелевшей строки сохраняется
     assert "2026-10-20" in api("cake", "getOrders", date="2026-10-20")["dates"]
     assert api("cake", "deleteOrder", id=o["id"])["ok"]
-    assert api("cake", "savePlaces", places=[{"productId": "p002", "place": 7}, {"productId": "p003", "place": 2}])["places"] == {"p002": 7, "p003": 2}
-    assert api("cake", "savePlaces", places=[{"productId": "p002", "place": 0}])["places"] == {"p003": 2}
+    r = api("cake", "savePlaces", places=[{"productId": "p002", "place": 7}, {"productId": "p003", "place": 2}])["places"]
+    assert r["p002"] == 7 and r["p003"] == 2
+    r = api("cake", "savePlaces", places=[{"productId": "p002", "place": 0}])["places"]
+    assert "p002" not in r and r["p003"] == 2
     p = api("cake", "savePoint", customer="Тест", address="г. Минск, ул. Тестовая, 1", route="Маршрут 9")["point"]
     assert p["route"] == "Маршрут 9" and "Маршрут 9" in api("cake", "getOrders")["routes"]
+
+
+def test_places_from_photos_once(api):
+    """Места по фото ставятся в новую базу один раз; дальше в базе последнее сохранение из приложения."""
+    from bots.cake.places_data import PLACES
+    r = api("cake", "getOrders")["places"]
+    assert all(r.get(k) == v for k, v in PLACES.items() if k not in ("p002", "p003")) and PLACES["p007"] == 1  # p002/p003 правит тест выше
+    api("cake", "savePlaces", places=[{"productId": "p007", "place": 40}, {"productId": "p013", "place": 0}])
+    cake_bot._ready = False  # перезапуск API — правки не перетираются
+    r = api("cake", "getOrders")["places"]
+    assert r["p007"] == 40 and "p013" not in r and r["p018"] == PLACES["p018"]
 
 
 def test_migration_into_old_db(client, api):

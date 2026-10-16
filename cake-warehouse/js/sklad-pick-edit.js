@@ -1,4 +1,4 @@
-// изменено 2026-10-17 05:30
+// изменено 2026-10-17 10:30
 /* Сборка: ввод и правка заявки, карта склада (место торта — № по кругу по часовой от двери),
    отгрузка собранного маршрута водителю (черновик рейса). */
 (function(){
@@ -83,8 +83,11 @@
     });
   };
 
-  Cake.editPlaces = function(){
+  Cake.editPlaces = async function(){
     const pk = PK();
+    const fresh = await api('getOrders', pk.date ? {date:pk.date} : {});  // последнее сохранение, даже если «Сборку» ещё не открывали
+    if(!fresh.ok){ fail(fresh); return; }
+    pk.places = fresh.places || {};
     const sh = Kit.sheet({title:'Места на складе', sub:'Встаньте у двери и идите по часовой: первое место — 1, дальше 2, 3… Несколько тортов на одном месте — один номер', body: html`
       <div class="search"><span>${icon('search')}</span><input class="input" id="epQ" type="search" placeholder="Найти торт" autocomplete="off"></div>
       <div class="section" id="epList">${productRows(id=>pk.places[id], 'data-ep')}</div>`,
@@ -99,7 +102,7 @@
       if(!places.length){ sh.close(); return; }
       Kit.busy(el, true); const r = await api('savePlaces', {places}); Kit.busy(el, false);
       if(!r.ok){ fail(r); return; }
-      pk.places = r.places; haptic('success'); Kit.toast(`Сохранено мест: ${r.saved}`, 'ok'); sh.close(); await pk.reload();
+      pk.places = r.places; haptic('success'); Kit.toast(`Сохранено мест: ${r.saved}`, 'ok'); sh.close(); if(pk.date) await pk.reload();
     });
   };
 })();

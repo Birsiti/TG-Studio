@@ -1,4 +1,4 @@
-# изменено 2026-10-17 08:50
+# изменено 2026-10-17 10:30
 """Сборка в уже работающей базе: недостающие колонки, маршруты как направления рейсов,
 точки и заявки с фото накладных (orders_data.py) — один раз."""
 from __future__ import annotations
@@ -7,6 +7,7 @@ from datetime import datetime
 
 from core import iso_now, jdump, new_id, scalar
 from bots.cake.orders_data import DAY, ORDERS, POINTS
+from bots.cake.places_data import PLACES
 
 
 def route_city(conn, route: str) -> str:
@@ -28,9 +29,20 @@ def migrate_picking(conn, now: datetime) -> None:
     if "trip_id" not in cols:  # базы, созданные до связи заявок с рейсами
         conn.execute("ALTER TABLE orders ADD COLUMN trip_id TEXT")
     seed_orders(conn, now)
+    seed_places(conn)
     routes = [r["route"] for r in conn.execute("SELECT DISTINCT route FROM points WHERE route<>'' ORDER BY route").fetchall()]
     for i, route in enumerate(routes):  # маршруты — первыми и по порядку: 2, 3, … (каждый старт, идемпотентно)
         conn.execute("UPDATE cities SET sort=? WHERE id=?", (i - len(routes), route_city(conn, route)))
+
+
+def seed_places(conn) -> None:
+    """Места по фото — один раз. Дальше их меняют в приложении, и в базе остаётся последнее сохранение
+    (уже заданное место не перетираем)."""
+    if scalar(conn, "SELECT v FROM meta WHERE k='places_v1'") is not None:
+        return
+    for pid, place in PLACES.items():
+        conn.execute("INSERT OR IGNORE INTO places(product_id,place) SELECT id,? FROM products WHERE id=?", (place, pid))
+    conn.execute("INSERT INTO meta(k,v) VALUES('places_v1',?)", (iso_now(),))
 
 
 def seed_orders(conn, now: datetime) -> None:

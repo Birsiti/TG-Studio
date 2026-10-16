@@ -3,6 +3,9 @@
 
     python3 cake-warehouse/db/gen_karta_draft.py
 
+Заодно пишет api/bots/cake/places_data.py: места тортов из ассортимента — API ставит их
+в базу один раз (дальше места меняют только в приложении, последнее сохранение остаётся).
+
 Строка с product_id — торт из ассортимента; без него — новый товар (название, категория
 и вес — догадка из подписи, на странице их можно поправить). note — вопрос к руководителю.
 """
@@ -15,6 +18,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 SRC, OUT = HERE / "places-photos.csv", HERE.parent / "karta-draft.js"
+API = HERE.parent.parent / "api" / "bots" / "cake" / "places_data.py"  # места по фото — сеются в базу один раз
 CAT_OF = [("венский", "Венский десерт"), ("набор", "Набор пирожных"), ("сладости", "Сладости мучные"),
           ("пирожное", "Пирожное"), ("торт", "Торт"), ("трубочка", "Сладости мучные")]
 
@@ -37,6 +41,11 @@ def main() -> None:
     OUT.write_text("// изменено 2026-10-17 07:50\n"
                    "// СГЕНЕРИРОВАНО db/gen_karta_draft.py из db/places-photos.csv — руками не править.\n"
                    "window.CakeKartaDraft = " + json.dumps(out, ensure_ascii=False, indent=0) + ";\n", encoding="utf-8")
+    places = {x["productId"]: x["place"] for x in out if x["productId"]}
+    API.write_text("# изменено 2026-10-17 10:30\n"
+                   '"""СГЕНЕРИРОВАНО cake-warehouse/db/gen_karta_draft.py из db/places-photos.csv — руками не править.\n'
+                   'Места на складе по фото (обход по часовой от двери): товар → номер места."""\n\n'
+                   "PLACES = " + json.dumps(places, ensure_ascii=False, indent=4) + "\n", encoding="utf-8")
     print(f"{OUT.name}: {len(out)} мест, новых товаров {sum(1 for x in out if not x['productId'])}, вопросов {sum(1 for x in out if x['note'])}")
 
 
