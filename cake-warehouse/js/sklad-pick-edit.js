@@ -1,5 +1,6 @@
-// изменено 2026-10-17 02:55
-/* Сборка: ввод и правка заявки, карта склада (место торта — № по кругу против часовой от двери). */
+// изменено 2026-10-17 04:20
+/* Сборка: ввод и правка заявки, карта склада (место торта — № по кругу против часовой от двери),
+   отгрузка собранного маршрута водителю (черновик рейса). */
 (function(){
   "use strict";
   const {html, icon, $, $$, date: D, haptic} = Kit;
@@ -55,6 +56,30 @@
       const r = await api('deleteOrder', {id:o.id});
       if(!r.ok){ fail(r); return; }
       sh.close(); await pk.reload();
+    });
+  };
+
+  Cake.shipRoute = async function(list){
+    const pk = PK(), left = list.filter(o=>o.status !== 'picked');
+    if(left.length){ Kit.toast(`Не собраны: №${left.map(o=>o.num).join(', №')}`, 'error'); haptic('warning'); return; }
+    const s = await api('getShifts', {from:pk.date, to:pk.date});
+    const onShift = (s.ok && s.days[pk.date]) || [];
+    const drivers = Cake.refs.staff.filter(x=>x.role === 'driver' && x.active).sort((a, b)=> onShift.includes(b.id) - onShift.includes(a.id));
+    const qty = list.reduce((t, o)=>t + o.lines.reduce((q, l)=>q + l.qty + l.bonus, 0), 0), boxes = list.reduce((t, o)=>t + (o.boxes || 0), 0);
+    let driverId = '';
+    const sh = Kit.sheet({title:`Отгрузка · ${pk.route}`, sub:`${list.length} заявок · ${qty} шт · ящиков ${boxes}`, body: html`
+      <p class="hint">Создастся рейс на сборке. Дальше на вкладке «Рейсы» — «Отгрузить»: торты спишутся со склада, ящики запишутся на водителя.</p>
+      <div class="eyebrow section" style="margin-bottom:8px">Водитель</div>
+      <div class="chips" id="srDrv">${drivers.map(d=>html`<button class="chip" type="button" data-d="${d.id}">${d.name}${onShift.includes(d.id) ? ' · на смене' : ''}</button>`)}</div>`,
+      actions: html`<button class="btn btn-primary btn-block" type="button" data-ok>${icon('truck')}Создать рейс</button>`});
+    Kit.on(sh.el, 'click', '[data-d]', (e, el)=>{ driverId = driverId === el.dataset.d ? '' : el.dataset.d; $$('[data-d]', sh.el).forEach(b=>b.classList.toggle('is-on', b.dataset.d === driverId)); haptic('select'); });
+    Kit.on(sh.el, 'click', '[data-ok]', async (e, el)=>{
+      Kit.busy(el, true);
+      const r = await api('routeToTrip', Object.assign({date:pk.date, route:pk.route}, driverId ? {driverId} : {}));
+      Kit.busy(el, false);
+      if(!r.ok){ fail(r); return; }
+      haptic('success'); Kit.toast(`Рейс №${r.trip.num} создан — отгрузите на вкладке «Рейсы»`, 'ok'); sh.close();
+      await Cake.loadRefs(); await pk.reload();  // маршрут мог впервые стать направлением рейса
     });
   };
 

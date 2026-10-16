@@ -1,4 +1,4 @@
-// изменено 2026-10-17 02:40
+// изменено 2026-10-17 04:10
 /* ============================================================
    mock-picking.js — сборка по кругу в демо-режиме (двойник api/bots/cake/picking.py).
    Точки и заявки — mock-orders.js; в демо заявки с фото стоят на сегодня.
@@ -12,10 +12,19 @@
     if(!S.orders){  // старое состояние демо без сборки — досеиваем один раз
       var today = D.today();
       S.points = CakeMockOrders.points.map(function(p){ return Object.assign({}, p); });
-      S.orders = CakeMockOrders.orders.map(function(o){ return Object.assign({}, o, {date:today, checked:[], status:'new', picker:'', boxes:null, pickedAt:null}); });
+      S.orders = CakeMockOrders.orders.map(function(o){ return Object.assign({}, o, {date:today, checked:[], status:'new', picker:'', boxes:null, pickedAt:null, tripId:null}); });
       S.places = {};
     }
+    S.points.forEach(function(p){ if(p.route) routeCity(S, p.route); });
     return S;
+  }
+  // Маршрут — направление рейса, как город (так же, как route_city в API)
+  function routeCity(S, route){
+    var c = S.cities.filter(function(x){ return x.name === route; })[0];
+    if(c) return c.id;
+    var d = route.replace(/\D/g, ''), id = d && !byId(S.cities, 'route-' + d) ? 'route-' + d : Kit.uid('c');
+    S.cities.unshift({id:id, name:route, code:d ? ('М' + d).slice(0, 4) : route.slice(0, 3).toUpperCase(), sort:-1, active:true});
+    return id;
   }
   function order(S, id){ return byId(S.orders, id); }
   function lines(S, arr){
@@ -54,7 +63,7 @@
         var keep = ls.map(function(l){ return l.productId; });
         Object.assign(o, f, {checked:o.checked.filter(function(x){ return keep.indexOf(x) >= 0; })});
       } else {
-        o = Object.assign({id:Kit.uid('O'), checked:[], status:'new', picker:'', boxes:null, pickedAt:null}, f);
+        o = Object.assign({id:Kit.uid('O'), checked:[], status:'new', picker:'', boxes:null, pickedAt:null, tripId:null}, f);
         S.orders.push(o);
       }
       return {order:o};
@@ -88,6 +97,7 @@
     reopenPick: function(p){
       var o = order(st(), p.id);
       if(!o) return err('not_found', 'Заявка не найдена');
+      if(o.tripId) return err('bad_state', 'Заявка уже в рейсе — сначала отмените рейс');
       o.status = 'new'; o.pickedAt = null;
       return {order:o};
     },
@@ -100,6 +110,24 @@
         n++;
       });
       return {saved:n, places:S.places};
+    },
+    routeToTrip: function(p){
+      var S = st();
+      var list = S.orders.filter(function(o){ return o.date === p.date && o.route === p.route && !o.tripId; }).sort(function(a, b){ return a.num.localeCompare(b.num); });
+      if(!list.length) return err('not_found', 'Нет заявок маршрута без рейса');
+      var left = list.filter(function(o){ return o.status !== 'picked'; }).map(function(o){ return o.num; });
+      if(left.length) return err('bad_state', 'Не собраны: №' + left.join(', №'));
+      var drv = p.driverId && byId(S.staff, p.driverId);
+      if(p.driverId && (!drv || drv.role !== 'driver')) return err('not_found', 'Нет такого водителя');
+      var m = {}, boxes = 0;
+      list.forEach(function(o){ o.lines.forEach(function(l){ m[l.productId] = (m[l.productId] || 0) + l.qty + (l.bonus || 0); }); boxes += o.boxes || 0; });
+      var tid = Kit.uid('R'), num = ++S.num, box = S.tara.filter(function(x){ return x.active; })[0];
+      var t = {id:tid, num:num, date:p.date, cityId:routeCity(S, p.route), driverId:p.driverId || null, status:'draft',
+        lines:Object.keys(m).map(function(k){ return {productId:k, qty:m[k]}; }), taraOut:box && boxes ? [{taraId:box.id, qty:boxes}] : [], taraBack:[],
+        report:'', note:'Заявки: №' + list.map(function(o){ return o.num; }).join(', №'), createdAt:U.now(), shippedAt:null, reportedAt:null, closedAt:null};
+      S.trips.push(t);
+      list.forEach(function(o){ o.tripId = tid; });
+      return {trip:t, orders:list.length};
     },
     savePoint: function(p){
       var S = st();

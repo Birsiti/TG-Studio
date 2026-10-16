@@ -1,4 +1,4 @@
-// изменено 2026-10-17 02:50
+// изменено 2026-10-17 04:20
 /* Вкладка «Сборка»: заявки на дату и лист с галочками в порядке обхода склада
    (против часовой стрелки от двери). Сейчас — по заявке, со следующей недели — весь маршрут за круг. */
 (function(){
@@ -37,18 +37,23 @@
     const list = PK.orders.filter(o=>!PK.route || o.route === PK.route);
     const unplaced = PK.orders.some(o=>o.lines.some(l=>!placeOf(l.productId)));
     $('#pkNote').innerHTML = unplaced ? String(html`<p class="mode-note">Не у всех тортов задано место на складе — такие строки идут в конце листа. ${html`<button class="link-btn" type="button" data-places>Задать места</button>`}</p>`) : '';
-    if(PK.route && PK.mode === 'route'){ $('#pkList').innerHTML = String(routeSheet(list)); return; }
+    if(PK.route && PK.mode === 'route'){
+      const free = list.filter(o=>!o.tripId), ready = free.length && free.every(o=>o.status === 'picked');
+      $('#pkList').innerHTML = String(html`${routeSheet(list)}${free.length ? html`<button class="btn ${ready ? 'btn-primary' : 'btn-ghost'} btn-block section" type="button" data-ship>${icon('truck')}${ready ? 'Отгрузить маршрут водителю' : `Собрано ${free.length - free.filter(o=>o.status !== 'picked').length} из ${free.length} — отгрузка после сборки`}</button>` : html`<p class="hint section">Все заявки маршрута уже в рейсе — смотрите вкладку «Рейсы».</p>`}`);
+      return;
+    }
     $('#pkList').innerHTML = list.length ? String(html`${list.map(card)}`)
       : String(html`<div class="empty">${icon('route')}<div class="empty-title">Заявок нет</div>На ${D.label(PK.date)} заявок не внесено</div>`);
   }
 
   function card(o){
     const p = pt(o.pointId), done = o.status === 'picked', n = o.lines.length, c = o.checked.length;
+    const st = o.tripId ? ['В рейсе', 'pill-info'] : done ? ['Собрано', 'pill-ok'] : c ? [`${c} из ${n}`, 'pill-warn'] : ['Ждёт', 'pill-muted'];
     return html`<button class="pick-card${done ? ' is-done' : ''}" type="button" data-o="${o.id}">
       <span class="pick-card-main"><span class="pick-card-title">№${o.num} · ${p.customer}</span>
         <span class="pick-card-sub">${p.address}</span>
         <span class="pick-card-sub">${o.route} · ${total(o)} шт${o.comment ? ' · ' + o.comment : ''}</span></span>
-      <span class="pill ${done ? 'pill-ok' : c ? 'pill-warn' : 'pill-muted'}">${done ? 'Собрано' : c ? `${c} из ${n}` : 'Ждёт'}</span></button>`;
+      <span class="pill ${st[1]}">${st[0]}</span></button>`;
   }
 
   // Весь маршрут за один круг: сколько взять с каждого места и как разложить по заявкам
@@ -128,6 +133,7 @@
   Kit.on($('#pkMode'), 'click', '[data-m]', (e, el)=>{ haptic('select'); PK.mode = el.dataset.m; draw(); });
   Kit.on($('#pkList'), 'click', '[data-o]', (e, el)=> openOrder(PK.orders.find(x=>x.id === el.dataset.o)));
   Kit.on($('#pkNote'), 'click', '[data-places]', ()=> Cake.editPlaces());
+  Kit.on($('#pkList'), 'click', '[data-ship]', ()=> Cake.shipRoute(PK.orders.filter(o=>o.route === PK.route && !o.tripId)));
 
   Cake.tabs.pick = renderPick;
 })();
