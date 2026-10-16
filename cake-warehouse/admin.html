@@ -1,0 +1,55 @@
+<!-- изменено 2026-10-17 01:30 -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>ТОРТОВОЗ — склад</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="../kit/core.js"></script>
+<link rel="stylesheet" href="../kit/base.css">
+<link rel="stylesheet" href="brand.css">
+<script src="mock-data.js"></script>
+<script src="mock.js"></script>
+</head>
+<body>
+<div class="app has-tabbar">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark" id="mark"></div><div class="brand-text"><span class="brand-name">ТОРТОВОЗ</span><span class="brand-role">Склад</span></div></div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="refreshBtn" type="button" aria-label="Обновить"></button>
+      <button class="icon-btn" type="button" data-theme-toggle aria-label="Оформление"></button>
+    </div>
+  </header>
+
+  <section data-panel="overview" hidden>
+    <div class="page-head"><h1 class="page-title">Сводка</h1><p class="page-sub" id="ovSub"></p></div>
+    <div id="ovLow"></div>
+    <div class="stats" id="ovStats"></div>
+    <div class="section"><div class="section-head"><h2 class="section-title">Отгрузки за 14 дней</h2><span class="hint">шт</span></div><div class="card" id="ovChart"></div></div>
+    <div class="section"><div class="section-head"><h2 class="section-title">По городам</h2></div><div class="card" id="ovCities"></div></div>
+    <div class="section"><div class="section-head"><h2 class="section-title">Ходовые торты</h2></div><div class="card" id="ovTop"></div></div>
+  </section>
+
+  <section data-panel="shifts" hidden>
+    <div class="page-head"><h1 class="page-title">Смены</h1><p class="page-sub">Кто работает в выбранный день</p></div>
+    <div class="days" id="shDays"></div>
+    <div id="shList"></div>
+  </section>
+
+  <section data-panel="refs" hidden>
+    <div class="page-head"><h1 class="page-title">Справочники</h1><p class="page-sub">Ассортимент, города, люди и тара</p></div>
+    <div class="seg seg-grid" id="refSeg"></div>
+    <div class="section"><button class="add-tile" type="button" id="refAdd"></button><div class="section" id="refList"></div></div>
+  </section>
+</div>
+
+<nav class="tabbar"><div class="tabbar-inner">
+  <button type="button" data-tab="overview"><span data-ic="chart"></span>Сводка</button>
+  <button type="button" data-tab="shifts"><span data-ic="calendar"></span>Смены</button>
+  <button type="button" data-tab="refs"><span data-ic="settings"></span>Справочники</button>
+</div></nav>
+
+<script src="js/admin.js"></script>
+</body>
+</html>
