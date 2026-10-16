@@ -1,4 +1,4 @@
-# изменено 2026-10-16 20:05
+# изменено 2026-10-16 23:00
 from core import now
 
 
@@ -35,7 +35,8 @@ def test_income_writeoff_adjust(api):
 def test_trip_full_cycle(api):
     api("cake", "addIncome", lines=[{"productId": "p003", "qty": 10}])
     q0 = stock_of(api, "p003")
-    tara0 = next(c for c in api("cake", "getTara")["cities"] if c["id"] == "lida")["balance"]["box"]
+    pavel = lambda: next(d for d in api("cake", "getTara")["drivers"] if d["id"] == "dr-pavel")["tara"]["box"]  # noqa: E731
+    tara0 = pavel()
     r = api("cake", "saveTrip", cityId="lida", driverId="dr-pavel", lines=[{"productId": "p003", "qty": 6}],
             taraOut=[{"taraId": "box", "qty": 4}])
     trip = r["trip"]
@@ -57,8 +58,11 @@ def test_trip_full_cycle(api):
              taraBack=[{"taraId": "box", "qty": 3}])["trip"]
     assert cl["status"] == "closed" and cl["lines"][0]["delivered"] == 4
     assert stock_of(api, "p003") == q0 - 5
-    tara1 = next(c for c in api("cake", "getTara")["cities"] if c["id"] == "lida")["balance"]["box"]
-    assert tara1 == tara0 + 1
+    tara1 = pavel()
+    # выдали 4, вернул 3 → долг водителя вырос на 1
+    assert (tara1["issued"], tara1["returned"], tara1["debt"]) == (tara0["issued"] + 4, tara0["returned"] + 3, tara0["debt"] + 1)
+    assert any(t["id"] == trip["id"] for t in api("cake", "getMyTrips", driverId="dr-pavel")["trips"])
+    assert api("cake", "getMyTrips", driverId="dr-pavel")["taraDebt"] == [{"taraId": "box", "qty": tara1["debt"]}]
 
 
 def test_ship_checks(api):
@@ -70,9 +74,16 @@ def test_ship_checks(api):
 
 
 def test_tara_shifts_overview_refs(api):
-    r = api("cake", "taraMove", cityId="vitebsk", taraId="stack", qty=2, dir="out")
-    b = r["balance"]
-    assert api("cake", "taraMove", cityId="vitebsk", taraId="stack", qty=2, dir="in")["balance"] == b - 2
+    r = api("cake", "taraMove", driverId="dr-ivan", taraId="box", qty=5, kind="out")
+    b = r["debt"]
+    assert api("cake", "taraMove", driverId="dr-ivan", taraId="box", qty=2, kind="back")["debt"] == b - 2
+    assert api("cake", "taraMove", driverId="dr-ivan", taraId="box", qty=1, kind="writeoff")["debt"] == b - 3
+    assert api("cake", "taraMove", driverId="dr-ivan", taraId="box", qty=b, kind="back")["error"] == "bad_request"
+    assert api("cake", "taraMove", driverId="sk-anna", taraId="box", qty=1, kind="out")["error"] == "not_found"
+    t = api("cake", "getTara")
+    box = t["types"][0]
+    assert box["inStock"] == box["total"] - box["atDrivers"] - box["lost"] and box["lost"] >= 1
+    assert sum(d["tara"]["box"]["debt"] for d in t["drivers"]) == box["atDrivers"]
     assert api("cake", "setShift", date=T(), staffIds=["dr-ivan", "sk-anna", "ghost"])["staffIds"] == ["dr-ivan", "sk-anna"]
     assert api("cake", "getShifts")["days"][T()] == ["dr-ivan", "sk-anna"]
     o = api("cake", "getOverview")
@@ -96,7 +107,7 @@ def test_catalog_from_client(api):
     assert sum(1 for p in r["products"] if len(p["id"]) == 4) == 94 and r["cats"][0] == "Торт"
     names = {(p["cat"], p["name"], p["weightG"]) for p in r["products"]}
     assert ("Венский десерт", "Вишня в коньяке", 620) in names and ("Набор пирожных", "Honey Бум фисташка", 310) in names
-    assert {t["name"] for t in r["tara"]} == {"Ящик", "Стопка"}
+    assert {t["name"] for t in r["tara"]} == {"Ящик"}
     p = api("cake", "saveProduct", name="Медовик", cat="Торт", weightG=1000)["product"]
     assert p["cat"] == "Торт" and p["weightG"] == 1000
 

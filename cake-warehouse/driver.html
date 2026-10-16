@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-16 19:10 -->
+<!-- изменено 2026-10-16 23:00 -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -33,7 +33,7 @@
 
   const ST = {draft:['Собирается на складе','pill-warn'], shipped:['В пути','pill-info'], reported:['Отчёт сдан','pill-accent'], closed:['Принят складом','pill-ok']};
   const PICK_KEY = 'tgs-cake-driver';
-  let REFS = null, ME = null, TRIPS = [], restricted = false;
+  let REFS = null, ME = null, TRIPS = [], DEBT = [], restricted = false;
   const P = id=> REFS.products.find(x=>x.id === id) || {name:'?'};
   const W = g=> !g ? '' : g < 1000 ? g + ' г' : String(g / 1000).replace('.', ',') + ' кг';
   const L = id=> { const p = P(id); return p.name + (p.weightG ? ', ' + W(p.weightG) : ''); };
@@ -47,7 +47,7 @@
     REFS = refs; restricted = me.ok && me.restricted;
     const picked = Kit.store(PICK_KEY);
     const r = await api('getMyTrips', {driverId:(me.ok && me.staff) ? undefined : picked || undefined});
-    ME = r.ok ? r.driver : null; TRIPS = r.ok ? r.trips : [];
+    ME = r.ok ? r.driver : null; TRIPS = r.ok ? r.trips : []; DEBT = (r.ok && r.taraDebt) || [];
     render();
   }
 
@@ -59,6 +59,7 @@
       <div class="page-head"><h1 class="page-title">${ME.name.split(' ')[0]}, привет</h1>
         <p class="page-sub">${ME.car || 'Машина не указана'} ${restricted ? '' : html`· <button class="link-btn" type="button" id="swap">сменить водителя</button>`}</p></div>
       <p><span class="thermo">+2…+6 °C в кузове</span></p>
+      ${DEBT.length ? html`<div class="card section" style="display:flex;align-items:center;gap:12px">${icon('layers')}<span style="flex:1">Ящиков на руках — верните на склад</span><span class="qty is-low">${DEBT.reduce((a, d)=>a + d.qty, 0)}</span></div>` : ''}
       <div class="section"><div class="section-head"><h2 class="section-title">Текущие рейсы</h2></div>
         ${active.length ? active.map(card) : html`<div class="empty">${icon('truck')}<div class="empty-title">Рейсов нет</div>Склад ещё не назначил вам рейс</div>`}</div>
       ${done.length ? html`<div class="section"><div class="section-head"><h2 class="section-title">Последние</h2></div>${done.slice(0, 8).map(card)}</div>` : ''}`);
@@ -106,7 +107,7 @@
       ${t.lines.map(l=>html`<div class="qrow"><span class="qrow-name">${Kit.nobr(P(l.productId).name)}<small>${W(P(l.productId).weightG)} · увезли ${l.qty}</small></span>
         <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-back="${l.productId}" value="${(rb[l.productId] || {}).back || ''}">
         <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-spoil="${l.productId}" value="${(rb[l.productId] || {}).spoiled || ''}"></div>`)}
-      ${t.taraOut.length ? html`<div class="eyebrow section" style="margin-bottom:4px">Тара обратно</div>
+      ${t.taraOut.length ? html`<div class="eyebrow section" style="margin-bottom:4px">Ящики сдаю</div>
         ${t.taraOut.map(l=>html`<div class="qrow"><span class="qrow-name">${T(l.taraId).name}<small>увезли ${l.qty}</small></span><input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-tb="${l.taraId}" value="${tb[l.taraId] != null ? tb[l.taraId] : ''}"></div>`)}` : ''}
       <label class="field section"><span class="field-label">Комментарий для склада</span><textarea class="textarea" id="rCom" maxlength="300" rows="2">${rep.comment || ''}</textarea></label>`,
       actions: html`<button class="btn btn-primary btn-block" type="button" id="rGo">${icon('send')}Отправить на склад</button>`});

@@ -1,4 +1,4 @@
--- изменено 2026-10-16 22:00
+-- изменено 2026-10-16 23:00
 -- СГЕНЕРИРОВАНО build_seed.py — правьте генератор, а не этот файл.
 -- Ассортимент: api/bots/cake.py (CATALOG). Заказчики, точки, заявки: фото от 17.10.2026 (../source/).
 PRAGMA foreign_keys = ON;
@@ -147,9 +147,7 @@ INSERT INTO points (id, customer_id, route_id, store_code, address, delivery_fro
   (23, 7, 2, NULL, 'Минская обл., пос. Юбилейный, ул. Полевая, д. 15', NULL, NULL, NULL),
   (24, 6, 2, NULL, 'г. Минск, ул. Связистов, 13', NULL, NULL, NULL);
 
-INSERT INTO tara_types (id, name, total) VALUES
-  (1, 'Ящик', 0),
-  (2, 'Стопка', 0);  -- сколько в обороте — уточнить у клиента
+INSERT INTO tara_types (id, name, total) VALUES (1, 'Ящик', 0);  -- сколько ящиков в обороте — посчитать на складе
 
 -- Заявка № 1103561 · Маршрут 2
 INSERT INTO orders (id, number, date, point_id, route_id, comment) VALUES (1, '1103561', '2026-10-17', 1, 1, NULL);

@@ -1,4 +1,4 @@
--- изменено 2026-10-16 22:00
+-- изменено 2026-10-16 23:00
 -- Частые запросы. Запуск: sqlite3 -header -column cake.db < queries.sql
 -- (или скопировать нужный в sqlite3 / DB Browser for SQLite)
 
@@ -20,8 +20,16 @@ SELECT route, name, weight_g, need, have, short FROM v_route_shortage WHERE date
 -- 4. Остатки, что заканчивается — первым
 SELECT category, name, weight_g, qty, min_qty FROM v_stock ORDER BY is_low DESC, category, name;
 
--- 5. Кто сколько тары должен
-SELECT customer, address, route, tara, qty FROM v_tara_debt ORDER BY qty DESC;
+-- 5. Ящики за водителями: выдано, вернул, утерял, долг
+SELECT driver AS "Водитель", issued AS "Выдано", returned AS "Вернул", lost AS "Утерял", debt AS "Долг"
+FROM v_driver_tara ORDER BY debt DESC;
+
+-- 5а. Ящики по рейсам за неделю: что не вернулось с маршрута
+SELECT date, route, driver, issued, returned, not_returned FROM v_sheet_tara
+WHERE date >= date('now', '-7 days') ORDER BY date DESC, route;
+
+-- 5б. Ящики на складе
+SELECT name, total AS "Всего", at_drivers AS "У водителей", lost AS "Утеряно", in_stock AS "На складе" FROM v_tara_stock;
 
 -- 6. Отгрузки по заказчикам за неделю
 SELECT cu.name AS customer, -SUM(m.qty) AS shipped

@@ -1,4 +1,4 @@
-# изменено 2026-10-16 22:00
+# изменено 2026-10-16 23:00
 """Генерирует seed.sql из каталога API и данных заявок от 17.10.2026.
 
     python3 cake-warehouse/db/build_seed.py   (из корня репозитория)
@@ -127,7 +127,7 @@ def q(v) -> str:
 
 
 def main() -> None:
-    out = ["-- изменено 2026-10-16 22:00",
+    out = ["-- изменено 2026-10-16 23:00",
            "-- СГЕНЕРИРОВАНО build_seed.py — правьте генератор, а не этот файл.",
            "-- Ассортимент: api/bots/cake.py (CATALOG). Заказчики, точки, заявки: фото от 17.10.2026 (../source/).",
            "PRAGMA foreign_keys = ON;", "BEGIN;", ""]
@@ -154,7 +154,7 @@ def main() -> None:
     out.append("INSERT INTO points (id, customer_id, route_id, store_code, address, delivery_from, delivery_to, note) VALUES")
     out.append(",\n".join(pts) + ";\n")
 
-    out.append("INSERT INTO tara_types (id, name, total) VALUES\n  (1, 'Ящик', 0),\n  (2, 'Стопка', 0);  -- сколько в обороте — уточнить у клиента\n")
+    out.append("INSERT INTO tara_types (id, name, total) VALUES (1, 'Ящик', 0);  -- сколько ящиков в обороте — посчитать на складе\n")
 
     point_id = {key: i + 1 for i, (key, *_r) in enumerate(POINTS)}
     oid = 0

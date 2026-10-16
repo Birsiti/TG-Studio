@@ -1,4 +1,4 @@
-# изменено 2026-10-16 22:00
+# изменено 2026-10-16 23:00
 """Собирает базу во временный файл из schema.sql + seed.sql и проверяет её.
 
     python3 cake-warehouse/db/check_db.py            — проверка
@@ -69,11 +69,27 @@ def check(conn: sqlite3.Connection) -> None:
     conn.execute("INSERT INTO stock_moves (type, date, product_id, qty, order_id, sheet_id) "
                  "SELECT 'ship', o.date, l.product_id, -l.qty, o.id, o.sheet_id FROM orders o "
                  "JOIN order_lines l ON l.order_id = o.id WHERE o.sheet_id = ?", (sid,))
-    conn.execute("INSERT INTO tara_moves (date, tara_id, point_id, qty, sheet_id) VALUES ('2026-10-17', 1, 13, 4, ?)", (sid,))
-    conn.execute("INSERT INTO tara_moves (date, tara_id, point_id, qty, sheet_id) VALUES ('2026-10-17', 1, 13, -3, ?)", (sid,))
-    assert one("SELECT qty FROM v_tara_debt WHERE point_id = 13")[0] == 1
     shipped = -one("SELECT SUM(qty) FROM stock_moves WHERE type = 'ship'")[0]
-    print(f"✔ отгрузка листа М3: {shipped} шт, долг тары точки — 1 ящик")
+    print(f"✔ отгрузка листа М3: {shipped} шт")
+
+    # ящики за водителем: выдали 14 по листу, вернул 12, один утерял
+    conn.execute("UPDATE tara_types SET total = 500 WHERE id = 1")
+    conn.execute("INSERT INTO staff (id, name, role) VALUES (10, 'Водитель Тест', 'driver'), (11, 'Кладовщик Тест', 'storekeeper')")
+    conn.execute("UPDATE route_sheets SET driver_id = 10 WHERE id = ?", (sid,))
+    conn.execute("INSERT INTO tara_moves (date, tara_id, driver_id, kind, qty, sheet_id) VALUES ('2026-10-17', 1, 10, 'out', 14, ?)", (sid,))
+    conn.execute("INSERT INTO tara_moves (date, tara_id, driver_id, kind, qty, sheet_id) VALUES ('2026-10-17', 1, 10, 'back', -12, ?)", (sid,))
+    conn.execute("INSERT INTO tara_moves (date, tara_id, driver_id, kind, qty) VALUES ('2026-10-18', 1, 10, 'writeoff', -1)")
+    got = one("SELECT issued, returned, lost, debt FROM v_driver_tara WHERE driver_id = 10")
+    assert got == (14, 12, 1, 1), got
+    assert one("SELECT issued, returned, not_returned FROM v_sheet_tara WHERE sheet_id = ?", (sid,)) == (14, 12, 2)
+    assert one("SELECT at_drivers, lost, in_stock FROM v_tara_stock") == (1, 1, 498)
+    expect_error(conn, "INSERT INTO tara_moves (date, tara_id, driver_id, kind, qty) VALUES ('2026-10-18', 1, 10, 'back', -2)",
+                 what="вернул больше, чем на руках")
+    expect_error(conn, "INSERT INTO tara_moves (date, tara_id, driver_id, kind, qty) VALUES ('2026-10-18', 1, 11, 'out', 3)",
+                 what="ящики на кладовщика")
+    expect_error(conn, "INSERT INTO tara_moves (date, tara_id, driver_id, kind, qty) VALUES ('2026-10-18', 1, 10, 'out', -3)",
+                 what="выдача с минусом")
+    print("✔ ящики: водителю выдано 14, вернул 12, утерял 1 → долг 1; на складе 498 из 500")
 
     # защита учёта
     expect_error(conn, "UPDATE stock_moves SET qty = 1 WHERE id = 1", what="правка журнала")

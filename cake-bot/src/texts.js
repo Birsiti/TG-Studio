@@ -20,6 +20,7 @@ function makeLookup(refs) {
 
 const sum = (arr, f) => arr.reduce((s, x) => s + (f(x) || 0), 0);
 const taraLine = (L, list) => list.map((l) => `${L.tara(l.taraId)} ${l.qty}`).join(', ');
+const boxes = (list) => sum(list || [], (l) => l.qty);
 
 function tripTitle(t, L) {
   return `Рейс №${t.num} · ${L.city(t.cityId)}`;
@@ -27,8 +28,8 @@ function tripTitle(t, L) {
 
 function shippedForDriver(t, L) {
   const lines = t.lines.map((l) => `• ${L.product(l.productId)} — ${l.qty}`).join('\n');
-  const tara = taraLine(L, t.taraOut);
-  return `${tripTitle(t, L)} отгружен вам.\n\n${lines}\n\nВсего ${sum(t.lines, (l) => l.qty)} шт${tara ? `\nТара: ${tara}` : ''}\n\nПосле развоза сдайте отчёт в «Мои рейсы».`;
+  const out = boxes(t.taraOut);
+  return `${tripTitle(t, L)} отгружен вам.\n\n${lines}\n\nВсего ${sum(t.lines, (l) => l.qty)} шт${out ? `\nЯщиков выдано: ${out} — за вами, верните на склад` : ''}\n\nПосле развоза сдайте отчёт в «Мои рейсы».`;
 }
 
 function reportedForStore(t, L) {
@@ -39,8 +40,8 @@ function reportedForStore(t, L) {
   const spoiled = sum(ret, (r) => r.spoiled);
   const parts = [`${tripTitle(t, L)}: ${L.staff(t.driverId)} сдал отчёт.`];
   parts.push(ret.length ? `Возврат: ${back} шт целых${spoiled ? `, брак ${spoiled}` : ''}.` : 'Возврата нет.');
-  const tb = taraLine(L, rep.taraBack || []);
-  parts.push(tb ? `Тара обратно: ${tb}.` : 'Тару не вернули.');
+  const boxOut = boxes(t.taraOut), boxBack = boxes(rep.taraBack);
+  if (boxOut || boxBack) parts.push(`Ящики: выдано ${boxOut}, сдаёт ${boxBack}${boxOut > boxBack ? `, не хватает ${boxOut - boxBack}` : ''}.`);
   if (rep.comment) parts.push(`Комментарий: «${rep.comment}»`);
   parts.push('Сверьте и закройте рейс.');
   return parts.join('\n');
@@ -48,7 +49,9 @@ function reportedForStore(t, L) {
 
 function closedForDriver(t, L) {
   const delivered = sum(t.lines, (l) => l.delivered);
-  return `${tripTitle(t, L)} принят складом. Доставлено ${delivered} шт. Спасибо!`;
+  const out = boxes(t.taraOut), back = boxes(t.taraBack);
+  const box = out || back ? `\nЯщики: выдано ${out}, принято ${back}${out > back ? ` — долг по рейсу ${out - back}` : ''}.` : '';
+  return `${tripTitle(t, L)} принят складом. Доставлено ${delivered} шт.${box}`;
 }
 
 // Утренняя сводка: moves — движения за вчера, overview — getOverview, trips — getTrips
@@ -72,11 +75,8 @@ function digest({ day, moves, overview, trips, tara }, L) {
   if (overview.lowStock.length) out.push(`Мало: ${overview.lowStock.slice(0, 10).join(', ')}${overview.lowStock.length > 10 ? ` и ещё ${overview.lowStock.length - 10}` : ''}`);
   if (road.length) out.push(`В пути: ${road.map((t) => tripTitle(t, L)).join('; ')}`);
   if (open.length) out.push(`Ждут приёмки: ${open.map((t) => tripTitle(t, L)).join('; ')}`);
-  const debt = (tara.cities || [])
-    .map((c) => ({ c, n: Object.values(c.balance).reduce((a, b) => a + b, 0) }))
-    .filter((x) => x.n > 0)
-    .sort((a, b) => b.n - a.n);
-  if (debt.length) out.push(`Тара на руках: ${debt.slice(0, 5).map((x) => `${x.c.name} ${x.n}`).join(', ')}`);
+  const debt = (tara.drivers || []).filter((d) => d.debt > 0).sort((a, b) => b.debt - a.debt);
+  if (debt.length) out.push(`Ящики за водителями: ${debt.map((d) => `${d.name.split(' ')[0]} ${d.debt}`).join(', ')} (всего ${sum(debt, (d) => d.debt)})`);
   return out.join('\n');
 }
 

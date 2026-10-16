@@ -53,11 +53,12 @@ test('тексты: отгрузка водителю и отчёт кладов
   assert.match(s, /Сникерс, 800 г — 3/);
   assert.match(s, /Медок, 75 г — 2/);
   assert.match(s, /Всего 5 шт/);
-  assert.match(s, /Ящик 4/);
+  assert.match(s, /Ящиков выдано: 4/);
   const r = texts.reportedForStore(trip, L);
   assert.match(r, /Иван сдал отчёт/);
   assert.match(r, /1 шт целых, брак 1/);
-  assert.match(r, /Ящик 3/);
+  assert.match(r, /Ящики: выдано 4, сдаёт 3, не хватает 1/);
+  assert.match(texts.closedForDriver({ ...trip, lines: [{ delivered: 4 }], taraBack: [{ taraId: 'box', qty: 3 }] }, L), /выдано 4, принято 3 — долг по рейсу 1/);
   assert.match(r, /помяли/);
   assert.match(texts.reportedForStore({ ...trip, report: '' }, L), /Возврата нет/);
 });
@@ -69,14 +70,14 @@ test('сводка за вчера', () => {
   ];
   const overview = { stockTotal: 120, lowStock: ['Сникерс'] };
   const trips = [{ num: 7, cityId: 'c1', status: 'reported' }];
-  const tara = { cities: [{ name: 'Брест', balance: { box: 6 } }] };
+  const tara = { drivers: [{ name: 'Иван Кравец', debt: 6 }, { name: 'Павел Гриб', debt: 0 }, { name: 'Артур Лис', debt: 9 }] };
   const d = texts.digest({ day: '16.10.2026', moves, overview, trips, tara }, L);
   assert.match(d, /Приход: 50 шт/);
   assert.match(d, /Отгружено: 10 шт\n• Брест — 10/);
   assert.match(d, /Списано: 2 шт/);
   assert.match(d, /Мало: Сникерс/);
   assert.match(d, /Ждут приёмки: Рейс №7 · Брест/);
-  assert.match(d, /Тара на руках: Брест 6/);
+  assert.match(d, /Ящики за водителями: Артур 9, Иван 6 \(всего 15\)/);
 });
 
 test('вчерашняя дата считается в часовом поясе Минска', () => {

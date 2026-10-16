@@ -1,4 +1,4 @@
-// изменено 2026-10-16 19:10
+// изменено 2026-10-16 23:00
 /* ============================================================
    mock.js — офлайн-двойник API склада (api/bots/cake.py).
    Тот же контракт action; состояние в localStorage, общее для
@@ -6,7 +6,7 @@
    ============================================================ */
 window.CakeMock = (function(){
   "use strict";
-  var KEY = 'tgs-mock-cake-v2';
+  var KEY = 'tgs-mock-cake-v3';
   var D = Kit.date;
   var MOVE_TYPES = {'in':'Приход', ship:'Отгрузка', 'return':'Возврат', writeoff:'Списание', adjust:'Инвентаризация'};
   // сгенерировано из api/bots/cake.py (CATALOG) — правьте там и перегенерируйте
@@ -124,21 +124,21 @@ window.CakeMock = (function(){
   function load(){
     if(S) return S;
     try{ S = JSON.parse(localStorage.getItem(KEY)); }catch(e){ S = null; }
-    if(!S || S.v !== 2) { S = seed(); save(); }
+    if(!S || S.v !== 3) { S = seed(); save(); }
     return S;
   }
 
   function seed(){
     var r = rng(42), today = D.today();
-    var st = {v:2, products:[], cities:[], staff:[], tara:[], moves:[], trips:[], taraMoves:[], shifts:{}, moveId:0, taraId:0, num:0};
+    var st = {v:3, products:[], cities:[], staff:[], tara:[], moves:[], trips:[], taraMoves:[], shifts:{}, moveId:0, taraId:0, num:0};
     PRODUCTS.forEach(function(p, i){ st.products.push({id:p[0], cat:p[1], name:p[2], sku:'', weightG:p[3], shelfDays:0, minQty:0, sort:i, active:true}); });
     CITIES.forEach(function(c, i){ st.cities.push({id:c[0], name:c[1], code:c[2], sort:i, active:true}); });
     STAFF.forEach(function(s){ st.staff.push({id:s[0], name:s[1], role:s[2], phone:s[3], car:s[4], tgId:'', active:true}); });
-    st.tara = [{id:'box', name:'Ящик', total:500, sort:0, active:true}, {id:'stack', name:'Стопка', total:150, sort:1, active:true}];
+    st.tara = [{id:'box', name:'Ящик', total:500, sort:0, active:true}];
     var drivers = ['dr-ivan','dr-sergey','dr-pavel','dr-artur'], pids = PRODUCTS.map(function(p){ return p[0]; }), cids = CITIES.map(function(c){ return c[0]; });
     var stock = {}; pids.forEach(function(p){ stock[p] = 0; });
     function mv(type, day, pid, q, extra){ st.moves.push(Object.assign({id:++st.moveId, type:type, date:day, productId:pid, qty:q, cityId:null, tripId:null, note:'', createdAt:now()}, extra || {})); stock[pid] += q; }
-    function tm(day, tid, cid, q, trip){ st.taraMoves.push({id:++st.taraId, date:day, taraId:tid, cityId:cid, qty:q, tripId:trip || null, note:''}); }
+    function tm(day, tid, drv, kind, q, cid, trip){ if(q) st.taraMoves.push({id:++st.taraId, date:day, taraId:tid, driverId:drv, kind:kind, qty:kind === 'out' ? q : -q, cityId:cid, tripId:trip || null, note:''}); }
     for(var back = 14; back >= 0; back--){
       var day = D.add(today, -back);
       st.shifts[day] = [back % 2 ? 'sk-oleg' : 'sk-anna'].concat(sample(r, drivers, 3));
@@ -147,27 +147,29 @@ window.CakeMock = (function(){
       sample(r, cids, 4).forEach(function(cid){
         var tid = 'R-S' + (++st.num), lines = [];
         sample(r, pids, 14).forEach(function(pid){ var q = Math.min(stock[pid], ri(r, 1, 5)); if(q){ lines.push({productId:pid, qty:q}); mv('ship', day, pid, -q, {cityId:cid, tripId:tid}); } });
-        var crates = Math.floor(lines.reduce(function(s, l){ return s + l.qty; }, 0) / 2) + 1, backCr = crates - ri(r, 0, 3);
-        tm(day, 'box', cid, crates, tid); tm(day, 'box', cid, -backCr, tid);
+        var drv = drivers[ri(r, 0, 3)];
+        var crates = Math.floor(lines.reduce(function(s, l){ return s + l.qty; }, 0) / 2) + 1, backCr = Math.max(0, crates - [0, 0, 0, 1, 2][ri(r, 0, 4)]);
+        tm(day, 'box', drv, 'out', crates, cid, tid); tm(day, 'box', drv, 'back', backCr, cid, tid);
         var closed = lines.map(function(l){ var b = r() < .25 ? 1 : 0; if(b) mv('return', day, l.productId, b, {cityId:cid, tripId:tid}); return Object.assign({}, l, {back:b, spoiled:0, delivered:l.qty - b}); });
-        st.trips.push({id:tid, num:st.num, date:day, cityId:cid, driverId:drivers[ri(r, 0, 3)], status:'closed', lines:closed,
+        st.trips.push({id:tid, num:st.num, date:day, cityId:cid, driverId:drv, status:'closed', lines:closed,
           taraOut:[{taraId:'box', qty:crates}], taraBack:[{taraId:'box', qty:backCr}], report:'', note:'', createdAt:day + 'T07:20:00', shippedAt:day + 'T07:40:00', reportedAt:null, closedAt:day + 'T18:30:00'});
       });
     }
     [['shipped','brest','dr-ivan'],['draft','gomel','dr-sergey']].forEach(function(t){
       var tid = 'R-S' + (++st.num), lines = sample(r, pids, 12).map(function(p){ return {productId:p, qty:Math.min(stock[p], ri(r, 1, 4))}; }).filter(function(l){ return l.qty; });
-      var tara = [{taraId:'box', qty:16}, {taraId:'stack', qty:2}];
-      if(t[0] === 'shipped'){ lines.forEach(function(l){ mv('ship', today, l.productId, -l.qty, {cityId:t[1], tripId:tid}); }); tara.forEach(function(l){ tm(today, l.taraId, t[1], l.qty, tid); }); }
+      var tara = [{taraId:'box', qty:16}];
+      if(t[0] === 'shipped'){ lines.forEach(function(l){ mv('ship', today, l.productId, -l.qty, {cityId:t[1], tripId:tid}); }); tara.forEach(function(l){ tm(today, l.taraId, t[2], 'out', l.qty, t[1], tid); }); }
       st.trips.push({id:tid, num:st.num, date:today, cityId:t[1], driverId:t[2], status:t[0], lines:lines, taraOut:tara, taraBack:[], report:'', note:'', createdAt:now(), shippedAt:t[0] === 'shipped' ? now() : null, reportedAt:null, closedAt:null});
     });
     return st;
   }
 
   function stockMap(){ var m = {}; S.moves.forEach(function(x){ m[x.productId] = (m[x.productId] || 0) + x.qty; }); return m; }
-  function taraDebt(){ var m = {}; S.taraMoves.forEach(function(x){ var k = x.cityId + '|' + x.taraId; m[k] = (m[k] || 0) + x.qty; }); return m; }
+  // долг ящиков: ключ «водитель|вид тары»
+  function taraDebt(){ var m = {}; S.taraMoves.forEach(function(x){ var k = x.driverId + '|' + x.taraId; m[k] = (m[k] || 0) + x.qty; }); return m; }
   function byId(list, id){ for(var i = 0; i < list.length; i++) if(list[i].id === id) return list[i]; return null; }
   function addMove(type, pid, q, extra){ S.moves.push(Object.assign({id:++S.moveId, type:type, date:D.today(), productId:pid, qty:q, cityId:null, tripId:null, note:'', createdAt:now()}, extra || {})); }
-  function addTara(tid, cid, q, trip, note){ S.taraMoves.push({id:++S.taraId, date:D.today(), taraId:tid, cityId:cid, qty:q, tripId:trip || null, note:note || ''}); }
+  function addTara(tid, drv, kind, q, cid, trip, note){ S.taraMoves.push({id:++S.taraId, date:D.today(), taraId:tid, driverId:drv, kind:kind, qty:kind === 'out' ? Math.abs(q) : -Math.abs(q), cityId:cid || null, tripId:trip || null, note:note || ''}); }
   function lines(arr, allowEmpty){
     var m = {}, out = [];
     (arr || []).forEach(function(x){ var q = Math.max(0, parseInt(x.qty, 10) || 0); if(q && byId(S.products, x.productId)) m[x.productId] = (m[x.productId] || 0) + q; });
@@ -227,7 +229,7 @@ window.CakeMock = (function(){
       if(!t.lines.length) return err('bad_request', 'В рейсе нет тортов'); if(!t.driverId) return err('bad_request', 'Не выбран водитель');
       var s = shortage(t.lines); if(s) return err('no_stock', s);
       t.lines.forEach(function(l){ addMove('ship', l.productId, -l.qty, {cityId:t.cityId, tripId:t.id}); });
-      t.taraOut.forEach(function(l){ addTara(l.taraId, t.cityId, l.qty, t.id); });
+      t.taraOut.forEach(function(l){ addTara(l.taraId, t.driverId, 'out', l.qty, t.cityId, t.id); });
       t.status = 'shipped'; t.shippedAt = now(); return {trip:t};
     },
     cancelTrip: function(p){ var t = byId(S.trips, p.id); if(!t) return err('not_found'); if(t.status !== 'draft') return err('bad_state', 'Отменить можно только рейс на сборке'); t.status = 'cancelled'; return {trip:t}; },
@@ -241,24 +243,45 @@ window.CakeMock = (function(){
       var rs = returns(p.returns, t); if(!rs) return err('bad_request', 'Возврат больше, чем уехало');
       var tb = taraLines(p.taraBack), by = {};
       rs.forEach(function(r){ by[r.productId] = r; if(r.back) addMove('return', r.productId, r.back, {cityId:t.cityId, tripId:t.id}); });
-      tb.forEach(function(l){ addTara(l.taraId, t.cityId, -l.qty, t.id); });
+      tb.forEach(function(l){ addTara(l.taraId, t.driverId, 'back', l.qty, t.cityId, t.id); });
       t.lines = t.lines.map(function(l){ var r = by[l.productId] || {}, b = r.back || 0, s = r.spoiled || 0; return Object.assign({}, l, {back:b, spoiled:s, delivered:l.qty - b - s}); });
       t.taraBack = tb; t.status = 'closed'; t.closedAt = now(); return {trip:t};
     },
     getMyTrips: function(p){
       var d = p.driverId && byId(S.staff, p.driverId); if(!d) return {driver:null, trips:[]};
-      var since = D.add(D.today(), -14);
-      return {driver:d, trips:S.trips.filter(function(t){ return t.driverId === d.id && t.status !== 'cancelled' && (/draft|shipped|reported/.test(t.status) || t.date >= since); }).sort(function(a, b){ return a.date === b.date ? b.num - a.num : (a.date < b.date ? 1 : -1); }).slice(0, 30)};
+      var since = D.add(D.today(), -14), debt = taraDebt();
+      var taraDebtList = S.tara.map(function(t){ return {taraId:t.id, qty:debt[d.id + '|' + t.id] || 0}; }).filter(function(x){ return x.qty; });
+      return {driver:d, taraDebt:taraDebtList, trips:S.trips.filter(function(t){ return t.driverId === d.id && t.status !== 'cancelled' && (/draft|shipped|reported/.test(t.status) || t.date >= since); }).sort(function(a, b){ return a.date === b.date ? b.num - a.num : (a.date < b.date ? 1 : -1); }).slice(0, 30)};
     },
 
     getTara: function(){
-      var debt = taraDebt();
-      var types = S.tara.map(function(t){ var out = 0; Object.keys(debt).forEach(function(k){ if(k.split('|')[1] === t.id) out += debt[k]; }); return Object.assign({}, t, {out:out, inStock:t.total - out}); });
-      var cities = S.cities.map(function(c){ var b = {}; types.forEach(function(t){ b[t.id] = debt[c.id + '|' + t.id] || 0; }); return Object.assign({}, c, {balance:b}); })
-        .filter(function(c){ return c.active || Object.keys(c.balance).some(function(k){ return c.balance[k]; }); });
-      return {types:types, cities:cities, history:S.taraMoves.slice(-60).reverse()};
+      var agg = {};
+      S.taraMoves.forEach(function(x){ var k = x.driverId + '|' + x.taraId + '|' + x.kind; agg[k] = (agg[k] || 0) + x.qty; });
+      var g = function(d, t, k){ return agg[d + '|' + t + '|' + k] || 0; };
+      var types = S.tara.map(function(t){
+        var at = 0, lost = 0;
+        Object.keys(agg).forEach(function(k){ var p = k.split('|'); if(p[1] === t.id){ at += agg[k]; if(p[2] === 'writeoff') lost -= agg[k]; } });
+        return Object.assign({}, t, {atDrivers:at, lost:lost, inStock:t.total - at - lost});
+      });
+      var drivers = S.staff.filter(function(s){ return s.role === 'driver'; }).map(function(d){
+        var per = {}, debt = 0, any = false;
+        S.tara.forEach(function(t){
+          var o = g(d.id, t.id, 'out'), b = g(d.id, t.id, 'back'), w = g(d.id, t.id, 'writeoff');
+          per[t.id] = {issued:o, returned:-b, lost:-w, debt:o + b + w}; debt += o + b + w; if(o) any = true;
+        });
+        return Object.assign({}, d, {tara:per, debt:debt, _any:any});
+      }).filter(function(d){ return d.active || d.debt || d._any; }).sort(function(a, b){ return b.debt - a.debt; });
+      return {types:types, drivers:drivers, history:S.taraMoves.slice(-100).reverse()};
     },
-    taraMove: function(p){ var q = parseInt(p.qty, 10) || 0; if(q < 1) return err('bad_request'); addTara(p.taraId, p.cityId, (p.dir === 'out' ? 1 : -1) * q, null, p.note); return {balance:taraDebt()[p.cityId + '|' + p.taraId] || 0}; },
+    taraMove: function(p){
+      var q = parseInt(p.qty, 10) || 0, d = byId(S.staff, p.driverId);
+      if(q < 1 || !/^(out|back|writeoff)$/.test(p.kind)) return err('bad_request');
+      if(!d || d.role !== 'driver') return err('not_found', 'Нет такого водителя');
+      var debt = taraDebt()[d.id + '|' + p.taraId] || 0;
+      if(p.kind !== 'out' && q > debt) return err('bad_request', 'У водителя на руках только ' + debt);
+      addTara(p.taraId, d.id, p.kind, q, null, null, p.note);
+      return {debt:taraDebt()[d.id + '|' + p.taraId] || 0};
+    },
 
     getShifts: function(p){ var from = p.from || D.today(), to = p.to || D.add(from, 6), days = {}; Object.keys(S.shifts).forEach(function(d){ if(inRange(d, from, to) && S.shifts[d].length) days[d] = S.shifts[d]; }); return {days:days, from:from, to:to}; },
     setShift: function(p){ var ids = (p.staffIds || []).filter(function(id, i, a){ return byId(S.staff, id) && a.indexOf(id) === i; }); S.shifts[p.date] = ids; return {date:p.date, staffIds:ids}; },

@@ -1,4 +1,4 @@
--- изменено 2026-10-16 22:00
+-- изменено 2026-10-16 23:00
 -- ============================================================
 -- ТОРТОВОЗ — база склада тортов (SQLite 3.35+, файл на iMac).
 --
@@ -11,7 +11,8 @@
 --
 -- Остаток не хранится полем, а считается суммой журнала stock_moves
 -- (qty со знаком) — так учёт нельзя «тихо» поправить задним числом.
--- Долг тары по точкам — так же, суммой tara_moves.
+-- Оборотные ящики числятся за водителем: выдали при отгрузке → вернул →
+-- долг = сумма tara_moves по водителю.
 --
 -- Создать базу:  sqlite3 cake.db < schema.sql && sqlite3 cake.db < seed.sql
 -- ============================================================
@@ -85,7 +86,7 @@ CREATE TABLE IF NOT EXISTS staff (
 
 CREATE TABLE IF NOT EXISTS tara_types (
   id     INTEGER PRIMARY KEY,
-  name   TEXT    NOT NULL UNIQUE,                -- Ящик, Стопка
+  name   TEXT    NOT NULL UNIQUE,                -- Ящик (если ящики разных сетей — отдельные виды)
   total  INTEGER NOT NULL DEFAULT 0 CHECK (total >= 0)  -- всего в обороте
 );
 
@@ -105,8 +106,8 @@ CREATE TABLE IF NOT EXISTS route_sheets (
                CHECK (status IN ('picking', 'picked', 'shipped', 'closed', 'cancelled')),
   picker_id    INTEGER REFERENCES staff(id),     -- «Сборку осуществил (ФИО)»
   picker_name  TEXT,                             -- если сборщик не в справочнике
-  boxes        INTEGER CHECK (boxes  IS NULL OR boxes  >= 0),  -- «Количество ящиков»
-  stacks       INTEGER CHECK (stacks IS NULL OR stacks >= 0),  -- «Количество стопок»
+  boxes        INTEGER CHECK (boxes  IS NULL OR boxes  >= 0),  -- «Количество ящиков» (при отгрузке → tara_moves out на водителя)
+  stacks       INTEGER CHECK (stacks IS NULL OR stacks >= 0),  -- «Количество стопок» (для погрузки, не тара)
   driver_id    INTEGER REFERENCES staff(id),
   created_at   TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
   picked_at    TEXT,
@@ -172,17 +173,35 @@ CREATE TABLE IF NOT EXISTS stock_moves (
 CREATE INDEX IF NOT EXISTS ix_moves_product ON stock_moves(product_id);
 CREATE INDEX IF NOT EXISTS ix_moves_date ON stock_moves(date, type);
 
+-- Ящики за водителем: out — выдали (обычно при отгрузке сводной), back — вернул,
+-- writeoff — утерял/сломал (долг списан, ящиков в обороте меньше)
 CREATE TABLE IF NOT EXISTS tara_moves (
   id          INTEGER PRIMARY KEY,
   date        TEXT    NOT NULL CHECK (date GLOB '[0-9][0-9][0-9][0-9]-[0-1][0-9]-[0-3][0-9]'),
   tara_id     INTEGER NOT NULL REFERENCES tara_types(id),
-  point_id    INTEGER NOT NULL REFERENCES points(id),
-  qty         INTEGER NOT NULL CHECK (qty <> 0),  -- + оставили на точке, − забрали
+  driver_id   INTEGER NOT NULL REFERENCES staff(id),
+  kind        TEXT    NOT NULL CHECK (kind IN ('out', 'back', 'writeoff')),
+  qty         INTEGER NOT NULL,                   -- + выдали, − вернул/списан
   sheet_id    INTEGER REFERENCES route_sheets(id),
+  point_id    INTEGER REFERENCES points(id),      -- если известно, на какой точке остались
   note        TEXT,
-  created_at  TEXT    NOT NULL DEFAULT (datetime('now', 'localtime'))
+  staff_id    INTEGER REFERENCES staff(id),       -- кто провёл
+  created_at  TEXT    NOT NULL DEFAULT (datetime('now', 'localtime')),
+  CHECK ((kind = 'out' AND qty > 0) OR (kind IN ('back', 'writeoff') AND qty < 0))
 );
-CREATE INDEX IF NOT EXISTS ix_tara_point ON tara_moves(point_id, tara_id);
+CREATE INDEX IF NOT EXISTS ix_tara_driver ON tara_moves(driver_id, tara_id);
+CREATE INDEX IF NOT EXISTS ix_tara_sheet ON tara_moves(sheet_id);
+
+-- Ящики выдаются только водителю
+CREATE TRIGGER IF NOT EXISTS trg_tara_driver_role BEFORE INSERT ON tara_moves
+WHEN (SELECT role FROM staff WHERE id = NEW.driver_id) IS NOT 'driver'
+BEGIN SELECT RAISE(ABORT, 'Ящики числятся только за водителем'); END;
+
+-- Вернуть или списать больше, чем на руках, нельзя
+CREATE TRIGGER IF NOT EXISTS trg_tara_not_below_zero BEFORE INSERT ON tara_moves
+WHEN NEW.kind IN ('back', 'writeoff') AND
+     COALESCE((SELECT SUM(qty) FROM tara_moves WHERE driver_id = NEW.driver_id AND tara_id = NEW.tara_id), 0) + NEW.qty < 0
+BEGIN SELECT RAISE(ABORT, 'У водителя на руках меньше ящиков'); END;
 
 -- Журнал нельзя править задним числом: только новые записи
 CREATE TRIGGER IF NOT EXISTS trg_stock_moves_no_update BEFORE UPDATE ON stock_moves
@@ -247,21 +266,38 @@ FROM v_route_summary s
 JOIN v_stock st ON st.product_id = s.product_id
 WHERE s.qty > st.qty;
 
--- Долг тары по точкам
-CREATE VIEW IF NOT EXISTS v_tara_debt AS
-SELECT pt.id AS point_id, cu.name AS customer, pt.address, r.name AS route, t.name AS tara, SUM(m.qty) AS qty
-FROM tara_moves m
-JOIN points pt ON pt.id = m.point_id
-JOIN customers cu ON cu.id = pt.customer_id
-LEFT JOIN routes r ON r.id = pt.route_id
-JOIN tara_types t ON t.id = m.tara_id
-GROUP BY pt.id, t.id
-HAVING SUM(m.qty) <> 0;
+-- Ящики по водителям: выдано, вернул, утерял, долг
+CREATE VIEW IF NOT EXISTS v_driver_tara AS
+SELECT st.id AS driver_id, st.name AS driver, t.name AS tara,
+       COALESCE(SUM(CASE WHEN m.kind = 'out' THEN m.qty END), 0)       AS issued,
+       COALESCE(-SUM(CASE WHEN m.kind = 'back' THEN m.qty END), 0)     AS returned,
+       COALESCE(-SUM(CASE WHEN m.kind = 'writeoff' THEN m.qty END), 0) AS lost,
+       COALESCE(SUM(m.qty), 0)                                         AS debt
+FROM staff st
+CROSS JOIN tara_types t
+LEFT JOIN tara_moves m ON m.driver_id = st.id AND m.tara_id = t.id
+WHERE st.role = 'driver'
+GROUP BY st.id, t.id;
 
--- Тара на складе = всего в обороте − на точках
+-- Ящики по листам (рейсам): сколько уехало и сколько вернулось с этого маршрута
+CREATE VIEW IF NOT EXISTS v_sheet_tara AS
+SELECT s.id AS sheet_id, s.date, r.name AS route, st.name AS driver, t.name AS tara,
+       COALESCE(SUM(CASE WHEN m.kind = 'out' THEN m.qty END), 0)   AS issued,
+       COALESCE(-SUM(CASE WHEN m.kind = 'back' THEN m.qty END), 0) AS returned,
+       COALESCE(SUM(m.qty), 0)                                     AS not_returned
+FROM route_sheets s
+JOIN routes r ON r.id = s.route_id
+JOIN tara_moves m ON m.sheet_id = s.id
+JOIN staff st ON st.id = m.driver_id
+JOIN tara_types t ON t.id = m.tara_id
+GROUP BY s.id, m.driver_id, t.id;
+
+-- Ящики на складе = всего в обороте − за водителями − утеряно
 CREATE VIEW IF NOT EXISTS v_tara_stock AS
-SELECT t.id AS tara_id, t.name, t.total, COALESCE(SUM(m.qty), 0) AS at_points,
-       t.total - COALESCE(SUM(m.qty), 0) AS in_stock
+SELECT t.id AS tara_id, t.name, t.total,
+       COALESCE(SUM(m.qty), 0) AS at_drivers,
+       COALESCE(-SUM(CASE WHEN m.kind = 'writeoff' THEN m.qty END), 0) AS lost,
+       t.total - COALESCE(SUM(m.qty), 0) - COALESCE(-SUM(CASE WHEN m.kind = 'writeoff' THEN m.qty END), 0) AS in_stock
 FROM tara_types t
 LEFT JOIN tara_moves m ON m.tara_id = t.id
 GROUP BY t.id;

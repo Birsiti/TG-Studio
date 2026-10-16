@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-16 19:10 -->
+<!-- изменено 2026-10-16 23:00 -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -78,7 +78,7 @@
       <div class="stat"><div class="stat-label">На складе</div><div class="stat-value">${num(o.stockTotal)}</div><div class="stat-delta">тортов</div></div>
       <div class="stat"><div class="stat-label">Отгружено сегодня</div><div class="stat-value">${num(o.shippedToday)}</div><div class="stat-delta">за 14 дн ${num(o.shippedPeriod)}</div></div>
       <div class="stat"><div class="stat-label">Рейсы</div><div class="stat-value">${o.trips.shipped}</div><div class="stat-delta">в пути · сборка ${o.trips.draft} · приёмка ${o.trips.reported}</div></div>
-      <div class="stat"><div class="stat-label">Тара в городах</div><div class="stat-value">${num(o.taraOut)}</div><div class="stat-delta">шт на руках</div></div>
+      <div class="stat"><div class="stat-label">Ящики у водителей</div><div class="stat-value">${num(o.taraOut)}</div><div class="stat-delta">долг</div></div>
       <div class="stat"><div class="stat-label">Возвраты</div><div class="stat-value">${num(o.returnedPeriod)}</div><div class="stat-delta">за 14 дн</div></div>
       <div class="stat"><div class="stat-label">Списано</div><div class="stat-value">${num(o.writtenOffPeriod)}</div><div class="stat-delta ${o.writtenOffPeriod ? 'down' : ''}">за 14 дн</div></div>`);
     $('#ovChart').innerHTML = String(Kit.chart.bars(o.series.map(s=>({label:String(D.day(s.date)), value:s.value})), {highlightLast:true, label:'Отгрузки по дням'}));

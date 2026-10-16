@@ -1,4 +1,4 @@
-# изменено 2026-10-16 21:00
+# изменено 2026-10-16 23:00
 """Склад тортов с развозом по городам (cake-warehouse/*.html).
 
 Рабочий учёт, а не витрина: нет ежедневного «освежения» и нет удаления
@@ -12,8 +12,9 @@
   инвентаризации, − отгрузка/списание). Остаток = SUM(qty).
   trips — рейс в город: draft (сборка) → shipped (в пути) → reported
   (водитель сдал отчёт) → closed (кладовщик принял); draft → cancelled.
-  tara_moves — долг тары по городам, qty со знаком (+ уехала в город,
-  − вернулась). На складе = tara_types.total − долг всех городов.
+  tara_moves — оборотная тара (ящики) за водителями: kind out (выдали
+  водителю, +), back (вернул, −), writeoff (утеряны — долг списан, −).
+  Долг водителя = SUM(qty). На складе = всего в обороте − долги − утеряно.
   shifts — кто на смене в день.
 
 Доступ: если задана TGS_CAKE_ADMINS (tg id через запятую), работать могут
@@ -61,7 +62,8 @@ CREATE TABLE IF NOT EXISTS trips(
   created_at TEXT NOT NULL, shipped_at TEXT, reported_at TEXT, closed_at TEXT, seed INTEGER NOT NULL DEFAULT 0);
 CREATE INDEX IF NOT EXISTS ct_date ON trips(date);
 CREATE TABLE IF NOT EXISTS tara_moves(
-  id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, tara_id TEXT NOT NULL, city_id TEXT NOT NULL,
+  id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, tara_id TEXT NOT NULL, driver_id TEXT NOT NULL,
+  city_id TEXT, kind TEXT NOT NULL DEFAULT 'out',
   qty INTEGER NOT NULL, trip_id TEXT, note TEXT NOT NULL DEFAULT '', user_id TEXT, created_at TEXT NOT NULL,
   seed INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS shifts(date TEXT NOT NULL, staff_id TEXT NOT NULL, PRIMARY KEY(date, staff_id));
@@ -126,7 +128,7 @@ SEED_STAFF = [
     ("dr-pavel", "Павел Гриб", "driver", "+375291234513", "Ford Transit · 3304 MO-7"),
     ("dr-artur", "Артур Лис", "driver", "+375291234514", "Iveco Daily · 0912 HA-7"),
 ]
-SEED_TARA = [("box", "Ящик", 500), ("stack", "Стопка", 150)]
+SEED_TARA = [("box", "Ящик", 500)]
 
 
 # сид объявлен ниже — оборачиваем, чтобы декораторы action видели bot
@@ -218,8 +220,9 @@ def _stock_map(conn) -> dict[str, int]:
 
 
 def _tara_debt(conn) -> dict[tuple[str, str], int]:
-    return {(r["city_id"], r["tara_id"]): r["q"]
-            for r in rows(conn, "SELECT city_id, tara_id, SUM(qty) q FROM tara_moves GROUP BY city_id, tara_id")}
+    """(водитель, вид тары) → сколько у него на руках."""
+    return {(r["driver_id"], r["tara_id"]): r["q"]
+            for r in rows(conn, "SELECT driver_id, tara_id, SUM(qty) q FROM tara_moves GROUP BY driver_id, tara_id")}
 
 
 def _get_trip(conn, tid: str) -> dict:
@@ -267,9 +270,11 @@ def _add_move(ctx: Ctx, type_: str, day: str, pid: str, qty: int, *, city=None, 
                      "VALUES(?,?,?,?,?,?,?,?,?,?)", (type_, day, pid, qty, city, trip, note, ctx.user, iso_now(), seed))
 
 
-def _add_tara(ctx: Ctx, day: str, tid: str, city: str, qty: int, *, trip=None, note="", seed=0):
-    ctx.conn.execute("INSERT INTO tara_moves(date,tara_id,city_id,qty,trip_id,note,user_id,created_at,seed) "
-                     "VALUES(?,?,?,?,?,?,?,?,?)", (day, tid, city, qty, trip, note, ctx.user, iso_now(), seed))
+def _add_tara(ctx: Ctx, day: str, tid: str, driver: str, kind: str, qty: int, *, city=None, trip=None, note="", seed=0):
+    """qty без знака; знак задаёт kind: out — на водителя, back/writeoff — с водителя."""
+    qty = abs(qty) if kind == "out" else -abs(qty)
+    ctx.conn.execute("INSERT INTO tara_moves(date,tara_id,driver_id,kind,city_id,qty,trip_id,note,user_id,created_at,seed) "
+                     "VALUES(?,?,?,?,?,?,?,?,?,?,?)", (day, tid, driver, kind, city, qty, trip, note, ctx.user, iso_now(), seed))
 
 
 def _check_stock(conn, lines: list[dict]) -> None:
@@ -478,7 +483,7 @@ def ship_trip(ctx: Ctx, p: dict) -> dict:
     for ln in lines:
         _add_move(ctx, "ship", ctx.today, ln["productId"], -ln["qty"], city=t["city_id"], trip=t["id"])
     for ln in jload(t["tara_out"], []):
-        _add_tara(ctx, ctx.today, ln["taraId"], t["city_id"], ln["qty"], trip=t["id"])
+        _add_tara(ctx, ctx.today, ln["taraId"], t["driver_id"], "out", ln["qty"], city=t["city_id"], trip=t["id"])
     ctx.conn.execute("UPDATE trips SET status='shipped', shipped_at=? WHERE id=?", (iso_now(), t["id"]))
     return {"trip": _trip(_get_trip(ctx.conn, t["id"]))}
 
@@ -536,7 +541,7 @@ def close_trip(ctx: Ctx, p: dict) -> dict:
         if r["back"]:
             _add_move(ctx, "return", ctx.today, r["productId"], r["back"], city=t["city_id"], trip=t["id"])
     for ln in tara_back:
-        _add_tara(ctx, ctx.today, ln["taraId"], t["city_id"], -ln["qty"], trip=t["id"])
+        _add_tara(ctx, ctx.today, ln["taraId"], t["driver_id"], "back", ln["qty"], city=t["city_id"], trip=t["id"])
     lines = []
     by = {r["productId"]: r for r in rets}
     for ln in jload(t["lines"], []):
@@ -559,43 +564,55 @@ def get_my_trips(ctx: Ctx, p: dict) -> dict:
                         "(status IN ('draft','shipped','reported') OR date>=?) ORDER BY date DESC, num DESC LIMIT 30",
               (did, add_days(ctx.today, -14)))
     drv = one(ctx.conn, "SELECT * FROM staff WHERE id=?", (did,))
-    return {"driver": _staff(drv) if drv else None, "trips": [_trip(r) for r in rs]}
+    debt = [{"taraId": tid, "qty": q} for (d, tid), q in _tara_debt(ctx.conn).items() if d == did and q]
+    return {"driver": _staff(drv) if drv else None, "trips": [_trip(r) for r in rs], "taraDebt": debt}
 
 
 # ============ ТАРА ============
 
 @action("getTara")
 def get_tara(ctx: Ctx, p: dict) -> dict:
-    debt = _tara_debt(ctx.conn)
-    types = [_tara(r) for r in rows(ctx.conn, "SELECT * FROM tara_types ORDER BY sort, name")]
-    out_total = {t["id"]: sum(q for (c, tid), q in debt.items() if tid == t["id"]) for t in types}
+    """Ящики по водителям: выдано, вернул, утеряно, долг; по виду тары — сколько на складе."""
+    c = ctx.conn
+    types = [_tara(r) for r in rows(c, "SELECT * FROM tara_types ORDER BY sort, name")]
+    agg = {(r["driver_id"], r["tara_id"], r["kind"]): r["q"] for r in rows(
+        c, "SELECT driver_id, tara_id, kind, SUM(qty) q FROM tara_moves GROUP BY driver_id, tara_id, kind")}
     for t in types:
-        t["out"] = out_total[t["id"]]
-        t["inStock"] = t["total"] - t["out"]
-    cities = []
-    for c in rows(ctx.conn, "SELECT * FROM cities ORDER BY sort, name"):
-        b = {t["id"]: debt.get((c["id"], t["id"]), 0) for t in types}
-        if c["active"] or any(b.values()):
-            cities.append({**_city(c), "balance": b})
-    hist = [{"id": r["id"], "date": r["date"], "taraId": r["tara_id"], "cityId": r["city_id"], "qty": r["qty"],
-             "tripId": r["trip_id"], "note": r["note"]}
-            for r in rows(ctx.conn, "SELECT * FROM tara_moves ORDER BY id DESC LIMIT 60")]
-    return {"types": types, "cities": cities, "history": hist}
+        t["atDrivers"] = sum(q for (d, tid, k), q in agg.items() if tid == t["id"])
+        t["lost"] = -sum(q for (d, tid, k), q in agg.items() if tid == t["id"] and k == "writeoff")
+        t["inStock"] = t["total"] - t["atDrivers"] - t["lost"]
+    drivers = []
+    for d in rows(c, "SELECT * FROM staff WHERE role='driver' ORDER BY name"):
+        per = {}
+        for t in types:
+            g = lambda k: agg.get((d["id"], t["id"], k), 0)  # noqa: E731
+            per[t["id"]] = {"issued": g("out"), "returned": -g("back"), "lost": -g("writeoff"),
+                            "debt": g("out") + g("back") + g("writeoff")}
+        if d["active"] or any(v["debt"] or v["issued"] for v in per.values()):
+            drivers.append({**_staff(d), "tara": per, "debt": sum(v["debt"] for v in per.values())})
+    drivers.sort(key=lambda x: -x["debt"])
+    hist = [{"id": r["id"], "date": r["date"], "taraId": r["tara_id"], "driverId": r["driver_id"], "kind": r["kind"],
+             "qty": r["qty"], "cityId": r["city_id"], "tripId": r["trip_id"], "note": r["note"]}
+            for r in rows(c, "SELECT * FROM tara_moves ORDER BY id DESC LIMIT 100")]
+    return {"types": types, "drivers": drivers, "history": hist}
 
 
 @action("taraMove", write=True)
 def tara_move(ctx: Ctx, p: dict) -> dict:
-    """Ручное движение тары вне рейса: dir=out — отдали городу, in — город вернул."""
-    city = v_id(p, "cityId")
-    if not scalar(ctx.conn, "SELECT 1 FROM cities WHERE id=?", (city,)):
-        raise ApiError("not_found", "Нет такого города")
+    """Ящики вне рейса: kind=out — выдали водителю, back — вернул, writeoff — утеряны (списать долг)."""
+    driver = v_id(p, "driverId")
+    if not scalar(ctx.conn, "SELECT 1 FROM staff WHERE id=? AND role='driver'", (driver,)):
+        raise ApiError("not_found", "Нет такого водителя")
     tid = v_id(p, "taraId")
     if not scalar(ctx.conn, "SELECT 1 FROM tara_types WHERE id=?", (tid,)):
         raise ApiError("not_found", "Нет такой тары")
     q = v_int(p, "qty", lo=1, hi=MAX_QTY)
-    sign = 1 if v_enum(p, "dir", ("out", "in")) == "out" else -1
-    _add_tara(ctx, ctx.today, tid, city, sign * q, note=v_str(p, "note", required=False, max_len=200))
-    return {"balance": _tara_debt(ctx.conn).get((city, tid), 0)}
+    kind = v_enum(p, "kind", ("out", "back", "writeoff"))
+    debt = _tara_debt(ctx.conn).get((driver, tid), 0)
+    if kind != "out" and q > debt:
+        raise ApiError("bad_request", f"У водителя на руках только {debt}")
+    _add_tara(ctx, ctx.today, tid, driver, kind, q, note=v_str(p, "note", required=False, max_len=200))
+    return {"debt": _tara_debt(ctx.conn).get((driver, tid), 0)}
 
 
 # ============ СМЕНЫ ============
@@ -693,10 +710,12 @@ def seed(conn, now: datetime) -> None:
                 if q:
                     lines.append({"productId": pid, "qty": q})
                     add("ship", day, pid, -q, city=cid, trip=tid)
+            drv = rnd.choice(drivers)
             crates = sum(ln["qty"] for ln in lines) // 2 + 1
-            _add_tara(ctx, day, "box", cid, crates, trip=tid, seed=1)
-            back_crates = crates - rnd.randint(0, 3)
-            _add_tara(ctx, day, "box", cid, -back_crates, trip=tid, seed=1)
+            _add_tara(ctx, day, "box", drv, "out", crates, city=cid, trip=tid, seed=1)
+            back_crates = max(0, crates - rnd.choice([0, 0, 0, 1, 2]))
+            if back_crates:
+                _add_tara(ctx, day, "box", drv, "back", back_crates, city=cid, trip=tid, seed=1)
             closed = []
             for ln in lines:
                 b = rnd.choice([0, 0, 0, 1])
@@ -707,7 +726,7 @@ def seed(conn, now: datetime) -> None:
             ts = f"{day}T07:{rnd.randint(10, 59)}:00+03:00"
             conn.execute("INSERT INTO trips(id,num,date,city_id,driver_id,status,lines,tara_out,tara_back,created_at,"
                          "shipped_at,closed_at,seed) VALUES(?,?,?,?,?,'closed',?,?,?,?,?,?,1)",
-                         (tid, num, day, cid, rnd.choice(drivers), jdump(closed), jdump([{"taraId": "box", "qty": crates}]),
+                         (tid, num, day, cid, drv, jdump(closed), jdump([{"taraId": "box", "qty": crates}]),
                           jdump([{"taraId": "box", "qty": back_crates}]), ts, ts, f"{day}T18:30:00+03:00"))
         for pid in rnd.sample(pids, 1):
             if stock[pid] > 2:
@@ -719,12 +738,12 @@ def seed(conn, now: datetime) -> None:
         tid = f"R-S{num:04d}"
         lines = [{"productId": pid, "qty": min(stock[pid], rnd.randint(1, 4))} for pid in rnd.sample(pids, 12)]
         lines = [ln for ln in lines if ln["qty"]]
-        tara = [{"taraId": "box", "qty": 16}, {"taraId": "stack", "qty": 2}]
+        tara = [{"taraId": "box", "qty": 16}]
         if status == "shipped":
             for ln in lines:
                 add("ship", today, ln["productId"], -ln["qty"], city=cid, trip=tid)
             for ln in tara:
-                _add_tara(ctx, today, ln["taraId"], cid, ln["qty"], trip=tid, seed=1)
+                _add_tara(ctx, today, ln["taraId"], drv, "out", ln["qty"], city=cid, trip=tid, seed=1)
         conn.execute("INSERT INTO trips(id,num,date,city_id,driver_id,status,lines,tara_out,created_at,shipped_at,seed) "
                      "VALUES(?,?,?,?,?,?,?,?,?,?,1)",
                      (tid, num, today, cid, drv, status, jdump(lines), jdump(tara), iso_now(),
