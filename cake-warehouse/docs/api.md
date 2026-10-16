@@ -76,7 +76,7 @@ Content-Type: text/plain;charset=utf-8          (простой CORS-запро�
 | `saveOrder` | `id?`, `num`, `date?`, `pointId`, `comment?`, `lines[{productId, qty, bonus?}]` | `order`; маршрут берётся у точки; номер уникален; собранная не правится |
 | `deleteOrder` | `id` | только несобранная |
 | `checkLine` | `id`, `productId`, `done?` (по умолчанию `true`) | `order` с обновлёнными `checked` |
-| `finishPick` | `id`, `picker`, `boxes?` | `status: picked`; `bad_state`, если отмечено не всё |
+| `finishPick` | `id`, `picker`, `boxes?`, `all?` (отметить все строки) | `status: picked`; `bad_state`, если отмечено не всё |
 | `reopenPick` | `id` | обратно `new`; нельзя, если заявка уже в рейсе |
 | `routeToTrip` | `date`, `route`, `driverId?` | Все заявки маршрута на дату без рейса должны быть собраны → черновик рейса: торты с бонусами, ящики — сумма по заявкам, в комментарии номера заявок; `trip`, `orders`. Отмена рейса освобождает заявки |
 | `savePlaces` | `places[{productId, place}]` (0 — убрать место) | `saved`, `places` |

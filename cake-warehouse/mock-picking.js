@@ -1,4 +1,4 @@
-// изменено 2026-10-17 10:30
+// изменено 2026-10-17 11:40
 /* ============================================================
    mock-picking.js — сборка по кругу в демо-режиме (двойник api/bots/cake/picking.py).
    Точки и заявки — mock-orders.js; в демо заявки с фото стоят на сегодня.
@@ -93,9 +93,10 @@
       var S = st(), o = order(S, p.id);
       if(!o) return err('not_found', 'Заявка не найдена');
       if(o.status !== 'new') return err('bad_state', 'Заявка уже собрана');
+      if(!String(p.picker || '').trim()) return err('bad_request', 'picker: обязательное поле');
+      if(p.all) o.checked = o.lines.map(function(l){ return l.productId; });  // «Всё уже собрано»
       var left = o.lines.filter(function(l){ return o.checked.indexOf(l.productId) < 0; }).length;
       if(left) return err('bad_state', 'Не отмечено строк: ' + left);
-      if(!String(p.picker || '').trim()) return err('bad_request', 'picker: обязательное поле');
       Object.assign(o, {status:'picked', picker:String(p.picker).trim(), boxes:p.boxes == null ? null : +p.boxes, pickedAt:U.now()});
       return {order:o};
     },

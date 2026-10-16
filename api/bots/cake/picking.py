@@ -126,12 +126,16 @@ def finish_pick(ctx: Ctx, p: dict) -> dict:
     o = _get_order(ctx.conn, v_id(p, "id"))
     if o["status"] != "new":
         raise ApiError("bad_state", "Заявка уже собрана")
-    left = {ln["productId"] for ln in jload(o["lines"], [])} - set(jload(o["checked"], []))
+    picker = v_str(p, "picker", min_len=1, max_len=60)
+    boxes = v_int(p, "boxes", lo=0, hi=999, required=False, default=None)
+    lines = [ln["productId"] for ln in jload(o["lines"], [])]
+    if v_bool(p, "all", default=False):  # «Всё уже собрано» — отметить все строки разом
+        ctx.conn.execute("UPDATE orders SET checked=? WHERE id=?", (jdump(lines), o["id"]))
+    left = set(lines) - set(jload(scalar(ctx.conn, "SELECT checked FROM orders WHERE id=?", (o["id"],)), []))
     if left:
         raise ApiError("bad_state", f"Не отмечено строк: {len(left)}")
     ctx.conn.execute("UPDATE orders SET status='picked', picker=?, boxes=?, picked_at=? WHERE id=?",
-                     (v_str(p, "picker", min_len=1, max_len=60), v_int(p, "boxes", lo=0, hi=999, required=False, default=None),
-                      iso_now(), o["id"]))
+                     (picker, boxes, iso_now(), o["id"]))
     return {"order": _order(_get_order(ctx.conn, o["id"]))}
 
 
