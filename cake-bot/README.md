@@ -1,0 +1,125 @@
+# cake-bot
+
+Бот склада тортов (Mini App — `../cake-warehouse/`, API — `../api/bots/cake.py`).
+Работает на iMac рядом с API, по образцу `taxi-morning-digest`:
+
+1. На `/start` показывает кнопки Mini App по роли: кладовщику — склад,
+   водителю — его рейсы, руководителю — всё. Роль берётся из справочника
+   «Люди» (поле Telegram id) и из `ADMIN_IDS`.
+2. Следит за рейсами и пишет:
+   - водителю — «рейс отгружен вам» с составом и тарой;
+   - кладовщикам и руководителю — «водитель сдал отчёт, примите рейс»;
+   - водителю — «рейс принят складом».
+3. Каждое утро (по умолчанию в 07:00) шлёт руководителю сводку за вчера:
+   приход, отгрузки по городам, возвраты, списания, остаток, что мало,
+   рейсы в пути и на приёмке, тара на руках.
+4. `/id` — показывает человеку его Telegram id, чтобы добавить в справочник.
+
+## Где что хранится
+
+Всё на iMac:
+- данные склада — SQLite API (`TGS_DATA_DIR/cake.db`, см. `../api/README.md`);
+- состояние бота — `data/state.json` (последние статусы рейсов и offset
+  Telegram, чтобы не слать уведомления повторно после перезапуска);
+- токен и ключи — `.env` (не коммитится).
+
+Входящие соединения не нужны: бот сам опрашивает Telegram (long polling)
+и ходит в API по `127.0.0.1`.
+
+## Настройка
+
+### 1. Зависимости
+
+```bash
+cd cake-bot
+npm install
+```
+
+Нужен Node.js 18+ (`brew install node`).
+
+### 2. `.env`
+
+Скопировать `.env.example` в `.env` и заполнить:
+
+- `BOT_TOKEN` — токен от @BotFather;
+- `ADMIN_IDS` — Telegram id руководителей через запятую (свой id можно
+  узнать, написав боту `/id` после запуска);
+- `SERVICE_KEY` — длинная случайная строка: `openssl rand -hex 24`.
+
+### 3. Те же значения — в API
+
+В plist API (`~/Library/LaunchAgents/xyz.tg-studio.api.plist`, раздел
+`EnvironmentVariables`, см. `../api/README.md`):
+
+```
+TGS_CAKE_BOT_TOKEN   = тот же BOT_TOKEN
+TGS_CAKE_ADMINS      = тот же ADMIN_IDS
+TGS_CAKE_SERVICE_KEY = тот же SERVICE_KEY
+```
+
+и перезапустить API: `launchctl kickstart -k gui/$(id -u)/xyz.tg-studio.api`.
+
+### 4. Проверить
+
+```bash
+npm run check                    # бот, API, руководители, адрес страниц
+npm run digest:now -- --print    # показать утреннюю сводку в терминале
+npm run digest:now               # отправить её руководителям сейчас
+npm test                         # тесты логики
+```
+
+### 5. Запустить постоянно
+
+Пока открыт терминал: `npm start`. Чтобы бот работал всегда, даже после
+перезагрузки Mac — launchd, шаблон и инструкция в
+`deploy/com.tgstudio.cake-bot.plist.example`.
+
+### 6. Кнопка меню в Telegram
+
+Бот сам ставит команды `/start` и `/id`. Если нужна постоянная кнопка
+«Открыть» слева от поля ввода — в @BotFather: `/mybots` → бот →
+Bot Settings → Menu Button → ссылка на `sklad.html`.
+
+## Смена токена
+
+@BotFather → `/revoke` → новый токен вписать в `.env` (`BOT_TOKEN`) и в
+plist API (`TGS_CAKE_BOT_TOKEN`), перезапустить оба процесса. Код
+трогать не нужно.
+
+## Настройки в `.env`
+
+- `DIGEST_CRON` — время сводки (cron), по умолчанию `0 7 * * *`.
+- `TIMEZONE` — по умолчанию `Europe/Minsk`.
+- `WATCH_SECONDS` — как часто проверять рейсы, по умолчанию 60.
+- `WEBAPP_BASE` — где лежат страницы Mini App (GitHub Pages, нужен https).
+
+## Структура
+
+```
+src/
+  config.js       читает .env
+  telegram.js     Bot API через fetch (без библиотек)
+  api.js          запросы к API склада со служебным ключом
+  store.js        data/state.json
+  roles.js        роль по Telegram id и кнопки Web App
+  events.js       какие рейсы сменили статус с прошлой проверки
+  texts.js        тексты уведомлений и сводки
+  commands.js     ответы на /start и /id
+  watch.js        проверка рейсов → уведомления
+  digest-job.js   утренняя сводка
+  index.js        точка входа: long polling + проверка рейсов + cron
+scripts/
+  check.js        проверка настройки
+  digest-now.js   сводка вручную
+test/             node --test
+deploy/
+  com.tgstudio.cake-bot.plist.example   автозапуск на macOS
+```
+
+## Ограничения
+
+- Если отгрузка и отчёт водителя случились между двумя проверками
+  (по умолчанию минута), водитель получит только «принят», без «отгружен»:
+  отчёт он уже сдал, напоминать незачем.
+- При первом запуске бот только запоминает текущие рейсы и не шлёт
+  уведомления о старых.

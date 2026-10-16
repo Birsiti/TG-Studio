@@ -1,4 +1,4 @@
-# изменено 2026-10-16 20:05
+# изменено 2026-10-16 21:00
 """Склад тортов с развозом по городам (cake-warehouse/*.html).
 
 Рабочий учёт, а не витрина: нет ежедневного «освежения» и нет удаления
@@ -20,9 +20,12 @@
 только эти id и активные сотрудники с заполненным tg_id. Пусто — открыто
 (демо). Если задан TGS_CAKE_BOT_TOKEN, каждый запрос обязан нести initData,
 подписанный этим ботом; id пользователя берётся из подписи, а не из userId.
+TGS_CAKE_SERVICE_KEY — служебный ключ бота склада (cake-bot): с ним проходит
+всё, без подписи и списка.
 """
 from __future__ import annotations
 
+import hmac
 import os
 import random
 from datetime import datetime
@@ -140,7 +143,17 @@ def _admins() -> set[str]:
     return {x.strip() for x in os.environ.get("TGS_CAKE_ADMINS", "").split(",") if x.strip()}
 
 
+def _service(p: dict) -> bool:
+    """Бот склада (cake-bot) на том же iMac ходит со служебным ключом."""
+    key = os.environ.get("TGS_CAKE_SERVICE_KEY", "")
+    got = p.get("serviceKey")
+    return bool(key) and isinstance(got, str) and hmac.compare_digest(got.encode(), key.encode())
+
+
 def _guard(ctx: Ctx, p: dict) -> None:
+    if _service(p):
+        ctx.user = None
+        return
     # С токеном бота (TGS_CAKE_BOT_TOKEN) верим только подписанному initData:
     # userId из запроса подделать нельзя, без подписи — отказ.
     token = os.environ.get("TGS_CAKE_BOT_TOKEN", "")

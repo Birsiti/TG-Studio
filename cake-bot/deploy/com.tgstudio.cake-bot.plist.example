@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Автозапуск бота склада на macOS через launchd — процесс поднимается при
+  входе в систему и перезапускается, если упадёт.
+
+  Установка:
+    1. Скопировать этот файл в ~/Library/LaunchAgents/com.tgstudio.cake-bot.plist
+       (убрать .example из имени).
+    2. Заменить ЗАМЕНИ_НА_ПУТЬ ниже на реальный путь до репозитория
+       (например /Users/denis/tg-studio) и, если нужно, путь до node
+       (узнать командой `which node`; на Apple Silicon обычно /opt/homebrew/bin/node).
+    3. launchctl load ~/Library/LaunchAgents/com.tgstudio.cake-bot.plist
+    4. Логи пишутся в out.log / err.log внутри папки cake-bot.
+
+  Перезапустить после git pull:  launchctl kickstart -k gui/$(id -u)/com.tgstudio.cake-bot
+  Остановить:  launchctl unload ~/Library/LaunchAgents/com.tgstudio.cake-bot.plist
+-->
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.tgstudio.cake-bot</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/node</string>
+    <string>ЗАМЕНИ_НА_ПУТЬ/cake-bot/src/index.js</string>
+  </array>
+
+  <key>WorkingDirectory</key>
+  <string>ЗАМЕНИ_НА_ПУТЬ/cake-bot</string>
+
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>ЗАМЕНИ_НА_ПУТЬ/cake-bot/out.log</string>
+  <key>StandardErrorPath</key>
+  <string>ЗАМЕНИ_НА_ПУТЬ/cake-bot/err.log</string>
+</dict>
+</plist>

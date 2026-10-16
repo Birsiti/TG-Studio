@@ -123,3 +123,12 @@ def test_bot_token_signature(api, monkeypatch):
     bad = _signed(tok, 555).replace("%22id%22%3A+555", "%22id%22%3A+556")
     assert api("cake", "getStock", initData=bad)["error"] == "forbidden"
     assert api("cake", "getMe", initData=_signed(tok, 555))["restricted"] is True
+
+
+def test_service_key_for_bot(api, monkeypatch):
+    monkeypatch.setenv("TGS_CAKE_BOT_TOKEN", "123456:TEST-token")
+    monkeypatch.setenv("TGS_CAKE_SERVICE_KEY", "s3cret-key-for-bot")
+    assert api("cake", "getRefs", user=None)["error"] == "forbidden"
+    assert api("cake", "getRefs", user=None, serviceKey="wrong")["error"] == "forbidden"
+    assert api("cake", "getRefs", user=None, serviceKey="s3cret-key-for-bot")["ok"]
+    assert api("cake", "getTrips", user=None, serviceKey="s3cret-key-for-bot")["ok"]

@@ -1,0 +1,19 @@
+{
+  "name": "cake-bot",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Бот склада тортов: кнопки Mini App по ролям, уведомления о рейсах и утренняя сводка руководителю",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node src/index.js",
+    "digest:now": "node scripts/digest-now.js",
+    "check": "node scripts/check.js",
+    "test": "node --test test/*.test.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.5",
+    "node-cron": "^4.6.0"
+  }
+}

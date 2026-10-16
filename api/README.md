@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-16 20:05 -->
+<!-- изменено 2026-10-16 21:00 -->
 # API студии TG-Studio
 
 Один процесс на Python 3.12 (FastAPI + SQLite) обслуживает все демо-боты
@@ -59,6 +59,7 @@ GET  /health           {"ok": true, "time": ..., "bots": [...]}
 | `TGS_LEADS_WEBHOOK` | `https://tg-studio-leads.birsiti.workers.dev` | Куда пересылать заявки studio (пусто — не пересылать) |
 | `TGS_CAKE_ADMINS` | пусто | Склад тортов: tg id через запятую; если задано — `cake` доступен только им и сотрудникам с tg id из справочника |
 | `TGS_CAKE_BOT_TOKEN` | пусто | Склад тортов: токен бота из @BotFather. Если задан — каждый запрос должен нести подписанный Telegram `initData` (его шлёт `kit/core.js`), id пользователя берётся из подписи. **Только здесь, никогда в репозитории** |
+| `TGS_CAKE_SERVICE_KEY` | пусто | Склад тортов: служебный ключ бота `cake-bot` (тот же, что `SERVICE_KEY` в его `.env`) |
 | `TGS_STUDIO_KEY` | пусто | Ключ владельца: реальные заявки видны только в `dashboard.html?key=<ключ>` (без ключа — демо-заявки) |
 
 ## Заявки TG-Studio (studio)
@@ -120,6 +121,7 @@ tests/           pytest (FastAPI TestClient) — на каждого бота
        <key>TGS_STUDIO_KEY</key><string>ВАШ-СЛУЧАЙНЫЙ-КЛЮЧ</string>
        <key>TGS_CAKE_BOT_TOKEN</key><string>ТОКЕН-БОТА-СКЛАДА</string>
        <key>TGS_CAKE_ADMINS</key><string>TG-ID-РУКОВОДИТЕЛЯ</string>
+       <key>TGS_CAKE_SERVICE_KEY</key><string>СЛУЖЕБНЫЙ-КЛЮЧ-БОТА</string>
      </dict>
      <key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
      <key>StandardOutPath</key><string>/Users/USER/Library/Logs/tgs-api.log</string>
