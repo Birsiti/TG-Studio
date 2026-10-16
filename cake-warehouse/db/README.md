@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 00:30 -->
+<!-- изменено 2026-10-17 01:30 -->
 # База склада тортов (SQLite)
 
 Файл базы живёт на iMac рядом с API. Схема построена по реальным заявкам
@@ -8,13 +8,15 @@
 
 | Файл | Что внутри |
 |---|---|
-| `schema.sql` | Таблицы, ограничения, триггеры, представления |
+| `schema/01…08_*.sql` | Таблицы, триггеры, представления — по файлу на раздел, применяются по порядку |
+| `dbutil.py` | Сборка базы из `schema/*.sql` + `seed.sql` |
 | `seed.sql` | Начальные данные (сгенерирован `build_seed.py`, руками не править) |
-| `build_seed.py` | Генератор `seed.sql`: ассортимент из `api/bots/cake.py`, точки и заявки с фото |
+| `build_seed.py` | Генератор `seed.sql`: ассортимент из `api/bots/cake/catalog.py`, точки и заявки с фото |
 | `check_db.py` | Собирает базу с нуля и проверяет её |
 | `queries.sql` | Частые запросы: сводная, остатки, нехватка, ящики |
 | `import_places.py` | Бланк «Карта склада» и его загрузка в `places.csv` |
-| `pick_sheet.py` | Лист сборки по кругу: заявка или весь маршрут, HTML + PDF |
+| `pick_sheet.py`, `pick_render.py` | Лист сборки по кругу: заявка или весь маршрут, HTML + PDF (запросы / оформление) |
+| `gen_mock_catalog.py` | Перегенерировать каталог демо-режима (`../mock-data.js`) |
 
 ## Таблицы
 
@@ -92,7 +94,7 @@ python3 cake-warehouse/db/check_db.py          # проверить (време�
 python3 cake-warehouse/db/check_db.py cake.db  # создать файл базы (не перезаписывает)
 
 # или напрямую:
-sqlite3 cake.db < cake-warehouse/db/schema.sql
+cat cake-warehouse/db/schema/*.sql | sqlite3 cake.db
 sqlite3 cake.db < cake-warehouse/db/seed.sql
 sqlite3 -header -column cake.db < cake-warehouse/db/queries.sql
 ```
@@ -103,6 +105,6 @@ DB Browser for SQLite (`brew install --cask db-browser-for-sqlite`).
 
 ## Что дальше
 
-Приложение (`../sklad.html`, `api/bots/cake.py`) пока работает на старой
+Приложение (`../sklad.html`, `api/bots/cake/`) пока работает на старой
 модели «рейс в город». Следующий шаг — перевести API на эту схему: заявки,
 сводная по маршруту, лист сборки с ящиками и стопками, тара по точкам.

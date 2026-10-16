@@ -3,7 +3,7 @@
 
     python3 cake-warehouse/db/build_seed.py   (из корня репозитория)
 
-Ассортимент берётся из api/bots/cake.py (CATALOG) — один источник правды.
+Ассортимент берётся из api/bots/cake/catalog.py (CATALOG) — один источник правды.
 Заявки внесены только полностью видимые на фото; каждая сверена со строкой
 «Итого» накладной (штук без бонусов и вес) — см. EXPECTED и check_db.py.
 """
@@ -129,7 +129,7 @@ def q(v) -> str:
 def main() -> None:
     out = ["-- изменено 2026-10-16 23:00",
            "-- СГЕНЕРИРОВАНО build_seed.py — правьте генератор, а не этот файл.",
-           "-- Ассортимент: api/bots/cake.py (CATALOG). Заказчики, точки, заявки: фото от 17.10.2026 (../source/).",
+           "-- Ассортимент: api/bots/cake/catalog.py (CATALOG). Заказчики, точки, заявки: фото от 17.10.2026 (../source/).",
            "PRAGMA foreign_keys = ON;", "BEGIN;", ""]
     out.append("INSERT INTO categories (id, name, sort) VALUES")
     out.append(",\n".join(f"  ({i + 1}, {q(c)}, {i})" for i, c in enumerate(CATS)) + ";\n")

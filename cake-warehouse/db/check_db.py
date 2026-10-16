@@ -1,5 +1,5 @@
-# изменено 2026-10-17 00:30
-"""Собирает базу во временный файл из schema.sql + seed.sql и проверяет её.
+# изменено 2026-10-17 01:30
+"""Собирает базу во временный файл из schema/*.sql + seed.sql и проверяет её.
 
     python3 cake-warehouse/db/check_db.py            — проверка
     python3 cake-warehouse/db/check_db.py cake.db    — собрать базу в файл (если его нет)
@@ -13,15 +13,12 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
+import dbutil  # noqa: E402
 from build_seed import EXPECTED  # noqa: E402
 
 
 def build(path: Path) -> sqlite3.Connection:
-    conn = sqlite3.connect(path)
-    conn.execute("PRAGMA foreign_keys = ON")
-    conn.executescript((HERE / "schema.sql").read_text(encoding="utf-8"))
-    conn.executescript((HERE / "seed.sql").read_text(encoding="utf-8"))
-    return conn
+    return dbutil.build(sqlite3.connect(path))
 
 
 def expect_error(conn, sql, args=(), what=""):

@@ -1,6 +1,6 @@
 # cake-bot
 
-Бот склада тортов (Mini App — `../cake-warehouse/`, API — `../api/bots/cake.py`).
+Бот склада тортов (Mini App — `../cake-warehouse/`, API — `../api/bots/cake/`).
 Работает на iMac рядом с API, по образцу `taxi-morning-digest`:
 
 1. На `/start` показывает кнопки Mini App по роли: кладовщику — склад,

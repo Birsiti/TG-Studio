@@ -1,0 +1,87 @@
+<!-- изменено 2026-10-17 01:30 -->
+# API склада
+
+```
+POST https://api.tg-studio.xyz/api/cake
+Content-Type: text/plain;charset=utf-8          (простой CORS-запрос без preflight)
+{"action": "getStock", "userId": "...", "initData": "...", ...параметры}
+→ {"ok": true, ...}  |  {"ok": false, "error": "код", "message": "текст"}
+```
+
+Код: `api/bots/cake/` (по модулю на тему), тесты: `api/tests/test_cake.py`.
+Из страниц запросы шлёт `Kit.createApi` (`kit/core.js`): сам добавляет
+`userId` и, внутри Telegram, `initData`. Если сервер недоступен —
+тихо переходит на `mock.js` (тот же контракт в браузере).
+
+## Доступ (`base.py`)
+
+1. `serviceKey` = `TGS_CAKE_SERVICE_KEY` → пропуск (бот склада).
+2. Задан `TGS_CAKE_BOT_TOKEN` → нужен `initData`, подписанный этим ботом
+   (HMAC, не старше 24 ч); пользователь берётся из подписи.
+3. Задан `TGS_CAKE_ADMINS` → пускаются эти id и активные сотрудники с
+   этим `tgId`. Иначе — открытое демо.
+
+## Справочники (`refs.py`)
+
+| Действие | Параметры | Ответ |
+|---|---|---|
+| `getRefs` | — | `products`, `cities`, `staff`, `tara`, `moveTypes`, `cats` |
+| `getMe` | — | `staff` (кто я по Telegram id или null), `restricted` |
+| `saveProduct` | `id?`, `name`, `cat`, `sku`, `weightG`, `shelfDays`, `minQty`, `active` | `product` |
+| `saveCity` | `id?`, `name`, `code`, `active` | `city` |
+| `saveStaff` | `id?`, `name`, `role` (`storekeeper`/`driver`), `phone` (+375…), `car`, `tgId` (цифры), `active` | `staff` |
+| `saveTara` | `id?`, `name`, `total`, `active` | `tara` |
+
+Без `id` — создать, с `id` — изменить. Удаления нет: `active:false` скрывает.
+
+## Остатки (`stock.py`)
+
+| Действие | Параметры | Ответ |
+|---|---|---|
+| `getStock` | — | `items[]` (товар + `qty`, `lastIn`, `onRoad`), `total` |
+| `addIncome` | `date?`, `note?`, `lines[{productId, qty}]` | `added` |
+| `writeOff` | `productId`, `qty`, `reason` | `qty` (новый остаток); `no_stock` если не хватает |
+| `adjustStock` | `productId`, `actual`, `note?` | `delta`, `qty` |
+| `getMoves` | `from?`, `to?`, `type?` (`in`/`ship`/`return`/`writeoff`/`adjust`) | `moves[]` (до 500) |
+
+## Рейсы (`trips.py`)
+
+Статусы: `draft` → `shipped` → `reported` → `closed`; `draft` → `cancelled`.
+
+| Действие | Параметры | Что делает |
+|---|---|---|
+| `getTrips` | `from?`, `to?` | Рейсы ±7 дней + все незакрытые |
+| `saveTrip` | `id?`, `date?`, `cityId`, `driverId?`, `lines[{productId, qty}]`, `taraOut[{taraId, qty}]`, `note?` | Создать/изменить черновик |
+| `shipTrip` | `id` | Проверить остаток, списать торты, записать ящики на водителя → `shipped` |
+| `cancelTrip` | `id` | Только черновик → `cancelled` |
+| `reportTrip` | `id`, `returns[{productId, back, spoiled}]`, `taraBack[]`, `comment?` | Отчёт водителя → `reported` |
+| `closeTrip` | `id`, `returns[]`, `taraBack[]` | Годные — на остаток, ящики — с долга → `closed`; в строках `delivered` |
+| `getMyTrips` | `driverId?` (только в открытом демо) | `driver`, `trips`, `taraDebt` |
+
+## Ящики (`tara.py`)
+
+| Действие | Параметры | Ответ |
+|---|---|---|
+| `getTara` | — | `types[]` (`total`, `atDrivers`, `lost`, `inStock`), `drivers[]` (`tara[id]: issued/returned/lost/debt`, `debt`), `history[]` |
+| `taraMove` | `driverId`, `taraId`, `qty`, `kind` (`out`/`back`/`writeoff`), `note?` | `debt`; вернуть/списать больше долга нельзя |
+
+## Смены и сводка (`shifts.py`, `overview.py`)
+
+| Действие | Параметры | Ответ |
+|---|---|---|
+| `getShifts` | `from?`, `to?` | `days{date: [staffId]}` |
+| `setShift` | `date`, `staffIds[]` | Заменяет список на день |
+| `getOverview` | `days?` (7–60, по умолчанию 14) | `stockTotal`, `lowStock`, `shippedToday`, `shippedPeriod`, `returnedPeriod`, `writtenOffPeriod`, `trips`, `series`, `byCity`, `topProducts`, `taraOut`, `onShift` |
+
+## Ошибки
+
+| Код | Когда |
+|---|---|
+| `bad_request` | Неверное поле (в `message` — какое) |
+| `not_found` | Нет товара, рейса, водителя, города |
+| `no_stock` | Не хватает остатка (в `message` — чего и сколько) |
+| `bad_state` | Действие не для этого статуса рейса |
+| `forbidden` | Нет подписи бота или нет в списке доступа |
+| `rate_limited` | Больше 120 запросов/мин (30 изменяющих) с IP |
+
+Общие коды сервера — в `api/README.md`.

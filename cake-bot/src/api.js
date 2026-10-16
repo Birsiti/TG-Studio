@@ -1,4 +1,4 @@
-// Запросы к API склада (api/bots/cake.py) со служебным ключом.
+// Запросы к API склада (api/bots/cake/) со служебным ключом.
 const config = require('./config');
 
 async function api(action, payload = {}) {

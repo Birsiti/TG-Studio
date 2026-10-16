@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-16 23:00 -->
+<!-- изменено 2026-10-17 01:30 -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -9,6 +9,7 @@
 <script src="../kit/core.js"></script>
 <link rel="stylesheet" href="../kit/base.css">
 <link rel="stylesheet" href="brand.css">
+<script src="mock-data.js"></script>
 <script src="mock.js"></script>
 </head>
 <body>
@@ -49,140 +50,6 @@
   <button type="button" data-tab="refs"><span data-ic="settings"></span>Справочники</button>
 </div></nav>
 
-<script>
-(function(){
-  "use strict";
-  const {html, icon, $, $$, date: D, num, haptic} = Kit;
-  const api = Kit.createApi({bot:'cake', mock: window.CakeMock});
-  $('#mark').innerHTML = icon('grid');
-  $('#refreshBtn').innerHTML = icon('refresh');
-  $$('[data-ic]').forEach(el=> el.outerHTML = String(icon(el.dataset.ic)));
-
-  const ROLE = {storekeeper:'Кладовщик', driver:'Водитель'};
-  let REFS = {products:[], cities:[], staff:[], tara:[]};
-  const fail = r=> { Kit.toast(r.message || 'Не получилось', 'error'); haptic('error'); };
-  const P = id=> REFS.products.find(x=>x.id === id) || {name:'?'};
-  const W = g=> !g ? '' : g < 1000 ? g + ' г' : String(g / 1000).replace('.', ',') + ' кг';
-  const L = id=> { const p = P(id); return p.name + (p.weightG ? ', ' + W(p.weightG) : ''); };
-  const C = id=> REFS.cities.find(x=>x.id === id) || {name:'?'};
-  async function loadRefs(){ const r = await api('getRefs'); if(r.ok) REFS = r; else fail(r); }
-
-  /* ============ СВОДКА ============ */
-  async function renderOverview(){
-    const o = await api('getOverview', {days:14});
-    if(!o.ok){ fail(o); return; }
-    const shift = o.onShift.map(id=>REFS.staff.find(s=>s.id === id)).filter(Boolean);
-    $('#ovSub').textContent = `${D.label(D.today())} · на смене ${shift.length ? shift.map(s=>s.name.split(' ')[0]).join(', ') : 'никого'}`;
-    $('#ovLow').innerHTML = o.lowStock.length ? String(html`<p class="mode-note">${icon('alert')} Мало на складе: ${o.lowStock.join(', ')}</p>`) : '';
-    $('#ovStats').innerHTML = String(html`
-      <div class="stat"><div class="stat-label">На складе</div><div class="stat-value">${num(o.stockTotal)}</div><div class="stat-delta">тортов</div></div>
-      <div class="stat"><div class="stat-label">Отгружено сегодня</div><div class="stat-value">${num(o.shippedToday)}</div><div class="stat-delta">за 14 дн ${num(o.shippedPeriod)}</div></div>
-      <div class="stat"><div class="stat-label">Рейсы</div><div class="stat-value">${o.trips.shipped}</div><div class="stat-delta">в пути · сборка ${o.trips.draft} · приёмка ${o.trips.reported}</div></div>
-      <div class="stat"><div class="stat-label">Ящики у водителей</div><div class="stat-value">${num(o.taraOut)}</div><div class="stat-delta">долг</div></div>
-      <div class="stat"><div class="stat-label">Возвраты</div><div class="stat-value">${num(o.returnedPeriod)}</div><div class="stat-delta">за 14 дн</div></div>
-      <div class="stat"><div class="stat-label">Списано</div><div class="stat-value">${num(o.writtenOffPeriod)}</div><div class="stat-delta ${o.writtenOffPeriod ? 'down' : ''}">за 14 дн</div></div>`);
-    $('#ovChart').innerHTML = String(Kit.chart.bars(o.series.map(s=>({label:String(D.day(s.date)), value:s.value})), {highlightLast:true, label:'Отгрузки по дням'}));
-    $('#ovCities').innerHTML = String(Kit.chart.rank(o.byCity.map(c=>({name:C(c.cityId).name, value:c.qty}))));
-    $('#ovTop').innerHTML = String(Kit.chart.rank(o.topProducts.map(p=>({name:L(p.productId), value:p.qty}))));
-  }
-
-  /* ============ СМЕНЫ ============ */
-  let shDay = D.today(), SHIFTS = {};
-  async function renderShifts(){
-    const from = D.add(D.today(), -1), to = D.add(D.today(), 12);
-    const r = await api('getShifts', {from, to});
-    if(!r.ok){ fail(r); return; }
-    SHIFTS = r.days;
-    const days = []; for(let k = from; k <= to; k = D.add(k, 1)) days.push(k);
-    $('#shDays').innerHTML = String(html`${days.map(k=>html`<button type="button" class="day${k === shDay ? ' is-on' : ''}" data-day="${k}"><span class="day-dow">${k === D.today() ? 'сег' : D.dow(k)}</span><span class="day-num">${D.day(k)}</span></button>`)}`);
-    drawShift();
-  }
-  function drawShift(){
-    const on = new Set(SHIFTS[shDay] || []);
-    const grp = role=> REFS.staff.filter(s=>s.role === role && (s.active || on.has(s.id)));
-    $('#shList').innerHTML = String(html`${['storekeeper','driver'].map(role=>html`<div class="section"><div class="section-head"><h2 class="section-title">${role === 'driver' ? 'Водители' : 'Кладовщики'}</h2><span class="hint">${grp(role).filter(s=>on.has(s.id)).length} из ${grp(role).length}</span></div>
-      <div class="list">${grp(role).map(s=>html`<label class="row"><span class="avatar">${Kit.initials(s.name)}</span><span class="row-main"><span class="row-title">${s.name}</span><span class="row-sub">${s.car || Kit.phone.pretty(s.phone)}</span></span>
-        <span class="switch"><input type="checkbox" data-s="${s.id}" ${on.has(s.id) ? Kit.raw('checked') : ''} aria-label="На смене"><span></span></span></label>`)}</div></div>`)}`);
-  }
-  Kit.on($('#shDays'), 'click', '[data-day]', (e, el)=>{ shDay = el.dataset.day; $$('#shDays .day').forEach(b=>b.classList.toggle('is-on', b === el)); haptic('select'); drawShift(); });
-  $('#shList').addEventListener('change', async e=>{
-    if(!e.target.dataset.s) return;
-    const ids = $$('#shList [data-s]').filter(x=>x.checked).map(x=>x.dataset.s);
-    haptic('select');
-    const r = await api('setShift', {date:shDay, staffIds:ids});
-    if(!r.ok){ fail(r); e.target.checked = !e.target.checked; return; }
-    SHIFTS[shDay] = r.staffIds;
-    drawShift();
-  });
-
-  /* ============ СПРАВОЧНИКИ ============ */
-  const KINDS = {
-    products:{label:'Торты', add:'Новый торт', save:'saveProduct', key:'product',
-      sub:x=>`${x.cat} · ${W(x.weightG) || 'вес —'}${x.shelfDays ? ' · ' + x.shelfDays + ' сут' : ''}${x.minQty ? ' · мин. ' + x.minQty : ''}`,
-      fields:x=>html`<label class="field"><span class="field-label">Название</span><input class="input" name="name" maxlength="80" value="${x.name || ''}"></label>
-        <label class="field section"><span class="field-label">Категория</span><select class="select" name="cat">${REFS.cats.map(c=>html`<option value="${c}" ${(x.cat || REFS.cats[0]) === c ? Kit.raw('selected') : ''}>${c}</option>`)}</select></label>
-        <div class="field-row section"><label class="field"><span class="field-label">Артикул</span><input class="input" name="sku" maxlength="30" value="${x.sku || ''}"></label>
-        <label class="field"><span class="field-label">Вес, г</span><input class="input" name="weightG" type="number" inputmode="numeric" value="${x.weightG || ''}"></label></div>
-        <div class="field-row section"><label class="field"><span class="field-label">Срок, суток</span><input class="input" name="shelfDays" type="number" inputmode="numeric" value="${x.shelfDays || ''}"></label>
-        <label class="field"><span class="field-label">Мин. остаток</span><input class="input" name="minQty" type="number" inputmode="numeric" value="${x.minQty || ''}"></label></div>`},
-    cities:{label:'Города', add:'Новый город', save:'saveCity', key:'city', sub:x=>x.code || '—',
-      fields:x=>html`<div class="field-row"><label class="field"><span class="field-label">Город</span><input class="input" name="name" maxlength="60" value="${x.name || ''}"></label>
-        <label class="field" style="flex:0 0 110px"><span class="field-label">Код</span><input class="input mono" name="code" maxlength="4" value="${x.code || ''}" placeholder="БРС"></label></div>`},
-    staff:{label:'Люди', add:'Новый сотрудник', save:'saveStaff', key:'staff',
-      sub:x=>`${ROLE[x.role]}${x.car ? ' · ' + x.car : ''}${x.tgId ? ' · TG ' + x.tgId : ''}`,
-      fields:x=>html`<label class="field"><span class="field-label">Имя и фамилия</span><input class="input" name="name" maxlength="80" value="${x.name || ''}"></label>
-        <div class="seg section" id="fRole">${Object.keys(ROLE).map(k=>html`<button type="button" data-v="${k}" class="${(x.role || 'driver') === k ? 'is-on' : ''}">${ROLE[k]}</button>`)}</div>
-        <div class="field section"><span class="field-label">Телефон</span><div id="fPhone"></div></div>
-        <label class="field section"><span class="field-label">Машина и номер</span><input class="input" name="car" maxlength="80" value="${x.car || ''}" placeholder="Iveco Daily · 4521 AB-7"></label>
-        <label class="field section"><span class="field-label">Telegram id — для входа в рабочем режиме</span><input class="input mono" name="tgId" inputmode="numeric" maxlength="15" value="${x.tgId || ''}"></label>`},
-    tara:{label:'Тара', add:'Новый вид тары', save:'saveTara', key:'tara', sub:x=>`всего ${num(x.total)} шт`,
-      fields:x=>html`<label class="field"><span class="field-label">Название</span><input class="input" name="name" maxlength="60" value="${x.name || ''}"></label>
-        <label class="field section"><span class="field-label">Всего в обороте, шт</span><input class="input" name="total" type="number" inputmode="numeric" value="${x.total || ''}"></label>`}
-  };
-  let kind = 'products';
-  function renderRefs(){
-    $('#refSeg').innerHTML = String(html`${Object.keys(KINDS).map(k=>html`<button type="button" data-k="${k}" class="${k === kind ? 'is-on' : ''}">${KINDS[k].label}</button>`)}`);
-    $('#refAdd').innerHTML = String(html`${icon('plus')}${KINDS[kind].add}`);
-    const list = REFS[kind];
-    $('#refList').innerHTML = String(html`<div class="list">${list.map(x=>html`<button class="row" type="button" data-id="${x.id}"${x.active ? '' : Kit.raw(' style="opacity:.55"')}>
-      ${kind === 'cities' ? html`<span class="row-code"><span class="code">${x.code || '—'}</span></span>` : kind === 'staff' ? html`<span class="avatar">${Kit.initials(x.name)}</span>` : ''}
-      <span class="row-main"><span class="row-title">${Kit.nobr(x.name)}${kind === 'products' && x.weightG ? html` <span class="hint nowrap">${W(x.weightG)}</span>` : ''}</span><span class="row-sub">${KINDS[kind].sub(x)}${x.active ? '' : ' · скрыт'}</span></span>${icon('right', 'row-chev')}</button>`)}</div>`);
-  }
-  Kit.on($('#refSeg'), 'click', '[data-k]', (e, el)=>{ kind = el.dataset.k; haptic('select'); renderRefs(); });
-  $('#refAdd').addEventListener('click', ()=> editRef({active:true}));
-  Kit.on($('#refList'), 'click', '[data-id]', (e, el)=> editRef(REFS[kind].find(x=>x.id === el.dataset.id)));
-
-  function editRef(x){
-    const K = KINDS[kind];
-    const sh = Kit.sheet({title:x.id ? x.name : K.add, body: html`${K.fields(x)}
-      <label class="row section" style="padding:0;border:0"><span class="row-main"><span class="row-title">Активен</span><span class="row-sub">Скрытые не предлагаются в рейсах и приходе</span></span>
-        <span class="switch"><input type="checkbox" id="fAct" ${x.active !== false ? Kit.raw('checked') : ''}><span></span></span></label>`,
-      actions: html`<button class="btn btn-primary btn-block" type="button" id="fSave">Сохранить</button>`});
-    let role = x.role || 'driver';
-    if(kind === 'staff'){
-      sh.$('#fPhone').innerHTML = String(Kit.phone.field('fPh', x.phone || ''));
-      Kit.phone.bind(sh.$('#fPh'));
-      Kit.on(sh.$('#fRole'), 'click', '[data-v]', (e, el)=>{ role = el.dataset.v; $$('#fRole button', sh.el).forEach(b=>b.classList.toggle('is-on', b === el)); haptic('select'); });
-    }
-    sh.$('#fSave').addEventListener('click', async ()=>{
-      const p = {id:x.id, active:sh.$('#fAct').checked};
-      $$('[name]', sh.el).forEach(el=> p[el.name] = el.value.trim());
-      if(kind === 'staff'){ p.role = role; p.phone = Kit.phone.value(sh.$('#fPh')) || undefined; }
-      Kit.busy(sh.$('#fSave'), true);
-      const r = await api(K.save, p);
-      Kit.busy(sh.$('#fSave'), false);
-      if(!r.ok){ fail(r); return; }
-      haptic('success'); sh.close(); Kit.toast('Сохранено', 'ok');
-      await loadRefs(); renderRefs();
-    });
-  }
-
-  /* ============ СТАРТ ============ */
-  const RENDER = {overview:renderOverview, shifts:renderShifts, refs:renderRefs};
-  let current = 'overview';
-  $('#refreshBtn').addEventListener('click', async ()=>{ haptic('light'); await loadRefs(); RENDER[current](); });
-  Kit.ready(async ()=>{ await loadRefs(); Kit.tabs({onChange(tab){ current = tab; RENDER[tab](); }}); });
-})();
-</script>
+<script src="js/admin.js"></script>
 </body>
 </html>
