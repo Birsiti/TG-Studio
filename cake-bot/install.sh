@@ -1,9 +1,10 @@
 #!/bin/bash
-# изменено 2026-10-16 22:40
+# изменено 2026-10-16 23:10
 # Установка бота склада на iMac одной командой (как taxi-morning-digest:
 # бот живёт на iMac, .env + автозапуск launchd, без LEADTEX).
 #   cd ~/tg-studio/cake-bot && bash install.sh
 # Повторный запуск безопасен: обновит .env, перезапустит бота и API.
+# Без вопросов (по ssh): CAKE_TOKEN=<токен> [CAKE_ADMINS=<id>] bash install.sh
 set -euo pipefail
 cd "$(dirname "$0")"
 DIR="$(pwd)"
@@ -14,6 +15,7 @@ PB=/usr/libexec/PlistBuddy
 
 say() { printf '\n\033[1m%s\033[0m\n' "$1"; }
 die() { printf '\n\033[31m✘ %s\033[0m\n' "$1"; exit 1; }
+ask() { [ -t 0 ] && read -rp "$1" a || a="${2:-}"; echo "$a"; }  # без терминала — ответ по умолчанию
 envget() { [ -f .env ] && grep -E "^$1=" .env | head -1 | cut -d= -f2- || true; }
 json() { node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d||'{}');$1})"; }
 
@@ -21,12 +23,14 @@ command -v node >/dev/null || die "Нет Node.js. Установите: brew in
 NODE="$(command -v node)"
 
 say "1/5 Токен бота"
-TOKEN="$(envget BOT_TOKEN)"
-if [ -n "$TOKEN" ]; then
-  read -rp "Токен уже есть в .env. Заменить? [y/N] " a
-  [[ "$a" =~ ^[yYдД] ]] && TOKEN=""
+TOKEN="${CAKE_TOKEN:-$(envget BOT_TOKEN)}"
+if [ -n "$TOKEN" ] && [ -z "${CAKE_TOKEN:-}" ]; then
+  [[ "$(ask 'Токен уже есть в .env. Заменить? [y/N] ')" =~ ^[yYдД] ]] && TOKEN=""
 fi
-if [ -z "$TOKEN" ]; then read -rsp "Вставьте токен от @BotFather (не отображается): " TOKEN; echo; fi
+if [ -z "$TOKEN" ]; then
+  [ -t 0 ] || die "Нет токена: запустите CAKE_TOKEN=<токен> bash install.sh"
+  read -rsp "Вставьте токен от @BotFather (не отображается): " TOKEN; echo
+fi
 TG="${TELEGRAM_API:-https://api.telegram.org}/bot$TOKEN"
 BOT_NAME="$(curl -s "$TG/getMe" | json 'console.log(j.ok?j.result.username:"")')"
 [ -n "$BOT_NAME" ] || die "Telegram не принял токен. Проверьте его в @BotFather."
@@ -35,21 +39,21 @@ echo "✔ Бот @$BOT_NAME"
 curl -s "$TG/deleteWebhook" >/dev/null
 
 say "2/5 Руководитель"
-ADMINS="$(envget ADMIN_IDS)"
-if [ -n "$ADMINS" ]; then
+ADMINS="${CAKE_ADMINS:-$(envget ADMIN_IDS)}"
+if [ -n "$ADMINS" ] && [ -z "${CAKE_ADMINS:-}" ]; then
   echo "Сейчас: $ADMINS"
-  read -rp "Оставить? [Y/n] " a
-  [[ "$a" =~ ^[nNнН] ]] && ADMINS=""
+  [[ "$(ask 'Оставить? [Y/n] ')" =~ ^[nNнН] ]] && ADMINS=""
 fi
 if [ -z "$ADMINS" ]; then
-  echo "Напишите боту @$BOT_NAME /start с телефона руководителя. Жду…"
+  echo "Напишите боту @$BOT_NAME /start с телефона руководителя. Жду до 5 минут…"
   for _ in $(seq 1 60); do
     WHO="$(curl -s "$TG/getUpdates?timeout=5" | json 'const u=(j.result||[]).filter(x=>x.message&&x.message.from).pop();if(u)console.log(u.message.from.id+" "+(u.message.from.first_name||""))' || true)"
     [ -n "$WHO" ] && break
   done
   [ -n "${WHO:-}" ] || die "Сообщение не пришло. Запустите скрипт ещё раз."
-  read -rp "Руководитель: ${WHO#* } (id ${WHO%% *}). Верно? [Y/n] " a
-  [[ "$a" =~ ^[nNнН] ]] && read -rp "Введите id через запятую: " ADMINS || ADMINS="${WHO%% *}"
+  echo "Руководитель: ${WHO#* } (id ${WHO%% *})"
+  ADMINS="${WHO%% *}"
+  if [[ "$(ask 'Верно? [Y/n] ')" =~ ^[nNнН] ]]; then read -rp "Введите id через запятую: " ADMINS; fi
 fi
 
 say "3/5 Настройки .env"
