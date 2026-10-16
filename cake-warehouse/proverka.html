@@ -1,0 +1,42 @@
+<!-- изменено 2026-10-17 08:00 -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>ТОРТОВОЗ — проверка карты</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="../kit/core.js"></script>
+<link rel="stylesheet" href="../kit/base.css">
+<link rel="stylesheet" href="brand.css">
+<script src="mock-data.js"></script>
+<script src="mock-orders.js"></script>
+<script src="mock.js"></script>
+<script src="mock-picking.js"></script>
+<script src="karta-draft.js"></script>
+</head>
+<body>
+<div class="app has-actionbar">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark" id="mark"></div><div class="brand-text"><span class="brand-name">ТОРТОВОЗ</span><span class="brand-role">Проверка карты</span></div></div>
+    <div class="topbar-actions"><button class="icon-btn" type="button" data-theme-toggle aria-label="Оформление"></button></div>
+  </header>
+  <div id="modeNote"></div>
+  <div class="page-head"><h1 class="page-title">Карта склада</h1>
+    <p class="page-sub">Места по фото, по часовой стрелке от двери. Проверьте каждое: «Верно» или поправьте торт и вес.</p></div>
+  <div class="progress"><span id="kProg"></span></div>
+  <p class="hint" id="kSum"></p>
+  <div class="chips scroll section" id="kFilter"></div>
+  <div class="section" id="kList"></div>
+</div>
+
+<div class="actionbar"><div class="actionbar-inner">
+  <div class="total"><div class="total-label">Проверено</div><div class="total-value" id="kDone">0</div></div>
+  <button class="btn btn-primary" type="button" id="kLoad">Загрузить на склад</button>
+</div></div>
+
+<script src="js/common.js"></script>
+<script src="js/proverka.js"></script>
+<script src="js/proverka-edit.js"></script>
+</body>
+</html>
