@@ -1,5 +1,5 @@
-// изменено 2026-10-17 04:20
-/* Сборка: ввод и правка заявки, карта склада (место торта — № по кругу против часовой от двери),
+// изменено 2026-10-17 05:30
+/* Сборка: ввод и правка заявки, карта склада (место торта — № по кругу по часовой от двери),
    отгрузка собранного маршрута водителю (черновик рейса). */
 (function(){
   "use strict";
@@ -85,7 +85,7 @@
 
   Cake.editPlaces = function(){
     const pk = PK();
-    const sh = Kit.sheet({title:'Места на складе', sub:'Встаньте у двери и идите против часовой: первое место — 1, дальше 2, 3… Несколько тортов на одном месте — один номер', body: html`
+    const sh = Kit.sheet({title:'Места на складе', sub:'Встаньте у двери и идите по часовой: первое место — 1, дальше 2, 3… Несколько тортов на одном месте — один номер', body: html`
       <div class="search"><span>${icon('search')}</span><input class="input" id="epQ" type="search" placeholder="Найти торт" autocomplete="off"></div>
       <div class="section" id="epList">${productRows(id=>pk.places[id], 'data-ep')}</div>`,
       actions: html`<button class="btn btn-primary btn-block" type="button" data-save>${icon('check')}Сохранить места</button>`});
