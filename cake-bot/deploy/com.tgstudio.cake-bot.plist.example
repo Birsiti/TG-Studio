@@ -35,6 +35,10 @@
   <true/>
   <key>KeepAlive</key>
   <true/>
+  <!-- Без этого launchd запускает агента как Background: урезанные CPU и диск,
+       на iMac старт в десятки раз медленнее -->
+  <key>ProcessType</key>
+  <string>Interactive</string>
 
   <key>StandardOutPath</key>
   <string>ЗАМЕНИ_НА_ПУТЬ/cake-bot/out.log</string>

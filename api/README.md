@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 00:50 -->
+<!-- изменено 2026-10-17 01:20 -->
 # API студии TG-Studio
 
 Один процесс на Python 3.12 (FastAPI + SQLite) обслуживает все демо-боты
@@ -128,12 +128,16 @@ tests/           pytest (FastAPI TestClient) — на каждого бота
        <key>TGS_CAKE_SERVICE_KEY</key><string>СЛУЖЕБНЫЙ-КЛЮЧ-БОТА</string>
      </dict>
      <key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
+     <key>ProcessType</key><string>Interactive</string>
      <key>StandardOutPath</key><string>/Users/USER/Library/Logs/tgs-api.log</string>
      <key>StandardErrorPath</key><string>/Users/USER/Library/Logs/tgs-api.log</string>
    </dict></plist>
    ```
 
    `launchctl load ~/Library/LaunchAgents/xyz.tg-studio.api.plist`
+
+   `ProcessType=Interactive` обязателен: без него launchd запускает агента
+   как Background (урезанные CPU и ввод-вывод) — на iMac старт 29 с вместо 1 с.
 4. Наружу — Cloudflare Tunnel: `cloudflared tunnel create tgs-api`,
    в `~/.cloudflared/config.yml` — `ingress: - hostname: api.tg-studio.xyz
    service: http://127.0.0.1:8098` и `- service: http_status:404`, затем

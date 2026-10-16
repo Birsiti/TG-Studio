@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 00:50 -->
+<!-- изменено 2026-10-17 01:20 -->
 # Установка на iMac
 
 Всё работает на iMac: API (Python) с базой SQLite и бот (Node.js).
@@ -57,7 +57,10 @@ git clone https://github.com/birsiti/TG-Studio.git ~/tg-studio
 На iMac (HDD, диск заполнен на 99%) холодный запуск API — **до 2 минут**: время
 уходит на чтение FastAPI с диска, сам код грузится за 0,5 с. Перед перезапуском
 прогрейте: `(cd ~/tg-studio/api && .venv/bin/python -c "import server")` — тогда
-перезапуск занимает секунды. После — ждите `/health` в цикле:
+перезапуск занимает секунды. В plist API и бота нужен
+`ProcessType=Interactive` (его ставит `install.sh`): без него launchd
+запускает их как фоновые с урезанным диском — старт 29 с вместо 1 с.
+После перезапуска ждите `/health` в цикле:
 `until curl -sf http://127.0.0.1:8098/health >/dev/null; do sleep 5; done`
 
 База: `TGS_DATA_DIR/cake.db`. При первом запуске она создаётся с

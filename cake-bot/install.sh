@@ -1,5 +1,5 @@
 #!/bin/bash
-# изменено 2026-10-17 00:50
+# изменено 2026-10-17 01:20
 # Установка бота склада на iMac одной командой (как taxi-morning-digest:
 # бот живёт на iMac, .env + автозапуск launchd, без LEADTEX).
 #   cd ~/tg-studio/cake-bot && bash install.sh
@@ -75,6 +75,9 @@ if [ -f "$API_PLIST" ]; then
     $PB -c "Delete :EnvironmentVariables:${kv%%=*}" "$API_PLIST" 2>/dev/null || true
     $PB -c "Add :EnvironmentVariables:${kv%%=*} string ${kv#*=}" "$API_PLIST"
   done
+  # Без ProcessType launchd запускает агента как Background (урезанные CPU и диск): старт 29 с вместо 1 с
+  $PB -c "Delete :ProcessType" "$API_PLIST" 2>/dev/null || true
+  $PB -c "Add :ProcessType string Interactive" "$API_PLIST"
   # Прогрев: на HDD холодный импорт FastAPI — до 2 минут; читаем файлы в кэш ОС,
   # пока старый API ещё работает, — перезапуск после этого занимает секунды
   [ -x ../api/.venv/bin/python ] && (cd ../api && .venv/bin/python -c "import server" >/dev/null 2>&1) || true
