@@ -1,4 +1,4 @@
-// изменено 2026-10-17 12:10
+// изменено 2026-10-17 12:25
 /* Вкладка «Сборка»: заявки на дату и лист с галочками в порядке обхода склада
    (по часовой стрелке от двери). Сейчас — по заявке, со следующей недели — весь маршрут за круг. */
 (function(){
@@ -89,7 +89,7 @@
         ${done && o.boxes != null ? html`<div class="kv"><span class="k">Ящиков</span><span class="v">${o.boxes}</span></div>` : ''}`;
     };
     const sub = ()=> `${p.customer} · ${o.route} · ${o.checked.length} из ${o.lines.length}`;
-    const actions = ()=> o.status === 'picked' ? html`<button class="btn btn-ghost btn-block" type="button" data-a="reopen">${icon('restore')}Вернуть в сборку</button>`
+    const actions = ()=> o.status === 'picked' ? html`<button class="btn btn-ghost" type="button" data-a="reopen">${icon('restore')}Вернуть в сборку</button><button class="btn btn-primary" type="button" data-a="ok">${icon('check')}ОК</button>`
       : html`<button class="btn btn-ghost" type="button" data-a="edit">${icon('edit')}Изменить</button><button class="btn btn-primary" type="button" data-a="finish">${icon('check')}Собрано</button>`;
     const sh = Kit.sheet({title:`Заявка №${o.num}`, sub:sub(), body:body(), actions:actions()});
     const redraw = ()=>{ sh.body.innerHTML = String(body()); const s = $('.sheet-sub', sh.el); if(s) s.textContent = sub(); const a = $('.sheet-actions', sh.el); if(a) a.innerHTML = String(actions()); };
@@ -103,6 +103,7 @@
     });
     Kit.on(sh.el, 'click', '[data-a]', async (e, el)=>{
       const a = el.dataset.a;
+      if(a === 'ok'){ sh.close(); return; }
       if(a === 'edit'){ sh.close(); Cake.editOrder(o); return; }
       if(a === 'reopen'){ const r = await api('reopenPick', {id:o.id}); if(!r.ok){ fail(r); return; } Object.assign(o, r.order); redraw(); draw(); return; }
       const left = o.lines.length - o.checked.length;
