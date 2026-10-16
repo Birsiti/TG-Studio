@@ -13,7 +13,13 @@ async function handleMessage(msg) {
     return tg.send(msg.chat.id, `Ваш Telegram id: ${id}\n\nПередайте его руководителю — он добавит вас в «Справочники → Люди».`);
   }
 
-  const r = await refs();
+  let r;
+  try {
+    r = await refs();
+  } catch (err) {
+    console.error('[bot] API недоступен:', err.message);
+    return tg.send(msg.chat.id, `Склад сейчас недоступен (сервер не отвечает). Попробуйте через пару минут.\n\nВаш Telegram id: ${id}`);
+  }
   const role = roleOf(id, r.staff, config.adminIds);
   if (!role) {
     return tg.send(msg.chat.id, `Здравствуйте! Доступа к складу пока нет.\n\nВаш Telegram id: ${id} — передайте его руководителю, чтобы он добавил вас в «Справочники → Люди».`);

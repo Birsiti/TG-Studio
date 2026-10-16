@@ -34,6 +34,7 @@ async function pollUpdates() {
     } catch (err) {
       if (stopping) break;
       console.error('[bot] getUpdates:', err.message);
+      if (/409|webhook/i.test(err.message)) console.error('[bot] На токене висит webhook (LEADTEX или другой сервис): бот не получит сообщения, пока его не снять. См. npm run check.');
       await sleep(backoff);
       backoff = Math.min(backoff * 2, 60000);
     }

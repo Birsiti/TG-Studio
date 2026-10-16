@@ -9,6 +9,11 @@ const { api } = require('../src/api');
     try { console.log(`✔ ${name}: ${await fn()}`); } catch (err) { ok = false; console.log(`✘ ${name}: ${err.message}`); }
   };
   await step('Бот', async () => '@' + (await tg.call('getMe')).username);
+  await step('Webhook свободен', async () => {
+    const w = await tg.call('getWebhookInfo');
+    if (w.url) throw new Error(`токен занят webhook ${w.url} — бот не получит /start. Снять: отключить бота в LEADTEX или вызвать deleteWebhook`);
+    return 'да, long polling';
+  });
   await step('API склада', async () => { const r = await api('getRefs'); return `${r.products.length} позиций, ${r.staff.length} сотрудников`; });
   await step('Руководители (ADMIN_IDS)', async () => { if (!config.adminIds.length) throw new Error('пусто'); return config.adminIds.join(', '); });
   await step('Страницы Mini App', async () => { if (!config.webappBase.startsWith('https://')) throw new Error('нужен https'); return config.webappBase; });
