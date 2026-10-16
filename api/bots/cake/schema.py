@@ -1,4 +1,4 @@
-# изменено 2026-10-17 01:30
+# изменено 2026-10-17 02:10
 """Схема базы склада (SQLite) и общие константы."""
 
 SCHEMA = """
@@ -34,10 +34,23 @@ CREATE TABLE IF NOT EXISTS tara_moves(
   qty INTEGER NOT NULL, trip_id TEXT, note TEXT NOT NULL DEFAULT '', user_id TEXT, created_at TEXT NOT NULL,
   seed INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS shifts(date TEXT NOT NULL, staff_id TEXT NOT NULL, PRIMARY KEY(date, staff_id));
+-- Сборка по кругу: место торта на складе (№ по кругу против часовой от двери), точки разгрузки, заявки
+CREATE TABLE IF NOT EXISTS places(product_id TEXT PRIMARY KEY, place INTEGER NOT NULL);
+CREATE TABLE IF NOT EXISTS points(
+  id TEXT PRIMARY KEY, customer TEXT NOT NULL, address TEXT NOT NULL, route TEXT NOT NULL DEFAULT '',
+  code TEXT NOT NULL DEFAULT '', sort INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1,
+  seed INTEGER NOT NULL DEFAULT 0);
+CREATE TABLE IF NOT EXISTS orders(
+  id TEXT PRIMARY KEY, num TEXT NOT NULL UNIQUE, date TEXT NOT NULL, point_id TEXT NOT NULL, route TEXT NOT NULL DEFAULT '',
+  comment TEXT NOT NULL DEFAULT '', lines TEXT NOT NULL DEFAULT '[]', checked TEXT NOT NULL DEFAULT '[]',
+  status TEXT NOT NULL DEFAULT 'new', picker TEXT NOT NULL DEFAULT '', boxes INTEGER, picked_at TEXT,
+  created_at TEXT NOT NULL, seed INTEGER NOT NULL DEFAULT 0);
+CREATE INDEX IF NOT EXISTS co_date ON orders(date, route);
 """
 
 MOVE_TYPES = {"in": "Приход", "ship": "Отгрузка", "return": "Возврат", "writeoff": "Списание", "adjust": "Инвентаризация"}
 TRIP_STATUSES = ("draft", "shipped", "reported", "closed", "cancelled")
 ROLES = ("storekeeper", "driver")
+ORDER_STATUSES = ("new", "picked")  # собирается → собрано
 MAX_LINES = 150
 MAX_QTY = 100000

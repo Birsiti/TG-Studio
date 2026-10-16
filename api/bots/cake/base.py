@@ -1,4 +1,4 @@
-# изменено 2026-10-17 01:30
+# изменено 2026-10-17 02:10
 """Объект bot, проверка доступа, выдача строк в JSON и общие проверки строк."""
 from __future__ import annotations
 
@@ -14,7 +14,12 @@ def _seed(conn, now):
     seed(conn, now)
 
 
-bot = Bot("cake", SCHEMA, _seed)
+def _migrate(conn, now):
+    from bots.cake.orders_seed import seed_orders  # заявки с фото — и в старые базы, один раз
+    seed_orders(conn, now)
+
+
+bot = Bot("cake", SCHEMA, _seed, migrate=_migrate)
 
 
 # ============ ДОСТУП ============

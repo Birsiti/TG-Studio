@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 01:30 -->
+<!-- изменено 2026-10-17 03:30 -->
 # API склада
 
 ```
@@ -64,6 +64,27 @@ Content-Type: text/plain;charset=utf-8          (простой CORS-запро�
 |---|---|---|
 | `getTara` | — | `types[]` (`total`, `atDrivers`, `lost`, `inStock`), `drivers[]` (`tara[id]: issued/returned/lost/debt`, `debt`), `history[]` |
 | `taraMove` | `driverId`, `taraId`, `qty`, `kind` (`out`/`back`/`writeoff`), `note?` | `debt`; вернуть/списать больше долга нельзя |
+
+## Сборка (`picking.py`)
+
+Заявки точек и лист сборки. Остаток не трогает — торты списывает отгрузка
+рейса. Порядок строк по месту на складе считает экран (места — в ответе).
+
+| Действие | Параметры | Ответ / что делает |
+|---|---|---|
+| `getOrders` | `date?` (по умолчанию ближайшая дата с заявками) | `date`, `dates[]`, `orders[]`, `points[]`, `routes[]`, `places{productId: №}` |
+| `saveOrder` | `id?`, `num`, `date?`, `pointId`, `comment?`, `lines[{productId, qty, bonus?}]` | `order`; маршрут берётся у точки; номер уникален; собранная не правится |
+| `deleteOrder` | `id` | только несобранная |
+| `checkLine` | `id`, `productId`, `done?` (по умолчанию `true`) | `order` с обновлёнными `checked` |
+| `finishPick` | `id`, `picker`, `boxes?` | `status: picked`; `bad_state`, если отмечено не всё |
+| `reopenPick` | `id` | обратно `new` |
+| `savePlaces` | `places[{productId, place}]` (0 — убрать место) | `saved`, `places` |
+| `savePoint` | `id?`, `customer`, `address`, `route?`, `code?`, `active?` | `point` |
+
+Заявка: `num`, `date`, `pointId`, `route`, `comment`, `lines[{productId, qty,
+bonus}]`, `checked[productId]`, `status` (`new` → `picked`), `picker`, `boxes`,
+`pickedAt`. Заявки с фото накладных (`orders_data.py`) попадают в базу
+один раз — и в новую, и в уже работающую (`migrate` в `core.Bot`).
 
 ## Смены и сводка (`shifts.py`, `overview.py`)
 

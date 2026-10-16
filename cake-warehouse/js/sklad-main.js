@@ -1,4 +1,4 @@
-// изменено 2026-10-17 01:30
+// изменено 2026-10-17 03:00
 /* Запуск экрана кладовщика: иконки, вкладки, кнопка «Обновить». */
 (function(){
   "use strict";
@@ -7,6 +7,10 @@
   $('#refreshBtn').innerHTML = icon('refresh');
   $('#searchIc').outerHTML = String(icon('search'));
   $('#tripAdd').innerHTML = html`${icon('plus')}Новый рейс`;
+  $('#pkAdd').innerHTML = html`${icon('plus')}Новая заявка`;
+  $('#pkPlaces').innerHTML = html`${icon('pin')}Места на складе`;
+  $('#pkAdd').addEventListener('click', ()=> Cake.editOrder(null));
+  $('#pkPlaces').addEventListener('click', ()=> Cake.editPlaces());
   $('#logCsv').innerHTML = html`${icon('download')}Выгрузить CSV`;
   $$('[data-ic]').forEach(el=> el.outerHTML = String(icon(el.dataset.ic)));
 

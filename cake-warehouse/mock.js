@@ -1,6 +1,7 @@
-// изменено 2026-10-17 01:30
+// изменено 2026-10-17 02:40
 /* ============================================================
    mock.js — офлайн-двойник API склада (api/bots/cake/). Данные — mock-data.js.
+   Действия других тем добавляются через CakeMock.register (mock-picking.js).
    Тот же контракт action; состояние в localStorage, общее для
    sklad / driver / admin в одном браузере.
    ============================================================ */
@@ -163,7 +164,7 @@ window.CakeMock = (function(){
     }
   };
 
-  return function(action, payload){
+  function run(action, payload){
     load();
     var fn = A[action];
     if(!fn) return {ok:false, error:'unknown_action'};
@@ -171,5 +172,8 @@ window.CakeMock = (function(){
     if(res && res.ok === false) return res;
     save();
     return Object.assign({ok:true}, res);
-  };
+  }
+  run.register = function(fns){ Object.assign(A, fns); };
+  run.util = {state:load, err:err, byId:byId, now:now};
+  return run;
 })();

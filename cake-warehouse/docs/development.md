@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 01:30 -->
+<!-- изменено 2026-10-17 03:30 -->
 # Разработка
 
 ## Правило размера
@@ -16,13 +16,17 @@ cake-warehouse/                 Mini App (GitHub Pages)
   js/common.js                   window.Cake: API, справочники, остатки, помощники
   js/sklad-stock.js              вкладка «Остатки»
   js/sklad-income.js             вкладка «Приход»
+  js/sklad-pick.js               вкладка «Сборка»: заявки, лист по кругу, весь маршрут
+  js/sklad-pick-edit.js          ввод заявки, места на складе
   js/sklad-trips.js              вкладка «Рейсы»
   js/sklad-tara.js               вкладка «Ящики»
   js/sklad-log.js                вкладка «Журнал»
   js/sklad-main.js               запуск экрана кладовщика
   js/driver.js  js/admin.js      экраны водителя и руководителя
   mock-data.js                   демо: каталог (генерируется), справочники, история
-  mock.js                        демо: двойник API в localStorage
+  mock.js                        демо: двойник API в localStorage (CakeMock.register — для других тем)
+  mock-orders.js                 демо: точки и заявки с фото (генерируется db/gen_mock_orders.py)
+  mock-picking.js                демо: действия сборки
   db/                            SQL-база под маршруты, листы сборки по кругу
   docs/                          эта документация
   source/                        фото заявок клиента
@@ -32,9 +36,10 @@ api/bots/cake/                  API (FastAPI + SQLite, общий сервер �
   __init__.py   bot и регистрация модулей
   schema.py     таблицы и константы        catalog.py   ассортимент и демо-справочники
   base.py       доступ, выдача JSON, общие проверки
-  refs.py  stock.py  trips.py  tara.py  shifts.py  overview.py   действия по темам
+  refs.py  stock.py  trips.py  tara.py  shifts.py  overview.py  picking.py   действия по темам
+  orders_data.py  orders_seed.py  заявки с фото (общие с db/) и их перенос в базу
   seed.py       демо-данные при первом запуске
-api/tests/test_cake.py          тесты API
+api/tests/test_cake.py, test_cake_picking.py   тесты API
 
 cake-bot/                       Telegram-бот (Node 18+, iMac)
   src/   config, telegram, api, store, roles, events, texts, commands, watch, digest-job, index
@@ -42,7 +47,7 @@ cake-bot/                       Telegram-бот (Node 18+, iMac)
 ```
 
 Порядок скриптов на странице кладовщика: `telegram-web-app.js` →
-`../kit/core.js` → `mock-data.js` → `mock.js` → `js/common.js` →
+`../kit/core.js` → `mock-data.js` → `mock-orders.js` → `mock.js` → `mock-picking.js` → `js/common.js` →
 вкладки → `js/sklad-main.js`. Вкладка регистрирует отрисовку в
 `Cake.tabs.<имя>`, общие данные — `Cake.refs`, `Cake.stock`.
 

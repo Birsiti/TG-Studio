@@ -1,4 +1,4 @@
-# изменено 2026-10-17 01:30
+# изменено 2026-10-17 02:20
 """Склад тортов с развозом по городам (cake-warehouse/*.html).
 
 Рабочий учёт, а не витрина: нет ежедневного «освежения» и нет удаления
@@ -16,6 +16,10 @@
   водителю, +), back (вернул, −), writeoff (утеряны — долг списан, −).
   Долг водителя = SUM(qty). На складе = всего в обороте − долги − утеряно.
   shifts — кто на смене в день.
+  points — точки разгрузки (заказчик, адрес, маршрут); orders — заявки точек
+  на дату: строки, галочки сборки, new (собирается) → picked (собрано).
+  places — место торта на складе: № по кругу против часовой от двери,
+  по нему экран сортирует лист сборки.
 
 Доступ: если задана TGS_CAKE_ADMINS (tg id через запятую), работать могут
 только эти id и активные сотрудники с заполненным tg_id. Пусто — открыто
@@ -31,10 +35,12 @@ TGS_CAKE_SERVICE_KEY — служебный ключ бота склада (cake
   refs.py     справочники          stock.py   остатки и журнал
   trips.py    рейсы                tara.py    ящики за водителями
   shifts.py   смены                overview.py сводка руководителя
+  picking.py  заявки и сборка по кругу, места, точки
   seed.py     демо-данные при первом запуске
+  orders_data.py, orders_seed.py — заявки с фото накладных (и в старые базы — миграцией)
 """
 from bots.cake.base import bot
-from bots.cake import refs, stock, trips, tara, shifts, overview  # noqa: F401 — регистрируют action
+from bots.cake import refs, stock, trips, tara, shifts, overview, picking  # noqa: F401 — регистрируют action
 from bots.cake.catalog import CATALOG, CATS, SEED_PRODUCTS  # noqa: F401 — для db/build_seed.py и import_places.py
 
 __all__ = ["bot", "CATALOG", "CATS", "SEED_PRODUCTS"]

@@ -1,4 +1,4 @@
-# изменено 2026-10-16 20:05
+# изменено 2026-10-17 02:10
 """Общее ядро API студии: SQLite на бота, реестр action, валидация,
 лимиты строк, демо-сид и ежедневное «освежение» демо-данных.
 
@@ -348,11 +348,13 @@ class Action:
 
 class Bot:
     def __init__(self, name: str, schema: str, seed: Callable[[sqlite3.Connection, datetime], None],
-                 refresh: Callable[[sqlite3.Connection, datetime], None] | None = None):
+                 refresh: Callable[[sqlite3.Connection, datetime], None] | None = None,
+                 migrate: Callable[[sqlite3.Connection, datetime], None] | None = None):
         self.name = name
         self.schema = schema
         self.seed = seed
         self.refresh = refresh
+        self.migrate = migrate  # при каждом старте процесса после схемы и сида; должна быть идемпотентной
         self.actions: dict[str, Action] = {}
         self._ready = False
         self._refreshed_on: str | None = None
@@ -394,6 +396,8 @@ class Bot:
                             self.seed(conn, now())
                             conn.execute("INSERT INTO meta(k,v) VALUES('seeded',?)", (iso_now(),))
                             conn.execute("INSERT OR REPLACE INTO meta(k,v) VALUES('refreshed_on',?)", (today,))
+                        if self.migrate is not None:
+                            self.migrate(conn, now())
                         conn.execute("COMMIT")
                     except Exception:
                         conn.execute("ROLLBACK")

@@ -1,3 +1,4 @@
+// изменено 2026-10-17 03:20
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { roleOf, keyboard, idsOf } = require('../src/roles');
@@ -84,4 +85,19 @@ test('вчерашняя дата считается в часовом пояс�
   const t = new Date('2026-10-16T22:30:00Z'); // в Минске уже 17-е, 01:30
   assert.equal(dayKey(0, t, 'Europe/Minsk'), '2026-10-17');
   assert.equal(dayKey(-1, t, 'Europe/Minsk'), '2026-10-16');
+});
+
+test('сборка: событие «собрано» и текст руководителю', () => {
+  const { diffOrders } = require('../src/events');
+  let r = diffOrders(null, [{ id: 'o1', status: 'new' }]);
+  assert.equal(r.events.length, 0);
+  const o = { id: 'o1', num: '1103609', status: 'picked', route: 'Маршрут 3', picker: 'Кобзев', boxes: 6,
+    lines: [{ productId: 'p1', qty: 50, bonus: 0 }, { productId: 'p2', qty: 0, bonus: 2 }] };
+  r = diffOrders(r.next, [o]);
+  assert.deepEqual(r.events.map((e) => e.kind), ['picked']);
+  assert.equal(diffOrders(r.next, [o]).events.length, 0);  // повторно не шлём
+  const t = texts.pickedForAdmin(o, { customer: 'Белвиллесден ИУП', address: 'пр-т Партизанский, 150А' });
+  assert.match(t, /№1103609 · Белвиллесден ИУП/);
+  assert.match(t, /50 шт \+ 2 бонус, позиций 2/);
+  assert.match(t, /Собрал: Кобзев · ящиков 6/);
 });

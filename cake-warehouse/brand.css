@@ -1,4 +1,4 @@
-/* изменено 2026-10-16 19:10 */
+/* изменено 2026-10-17 03:00 */
 /* ============================================================
    ТОРТОВОЗ — фирменный слой поверх kit/base.css.
    Характер: кондитерский склад с холодовой цепью. Шоколад и сливки,
@@ -96,3 +96,29 @@
 .cat-head{ margin:14px 0 4px; color:var(--accent); }
 .cat-group:first-child .cat-head{ margin-top:2px; }
 .qrow[hidden], .cat-group[hidden]{ display:none; }
+
+/* ---------- Сборка по кругу ---------- */
+.pick-card{ width:100%; display:flex; align-items:center; gap:12px; padding:14px 16px; text-align:left;
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); }
+.pick-card + .pick-card{ margin-top:10px; }
+.pick-card:active{ transform:scale(.99); }
+.pick-card.is-done{ opacity:.7; }
+.pick-card-main{ flex:1; min-width:0; }
+.pick-card-title{ display:block; font-weight:800; font-size:17px; }
+.pick-card-sub{ display:block; color:var(--ink-2); font-size:14px; margin-top:2px; }
+.pick-row{ width:100%; display:flex; align-items:center; gap:12px; min-height:56px; padding:8px 0; text-align:left;
+  border-bottom:1px dashed var(--line); }
+.pick-row:last-child{ border-bottom:0; }
+.pick-row.is-on .pick-name{ color:var(--ink-3); text-decoration:line-through; }
+.pick-row.is-on .qty{ color:var(--ink-3); }
+.pick-name{ flex:1; min-width:0; font-weight:600; }
+.pick-name small{ display:block; color:var(--ink-3); font-weight:400; font-size:14px; text-decoration:none; }
+.place{ flex:none; min-width:40px; height:40px; padding:0 6px; border-radius:var(--r-md); display:grid; place-items:center;
+  background:var(--accent); color:var(--accent-ink); font-family:var(--font-mono); font-weight:700; font-size:17px; }
+.place.is-none{ background:var(--surface-2); color:var(--ink-3); }
+.pick-box{ flex:none; width:30px; height:30px; border-radius:8px; border:2px solid var(--line-2); display:grid; place-items:center; }
+.pick-row.is-on .pick-box{ background:var(--ok); border-color:var(--ok); color:var(--surface); }
+.pick-box .ic{ width:18px; height:18px; }
+.mode-note .link-btn{ min-height:0; display:inline; }
+.progress{ margin-bottom:10px; height:6px; border-radius:3px; background:var(--surface-2); overflow:hidden; }
+.progress span{ display:block; height:100%; background:var(--ok); transition:width .2s; }

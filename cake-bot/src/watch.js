@@ -1,9 +1,10 @@
-// Раз в WATCH_SECONDS смотрим рейсы и рассылаем уведомления о переходах.
+// изменено 2026-10-17 03:30
+// Раз в WATCH_SECONDS смотрим рейсы и заявки и рассылаем уведомления о переходах.
 const config = require('./config');
 const tg = require('./telegram');
 const { api, refs } = require('./api');
 const store = require('./store');
-const { diffTrips } = require('./events');
+const { diffTrips, diffOrders } = require('./events');
 const { idsOf, keyboard } = require('./roles');
 const texts = require('./texts');
 
@@ -27,6 +28,17 @@ async function checkTrips() {
   }
   // Пишем состояние после рассылки: при сбое отправки событие повторится, а не потеряется
   store.save({ trips: next });
+  return events.length + await checkOrders();
+}
+
+// Заявка собрана → руководителям. Заявки — на ближайшую дату (как на экране «Сборка»).
+async function checkOrders() {
+  const r = await api('getOrders');
+  const { events, next } = diffOrders(store.get().orders, r.orders);
+  for (const { order } of events) {
+    await tg.sendMany(config.adminIds, texts.pickedForAdmin(order, r.points.find((p) => p.id === order.pointId)));
+  }
+  store.save({ orders: next });
   return events.length;
 }
 
