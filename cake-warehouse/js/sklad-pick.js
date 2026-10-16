@@ -1,4 +1,4 @@
-// изменено 2026-10-17 11:55
+// изменено 2026-10-17 12:10
 /* Вкладка «Сборка»: заявки на дату и лист с галочками в порядке обхода склада
    (по часовой стрелке от двери). Сейчас — по заявке, со следующей недели — весь маршрут за круг. */
 (function(){
@@ -112,15 +112,17 @@
     });
   }
 
-  // Собирает вся смена — кто собрал не спрашиваем; ящики (оборотная тара) — по желанию
+  // Собирает вся смена — кто собрал не спрашиваем; ящики (оборотная тара) — обязательно, они уйдут на водителя
   function finish(o, after, all){
     const sh = Kit.sheet({title:'Заявка собрана', sub:`№${o.num}`, body: html`
-      <label class="field"><span class="field-label">Количество ящиков</span><input class="input" id="pkBoxes" type="number" inputmode="numeric" min="0" placeholder="не обязательно"></label>`,
+      <label class="field"><span class="field-label">Количество ящиков</span><input class="input" id="pkBoxes" type="number" inputmode="numeric" min="0" placeholder="сколько ящиков"></label>
+      <p class="hint">Ящиков нет — поставьте 0.</p>`,
       actions: html`<button class="btn btn-primary btn-block" type="button" data-ok>${icon('check')}Готово</button>`});
     Kit.on(sh.el, 'click', '[data-ok]', async (e, el)=>{
-      const boxes = $('#pkBoxes', sh.el).value;
+      const boxes = $('#pkBoxes', sh.el).value.trim();
+      if(!/^\d+$/.test(boxes)){ Kit.toast('Укажите количество ящиков', 'error'); haptic('warning'); $('#pkBoxes', sh.el).focus(); return; }
       Kit.busy(el, true);
-      const r = await api('finishPick', Object.assign({id:o.id}, boxes !== '' ? {boxes:+boxes} : {}, all ? {all:true} : {}));
+      const r = await api('finishPick', Object.assign({id:o.id, boxes:+boxes}, all ? {all:true} : {}));
       Kit.busy(el, false);
       if(!r.ok){ fail(r); return; }
       Object.assign(o, r.order); haptic('success'); Kit.toast(`Заявка №${o.num} собрана`, 'ok'); sh.close(); after();
