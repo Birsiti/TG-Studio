@@ -1,4 +1,4 @@
-# изменено 2026-10-17 04:00
+# изменено 2026-10-17 08:50
 """Объект bot, проверка доступа, выдача строк в JSON и общие проверки строк."""
 from __future__ import annotations
 
@@ -73,7 +73,7 @@ def action(name: str, write: bool = False):
 
 def _product(r):
     return {"id": r["id"], "name": r["name"], "cat": r["cat"], "sku": r["sku"], "weightG": r["weight_g"], "shelfDays": r["shelf_days"],
-            "minQty": r["min_qty"], "sort": r["sort"], "active": bool(r["active"])}
+            "minQty": r["min_qty"], "perBox": r["per_box"], "sort": r["sort"], "active": bool(r["active"])}
 
 
 def _city(r):

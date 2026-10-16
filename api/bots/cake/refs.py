@@ -1,4 +1,4 @@
-# изменено 2026-10-17 01:30
+# изменено 2026-10-17 08:50
 """Справочники: торты, города, сотрудники, тара; кто я."""
 from __future__ import annotations
 
@@ -25,14 +25,19 @@ def get_refs(ctx: Ctx, p: dict) -> dict:
 def save_product(ctx: Ctx, p: dict) -> dict:
     pid = v_id(p, "id", required=False) or new_id("p")
     old = one(ctx.conn, "SELECT * FROM products WHERE id=?", (pid,))
+    w = v_int(p, "weightG", lo=1, hi=100000, required=False, default=old["weight_g"] if old else 0)
+    if not w:
+        raise ApiError("bad_request", "Укажите вес, г — как на упаковке")
     data = (v_str(p, "name", min_len=2, max_len=80), v_str(p, "cat", required=False, max_len=40) or CATS[0],
             v_str(p, "sku", required=False, max_len=30),
-            v_int(p, "weightG", hi=100000, required=False), v_int(p, "shelfDays", hi=365, required=False),
-            v_int(p, "minQty", hi=MAX_QTY, required=False), 1 if v_bool(p, "active", default=True) else 0)
+            w, v_int(p, "shelfDays", hi=365, required=False),
+            v_int(p, "minQty", hi=MAX_QTY, required=False),
+            v_int(p, "perBox", lo=1, hi=1000, required=False, default=old["per_box"] if old else 1),
+            1 if v_bool(p, "active", default=True) else 0)
     if old:
-        ctx.conn.execute("UPDATE products SET name=?,cat=?,sku=?,weight_g=?,shelf_days=?,min_qty=?,active=? WHERE id=?", (*data, pid))
+        ctx.conn.execute("UPDATE products SET name=?,cat=?,sku=?,weight_g=?,shelf_days=?,min_qty=?,per_box=?,active=? WHERE id=?", (*data, pid))
     else:
-        ctx.conn.execute("INSERT INTO products(name,cat,sku,weight_g,shelf_days,min_qty,active,id,sort) VALUES(?,?,?,?,?,?,?,?,?)",
+        ctx.conn.execute("INSERT INTO products(name,cat,sku,weight_g,shelf_days,min_qty,per_box,active,id,sort) VALUES(?,?,?,?,?,?,?,?,?,?)",
                          (*data, pid, _next_sort(ctx.conn, "products")))
     return {"product": _product(one(ctx.conn, "SELECT * FROM products WHERE id=?", (pid,)))}
 

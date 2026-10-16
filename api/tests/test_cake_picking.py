@@ -102,3 +102,13 @@ def test_route_to_trip(api):
     assert api("cake", "cancelTrip", id=t["id"])["trip"]["status"] == "cancelled"
     t2 = api("cake", "routeToTrip", date=day, route="Маршрут 2", driverId="dr-ivan")["trip"]
     assert api("cake", "shipTrip", id=t2["id"])["trip"]["status"] == "shipped"
+
+
+def test_product_weight_and_per_box(api):
+    """Вес обязателен, «шт в грузовом месте» — 10 пирожных = 1 коробка."""
+    assert api("cake", "saveProduct", name="Без веса", cat="Пирожное")["error"] == "bad_request"
+    p = api("cake", "saveProduct", name="Корзинка", cat="Пирожное", weightG=60, perBox=10)["product"]
+    assert p["weightG"] == 60 and p["perBox"] == 10
+    p = api("cake", "saveProduct", id=p["id"], name="Корзинка", cat="Пирожное")["product"]  # без полей — прежние значения
+    assert p["weightG"] == 60 and p["perBox"] == 10
+    assert next(x for x in api("cake", "getRefs")["products"] if x["id"] == "p001")["perBox"] == 1

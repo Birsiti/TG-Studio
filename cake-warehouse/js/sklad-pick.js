@@ -1,4 +1,4 @@
-// изменено 2026-10-17 05:30
+// изменено 2026-10-17 09:20
 /* Вкладка «Сборка»: заявки на дату и лист с галочками в порядке обхода склада
    (по часовой стрелке от двери). Сейчас — по заявке, со следующей недели — весь маршрут за круг. */
 (function(){
@@ -13,6 +13,8 @@
   // Порядок круга: по месту, без места — в конце, внутри — по названию
   const byPlace = (a, b)=> (placeOf(a.productId) || 1e6) - (placeOf(b.productId) || 1e6) || L(a.productId).localeCompare(L(b.productId), 'ru');
   const total = o=> o.lines.reduce((s, l)=>s + l.qty + l.bonus, 0);
+  // Грузовых мест: N шт в одной коробке (perBox у товара) — 10 пирожных = 1 место
+  const boxes = o=> o.lines.reduce((s, l)=>s + Math.ceil((l.qty + l.bonus) / (P(l.productId).perBox || 1)), 0);
   const shortNum = n=> String(n).slice(-4);
   const qtyCell = (q, b)=> !q && b ? html`<span class="qty">${b}<span class="qty-unit">бонус</span></span>`
     : html`<span class="qty">${q}${b ? html`<span class="qty-unit">+${b} бонус</span>` : ''}</span>`;
@@ -52,7 +54,7 @@
     return html`<button class="pick-card${done ? ' is-done' : ''}" type="button" data-o="${o.id}">
       <span class="pick-card-main"><span class="pick-card-title">№${o.num} · ${p.customer}</span>
         <span class="pick-card-sub">${p.address}</span>
-        <span class="pick-card-sub">${o.route} · ${total(o)} шт${o.comment ? ' · ' + o.comment : ''}</span></span>
+        <span class="pick-card-sub">${o.route} · ${total(o)} шт · мест ${boxes(o)}${o.comment ? ' · ' + o.comment : ''}</span></span>
       <span class="pill ${st[1]}">${st[0]}</span></button>`;
   }
 

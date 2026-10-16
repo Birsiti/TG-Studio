@@ -1,4 +1,4 @@
-# изменено 2026-10-16 23:00
+# изменено 2026-10-17 08:50
 from core import now
 
 
@@ -88,7 +88,7 @@ def test_tara_shifts_overview_refs(api):
     assert api("cake", "getShifts")["days"][T()] == ["dr-ivan", "sk-anna"]
     o = api("cake", "getOverview")
     assert o["ok"] and len(o["series"]) == 14 and o["stockTotal"] > 0 and o["byCity"]
-    p = api("cake", "saveProduct", name="Шоколадный", sku="T-200", shelfDays=5, minQty=4)["product"]
+    p = api("cake", "saveProduct", name="Шоколадный", sku="T-200", weightG=900, shelfDays=5, minQty=4)["product"]
     assert p["id"] and api("cake", "saveCity", name="Слуцк", code="слц")["city"]["code"] == "СЛЦ"
     assert api("cake", "saveStaff", name="Тест Водитель", role="driver", tgId="12ab")["error"] == "bad_request"
 

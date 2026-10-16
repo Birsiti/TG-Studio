@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 04:40 -->
+<!-- изменено 2026-10-17 09:40 -->
 # API склада
 
 ```
@@ -27,7 +27,7 @@ Content-Type: text/plain;charset=utf-8          (простой CORS-запро�
 |---|---|---|
 | `getRefs` | — | `products`, `cities`, `staff`, `tara`, `moveTypes`, `cats` |
 | `getMe` | — | `staff` (кто я по Telegram id или null), `restricted` |
-| `saveProduct` | `id?`, `name`, `cat`, `sku`, `weightG`, `shelfDays`, `minQty`, `active` | `product` |
+| `saveProduct` | `id?`, `name`, `cat`, `sku`, `weightG` (обязателен — вес с упаковки), `shelfDays`, `minQty`, `perBox` (шт в 1 грузовом месте, по умолчанию 1), `active` | `product`; при правке не переданные вес и `perBox` остаются прежними |
 | `saveCity` | `id?`, `name`, `code`, `active` | `city` |
 | `saveStaff` | `id?`, `name`, `role` (`storekeeper`/`driver`), `phone` (+375…), `car`, `tgId` (цифры), `active` | `staff` |
 | `saveTara` | `id?`, `name`, `total`, `active` | `tara` |

@@ -1,4 +1,4 @@
-# изменено 2026-10-17 05:00
+# изменено 2026-10-17 08:50
 """Сборка в уже работающей базе: недостающие колонки, маршруты как направления рейсов,
 точки и заявки с фото накладных (orders_data.py) — один раз."""
 from __future__ import annotations
@@ -22,6 +22,8 @@ def route_city(conn, route: str) -> str:
 
 
 def migrate_picking(conn, now: datetime) -> None:
+    if "per_box" not in {r["name"] for r in conn.execute("PRAGMA table_info(products)").fetchall()}:
+        conn.execute("ALTER TABLE products ADD COLUMN per_box INTEGER NOT NULL DEFAULT 1")  # шт в грузовом месте
     cols = {r["name"] for r in conn.execute("PRAGMA table_info(orders)").fetchall()}
     if "trip_id" not in cols:  # базы, созданные до связи заявок с рейсами
         conn.execute("ALTER TABLE orders ADD COLUMN trip_id TEXT")
