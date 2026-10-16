@@ -1,4 +1,4 @@
-// изменено 2026-10-17 10:30
+// изменено 2026-10-17 11:10
 /* Сборка: ввод и правка заявки, карта склада (место торта — № по кругу по часовой от двери),
    отгрузка собранного маршрута водителю (черновик рейса). */
 (function(){
@@ -13,6 +13,17 @@
       <span class="qrow-name">${Kit.nobr(p.name)}<small>${W(p.weightG)}</small></span>
       <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" ${attr}="${p.id}" value="${val(p.id) || ''}">
     </div>`);
+  }
+  // Окно мест — по номерам, как идём по складу; без места — в конце (по категориям)
+  function placeRows(places){
+    const act = Cake.refs.products.filter(p=>p.active), has = act.filter(p=>places[p.id]);
+    has.sort((a, b)=> places[a.id] - places[b.id] || a.name.localeCompare(b.name, 'ru'));
+    const row = p=> html`<div class="qrow" data-row="${p.id}" data-name="${nameKey(p)}">
+      <span class="qrow-name">${Kit.nobr(p.name)}<small>${p.cat} · ${W(p.weightG)}</small></span>
+      <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-ep="${p.id}" value="${places[p.id] || ''}">
+    </div>`;
+    const group = (title, ps)=> ps.length ? html`<div class="cat-group"><div class="eyebrow cat-head" data-c="${title}">${title} · ${ps.length}</div>${ps.map(row)}</div>` : '';
+    return html`${group('По местам', has)}${group('Без места', act.filter(p=>!places[p.id]))}`;
   }
   const mark = root=> $$('[data-row]', root).forEach(r=> r.classList.toggle('is-on', (parseInt($('input', r).value, 10) || 0) > 0));
 
@@ -90,7 +101,7 @@
     pk.places = fresh.places || {};
     const sh = Kit.sheet({title:'Места на складе', sub:'Встаньте у двери и идите по часовой: первое место — 1, дальше 2, 3… Несколько тортов на одном месте — один номер', body: html`
       <div class="search"><span>${icon('search')}</span><input class="input" id="epQ" type="search" placeholder="Найти торт" autocomplete="off"></div>
-      <div class="section" id="epList">${productRows(id=>pk.places[id], 'data-ep')}</div>`,
+      <div class="section" id="epList">${placeRows(pk.places)}</div>`,
       actions: html`<button class="btn btn-primary btn-block" type="button" data-save>${icon('check')}Сохранить места</button>`});
     mark(sh.el);
     $('#epList', sh.el).addEventListener('input', ()=> mark(sh.el));
