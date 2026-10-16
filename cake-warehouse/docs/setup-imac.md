@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 01:30 -->
+<!-- изменено 2026-10-16 22:50 -->
 # Установка на iMac
 
 Всё работает на iMac: API (Python) с базой SQLite и бот (Node.js).
@@ -37,26 +37,24 @@ git clone https://github.com/birsiti/TG-Studio.git ~/tg-studio
 
 ## 3. Бот
 
-```bash
-cd ~/tg-studio/cake-bot
-npm install
-cp .env.example .env
-```
-
-В `.env`: `BOT_TOKEN`, `ADMIN_IDS`, `SERVICE_KEY` — те же значения, что в
-API. Остальное (адрес API, страниц, время сводки) — по умолчанию.
+Как в проекте такси: бот живёт на iMac (`.env` + автозапуск launchd), без LEADTEX.
+Одна команда:
 
 ```bash
-npm run check                    # 4 зелёные галочки: бот, API, руководители, страницы
-npm run digest:now -- --print    # сводка в терминал
-npm start                        # запустить
+cd ~/tg-studio/cake-bot && bash install.sh
 ```
 
-Автозапуск: `deploy/com.tgstudio.cake-bot.plist.example` → скопировать в
-`~/Library/LaunchAgents/com.tgstudio.cake-bot.plist`, заменить путь,
-`launchctl load …`. Логи — `cake-bot/out.log`, `err.log`.
+Скрипт спросит токен (ввод скрыт), снимет чужой webhook, попросит
+написать боту `/start` с телефона руководителя и сам возьмёт его id,
+запишет `.env` (с новым `SERVICE_KEY`), впишет те же значения в plist API
+и перезапустит его, поставит автозапуск бота и покажет `npm run check`.
+Повторный запуск безопасен — так же меняется токен.
 
-Свой Telegram id — написать боту `/id`.
+Если API студии на iMac не установлен, бот всё равно ответит
+руководителю кнопками, а экраны откроются в демо-режиме.
+
+Вручную: `cp .env.example .env`, заполнить, `npm run check`, `npm start`.
+Логи — `cake-bot/out.log`, `err.log`.
 
 ## 4. Страницы
 
@@ -86,10 +84,8 @@ sqlite3 "$TGS_DATA_DIR/cake.db" ".backup $HOME/backup/cake-$(date +%F).db"
 
 ## Смена токена бота
 
-@BotFather → `/revoke` → новый токен:
-1. `cake-bot/.env` → `BOT_TOKEN`;
-2. plist API → `TGS_CAKE_BOT_TOKEN`;
-3. перезапустить API и бота.
+@BotFather → `/revoke` → новый токен → `bash cake-bot/install.sh`,
+на вопрос «Заменить?» ответить `y`. Скрипт обновит бота и API.
 
 Код и страницы трогать не нужно.
 

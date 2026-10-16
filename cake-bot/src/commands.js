@@ -18,14 +18,18 @@ async function handleMessage(msg) {
     r = await refs();
   } catch (err) {
     console.error('[bot] API недоступен:', err.message);
+    r = null;
+  }
+  const role = roleOf(id, r ? r.staff : [], config.adminIds);
+  if (!r && role !== 'admin') {
     return tg.send(msg.chat.id, `Склад сейчас недоступен (сервер не отвечает). Попробуйте через пару минут.\n\nВаш Telegram id: ${id}`);
   }
-  const role = roleOf(id, r.staff, config.adminIds);
   if (!role) {
     return tg.send(msg.chat.id, `Здравствуйте! Доступа к складу пока нет.\n\nВаш Telegram id: ${id} — передайте его руководителю, чтобы он добавил вас в «Справочники → Люди».`);
   }
-  const name = staffName(id, r.staff) || msg.from.first_name || '';
-  return tg.send(msg.chat.id, `${name ? name + ', з' : 'З'}дравствуйте! Вы вошли как: ${ROLE_RU[role].toLowerCase()}.`, keyboard(role, config.webappBase));
+  const name = (r && staffName(id, r.staff)) || msg.from.first_name || '';
+  const note = r ? '' : '\n\n⚠ Сервер склада не отвечает — экраны откроются в демо-режиме.';
+  return tg.send(msg.chat.id, `${name ? name + ', з' : 'З'}дравствуйте! Вы вошли как: ${ROLE_RU[role].toLowerCase()}.${note}`, keyboard(role, config.webappBase));
 }
 
 module.exports = { handleMessage };
