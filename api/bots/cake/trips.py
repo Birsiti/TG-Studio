@@ -1,4 +1,4 @@
-# изменено 2026-10-17 01:30
+# изменено 2026-10-17 04:00
 """Рейсы: сборка → отгрузка → отчёт водителя → приёмка; рейсы водителя."""
 from __future__ import annotations
 
@@ -70,6 +70,7 @@ def cancel_trip(ctx: Ctx, p: dict) -> dict:
     if t["status"] != "draft":
         raise ApiError("bad_state", "Отменить можно только рейс на сборке")
     ctx.conn.execute("UPDATE trips SET status='cancelled' WHERE id=?", (t["id"],))
+    ctx.conn.execute("UPDATE orders SET trip_id=NULL WHERE trip_id=?", (t["id"],))  # заявки маршрута снова можно отгрузить
     return {"trip": _trip(_get_trip(ctx.conn, t["id"]))}
 
 

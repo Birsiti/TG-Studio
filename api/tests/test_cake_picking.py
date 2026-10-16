@@ -1,4 +1,4 @@
-# изменено 2026-10-17 02:30
+# изменено 2026-10-17 04:00
 """Сборка по кругу: заявки с фото, галочки, места, точки, миграция в старую базу."""
 from bots.cake import bot as cake_bot
 
@@ -60,9 +60,44 @@ def test_save_order_and_places(api):
 def test_migration_into_old_db(client, api):
     """База, созданная до сборки: таблиц заявок нет — при старте они появятся и заполнятся один раз."""
     conn = cake_bot.connect()
-    conn.executescript("DROP TABLE orders; DROP TABLE points; DROP TABLE places; DELETE FROM meta WHERE k='orders_v1';")
+    conn.executescript("DROP TABLE orders; DROP TABLE points; DROP TABLE places; DELETE FROM meta WHERE k='orders_v1';"
+                       # таблица заявок первой версии — без trip_id
+                       "CREATE TABLE orders(id TEXT PRIMARY KEY, num TEXT NOT NULL UNIQUE, date TEXT NOT NULL, point_id TEXT NOT NULL,"
+                       " route TEXT NOT NULL DEFAULT '', comment TEXT NOT NULL DEFAULT '', lines TEXT NOT NULL DEFAULT '[]',"
+                       " checked TEXT NOT NULL DEFAULT '[]', status TEXT NOT NULL DEFAULT 'new', picker TEXT NOT NULL DEFAULT '',"
+                       " boxes INTEGER, picked_at TEXT, created_at TEXT NOT NULL, seed INTEGER NOT NULL DEFAULT 0);")
     conn.close()
     cake_bot._ready = False
     assert len(api("cake", "getOrders", date="2026-10-17")["orders"]) == 11
     cake_bot._ready = False  # повторный старт — без дублей
-    assert len(api("cake", "getOrders", date="2026-10-17")["orders"]) == 11
+    r = api("cake", "getOrders", date="2026-10-17")
+    assert len(r["orders"]) == 11 and all(o["tripId"] is None for o in r["orders"])
+
+
+def test_route_to_trip(api):
+    """Собранные заявки маршрута → рейс водителю → обычная отгрузка; отмена рейса освобождает заявки."""
+    day = "2026-10-21"
+    pts = [p for p in api("cake", "getOrders")["points"] if p["route"] == "Маршрут 2"][:2]
+    api("cake", "addIncome", lines=[{"productId": "p010", "qty": 20}, {"productId": "p011", "qty": 20}])
+    ids = []
+    for i, (pt, lines) in enumerate(zip(pts, ([{"productId": "p010", "qty": 3}], [{"productId": "p010", "qty": 2, "bonus": 1}, {"productId": "p011", "qty": 4}]))):
+        ids.append(api("cake", "saveOrder", num=f"30000{i}", date=day, pointId=pt["id"], lines=lines)["order"]["id"])
+    assert api("cake", "routeToTrip", date=day, route="Маршрут 2")["error"] == "bad_state"  # не собраны
+    for oid in ids:
+        o = next(x for x in api("cake", "getOrders", date=day)["orders"] if x["id"] == oid)
+        for ln in o["lines"]:
+            api("cake", "checkLine", id=oid, productId=ln["productId"])
+        api("cake", "finishPick", id=oid, picker="Кобзев", boxes=2)
+    r = api("cake", "routeToTrip", date=day, route="Маршрут 2", driverId="dr-ivan")
+    t = r["trip"]
+    assert r["orders"] == 2 and t["status"] == "draft" and t["driverId"] == "dr-ivan"
+    assert sorted((l["productId"], l["qty"]) for l in t["lines"]) == [("p010", 6), ("p011", 4)]  # бонус тоже едет
+    assert t["taraOut"] == [{"taraId": "box", "qty": 4}] and "№300000" in t["note"]
+    city = next(c for c in api("cake", "getRefs")["cities"] if c["id"] == t["cityId"])
+    assert city["name"] == "Маршрут 2"
+    assert all(o["tripId"] == t["id"] for o in api("cake", "getOrders", date=day)["orders"] if o["id"] in ids)
+    assert api("cake", "routeToTrip", date=day, route="Маршрут 2")["error"] == "not_found"  # повторно не создаётся
+    assert api("cake", "reopenPick", id=ids[0])["error"] == "bad_state"
+    assert api("cake", "cancelTrip", id=t["id"])["trip"]["status"] == "cancelled"
+    t2 = api("cake", "routeToTrip", date=day, route="Маршрут 2", driverId="dr-ivan")["trip"]
+    assert api("cake", "shipTrip", id=t2["id"])["trip"]["status"] == "shipped"

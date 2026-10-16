@@ -1,11 +1,33 @@
-# изменено 2026-10-17 02:10
-"""Точки и заявки с фото накладных (orders_data.py) — в базу один раз, и в новую, и в уже работающую."""
+# изменено 2026-10-17 04:00
+"""Сборка в уже работающей базе: недостающие колонки, маршруты как направления рейсов,
+точки и заявки с фото накладных (orders_data.py) — один раз."""
 from __future__ import annotations
 
 from datetime import datetime
 
-from core import iso_now, jdump, scalar
+from core import iso_now, jdump, new_id, scalar
 from bots.cake.orders_data import DAY, ORDERS, POINTS
+
+
+def route_city(conn, route: str) -> str:
+    """Маршрут — направление рейса, как город: строка в cities с тем же названием (создаётся при нужде)."""
+    cid = scalar(conn, "SELECT id FROM cities WHERE name=?", (route,))
+    if cid:
+        return cid
+    digits = "".join(ch for ch in route if ch.isdigit())
+    cid = f"route-{digits}" if digits and not scalar(conn, "SELECT 1 FROM cities WHERE id=?", (f"route-{digits}",)) else new_id("c")
+    sort = (scalar(conn, "SELECT MIN(sort) FROM cities") or 0) - 1  # маршруты — первыми в списке
+    conn.execute("INSERT INTO cities(id,name,code,sort) VALUES(?,?,?,?)", (cid, route, ("М" + digits)[:4] if digits else route[:3].upper(), sort))
+    return cid
+
+
+def migrate_picking(conn, now: datetime) -> None:
+    cols = {r["name"] for r in conn.execute("PRAGMA table_info(orders)").fetchall()}
+    if "trip_id" not in cols:  # базы, созданные до связи заявок с рейсами
+        conn.execute("ALTER TABLE orders ADD COLUMN trip_id TEXT")
+    seed_orders(conn, now)
+    for r in conn.execute("SELECT DISTINCT route FROM points WHERE route<>'' ORDER BY route").fetchall():
+        route_city(conn, r["route"])
 
 
 def seed_orders(conn, now: datetime) -> None:

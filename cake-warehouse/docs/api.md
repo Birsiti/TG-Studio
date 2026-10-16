@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 03:30 -->
+<!-- изменено 2026-10-17 04:40 -->
 # API склада
 
 ```
@@ -77,13 +77,15 @@ Content-Type: text/plain;charset=utf-8          (простой CORS-запро�
 | `deleteOrder` | `id` | только несобранная |
 | `checkLine` | `id`, `productId`, `done?` (по умолчанию `true`) | `order` с обновлёнными `checked` |
 | `finishPick` | `id`, `picker`, `boxes?` | `status: picked`; `bad_state`, если отмечено не всё |
-| `reopenPick` | `id` | обратно `new` |
+| `reopenPick` | `id` | обратно `new`; нельзя, если заявка уже в рейсе |
+| `routeToTrip` | `date`, `route`, `driverId?` | Все заявки маршрута на дату без рейса должны быть собраны → черновик рейса: торты с бонусами, ящики — сумма по заявкам, в комментарии номера заявок; `trip`, `orders`. Отмена рейса освобождает заявки |
 | `savePlaces` | `places[{productId, place}]` (0 — убрать место) | `saved`, `places` |
 | `savePoint` | `id?`, `customer`, `address`, `route?`, `code?`, `active?` | `point` |
 
 Заявка: `num`, `date`, `pointId`, `route`, `comment`, `lines[{productId, qty,
 bonus}]`, `checked[productId]`, `status` (`new` → `picked`), `picker`, `boxes`,
-`pickedAt`. Заявки с фото накладных (`orders_data.py`) попадают в базу
+`pickedAt`, `tripId`. Маршрут — направление рейса, как город: строка в `cities`
+с тем же названием (создаётся сама). Заявки с фото накладных (`orders_data.py`) попадают в базу
 один раз — и в новую, и в уже работающую (`migrate` в `core.Bot`).
 
 ## Смены и сводка (`shifts.py`, `overview.py`)

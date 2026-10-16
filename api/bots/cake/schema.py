@@ -1,4 +1,4 @@
-# изменено 2026-10-17 02:10
+# изменено 2026-10-17 04:00
 """Схема базы склада (SQLite) и общие константы."""
 
 SCHEMA = """
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS orders(
   id TEXT PRIMARY KEY, num TEXT NOT NULL UNIQUE, date TEXT NOT NULL, point_id TEXT NOT NULL, route TEXT NOT NULL DEFAULT '',
   comment TEXT NOT NULL DEFAULT '', lines TEXT NOT NULL DEFAULT '[]', checked TEXT NOT NULL DEFAULT '[]',
   status TEXT NOT NULL DEFAULT 'new', picker TEXT NOT NULL DEFAULT '', boxes INTEGER, picked_at TEXT,
-  created_at TEXT NOT NULL, seed INTEGER NOT NULL DEFAULT 0);
+  trip_id TEXT, created_at TEXT NOT NULL, seed INTEGER NOT NULL DEFAULT 0);
 CREATE INDEX IF NOT EXISTS co_date ON orders(date, route);
 """
 

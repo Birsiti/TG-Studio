@@ -1,4 +1,4 @@
-# изменено 2026-10-17 02:20
+# изменено 2026-10-17 04:00
 """Сборка по кругу: заявки точек на дату, лист с галочками, места тортов на складе, точки разгрузки.
 
 Остаток сборка не трогает — торты списываются отгрузкой рейса (trips.py).
@@ -7,7 +7,8 @@
 from __future__ import annotations
 
 from core import ApiError, Ctx, add_days, iso_now, jdump, jload, new_id, one, rows, scalar, v_bool, v_date, v_id, v_int, v_list, v_str
-from bots.cake.base import _next_sort, action
+from bots.cake.base import _get_trip, _next_sort, _trip, action
+from bots.cake.orders_seed import route_city
 from bots.cake.schema import MAX_LINES, MAX_QTY
 
 MAX_PLACE = 9999
@@ -16,7 +17,7 @@ MAX_PLACE = 9999
 def _order(r) -> dict:
     return {"id": r["id"], "num": r["num"], "date": r["date"], "pointId": r["point_id"], "route": r["route"],
             "comment": r["comment"], "lines": jload(r["lines"], []), "checked": jload(r["checked"], []),
-            "status": r["status"], "picker": r["picker"], "boxes": r["boxes"], "pickedAt": r["picked_at"]}
+            "status": r["status"], "picker": r["picker"], "boxes": r["boxes"], "pickedAt": r["picked_at"], "tripId": r["trip_id"]}
 
 
 def _point(r) -> dict:
@@ -137,6 +138,8 @@ def finish_pick(ctx: Ctx, p: dict) -> dict:
 @action("reopenPick", write=True)
 def reopen_pick(ctx: Ctx, p: dict) -> dict:
     o = _get_order(ctx.conn, v_id(p, "id"))
+    if o["trip_id"]:
+        raise ApiError("bad_state", "Заявка уже в рейсе — сначала отмените рейс")
     ctx.conn.execute("UPDATE orders SET status='new', picked_at=NULL WHERE id=?", (o["id"],))
     return {"order": _order(_get_order(ctx.conn, o["id"]))}
 
@@ -176,3 +179,35 @@ def save_point(ctx: Ctx, p: dict) -> dict:
         ctx.conn.execute("INSERT INTO points(customer,address,route,code,active,id,sort) VALUES(?,?,?,?,?,?,?)",
                          (*f, pid, _next_sort(ctx.conn, "points")))
     return {"point": _point(one(ctx.conn, "SELECT * FROM points WHERE id=?", (pid,)))}
+
+
+@action("routeToTrip", write=True)
+def route_to_trip(ctx: Ctx, p: dict) -> dict:
+    """Собранные заявки маршрута на дату → черновик рейса водителю (торты с бонусами, ящики — сумма по заявкам).
+    Дальше обычная цепочка рейса: «Отгрузить» спишет остаток и запишет ящики на водителя."""
+    day, route = v_date(p, "date"), v_str(p, "route", min_len=1, max_len=40)
+    rs = rows(ctx.conn, "SELECT * FROM orders WHERE date=? AND route=? AND trip_id IS NULL ORDER BY num", (day, route))
+    if not rs:
+        raise ApiError("not_found", "Нет заявок маршрута без рейса")
+    left = [r["num"] for r in rs if r["status"] != "picked"]
+    if left:
+        raise ApiError("bad_state", "Не собраны: №" + ", №".join(left))
+    driver = v_id(p, "driverId", required=False)
+    if driver and not scalar(ctx.conn, "SELECT 1 FROM staff WHERE id=? AND role='driver'", (driver,)):
+        raise ApiError("not_found", "Нет такого водителя")
+    lines: dict[str, int] = {}
+    boxes = 0
+    for r in rs:
+        for ln in jload(r["lines"], []):
+            lines[ln["productId"]] = lines.get(ln["productId"], 0) + ln["qty"] + ln.get("bonus", 0)
+        boxes += r["boxes"] or 0
+    box = scalar(ctx.conn, "SELECT id FROM tara_types WHERE active=1 ORDER BY sort LIMIT 1")
+    tid, num = new_id("R"), (scalar(ctx.conn, "SELECT MAX(num) FROM trips") or 0) + 1
+    ctx.conn.execute("INSERT INTO trips(id,num,date,city_id,driver_id,status,lines,tara_out,note,created_at) "
+                     "VALUES(?,?,?,?,?,'draft',?,?,?,?)",
+                     (tid, num, day, route_city(ctx.conn, route), driver,
+                      jdump([{"productId": k, "qty": v} for k, v in lines.items()]),
+                      jdump([{"taraId": box, "qty": boxes}] if box and boxes else []),
+                      "Заявки: №" + ", №".join(r["num"] for r in rs), iso_now()))
+    ctx.conn.execute(f"UPDATE orders SET trip_id=? WHERE id IN ({','.join('?' * len(rs))})", (tid, *[r["id"] for r in rs]))
+    return {"trip": _trip(_get_trip(ctx.conn, tid)), "orders": len(rs)}

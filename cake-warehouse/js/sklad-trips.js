@@ -1,4 +1,4 @@
-// изменено 2026-10-17 01:30
+// изменено 2026-10-17 04:20
 /* Вкладка «Рейсы»: сборка → отгрузка → приёмка с возвратом тортов и ящиков. */
 (function(){
   "use strict";
@@ -73,7 +73,7 @@
     const sh = Kit.sheet({title:t ? `Рейс №${t.num}` : 'Новый рейс', sub:'Сборка: остаток спишется при отгрузке', body: html`
       <div class="eyebrow" style="margin-bottom:8px">Дата</div>
       <div class="chips" id="eDate">${days.map(d=>html`<button type="button" class="chip${st.date === d ? ' is-on' : ''}" data-v="${d}">${D.label(d)}</button>`)}</div>
-      <div class="eyebrow section" style="margin-bottom:8px">Город</div>
+      <div class="eyebrow section" style="margin-bottom:8px">Куда — маршрут или город</div>
       <div class="chips" id="eCity">${Cake.refs.cities.filter(c=>c.active || c.id === st.cityId).map(c=>html`<button type="button" class="chip${st.cityId === c.id ? ' is-on' : ''}" data-v="${c.id}">${c.name}</button>`)}</div>
       <div class="eyebrow section" style="margin-bottom:8px">Водитель</div>
       <div class="chips" id="eDrv">${drivers.map(s=>html`<button type="button" class="chip${st.driverId === s.id ? ' is-on' : ''}" data-v="${s.id}">${s.name.split(' ')[0]}${SHIFT.includes(s.id) ? ' · на смене' : ''}</button>`)}</div>
@@ -97,7 +97,7 @@
     sh.$('#eQ').addEventListener('input', Kit.debounce(eFilter, 100));
     sh.$('#eOnly').addEventListener('click', ()=>{ only = !only; sh.$('#eOnly').classList.toggle('is-on', only); haptic('select'); eFilter(); });
     sh.$('#eSave').addEventListener('click', async ()=>{
-      if(!st.cityId){ Kit.toast('Выберите город', 'error'); return; }
+      if(!st.cityId){ Kit.toast('Выберите маршрут или город', 'error'); return; }
       const lines = $$('[data-q]', sh.el).map(el=>({productId:el.dataset.q, qty:parseInt(el.value, 10) || 0})).filter(l=>l.qty > 0);
       const over = lines.filter(l=>l.qty > stockOf(l.productId));
       if(over.length) Kit.toast('Больше, чем на складе: ' + over.map(l=>L(l.productId)).join(', '), 'error');

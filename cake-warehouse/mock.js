@@ -1,4 +1,4 @@
-// изменено 2026-10-17 02:40
+// изменено 2026-10-17 04:10
 /* ============================================================
    mock.js — офлайн-двойник API склада (api/bots/cake/). Данные — mock-data.js.
    Действия других тем добавляются через CakeMock.register (mock-picking.js).
@@ -90,7 +90,7 @@ window.CakeMock = (function(){
       t.taraOut.forEach(function(l){ addTara(l.taraId, t.driverId, 'out', l.qty, t.cityId, t.id); });
       t.status = 'shipped'; t.shippedAt = now(); return {trip:t};
     },
-    cancelTrip: function(p){ var t = byId(S.trips, p.id); if(!t) return err('not_found'); if(t.status !== 'draft') return err('bad_state', 'Отменить можно только рейс на сборке'); t.status = 'cancelled'; return {trip:t}; },
+    cancelTrip: function(p){ var t = byId(S.trips, p.id); if(!t) return err('not_found'); if(t.status !== 'draft') return err('bad_state', 'Отменить можно только рейс на сборке'); t.status = 'cancelled'; (S.orders || []).forEach(function(o){ if(o.tripId === t.id) o.tripId = null; }); return {trip:t}; },
     reportTrip: function(p){
       var t = byId(S.trips, p.id); if(!t) return err('not_found'); if(!/shipped|reported/.test(t.status)) return err('bad_state', 'Рейс не в пути');
       var rs = returns(p.returns, t); if(!rs) return err('bad_request', 'Возврат больше, чем уехало');
