@@ -1,4 +1,4 @@
-# изменено 2026-10-16 17:30
+# изменено 2026-10-16 19:10
 """Склад тортов с развозом по городам (cake-warehouse/*.html).
 
 Рабочий учёт, а не витрина: нет ежедневного «освежения» и нет удаления
@@ -31,7 +31,7 @@ from core import (ApiError, Bot, Ctx, add_days, iso_now, jdump, jload, new_id, o
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS products(
-  id TEXT PRIMARY KEY, name TEXT NOT NULL, sku TEXT NOT NULL DEFAULT '', weight_g INTEGER NOT NULL DEFAULT 0,
+  id TEXT PRIMARY KEY, name TEXT NOT NULL, cat TEXT NOT NULL DEFAULT '', sku TEXT NOT NULL DEFAULT '', weight_g INTEGER NOT NULL DEFAULT 0,
   shelf_days INTEGER NOT NULL DEFAULT 0, min_qty INTEGER NOT NULL DEFAULT 0, sort INTEGER NOT NULL DEFAULT 0,
   active INTEGER NOT NULL DEFAULT 1, seed INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS cities(
@@ -66,16 +66,51 @@ CREATE TABLE IF NOT EXISTS shifts(date TEXT NOT NULL, staff_id TEXT NOT NULL, PR
 MOVE_TYPES = {"in": "Приход", "ship": "Отгрузка", "return": "Возврат", "writeoff": "Списание", "adjust": "Инвентаризация"}
 TRIP_STATUSES = ("draft", "shipped", "reported", "closed", "cancelled")
 ROLES = ("storekeeper", "driver")
-MAX_LINES = 60
+MAX_LINES = 150
 MAX_QTY = 100000
 
-SEED_PRODUCTS = [
-    ("napoleon", "Наполеон", "T-101", 1200, 5, 20), ("medovik", "Медовик", "T-102", 1100, 7, 20),
-    ("praga", "Прага", "T-103", 1000, 5, 15), ("velvet", "Красный бархат", "T-104", 1300, 4, 10),
-    ("ptichye", "Птичье молоко", "T-105", 900, 5, 15), ("cheese", "Чизкейк Нью-Йорк", "T-106", 1000, 4, 10),
-    ("esterhazy", "Эстерхази", "T-107", 900, 6, 8), ("kievsky", "Киевский", "T-108", 1000, 7, 10),
-    ("smetannik", "Сметанник", "T-109", 1200, 3, 12), ("truffle", "Трюфельный", "T-110", 1100, 5, 10),
-]
+# Ассортимент по заявкам клиента (фото накладных от 17.10.2026): категория, название, вес единицы, г
+CATS = ("Торт", "Венский десерт", "Пирожное", "Набор пирожных", "Сладости мучные")
+CATALOG = {
+    "Торт": [
+        ("Муравейка", 550), ("Грильяжный", 800), ("Домашний", 850), ("Йогуртовый с персиком", 950),
+        ("Лесная ягодка", 1000), ("Лаванда", 850), ("Наполеон домашний", 1000), ("Панчо", 1000), ("Полесье", 1000),
+        ("Смородинка", 850), ("Смородинка", 1300), ("Съешь меня карамельный", 500), ("Съешь меня карамельный", 950),
+        ("Съешь меня трюфельный", 500), ("Творожный «Фруктовый»", 950), ("Творожный «Бруснично-грушевый»", 1000),
+        ("Творожный «Блуберри»", 1000), ("Юбилейный", 1000), ("Вкус наслаждения", 500), ("Трюфельный", 1500),
+        ("Царское удовольствие", 900), ("Какао-пломбир", 900), ("Шокобанан", 1000), ("Вкусненький", 1000),
+        ("Пражский", 1000), ("Санкт-Петербург", 1000), ("Санкт-Петербург", 2000), ("Ассорти «Трио»", 2000),
+        ("Дамские пальчики", 1000), ("Клубника-банан", 850), ("Крещатик", 1000), ("Кучерявый", 1000),
+        ("Кучерявый", 1500), ("Лакомка", 900), ("Экзотик", 1500), ("Баунти", 1000), ("Вишня в шоколаде", 1000),
+    ],
+    "Венский десерт": [
+        ("Клубника, ананас", 620), ("Вишня в коньяке", 620), ("Клубничный", 620), ("Голубичный", 600),
+        ("Ягодная поляна", 600), ("Киви, персик", 600), ("Вишня, малина, ежевика, голубика", 600),
+        ("Голубика, ежевика, малина", 600), ("Манго, папайя", 620), ("Тропический", 620), ("Фруктовый коктейль", 620),
+    ],
+    "Пирожное": [
+        ("Картошка с натур. сгущ.", 390), ("Картошка", 360), ("Фисташковое", 470), ("Шоколадно-банановое", 360),
+        ("Муравейка", 450), ("Пражское", 360), ("Эклер на сливочном масле", 250), ("Клубника-маракуйя", 360),
+        ("Лакомка", 420), ("Пломбир в шоколаде", 250), ("Кольцо творожное, заварное", 250),
+        ("Кольцо заварное сметанное", 250), ("Заварное с варёной сгущёнкой", 265), ("Клубничное наслаждение", 380),
+        ("Юмбрик творожный", 240), ("Лаванда", 470), ("Эклер заварной", 75), ("Эклер творожный", 75),
+        ("Ёж ореховый", 80), ("Медок", 75), ("Рафаэлка", 50),
+    ],
+    "Набор пирожных": [
+        ("Рафаэлка", 200), ("Эклер творожный", 300), ("Эклер заварной", 300), ("Медок", 300), ("Ёж ореховый", 400),
+        ("Царское удовольствие", 250), ("Царское удовольствие с орехом", 250), ("Наполеон", 225),
+        ("Вишня в шоколаде", 340), ("Honey Бум нутелла", 310), ("Honey Бум солёная карамель", 310),
+        ("Honey Бум фисташка", 310), ("Заварные пирожные", 256),
+    ],
+    "Сладости мучные": [
+        ("Птичье молоко фрукт ассорти", 350), ("Птичье молоко", 500), ("Эстерхази", 850), ("Эстерхази", 425),
+        ("Сникерс", 800), ("Сникерс", 400), ("Сказка", 650), ("Сластена", 800), ("Маффин шоколадный", 70),
+        ("Вафельная трубочка с вар. сгущ.", 65), ("Рулет бисквитный «Мохито»", 500),
+        ("Рулет бисквитный «Нежная лаванда»", 500),
+    ],
+}
+SEED_PRODUCTS = [(f"p{i + 1:03d}", cat, name, w) for i, (cat, name, w) in
+                 enumerate((c, n, w) for c in CATS for n, w in CATALOG[c])]
 SEED_CITIES = [("brest", "Брест", "БРС"), ("grodno", "Гродно", "ГРД"), ("gomel", "Гомель", "ГМЛ"),
                ("mogilev", "Могилёв", "МГЛ"), ("vitebsk", "Витебск", "ВТБ"), ("baranovichi", "Барановичи", "БРН"),
                ("pinsk", "Пинск", "ПНС"), ("lida", "Лида", "ЛИД")]
@@ -87,7 +122,7 @@ SEED_STAFF = [
     ("dr-pavel", "Павел Гриб", "driver", "+375291234513", "Ford Transit · 3304 MO-7"),
     ("dr-artur", "Артур Лис", "driver", "+375291234514", "Iveco Daily · 0912 HA-7"),
 ]
-SEED_TARA = [("crate", "Лоток кондитерский", 600), ("thermo", "Термобокс", 80)]
+SEED_TARA = [("box", "Ящик", 500), ("stack", "Стопка", 150)]
 
 
 # сид объявлен ниже — оборачиваем, чтобы декораторы action видели bot
@@ -122,7 +157,7 @@ def action(name: str, write: bool = False):
 # ============ ВЫДАЧА ============
 
 def _product(r):
-    return {"id": r["id"], "name": r["name"], "sku": r["sku"], "weightG": r["weight_g"], "shelfDays": r["shelf_days"],
+    return {"id": r["id"], "name": r["name"], "cat": r["cat"], "sku": r["sku"], "weightG": r["weight_g"], "shelfDays": r["shelf_days"],
             "minQty": r["min_qty"], "sort": r["sort"], "active": bool(r["active"])}
 
 
@@ -233,7 +268,7 @@ def get_refs(ctx: Ctx, p: dict) -> dict:
         "cities": [_city(r) for r in rows(c, "SELECT * FROM cities ORDER BY sort, name")],
         "staff": [_staff(r) for r in rows(c, "SELECT * FROM staff ORDER BY role DESC, name")],
         "tara": [_tara(r) for r in rows(c, "SELECT * FROM tara_types ORDER BY sort, name")],
-        "moveTypes": MOVE_TYPES,
+        "moveTypes": MOVE_TYPES, "cats": list(CATS),
     }
 
 
@@ -245,13 +280,14 @@ def _next_sort(conn, table: str) -> int:
 def save_product(ctx: Ctx, p: dict) -> dict:
     pid = v_id(p, "id", required=False) or new_id("p")
     old = one(ctx.conn, "SELECT * FROM products WHERE id=?", (pid,))
-    data = (v_str(p, "name", min_len=2, max_len=80), v_str(p, "sku", required=False, max_len=30),
+    data = (v_str(p, "name", min_len=2, max_len=80), v_str(p, "cat", required=False, max_len=40) or CATS[0],
+            v_str(p, "sku", required=False, max_len=30),
             v_int(p, "weightG", hi=100000, required=False), v_int(p, "shelfDays", hi=365, required=False),
             v_int(p, "minQty", hi=MAX_QTY, required=False), 1 if v_bool(p, "active", default=True) else 0)
     if old:
-        ctx.conn.execute("UPDATE products SET name=?,sku=?,weight_g=?,shelf_days=?,min_qty=?,active=? WHERE id=?", (*data, pid))
+        ctx.conn.execute("UPDATE products SET name=?,cat=?,sku=?,weight_g=?,shelf_days=?,min_qty=?,active=? WHERE id=?", (*data, pid))
     else:
-        ctx.conn.execute("INSERT INTO products(name,sku,weight_g,shelf_days,min_qty,active,id,sort) VALUES(?,?,?,?,?,?,?,?)",
+        ctx.conn.execute("INSERT INTO products(name,cat,sku,weight_g,shelf_days,min_qty,active,id,sort) VALUES(?,?,?,?,?,?,?,?,?)",
                          (*data, pid, _next_sort(ctx.conn, "products")))
     return {"product": _product(one(ctx.conn, "SELECT * FROM products WHERE id=?", (pid,)))}
 
@@ -593,9 +629,8 @@ def get_overview(ctx: Ctx, p: dict) -> dict:
 def seed(conn, now: datetime) -> None:
     rnd = random.Random(42)
     today = now.date().isoformat()
-    for i, (pid, name, sku, w, shelf, mn) in enumerate(SEED_PRODUCTS):
-        conn.execute("INSERT INTO products(id,name,sku,weight_g,shelf_days,min_qty,sort,seed) VALUES(?,?,?,?,?,?,?,1)",
-                     (pid, name, sku, w, shelf, mn, i))
+    for i, (pid, cat, name, w) in enumerate(SEED_PRODUCTS):
+        conn.execute("INSERT INTO products(id,cat,name,weight_g,sort,seed) VALUES(?,?,?,?,?,1)", (pid, cat, name, w, i))
     for i, (cid, name, code) in enumerate(SEED_CITIES):
         conn.execute("INSERT INTO cities(id,name,code,sort,seed) VALUES(?,?,?,?,1)", (cid, name, code, i))
     for sid, name, role, phone, car in SEED_STAFF:
@@ -619,23 +654,23 @@ def seed(conn, now: datetime) -> None:
         day = add_days(today, -back)
         conn.executemany("INSERT INTO shifts(date,staff_id) VALUES(?,?)",
                          [(day, keepers[back % 2])] + [(day, d) for d in rnd.sample(drivers, 3)])
-        for pid in pids:  # утренний приход с производства
-            add("in", day, pid, rnd.randint(14, 30), note="Цех")
+        for pid in rnd.sample(pids, 45):  # утренний приход с производства
+            add("in", day, pid, rnd.randint(4, 12), note="Цех")
         if back == 0:
             break  # сегодняшние рейсы ниже: часть на сборке, часть в пути
         for cid in rnd.sample(cities, 4):
             num += 1
             tid = f"R-S{num:04d}"
             lines = []
-            for pid in rnd.sample(pids, 6):
-                q = min(stock[pid], rnd.randint(3, 8))
+            for pid in rnd.sample(pids, 14):
+                q = min(stock[pid], rnd.randint(1, 5))
                 if q:
                     lines.append({"productId": pid, "qty": q})
                     add("ship", day, pid, -q, city=cid, trip=tid)
             crates = sum(ln["qty"] for ln in lines) // 2 + 1
-            _add_tara(ctx, day, "crate", cid, crates, trip=tid, seed=1)
+            _add_tara(ctx, day, "box", cid, crates, trip=tid, seed=1)
             back_crates = crates - rnd.randint(0, 3)
-            _add_tara(ctx, day, "crate", cid, -back_crates, trip=tid, seed=1)
+            _add_tara(ctx, day, "box", cid, -back_crates, trip=tid, seed=1)
             closed = []
             for ln in lines:
                 b = rnd.choice([0, 0, 0, 1])
@@ -646,8 +681,8 @@ def seed(conn, now: datetime) -> None:
             ts = f"{day}T07:{rnd.randint(10, 59)}:00+03:00"
             conn.execute("INSERT INTO trips(id,num,date,city_id,driver_id,status,lines,tara_out,tara_back,created_at,"
                          "shipped_at,closed_at,seed) VALUES(?,?,?,?,?,'closed',?,?,?,?,?,?,1)",
-                         (tid, num, day, cid, rnd.choice(drivers), jdump(closed), jdump([{"taraId": "crate", "qty": crates}]),
-                          jdump([{"taraId": "crate", "qty": back_crates}]), ts, ts, f"{day}T18:30:00+03:00"))
+                         (tid, num, day, cid, rnd.choice(drivers), jdump(closed), jdump([{"taraId": "box", "qty": crates}]),
+                          jdump([{"taraId": "box", "qty": back_crates}]), ts, ts, f"{day}T18:30:00+03:00"))
         for pid in rnd.sample(pids, 1):
             if stock[pid] > 2:
                 add("writeoff", day, pid, -1, note="Истёк срок")
@@ -656,8 +691,9 @@ def seed(conn, now: datetime) -> None:
     for status, cid, drv in (("shipped", "brest", drivers[0]), ("draft", "gomel", drivers[1])):
         num += 1
         tid = f"R-S{num:04d}"
-        lines = [{"productId": pid, "qty": rnd.randint(4, 8)} for pid in rnd.sample(pids, 5)]
-        tara = [{"taraId": "crate", "qty": 16}, {"taraId": "thermo", "qty": 2}]
+        lines = [{"productId": pid, "qty": min(stock[pid], rnd.randint(1, 4))} for pid in rnd.sample(pids, 12)]
+        lines = [ln for ln in lines if ln["qty"]]
+        tara = [{"taraId": "box", "qty": 16}, {"taraId": "stack", "qty": 2}]
         if status == "shipped":
             for ln in lines:
                 add("ship", today, ln["productId"], -ln["qty"], city=cid, trip=tid)

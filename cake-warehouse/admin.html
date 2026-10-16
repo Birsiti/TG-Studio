@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-16 17:30 -->
+<!-- изменено 2026-10-16 19:10 -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -62,6 +62,8 @@
   let REFS = {products:[], cities:[], staff:[], tara:[]};
   const fail = r=> { Kit.toast(r.message || 'Не получилось', 'error'); haptic('error'); };
   const P = id=> REFS.products.find(x=>x.id === id) || {name:'?'};
+  const W = g=> !g ? '' : g < 1000 ? g + ' г' : String(g / 1000).replace('.', ',') + ' кг';
+  const L = id=> { const p = P(id); return p.name + (p.weightG ? ', ' + W(p.weightG) : ''); };
   const C = id=> REFS.cities.find(x=>x.id === id) || {name:'?'};
   async function loadRefs(){ const r = await api('getRefs'); if(r.ok) REFS = r; else fail(r); }
 
@@ -81,7 +83,7 @@
       <div class="stat"><div class="stat-label">Списано</div><div class="stat-value">${num(o.writtenOffPeriod)}</div><div class="stat-delta ${o.writtenOffPeriod ? 'down' : ''}">за 14 дн</div></div>`);
     $('#ovChart').innerHTML = String(Kit.chart.bars(o.series.map(s=>({label:String(D.day(s.date)), value:s.value})), {highlightLast:true, label:'Отгрузки по дням'}));
     $('#ovCities').innerHTML = String(Kit.chart.rank(o.byCity.map(c=>({name:C(c.cityId).name, value:c.qty}))));
-    $('#ovTop').innerHTML = String(Kit.chart.rank(o.topProducts.map(p=>({name:P(p.productId).name, value:p.qty}))));
+    $('#ovTop').innerHTML = String(Kit.chart.rank(o.topProducts.map(p=>({name:L(p.productId), value:p.qty}))));
   }
 
   /* ============ СМЕНЫ ============ */
@@ -116,8 +118,9 @@
   /* ============ СПРАВОЧНИКИ ============ */
   const KINDS = {
     products:{label:'Торты', add:'Новый торт', save:'saveProduct', key:'product',
-      sub:x=>`${x.sku || 'без артикула'} · ${x.shelfDays ? x.shelfDays + ' сут' : 'срок —'} · мин. ${x.minQty || 0}`,
+      sub:x=>`${x.cat} · ${W(x.weightG) || 'вес —'}${x.shelfDays ? ' · ' + x.shelfDays + ' сут' : ''}${x.minQty ? ' · мин. ' + x.minQty : ''}`,
       fields:x=>html`<label class="field"><span class="field-label">Название</span><input class="input" name="name" maxlength="80" value="${x.name || ''}"></label>
+        <label class="field section"><span class="field-label">Категория</span><select class="select" name="cat">${REFS.cats.map(c=>html`<option value="${c}" ${(x.cat || REFS.cats[0]) === c ? Kit.raw('selected') : ''}>${c}</option>`)}</select></label>
         <div class="field-row section"><label class="field"><span class="field-label">Артикул</span><input class="input" name="sku" maxlength="30" value="${x.sku || ''}"></label>
         <label class="field"><span class="field-label">Вес, г</span><input class="input" name="weightG" type="number" inputmode="numeric" value="${x.weightG || ''}"></label></div>
         <div class="field-row section"><label class="field"><span class="field-label">Срок, суток</span><input class="input" name="shelfDays" type="number" inputmode="numeric" value="${x.shelfDays || ''}"></label>
@@ -143,7 +146,7 @@
     const list = REFS[kind];
     $('#refList').innerHTML = String(html`<div class="list">${list.map(x=>html`<button class="row" type="button" data-id="${x.id}"${x.active ? '' : Kit.raw(' style="opacity:.55"')}>
       ${kind === 'cities' ? html`<span class="row-code"><span class="code">${x.code || '—'}</span></span>` : kind === 'staff' ? html`<span class="avatar">${Kit.initials(x.name)}</span>` : ''}
-      <span class="row-main"><span class="row-title">${Kit.nobr(x.name)}</span><span class="row-sub">${KINDS[kind].sub(x)}${x.active ? '' : ' · скрыт'}</span></span>${icon('right', 'row-chev')}</button>`)}</div>`);
+      <span class="row-main"><span class="row-title">${Kit.nobr(x.name)}${kind === 'products' && x.weightG ? html` <span class="hint nowrap">${W(x.weightG)}</span>` : ''}</span><span class="row-sub">${KINDS[kind].sub(x)}${x.active ? '' : ' · скрыт'}</span></span>${icon('right', 'row-chev')}</button>`)}</div>`);
   }
   Kit.on($('#refSeg'), 'click', '[data-k]', (e, el)=>{ kind = el.dataset.k; haptic('select'); renderRefs(); });
   $('#refAdd').addEventListener('click', ()=> editRef({active:true}));

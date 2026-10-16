@@ -1,4 +1,4 @@
-// изменено 2026-10-16 17:30
+// изменено 2026-10-16 19:10
 /* ============================================================
    mock.js — офлайн-двойник API склада (api/bots/cake.py).
    Тот же контракт action; состояние в localStorage, общее для
@@ -6,12 +6,107 @@
    ============================================================ */
 window.CakeMock = (function(){
   "use strict";
-  var KEY = 'tgs-mock-cake-v1';
+  var KEY = 'tgs-mock-cake-v2';
   var D = Kit.date;
   var MOVE_TYPES = {'in':'Приход', ship:'Отгрузка', 'return':'Возврат', writeoff:'Списание', adjust:'Инвентаризация'};
-  var PRODUCTS = [['napoleon','Наполеон','T-101',1200,5,20],['medovik','Медовик','T-102',1100,7,20],['praga','Прага','T-103',1000,5,15],
-    ['velvet','Красный бархат','T-104',1300,4,10],['ptichye','Птичье молоко','T-105',900,5,15],['cheese','Чизкейк Нью-Йорк','T-106',1000,4,10],
-    ['esterhazy','Эстерхази','T-107',900,6,8],['kievsky','Киевский','T-108',1000,7,10],['smetannik','Сметанник','T-109',1200,3,12],['truffle','Трюфельный','T-110',1100,5,10]];
+  // сгенерировано из api/bots/cake.py (CATALOG) — правьте там и перегенерируйте
+  var CATS = ["Торт", "Венский десерт", "Пирожное", "Набор пирожных", "Сладости мучные"];
+  var PRODUCTS = [
+    ["p001", "Торт", "Муравейка", 550],
+    ["p002", "Торт", "Грильяжный", 800],
+    ["p003", "Торт", "Домашний", 850],
+    ["p004", "Торт", "Йогуртовый с персиком", 950],
+    ["p005", "Торт", "Лесная ягодка", 1000],
+    ["p006", "Торт", "Лаванда", 850],
+    ["p007", "Торт", "Наполеон домашний", 1000],
+    ["p008", "Торт", "Панчо", 1000],
+    ["p009", "Торт", "Полесье", 1000],
+    ["p010", "Торт", "Смородинка", 850],
+    ["p011", "Торт", "Смородинка", 1300],
+    ["p012", "Торт", "Съешь меня карамельный", 500],
+    ["p013", "Торт", "Съешь меня карамельный", 950],
+    ["p014", "Торт", "Съешь меня трюфельный", 500],
+    ["p015", "Торт", "Творожный «Фруктовый»", 950],
+    ["p016", "Торт", "Творожный «Бруснично-грушевый»", 1000],
+    ["p017", "Торт", "Творожный «Блуберри»", 1000],
+    ["p018", "Торт", "Юбилейный", 1000],
+    ["p019", "Торт", "Вкус наслаждения", 500],
+    ["p020", "Торт", "Трюфельный", 1500],
+    ["p021", "Торт", "Царское удовольствие", 900],
+    ["p022", "Торт", "Какао-пломбир", 900],
+    ["p023", "Торт", "Шокобанан", 1000],
+    ["p024", "Торт", "Вкусненький", 1000],
+    ["p025", "Торт", "Пражский", 1000],
+    ["p026", "Торт", "Санкт-Петербург", 1000],
+    ["p027", "Торт", "Санкт-Петербург", 2000],
+    ["p028", "Торт", "Ассорти «Трио»", 2000],
+    ["p029", "Торт", "Дамские пальчики", 1000],
+    ["p030", "Торт", "Клубника-банан", 850],
+    ["p031", "Торт", "Крещатик", 1000],
+    ["p032", "Торт", "Кучерявый", 1000],
+    ["p033", "Торт", "Кучерявый", 1500],
+    ["p034", "Торт", "Лакомка", 900],
+    ["p035", "Торт", "Экзотик", 1500],
+    ["p036", "Торт", "Баунти", 1000],
+    ["p037", "Торт", "Вишня в шоколаде", 1000],
+    ["p038", "Венский десерт", "Клубника, ананас", 620],
+    ["p039", "Венский десерт", "Вишня в коньяке", 620],
+    ["p040", "Венский десерт", "Клубничный", 620],
+    ["p041", "Венский десерт", "Голубичный", 600],
+    ["p042", "Венский десерт", "Ягодная поляна", 600],
+    ["p043", "Венский десерт", "Киви, персик", 600],
+    ["p044", "Венский десерт", "Вишня, малина, ежевика, голубика", 600],
+    ["p045", "Венский десерт", "Голубика, ежевика, малина", 600],
+    ["p046", "Венский десерт", "Манго, папайя", 620],
+    ["p047", "Венский десерт", "Тропический", 620],
+    ["p048", "Венский десерт", "Фруктовый коктейль", 620],
+    ["p049", "Пирожное", "Картошка с натур. сгущ.", 390],
+    ["p050", "Пирожное", "Картошка", 360],
+    ["p051", "Пирожное", "Фисташковое", 470],
+    ["p052", "Пирожное", "Шоколадно-банановое", 360],
+    ["p053", "Пирожное", "Муравейка", 450],
+    ["p054", "Пирожное", "Пражское", 360],
+    ["p055", "Пирожное", "Эклер на сливочном масле", 250],
+    ["p056", "Пирожное", "Клубника-маракуйя", 360],
+    ["p057", "Пирожное", "Лакомка", 420],
+    ["p058", "Пирожное", "Пломбир в шоколаде", 250],
+    ["p059", "Пирожное", "Кольцо творожное, заварное", 250],
+    ["p060", "Пирожное", "Кольцо заварное сметанное", 250],
+    ["p061", "Пирожное", "Заварное с варёной сгущёнкой", 265],
+    ["p062", "Пирожное", "Клубничное наслаждение", 380],
+    ["p063", "Пирожное", "Юмбрик творожный", 240],
+    ["p064", "Пирожное", "Лаванда", 470],
+    ["p065", "Пирожное", "Эклер заварной", 75],
+    ["p066", "Пирожное", "Эклер творожный", 75],
+    ["p067", "Пирожное", "Ёж ореховый", 80],
+    ["p068", "Пирожное", "Медок", 75],
+    ["p069", "Пирожное", "Рафаэлка", 50],
+    ["p070", "Набор пирожных", "Рафаэлка", 200],
+    ["p071", "Набор пирожных", "Эклер творожный", 300],
+    ["p072", "Набор пирожных", "Эклер заварной", 300],
+    ["p073", "Набор пирожных", "Медок", 300],
+    ["p074", "Набор пирожных", "Ёж ореховый", 400],
+    ["p075", "Набор пирожных", "Царское удовольствие", 250],
+    ["p076", "Набор пирожных", "Царское удовольствие с орехом", 250],
+    ["p077", "Набор пирожных", "Наполеон", 225],
+    ["p078", "Набор пирожных", "Вишня в шоколаде", 340],
+    ["p079", "Набор пирожных", "Honey Бум нутелла", 310],
+    ["p080", "Набор пирожных", "Honey Бум солёная карамель", 310],
+    ["p081", "Набор пирожных", "Honey Бум фисташка", 310],
+    ["p082", "Набор пирожных", "Заварные пирожные", 256],
+    ["p083", "Сладости мучные", "Птичье молоко фрукт ассорти", 350],
+    ["p084", "Сладости мучные", "Птичье молоко", 500],
+    ["p085", "Сладости мучные", "Эстерхази", 850],
+    ["p086", "Сладости мучные", "Эстерхази", 425],
+    ["p087", "Сладости мучные", "Сникерс", 800],
+    ["p088", "Сладости мучные", "Сникерс", 400],
+    ["p089", "Сладости мучные", "Сказка", 650],
+    ["p090", "Сладости мучные", "Сластена", 800],
+    ["p091", "Сладости мучные", "Маффин шоколадный", 70],
+    ["p092", "Сладости мучные", "Вафельная трубочка с вар. сгущ.", 65],
+    ["p093", "Сладости мучные", "Рулет бисквитный «Мохито»", 500],
+    ["p094", "Сладости мучные", "Рулет бисквитный «Нежная лаванда»", 500]
+  ];
   var CITIES = [['brest','Брест','БРС'],['grodno','Гродно','ГРД'],['gomel','Гомель','ГМЛ'],['mogilev','Могилёв','МГЛ'],
     ['vitebsk','Витебск','ВТБ'],['baranovichi','Барановичи','БРН'],['pinsk','Пинск','ПНС'],['lida','Лида','ЛИД']];
   var STAFF = [['sk-anna','Анна Литвинович','storekeeper','+375291234501',''],['sk-oleg','Олег Ткачук','storekeeper','+375291234502',''],
@@ -29,17 +124,17 @@ window.CakeMock = (function(){
   function load(){
     if(S) return S;
     try{ S = JSON.parse(localStorage.getItem(KEY)); }catch(e){ S = null; }
-    if(!S || S.v !== 1) { S = seed(); save(); }
+    if(!S || S.v !== 2) { S = seed(); save(); }
     return S;
   }
 
   function seed(){
     var r = rng(42), today = D.today();
-    var st = {v:1, products:[], cities:[], staff:[], tara:[], moves:[], trips:[], taraMoves:[], shifts:{}, moveId:0, taraId:0, num:0};
-    PRODUCTS.forEach(function(p, i){ st.products.push({id:p[0], name:p[1], sku:p[2], weightG:p[3], shelfDays:p[4], minQty:p[5], sort:i, active:true}); });
+    var st = {v:2, products:[], cities:[], staff:[], tara:[], moves:[], trips:[], taraMoves:[], shifts:{}, moveId:0, taraId:0, num:0};
+    PRODUCTS.forEach(function(p, i){ st.products.push({id:p[0], cat:p[1], name:p[2], sku:'', weightG:p[3], shelfDays:0, minQty:0, sort:i, active:true}); });
     CITIES.forEach(function(c, i){ st.cities.push({id:c[0], name:c[1], code:c[2], sort:i, active:true}); });
     STAFF.forEach(function(s){ st.staff.push({id:s[0], name:s[1], role:s[2], phone:s[3], car:s[4], tgId:'', active:true}); });
-    st.tara = [{id:'crate', name:'Лоток кондитерский', total:600, sort:0, active:true}, {id:'thermo', name:'Термобокс', total:80, sort:1, active:true}];
+    st.tara = [{id:'box', name:'Ящик', total:500, sort:0, active:true}, {id:'stack', name:'Стопка', total:150, sort:1, active:true}];
     var drivers = ['dr-ivan','dr-sergey','dr-pavel','dr-artur'], pids = PRODUCTS.map(function(p){ return p[0]; }), cids = CITIES.map(function(c){ return c[0]; });
     var stock = {}; pids.forEach(function(p){ stock[p] = 0; });
     function mv(type, day, pid, q, extra){ st.moves.push(Object.assign({id:++st.moveId, type:type, date:day, productId:pid, qty:q, cityId:null, tripId:null, note:'', createdAt:now()}, extra || {})); stock[pid] += q; }
@@ -47,21 +142,21 @@ window.CakeMock = (function(){
     for(var back = 14; back >= 0; back--){
       var day = D.add(today, -back);
       st.shifts[day] = [back % 2 ? 'sk-oleg' : 'sk-anna'].concat(sample(r, drivers, 3));
-      pids.forEach(function(p){ mv('in', day, p, ri(r, 14, 30), {note:'Цех'}); });
+      sample(r, pids, 45).forEach(function(p){ mv('in', day, p, ri(r, 4, 12), {note:'Цех'}); });
       if(back === 0) break;
       sample(r, cids, 4).forEach(function(cid){
         var tid = 'R-S' + (++st.num), lines = [];
-        sample(r, pids, 6).forEach(function(pid){ var q = Math.min(stock[pid], ri(r, 3, 8)); if(q){ lines.push({productId:pid, qty:q}); mv('ship', day, pid, -q, {cityId:cid, tripId:tid}); } });
+        sample(r, pids, 14).forEach(function(pid){ var q = Math.min(stock[pid], ri(r, 1, 5)); if(q){ lines.push({productId:pid, qty:q}); mv('ship', day, pid, -q, {cityId:cid, tripId:tid}); } });
         var crates = Math.floor(lines.reduce(function(s, l){ return s + l.qty; }, 0) / 2) + 1, backCr = crates - ri(r, 0, 3);
-        tm(day, 'crate', cid, crates, tid); tm(day, 'crate', cid, -backCr, tid);
+        tm(day, 'box', cid, crates, tid); tm(day, 'box', cid, -backCr, tid);
         var closed = lines.map(function(l){ var b = r() < .25 ? 1 : 0; if(b) mv('return', day, l.productId, b, {cityId:cid, tripId:tid}); return Object.assign({}, l, {back:b, spoiled:0, delivered:l.qty - b}); });
         st.trips.push({id:tid, num:st.num, date:day, cityId:cid, driverId:drivers[ri(r, 0, 3)], status:'closed', lines:closed,
-          taraOut:[{taraId:'crate', qty:crates}], taraBack:[{taraId:'crate', qty:backCr}], report:'', note:'', createdAt:day + 'T07:20:00', shippedAt:day + 'T07:40:00', reportedAt:null, closedAt:day + 'T18:30:00'});
+          taraOut:[{taraId:'box', qty:crates}], taraBack:[{taraId:'box', qty:backCr}], report:'', note:'', createdAt:day + 'T07:20:00', shippedAt:day + 'T07:40:00', reportedAt:null, closedAt:day + 'T18:30:00'});
       });
     }
     [['shipped','brest','dr-ivan'],['draft','gomel','dr-sergey']].forEach(function(t){
-      var tid = 'R-S' + (++st.num), lines = sample(r, pids, 5).map(function(p){ return {productId:p, qty:ri(r, 4, 8)}; });
-      var tara = [{taraId:'crate', qty:16}, {taraId:'thermo', qty:2}];
+      var tid = 'R-S' + (++st.num), lines = sample(r, pids, 12).map(function(p){ return {productId:p, qty:Math.min(stock[p], ri(r, 1, 4))}; }).filter(function(l){ return l.qty; });
+      var tara = [{taraId:'box', qty:16}, {taraId:'stack', qty:2}];
       if(t[0] === 'shipped'){ lines.forEach(function(l){ mv('ship', today, l.productId, -l.qty, {cityId:t[1], tripId:tid}); }); tara.forEach(function(l){ tm(today, l.taraId, t[1], l.qty, tid); }); }
       st.trips.push({id:tid, num:st.num, date:today, cityId:t[1], driverId:t[2], status:t[0], lines:lines, taraOut:tara, taraBack:[], report:'', note:'', createdAt:now(), shippedAt:t[0] === 'shipped' ? now() : null, reportedAt:null, closedAt:null});
     });
@@ -100,9 +195,9 @@ window.CakeMock = (function(){
   function inRange(d, a, b){ return d >= a && d <= b; }
 
   var A = {
-    getRefs: function(){ return {products:S.products, cities:S.cities, staff:S.staff, tara:S.tara, moveTypes:MOVE_TYPES}; },
+    getRefs: function(){ return {products:S.products, cities:S.cities, staff:S.staff, tara:S.tara, moveTypes:MOVE_TYPES, cats:CATS}; },
     getMe: function(){ return {staff:null, restricted:false}; },
-    saveProduct: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); return {product:upsert(S.products, {id:p.id || Kit.uid('p'), name:p.name, sku:p.sku || '', weightG:+p.weightG || 0, shelfDays:+p.shelfDays || 0, minQty:+p.minQty || 0, sort:p.sort != null ? p.sort : S.products.length, active:p.active !== false})}; },
+    saveProduct: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); return {product:upsert(S.products, {id:p.id || Kit.uid('p'), cat:p.cat || CATS[0], name:p.name, sku:p.sku || '', weightG:+p.weightG || 0, shelfDays:+p.shelfDays || 0, minQty:+p.minQty || 0, sort:p.sort != null ? p.sort : S.products.length, active:p.active !== false})}; },
     saveCity: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); return {city:upsert(S.cities, {id:p.id || Kit.uid('c'), name:p.name, code:String(p.code || '').toUpperCase().slice(0, 4), sort:S.cities.length, active:p.active !== false})}; },
     saveStaff: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Имя'); if(p.tgId && !/^\d+$/.test(p.tgId)) return err('bad_request', 'tgId: только цифры'); return {staff:upsert(S.staff, {id:p.id || Kit.uid('s'), name:p.name, role:p.role, phone:p.phone || '', car:p.car || '', tgId:p.tgId || '', active:p.active !== false})}; },
     saveTara: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); return {tara:upsert(S.tara, {id:p.id || Kit.uid('t'), name:p.name, total:+p.total || 0, sort:S.tara.length, active:p.active !== false})}; },

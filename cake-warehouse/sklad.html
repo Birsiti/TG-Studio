@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-16 17:30 -->
+<!-- изменено 2026-10-16 19:10 -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -24,7 +24,8 @@
 
   <section data-panel="stock" hidden>
     <div class="page-head"><h1 class="page-title">Остатки</h1><p class="page-sub" id="stockSub"></p></div>
-    <div class="search"><span id="searchIc"></span><input class="input" id="q" type="search" placeholder="Название или артикул" autocomplete="off"></div>
+    <div class="search"><span id="searchIc"></span><input class="input" id="q" type="search" placeholder="Название" autocomplete="off"></div>
+    <div class="chips scroll" id="stockCats" style="margin-top:12px"></div>
     <div class="section" id="stockList"></div>
   </section>
 
@@ -34,6 +35,7 @@
       <label class="field"><span class="field-label">Дата</span><input class="input" type="date" id="inDate"></label>
       <label class="field"><span class="field-label">Откуда</span><input class="input" id="inNote" maxlength="200" placeholder="Цех"></label>
     </div>
+    <div class="search section"><span data-ic="search"></span><input class="input" id="inQ" type="search" placeholder="Найти торт" autocomplete="off"></div>
     <div class="card section" id="inList"></div>
   </section>
 
@@ -87,6 +89,19 @@
   const SIGN = {'in':'+', ship:'−', 'return':'+', writeoff:'−', adjust:'±'};
   let REFS = {products:[], cities:[], staff:[], tara:[], moveTypes:{}}, STOCK = [], TRIPS = [], TARA = null, SHIFT = [];
   const P = id=> REFS.products.find(x=>x.id === id) || {name:'?'};
+  const W = g=> !g ? '' : g < 1000 ? g + ' г' : String(g / 1000).replace('.', ',') + ' кг';
+  const L = id=> { const p = P(id); return p.name + (p.weightG ? ', ' + W(p.weightG) : ''); };
+  const CATS = ()=> REFS.cats.concat(REFS.products.map(p=>p.cat).filter((c, i, a)=>c && !REFS.cats.includes(c) && a.indexOf(c) === i));
+  // Группы по категориям + поиск без перерисовки (введённые числа не теряются)
+  function byCat(list, row, asList){
+    return html`${CATS().map(c=>{ const ps = list.filter(p=>p.cat === c); return ps.length ? html`<div class="cat-group"><div class="eyebrow cat-head" data-c="${c}">${c} · ${ps.length}</div>${asList ? html`<div class="list">${ps.map(row)}</div>` : ps.map(row)}</div>` : ''; })}`;
+  }
+  function filterRows(root, q){
+    q = q.trim().toLowerCase();
+    $$('[data-name]', root).forEach(r=> r.hidden = !!q && !r.dataset.name.includes(q));
+    $$('.cat-group', root).forEach(g=>{ const n = $$('[data-name]', g).filter(r=>!r.hidden).length; g.hidden = !n; const h = $('.cat-head', g); h.textContent = h.dataset.c + ' · ' + n; });
+  }
+  const nameKey = p=> (p.name + ' ' + p.cat + ' ' + p.sku).toLowerCase();
   const C = id=> REFS.cities.find(x=>x.id === id) || {name:'?', code:'—'};
   const S = id=> REFS.staff.find(x=>x.id === id);
   const T = id=> REFS.tara.find(x=>x.id === id) || {name:'?'};
@@ -110,22 +125,25 @@
     $('#stockSub').textContent = `${pcs(r.total)} на складе` + (low ? ` · мало: ${low}` : '');
     drawStock();
   }
+  let stockCat = '', stockNonZero = false;
   function drawStock(){
     const q = $('#q').value.trim().toLowerCase();
-    const list = STOCK.filter(i=>!q || i.name.toLowerCase().includes(q) || i.sku.toLowerCase().includes(q));
-    $('#stockList').innerHTML = list.length ? String(html`<div class="list">${list.map(i=>html`<button class="row" type="button" data-p="${i.id}">
-      <span class="row-main"><span class="row-title">${Kit.nobr(i.name)}</span>
-        <span class="row-sub">${i.sku}${i.lastIn ? ' · приход ' + D.label(i.lastIn).toLowerCase() : ''}${i.onRoad ? ' · в пути ' + i.onRoad : ''}</span></span>
+    $('#stockCats').innerHTML = String(html`<button type="button" class="chip${stockCat ? '' : ' is-on'}" data-c="">Все</button>${CATS().map(c=>html`<button type="button" class="chip${stockCat === c ? ' is-on' : ''}" data-c="${c}">${c}</button>`)}<button type="button" class="chip${stockNonZero ? ' is-on' : ''}" data-nz="1">Есть на складе</button>`);
+    const list = STOCK.filter(i=>(!q || nameKey(i).includes(q)) && (!stockCat || i.cat === stockCat) && (!stockNonZero || i.qty > 0));
+    $('#stockList').innerHTML = list.length ? String(byCat(list, i=>html`<button class="row" type="button" data-p="${i.id}">
+      <span class="row-main"><span class="row-title">${Kit.nobr(i.name)} <span class="hint nowrap">${W(i.weightG)}</span></span>
+        <span class="row-sub">${i.lastIn ? 'приход ' + D.label(i.lastIn).toLowerCase() : 'прихода не было'}${i.onRoad ? ' · в пути ' + i.onRoad : ''}</span></span>
       <span class="row-end"><span class="qty${i.minQty && i.qty < i.minQty ? ' is-low' : ''}">${num(i.qty)}<span class="qty-unit">шт</span></span>
         ${i.minQty && i.qty < i.minQty ? html`<span class="pill pill-danger">мало</span>` : ''}</span>
-    </button>`)}</div>`) : String(html`<div class="empty">${icon('search')}<div class="empty-title">Ничего не нашлось</div></div>`);
+    </button>`, true)) : String(html`<div class="empty">${icon('search')}<div class="empty-title">Ничего не нашлось</div></div>`);
   }
   $('#q').addEventListener('input', Kit.debounce(drawStock, 120));
+  Kit.on($('#stockCats'), 'click', '.chip', (e, el)=>{ if(el.dataset.nz) stockNonZero = !stockNonZero; else stockCat = el.dataset.c; haptic('select'); drawStock(); });
   Kit.on($('#stockList'), 'click', '[data-p]', (e, el)=> openProduct(STOCK.find(x=>x.id === el.dataset.p)));
 
   function openProduct(i){
     if(!i) return;
-    const sh = Kit.sheet({title:i.name, sub:`${i.sku} · на складе ${pcs(i.qty)}`, body: html`
+    const sh = Kit.sheet({title:L(i.id), sub:`${i.cat} · на складе ${pcs(i.qty)}`, body: html`
       <div class="kv"><span class="k">Срок годности</span><span class="v">${i.shelfDays ? Kit.plural(i.shelfDays, 'сутки', 'суток', 'суток') : '—'}</span></div>
       <div class="kv"><span class="k">Минимальный остаток</span><span class="v">${i.minQty || '—'}</span></div>
       <div class="kv"><span class="k">В пути</span><span class="v">${pcs(i.onRoad)}</span></div>
@@ -157,10 +175,11 @@
   function renderIncome(){
     $('#inDate').value = D.today();
     const act = REFS.products.filter(p=>p.active);
-    $('#inList').innerHTML = String(html`${act.map(p=>html`<div class="qrow" data-row="${p.id}">
-      <span class="qrow-name">${Kit.nobr(p.name)}<small>${p.sku} · на складе ${stockOf(p.id)}</small></span>
+    $('#inQ').value = '';
+    $('#inList').innerHTML = String(byCat(act, p=>html`<div class="qrow" data-row="${p.id}" data-name="${nameKey(p)}">
+      <span class="qrow-name">${Kit.nobr(p.name)}<small>${W(p.weightG)} · на складе ${stockOf(p.id)}</small></span>
       <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-in="${p.id}">
-    </div>`)}`);
+    </div>`));
     inTotal();
   }
   function inLines(){ return $$('[data-in]').map(el=>({productId:el.dataset.in, qty:parseInt(el.value, 10) || 0})).filter(l=>l.qty > 0); }
@@ -171,6 +190,7 @@
     $('#inBar').classList.toggle('is-hidden', !t);
   }
   $('#inList').addEventListener('input', inTotal);
+  $('#inQ').addEventListener('input', Kit.debounce(()=> filterRows($('#inList'), $('#inQ').value), 100));
   $('#inSave').addEventListener('click', async ()=>{
     const lines = inLines();
     if(!lines.length) return;
@@ -222,9 +242,9 @@
       ${d && d.car ? html`<div class="kv"><span class="k">Машина</span><span class="v">${d.car}</span></div>` : ''}
       ${t.note ? html`<div class="kv"><span class="k">Комментарий</span><span class="v">${t.note}</span></div>` : ''}
       <div class="section"><div class="eyebrow" style="margin-bottom:8px">Состав</div>
-        ${t.lines.map(l=>html`<div class="kv"><span class="k">${P(l.productId).name}</span><span class="v mono">${l.qty}${closed ? html` <span class="hint">→ ${l.delivered}${l.back ? ' · возв ' + l.back : ''}${l.spoiled ? ' · брак ' + l.spoiled : ''}</span>` : ''}</span></div>`)}</div>
+        ${t.lines.map(l=>html`<div class="kv"><span class="k">${L(l.productId)}</span><span class="v mono">${l.qty}${closed ? html` <span class="hint">→ ${l.delivered}${l.back ? ' · возв ' + l.back : ''}${l.spoiled ? ' · брак ' + l.spoiled : ''}</span>` : ''}</span></div>`)}</div>
       ${t.taraOut.length ? html`<div class="section"><div class="eyebrow" style="margin-bottom:8px">Тара</div>${t.taraOut.map(l=>{ const b = (t.taraBack.find(x=>x.taraId === l.taraId) || {}).qty; return html`<div class="kv"><span class="k">${T(l.taraId).name}</span><span class="v mono">${l.qty}${closed ? ' → вернули ' + (b || 0) : ''}</span></div>`; })}</div>` : ''}
-      ${rep ? html`<div class="section"><div class="eyebrow" style="margin-bottom:8px">Отчёт водителя</div><p class="hint">Возврат: ${rep.returns.length ? rep.returns.map(r=>`${P(r.productId).name} ${r.back}${r.spoiled ? ' (брак ' + r.spoiled + ')' : ''}`).join(', ') : 'нет'}. Тара: ${rep.taraBack.map(l=>T(l.taraId).name + ' ' + l.qty).join(', ') || 'нет'}.${rep.comment ? ' «' + rep.comment + '»' : ''}</p></div>` : ''}`,
+      ${rep ? html`<div class="section"><div class="eyebrow" style="margin-bottom:8px">Отчёт водителя</div><p class="hint">Возврат: ${rep.returns.length ? rep.returns.map(r=>`${L(r.productId)} — ${r.back}${r.spoiled ? ' (брак ' + r.spoiled + ')' : ''}`).join(', ') : 'нет'}. Тара: ${rep.taraBack.map(l=>T(l.taraId).name + ' ' + l.qty).join(', ') || 'нет'}.${rep.comment ? ' «' + rep.comment + '»' : ''}</p></div>` : ''}`,
       actions: t.status === 'draft' ? html`<button class="btn btn-ghost" type="button" data-a="edit">${icon('edit')}Изменить</button><button class="btn btn-primary" type="button" data-a="ship">${icon('truck')}Отгрузить</button>`
         : /shipped|reported/.test(t.status) ? html`<button class="btn btn-primary btn-block" type="button" data-a="close">${icon('check')}Принять рейс</button>` : ''});
     Kit.on(sh.el, 'click', '[data-a]', async (e, el)=>{
@@ -253,8 +273,10 @@
       <div class="chips" id="eCity">${REFS.cities.filter(c=>c.active || c.id === st.cityId).map(c=>html`<button type="button" class="chip${st.cityId === c.id ? ' is-on' : ''}" data-v="${c.id}">${c.name}</button>`)}</div>
       <div class="eyebrow section" style="margin-bottom:8px">Водитель</div>
       <div class="chips" id="eDrv">${drivers.map(s=>html`<button type="button" class="chip${st.driverId === s.id ? ' is-on' : ''}" data-v="${s.id}">${s.name.split(' ')[0]}${SHIFT.includes(s.id) ? ' · на смене' : ''}</button>`)}</div>
-      <div class="eyebrow section" style="margin-bottom:4px">Торты</div>
-      <div>${REFS.products.filter(p=>p.active).map(p=>html`<div class="qrow${qty[p.id] ? ' is-on' : ''}"><span class="qrow-name">${Kit.nobr(p.name)}<small>на складе ${stockOf(p.id)}</small></span>
+      <div class="section-head section" style="margin-bottom:8px"><span class="eyebrow">Торты</span><span class="hint" id="eSum"></span></div>
+      <div class="search">${icon('search')}<input class="input" id="eQ" type="search" placeholder="Найти торт" autocomplete="off"></div>
+      <div class="chips" style="margin-top:8px"><button type="button" class="chip" id="eOnly">Только выбранные</button></div>
+      <div id="eList">${byCat(REFS.products.filter(p=>p.active || qty[p.id]), p=>html`<div class="qrow${qty[p.id] ? ' is-on' : ''}" data-name="${nameKey(p)}"><span class="qrow-name">${Kit.nobr(p.name)}<small>${W(p.weightG)} · на складе ${stockOf(p.id)}</small></span>
         <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-q="${p.id}" value="${qty[p.id] || ''}"></div>`)}</div>
       <div class="eyebrow section" style="margin-bottom:4px">Тара с собой</div>
       <div>${REFS.tara.filter(x=>x.active).map(x=>html`<div class="qrow"><span class="qrow-name">${x.name}</span><input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-tq="${x.id}" value="${tq[x.id] || ''}"></div>`)}</div>
@@ -263,12 +285,18 @@
     [['#eDate','date'], ['#eCity','cityId'], ['#eDrv','driverId']].forEach(([sel, key])=>{
       Kit.on(sh.$(sel), 'click', '[data-v]', (e, el)=>{ st[key] = el.dataset.v; $$(sel + ' .chip', sh.el).forEach(b=>b.classList.toggle('is-on', b === el)); haptic('select'); });
     });
-    sh.el.addEventListener('input', e=>{ const r = e.target.closest('.qrow'); if(r && e.target.dataset.q) r.classList.toggle('is-on', (parseInt(e.target.value, 10) || 0) > 0); });
+    let only = false;
+    const eSum = ()=>{ const ls = $$('[data-q]', sh.el).map(el=>parseInt(el.value, 10) || 0).filter(Boolean); sh.$('#eSum').textContent = ls.length ? `${ls.length} поз. · ${pcs(ls.reduce((a, b)=>a + b, 0))}` : ''; };
+    const eFilter = ()=>{ filterRows(sh.$('#eList'), sh.$('#eQ').value); if(only){ $$('[data-name]', sh.el).forEach(r=>{ if(!r.classList.contains('is-on')) r.hidden = true; }); $$('.cat-group', sh.el).forEach(g=> g.hidden = !$$('[data-name]', g).some(r=>!r.hidden)); } };
+    eSum();
+    sh.el.addEventListener('input', e=>{ const r = e.target.closest('.qrow'); if(r && e.target.dataset.q){ r.classList.toggle('is-on', (parseInt(e.target.value, 10) || 0) > 0); eSum(); } });
+    sh.$('#eQ').addEventListener('input', Kit.debounce(eFilter, 100));
+    sh.$('#eOnly').addEventListener('click', ()=>{ only = !only; sh.$('#eOnly').classList.toggle('is-on', only); haptic('select'); eFilter(); });
     sh.$('#eSave').addEventListener('click', async ()=>{
       if(!st.cityId){ Kit.toast('Выберите город', 'error'); return; }
       const lines = $$('[data-q]', sh.el).map(el=>({productId:el.dataset.q, qty:parseInt(el.value, 10) || 0})).filter(l=>l.qty > 0);
       const over = lines.filter(l=>l.qty > stockOf(l.productId));
-      if(over.length) Kit.toast('Больше, чем на складе: ' + over.map(l=>P(l.productId).name).join(', '), 'error');
+      if(over.length) Kit.toast('Больше, чем на складе: ' + over.map(l=>L(l.productId)).join(', '), 'error');
       const taraOut = $$('[data-tq]', sh.el).map(el=>({taraId:el.dataset.tq, qty:parseInt(el.value, 10) || 0})).filter(l=>l.qty > 0);
       Kit.busy(sh.$('#eSave'), true);
       const r = await api('saveTrip', {id:t ? t.id : undefined, date:st.date, cityId:st.cityId, driverId:st.driverId || undefined, lines, taraOut, note:sh.$('#eNote').value.trim()});
@@ -290,7 +318,7 @@
     const tb = {}; rep.taraBack.forEach(l=> tb[l.taraId] = l.qty);
     const sh = Kit.sheet({title:`Приёмка · ${C(t.cityId).name} №${t.num}`, sub:rep.returns.length || rep.taraBack.length ? 'Заполнено по отчёту водителя — сверьте' : 'Что вернулось из рейса', body: html`
       <div class="qrow" style="color:var(--ink-3);font-size:13px"><span class="qrow-name" style="font-weight:400">Торт · уехало</span><span style="width:84px;text-align:center">Годные</span><span style="width:84px;text-align:center">Брак</span></div>
-      ${t.lines.map(l=>html`<div class="qrow"><span class="qrow-name">${Kit.nobr(P(l.productId).name)}<small>уехало ${l.qty}</small></span>
+      ${t.lines.map(l=>html`<div class="qrow"><span class="qrow-name">${Kit.nobr(P(l.productId).name)}<small>${W(P(l.productId).weightG)} · уехало ${l.qty}</small></span>
         <input class="input" type="number" inputmode="numeric" min="0" max="${l.qty}" placeholder="0" data-back="${l.productId}" value="${(rb[l.productId] || {}).back || ''}">
         <input class="input" type="number" inputmode="numeric" min="0" max="${l.qty}" placeholder="0" data-spoil="${l.productId}" value="${(rb[l.productId] || {}).spoiled || ''}"></div>`)}
       <p class="hint">Годные вернутся на остаток. Брак уже списан отгрузкой — просто фиксируется в рейсе.</p>
@@ -355,7 +383,7 @@
     let last = '';
     $('#logList').innerHTML = LOG.length ? String(html`${LOG.map(m=>{
       const head = m.date !== last ? html`<div class="eyebrow" style="margin:16px 0 6px">${D.label(m.date)}</div>` : ''; last = m.date;
-      return html`${head}<div class="row" style="cursor:default"><span class="row-main"><span class="row-title">${P(m.productId).name}</span>
+      return html`${head}<div class="row" style="cursor:default"><span class="row-main"><span class="row-title">${L(m.productId)}</span>
         <span class="row-sub">${REFS.moveTypes[m.type]}${m.cityId ? ' · ' + C(m.cityId).name : ''}${m.note ? ' · ' + m.note : ''}</span></span>
         <span class="row-end"><span class="qty" style="color:${m.qty < 0 ? 'var(--danger)' : 'var(--ok)'}">${m.qty > 0 ? '+' : '−'}${Math.abs(m.qty)}</span></span></div>`;
     })}`) : String(html`<div class="empty">${icon('list')}<div class="empty-title">Движений нет</div></div>`);
@@ -363,8 +391,8 @@
   Kit.on($('#logRange'), 'click', '[data-r]', (e, el)=>{ logRange = el.dataset.r; haptic('select'); renderLog(); });
   Kit.on($('#logType'), 'click', '[data-y]', (e, el)=>{ logType = el.dataset.y; haptic('select'); renderLog(); });
   $('#logCsv').addEventListener('click', ()=>{
-    Kit.csv(`sklad-${D.today()}.csv`, [['Дата','Тип','Торт','Артикул','Кол-во','Город','Рейс','Комментарий']].concat(
-      LOG.map(m=>[m.date, REFS.moveTypes[m.type], P(m.productId).name, P(m.productId).sku, m.qty, m.cityId ? C(m.cityId).name : '', m.tripId || '', m.note])));
+    Kit.csv(`sklad-${D.today()}.csv`, [['Дата','Тип','Категория','Наименование','Вес, г','Кол-во','Город','Рейс','Комментарий']].concat(
+      LOG.map(m=>[m.date, REFS.moveTypes[m.type], P(m.productId).cat, P(m.productId).name, P(m.productId).weightG, m.qty, m.cityId ? C(m.cityId).name : '', m.tripId || '', m.note])));
   });
 
   /* ============ СТАРТ ============ */

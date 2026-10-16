@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-16 17:30 -->
+<!-- изменено 2026-10-16 19:10 -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -35,6 +35,8 @@
   const PICK_KEY = 'tgs-cake-driver';
   let REFS = null, ME = null, TRIPS = [], restricted = false;
   const P = id=> REFS.products.find(x=>x.id === id) || {name:'?'};
+  const W = g=> !g ? '' : g < 1000 ? g + ' г' : String(g / 1000).replace('.', ',') + ' кг';
+  const L = id=> { const p = P(id); return p.name + (p.weightG ? ', ' + W(p.weightG) : ''); };
   const C = id=> REFS.cities.find(x=>x.id === id) || {name:'?', code:'—'};
   const T = id=> REFS.tara.find(x=>x.id === id) || {name:'?'};
   const fail = r=> { Kit.toast(r.message || 'Не получилось', 'error'); haptic('error'); };
@@ -88,7 +90,7 @@
     const c = C(t.cityId);
     const sh = Kit.sheet({title:`${c.name} · №${t.num}`, sub:`${D.label(t.date)} · ${ST[t.status][0]}`, body: html`
       <div class="eyebrow" style="margin-bottom:8px">Везёте</div>
-      ${t.lines.map(l=>html`<div class="kv"><span class="k">${P(l.productId).name}</span><span class="v mono">${l.qty}${t.status === 'closed' ? ' → ' + l.delivered : ''}</span></div>`)}
+      ${t.lines.map(l=>html`<div class="kv"><span class="k">${L(l.productId)}</span><span class="v mono">${l.qty}${t.status === 'closed' ? ' → ' + l.delivered : ''}</span></div>`)}
       ${t.taraOut.length ? html`<div class="eyebrow section" style="margin-bottom:8px">Тара</div>${t.taraOut.map(l=>html`<div class="kv"><span class="k">${T(l.taraId).name}</span><span class="v mono">${l.qty}</span></div>`)}` : ''}
       ${t.note ? html`<p class="hint section">${t.note}</p>` : ''}`,
       actions: /shipped|reported/.test(t.status) ? html`<button class="btn btn-primary btn-block" type="button" id="goRep">${icon('clipboard')}${t.status === 'reported' ? 'Исправить отчёт' : 'Сдать рейс'}</button>` : ''});
@@ -101,7 +103,7 @@
     const tb = {}; rep.taraBack.forEach(l=> tb[l.taraId] = l.qty);
     const sh = Kit.sheet({title:'Отчёт по рейсу', sub:`${C(t.cityId).name} · что везёте обратно`, body: html`
       <div class="qrow" style="color:var(--ink-3);font-size:13px"><span class="qrow-name" style="font-weight:400">Торт</span><span style="width:84px;text-align:center">Целые</span><span style="width:84px;text-align:center">Брак</span></div>
-      ${t.lines.map(l=>html`<div class="qrow"><span class="qrow-name">${Kit.nobr(P(l.productId).name)}<small>увезли ${l.qty}</small></span>
+      ${t.lines.map(l=>html`<div class="qrow"><span class="qrow-name">${Kit.nobr(P(l.productId).name)}<small>${W(P(l.productId).weightG)} · увезли ${l.qty}</small></span>
         <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-back="${l.productId}" value="${(rb[l.productId] || {}).back || ''}">
         <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-spoil="${l.productId}" value="${(rb[l.productId] || {}).spoiled || ''}"></div>`)}
       ${t.taraOut.length ? html`<div class="eyebrow section" style="margin-bottom:4px">Тара обратно</div>
