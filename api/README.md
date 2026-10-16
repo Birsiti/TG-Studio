@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 00:20 -->
+<!-- изменено 2026-10-17 00:50 -->
 # API студии TG-Studio
 
 Один процесс на Python 3.12 (FastAPI + SQLite) обслуживает все демо-боты
@@ -144,8 +144,10 @@ tests/           pytest (FastAPI TestClient) — на каждого бота
    Бот склада: в `cake-bot/.env` — `API_URL=http://127.0.0.1:8098/api/cake` (это значение по умолчанию).
 6. Бэкап: базы — обычные файлы SQLite; горячая копия:
    `sqlite3 data/carwash.db ".backup backup/carwash-$(date +%F).db"`.
-7. Обновление: `git pull && launchctl kickstart -k gui/$(id -u)/xyz.tg-studio.api`.
-   На iMac API поднимается **до 2 минут**; ждать готовности в цикле:
+7. Обновление: `git pull && (cd api && .venv/bin/python -c "import server") && launchctl kickstart -k gui/$(id -u)/xyz.tg-studio.api`.
+   Строка с `import server` — прогрев: на iMac (HDD) холодный импорт FastAPI
+   до 2 минут, прогретый — 0,5 с, а прогрев идёт, пока старый API ещё работает.
+   Без прогрева API поднимается **до 2 минут**; ждать готовности в цикле:
    `until curl -sf http://127.0.0.1:8098/health >/dev/null; do sleep 5; done`.
 
 ## Ограничения демо

@@ -1,5 +1,5 @@
 #!/bin/bash
-# изменено 2026-10-17 00:20
+# изменено 2026-10-17 00:50
 # Установка бота склада на iMac одной командой (как taxi-morning-digest:
 # бот живёт на iMac, .env + автозапуск launchd, без LEADTEX).
 #   cd ~/tg-studio/cake-bot && bash install.sh
@@ -75,9 +75,12 @@ if [ -f "$API_PLIST" ]; then
     $PB -c "Delete :EnvironmentVariables:${kv%%=*}" "$API_PLIST" 2>/dev/null || true
     $PB -c "Add :EnvironmentVariables:${kv%%=*} string ${kv#*=}" "$API_PLIST"
   done
+  # Прогрев: на HDD холодный импорт FastAPI — до 2 минут; читаем файлы в кэш ОС,
+  # пока старый API ещё работает, — перезапуск после этого занимает секунды
+  [ -x ../api/.venv/bin/python ] && (cd ../api && .venv/bin/python -c "import server" >/dev/null 2>&1) || true
   launchctl unload "$API_PLIST" 2>/dev/null || true
   launchctl load "$API_PLIST"
-  # На старом iMac API поднимается до 2 минут — ждём /health до 180 с, иначе проверка ниже соврёт
+  # Без прогрева на iMac API поднимается до 2 минут — ждём /health до 180 с, иначе проверка ниже соврёт
   API_URL="$(envget API_URL)"; API_URL="${API_URL:-http://127.0.0.1:8098/api/cake}"; HEALTH="${API_URL%%/api/*}/health"
   printf "Жду API (%s)" "$HEALTH"
   for _ in $(seq 1 90); do
