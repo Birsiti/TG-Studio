@@ -1,4 +1,4 @@
-# изменено 2026-10-08 02:48
+# изменено 2026-10-16 20:05
 """Общее ядро API студии: SQLite на бота, реестр action, валидация,
 лимиты строк, демо-сид и ежедневное «освежение» демо-данных.
 
@@ -9,6 +9,8 @@
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import os
 import re
@@ -19,6 +21,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable
+from urllib.parse import parse_qsl
 from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo("Europe/Minsk")
@@ -238,6 +241,32 @@ def valid_user(v: Any) -> str | None:
     if isinstance(v, str) and _USER.match(v):
         return v
     return None
+
+
+def verify_init_data(init_data: Any, bot_token: str, max_age: int = 86400) -> str | None:
+    """Проверка Telegram.WebApp.initData подписью бота (HMAC-SHA256, схема
+    из документации Telegram Mini Apps). Возвращает id пользователя или None,
+    если подписи нет, она не сходится или устарела (старше max_age секунд)."""
+    if not isinstance(init_data, str) or not init_data or len(init_data) > 4096 or not bot_token:
+        return None
+    try:
+        pairs = dict(parse_qsl(init_data, keep_blank_values=True, strict_parsing=True))
+    except ValueError:
+        return None
+    got = pairs.pop("hash", "")
+    check = "\n".join(f"{k}={v}" for k, v in sorted(pairs.items()))
+    secret = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
+    want = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(want, got):
+        return None
+    try:
+        auth = int(pairs.get("auth_date", "0"))
+        uid = json.loads(pairs.get("user", "{}")).get("id")
+    except (ValueError, AttributeError):
+        return None
+    if max_age and now().timestamp() - auth > max_age:
+        return None
+    return str(uid) if isinstance(uid, int) and not isinstance(uid, bool) else None
 
 
 # ============ БАЗА ============

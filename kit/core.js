@@ -1,4 +1,4 @@
-// изменено 2026-10-08 02:30
+// изменено 2026-10-16 20:05
 /* ============================================================
    kit/core.js — общий рантайм всех Mini App студии TG-Studio.
 
@@ -587,6 +587,8 @@
     }
     function api(action, payload){
       payload = Object.assign({userId: user.id}, payload || {});
+      // Подпись Telegram: сервер бота может проверить её токеном (см. api/core.py verify_init_data)
+      if(inTelegram && tg.initData) payload.initData = tg.initData;
       if(state.mode === 'demo') return viaMock(action, payload);
       var ctrl = window.AbortController ? new AbortController() : null;
       var timer = setTimeout(function(){ if(ctrl) ctrl.abort(); }, state.mode === 'live' ? 12000 : 6000);

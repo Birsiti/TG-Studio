@@ -1,4 +1,4 @@
-# изменено 2026-10-16 19:10
+# изменено 2026-10-16 20:05
 from core import now
 
 
@@ -99,3 +99,27 @@ def test_catalog_from_client(api):
     assert {t["name"] for t in r["tara"]} == {"Ящик", "Стопка"}
     p = api("cake", "saveProduct", name="Медовик", cat="Торт", weightG=1000)["product"]
     assert p["cat"] == "Торт" and p["weightG"] == 1000
+
+
+def _signed(token, uid, age=0):
+    import hashlib, hmac, json, time
+    from urllib.parse import urlencode
+    data = {"auth_date": str(int(time.time()) - age), "query_id": "AAH", "user": json.dumps({"id": uid, "first_name": "Тест"})}
+    check = "\n".join(f"{k}={v}" for k, v in sorted(data.items()))
+    secret = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
+    data["hash"] = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
+    return urlencode(data)
+
+
+def test_bot_token_signature(api, monkeypatch):
+    tok = "123456:TEST-token"
+    monkeypatch.setenv("TGS_CAKE_BOT_TOKEN", tok)
+    monkeypatch.setenv("TGS_CAKE_ADMINS", "555")
+    assert api("cake", "getStock", user="555")["error"] == "forbidden"  # userId без подписи не верим
+    assert api("cake", "getStock", user="999", initData=_signed(tok, 555))["ok"]  # id берётся из подписи
+    assert api("cake", "getStock", user="555", initData=_signed("other:token", 555))["error"] == "forbidden"
+    assert api("cake", "getStock", user="555", initData=_signed(tok, 555, age=3 * 86400))["error"] == "forbidden"
+    assert api("cake", "getStock", initData=_signed(tok, 777))["error"] == "forbidden"  # подписан, но не в списке
+    bad = _signed(tok, 555).replace("%22id%22%3A+555", "%22id%22%3A+556")
+    assert api("cake", "getStock", initData=bad)["error"] == "forbidden"
+    assert api("cake", "getMe", initData=_signed(tok, 555))["restricted"] is True

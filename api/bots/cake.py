@@ -1,4 +1,4 @@
-# изменено 2026-10-16 19:10
+# изменено 2026-10-16 20:05
 """Склад тортов с развозом по городам (cake-warehouse/*.html).
 
 Рабочий учёт, а не витрина: нет ежедневного «освежения» и нет удаления
@@ -18,7 +18,8 @@
 
 Доступ: если задана TGS_CAKE_ADMINS (tg id через запятую), работать могут
 только эти id и активные сотрудники с заполненным tg_id. Пусто — открыто
-(демо).
+(демо). Если задан TGS_CAKE_BOT_TOKEN, каждый запрос обязан нести initData,
+подписанный этим ботом; id пользователя берётся из подписи, а не из userId.
 """
 from __future__ import annotations
 
@@ -27,7 +28,7 @@ import random
 from datetime import datetime
 
 from core import (ApiError, Bot, Ctx, add_days, iso_now, jdump, jload, new_id, one, rows, scalar, v_bool, v_date,
-                  v_enum, v_id, v_int, v_list, v_phone, v_str)
+                  v_enum, v_id, v_int, v_list, v_phone, v_str, verify_init_data)
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS products(
@@ -131,11 +132,23 @@ bot = Bot("cake", SCHEMA, lambda conn, now: seed(conn, now))
 
 # ============ ДОСТУП ============
 
+def _restricted() -> bool:
+    return bool(_admins() or os.environ.get("TGS_CAKE_BOT_TOKEN"))
+
+
 def _admins() -> set[str]:
     return {x.strip() for x in os.environ.get("TGS_CAKE_ADMINS", "").split(",") if x.strip()}
 
 
-def _guard(ctx: Ctx) -> None:
+def _guard(ctx: Ctx, p: dict) -> None:
+    # С токеном бота (TGS_CAKE_BOT_TOKEN) верим только подписанному initData:
+    # userId из запроса подделать нельзя, без подписи — отказ.
+    token = os.environ.get("TGS_CAKE_BOT_TOKEN", "")
+    if token:
+        uid = verify_init_data(p.get("initData"), token)
+        if not uid:
+            raise ApiError("forbidden", "Откройте приложение из бота")
+        ctx.user = uid
     admins = _admins()
     if not admins:
         return
@@ -148,7 +161,7 @@ def _guard(ctx: Ctx) -> None:
 def action(name: str, write: bool = False):
     def deco(fn):
         def wrapped(ctx: Ctx, p: dict) -> dict:
-            _guard(ctx)
+            _guard(ctx, p)
             return fn(ctx, p)
         return bot.action(name, write)(wrapped)
     return deco
@@ -334,7 +347,7 @@ def save_tara(ctx: Ctx, p: dict) -> dict:
 @action("getMe")
 def get_me(ctx: Ctx, p: dict) -> dict:
     me = ctx.user and one(ctx.conn, "SELECT * FROM staff WHERE tg_id=? AND tg_id<>''", (ctx.user,))
-    return {"staff": _staff(me) if me else None, "restricted": bool(_admins())}
+    return {"staff": _staff(me) if me else None, "restricted": _restricted()}
 
 
 # ============ ОСТАТКИ И ДВИЖЕНИЯ ============
@@ -526,7 +539,7 @@ def close_trip(ctx: Ctx, p: dict) -> dict:
 def get_my_trips(ctx: Ctx, p: dict) -> dict:
     """Рейсы водителя: по tg_id, а в открытом демо — по driverId из запроса."""
     me = ctx.user and one(ctx.conn, "SELECT * FROM staff WHERE tg_id=? AND tg_id<>'' AND role='driver'", (ctx.user,))
-    did = me["id"] if me else (None if _admins() else v_id(p, "driverId", required=False))
+    did = me["id"] if me else (None if _restricted() else v_id(p, "driverId", required=False))
     if not did:
         return {"driver": None, "trips": []}
     rs = rows(ctx.conn, "SELECT * FROM trips WHERE driver_id=? AND status<>'cancelled' AND "
