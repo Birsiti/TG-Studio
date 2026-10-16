@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-16 23:40 -->
+<!-- изменено 2026-10-17 00:20 -->
 # API студии TG-Studio
 
 Один процесс на Python 3.12 (FastAPI + SQLite) обслуживает все демо-боты
@@ -145,6 +145,8 @@ tests/           pytest (FastAPI TestClient) — на каждого бота
 6. Бэкап: базы — обычные файлы SQLite; горячая копия:
    `sqlite3 data/carwash.db ".backup backup/carwash-$(date +%F).db"`.
 7. Обновление: `git pull && launchctl kickstart -k gui/$(id -u)/xyz.tg-studio.api`.
+   На iMac API поднимается **до 2 минут**; ждать готовности в цикле:
+   `until curl -sf http://127.0.0.1:8098/health >/dev/null; do sleep 5; done`.
 
 ## Ограничения демо
 

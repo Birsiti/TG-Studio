@@ -1,5 +1,5 @@
 #!/bin/bash
-# изменено 2026-10-16 23:40
+# изменено 2026-10-17 00:20
 # Установка бота склада на iMac одной командой (как taxi-morning-digest:
 # бот живёт на iMac, .env + автозапуск launchd, без LEADTEX).
 #   cd ~/tg-studio/cake-bot && bash install.sh
@@ -77,16 +77,16 @@ if [ -f "$API_PLIST" ]; then
   done
   launchctl unload "$API_PLIST" 2>/dev/null || true
   launchctl load "$API_PLIST"
-  # На старом iMac API поднимается ~20 с — ждём /health до 60 с, иначе проверка ниже соврёт
+  # На старом iMac API поднимается до 2 минут — ждём /health до 180 с, иначе проверка ниже соврёт
   API_URL="$(envget API_URL)"; API_URL="${API_URL:-http://127.0.0.1:8098/api/cake}"; HEALTH="${API_URL%%/api/*}/health"
   printf "Жду API (%s)" "$HEALTH"
-  for _ in $(seq 1 30); do
+  for _ in $(seq 1 90); do
     curl -fs -m 2 "$HEALTH" | grep -q '"cake"' && { UP=1; break; }
     printf "."; sleep 2
   done
   echo
   [ -n "${UP:-}" ] && echo "✔ API перезапущен с настройками склада" \
-    || echo "⚠ API не ответил за 60 с: tail ~/Library/Logs/tgs-api.log"
+    || echo "⚠ API не ответил за 180 с: tail ~/Library/Logs/tgs-api.log"
 else
   echo "⚠ API студии на этом iMac не установлен ($API_PLIST нет)."
   echo "  Бот ответит руководителю кнопками, но склад будет в демо-режиме."

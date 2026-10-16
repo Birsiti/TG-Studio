@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-16 23:40 -->
+<!-- изменено 2026-10-17 00:20 -->
 # Установка на iMac
 
 Всё работает на iMac: API (Python) с базой SQLite и бот (Node.js).
@@ -54,7 +54,8 @@ git clone https://github.com/birsiti/TG-Studio.git ~/tg-studio
 Перезапуск: `launchctl kickstart -k gui/$(id -u)/xyz.tg-studio.api`.
 Проверка: `curl http://127.0.0.1:8098/health` → в списке есть `cake`
 (снаружи, когда будет туннель, — `curl https://api.tg-studio.xyz/health`).
-На старом iMac API поднимается ~20 секунд после перезапуска.
+На iMac API поднимается **до 2 минут** после перезапуска — ждите `/health` в цикле:
+`until curl -sf http://127.0.0.1:8098/health >/dev/null; do sleep 5; done`
 
 База: `TGS_DATA_DIR/cake.db`. При первом запуске она создаётся с
 демо-данными. **Перед боевым запуском** остановите API, удалите
@@ -98,6 +99,9 @@ cd ~/tg-studio/cake-bot && bash install.sh
 cd ~/tg-studio && git pull
 launchctl kickstart -k gui/$(id -u)/xyz.tg-studio.api
 cd cake-bot && npm install && launchctl kickstart -k gui/$(id -u)/com.tgstudio.cake-bot
+# API на iMac поднимается до 2 минут — ждём, потом проверяем
+until curl -sf http://127.0.0.1:8098/health >/dev/null; do sleep 5; done
+npm run check
 ```
 
 ## Бэкап
