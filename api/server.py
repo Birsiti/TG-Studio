@@ -1,7 +1,7 @@
 # изменено 2026-10-08 02:15
 """API студии TG-Studio: один процесс на все боты.
 
-Запуск:  uvicorn server:app --port 8097   (из папки api/)
+Запуск:  uvicorn server:app --port 8098   (из папки api/; на iMac 8097 занят витриной studio)
 
   POST /api/<бот>   тело {action, userId, ...}, Content-Type text/plain
                     (простой CORS-запрос без preflight) → {ok, ...}

@@ -1,5 +1,5 @@
 #!/bin/bash
-# изменено 2026-10-16 23:10
+# изменено 2026-10-16 23:40
 # Установка бота склада на iMac одной командой (как taxi-morning-digest:
 # бот живёт на iMac, .env + автозапуск launchd, без LEADTEX).
 #   cd ~/tg-studio/cake-bot && bash install.sh
@@ -11,7 +11,7 @@ DIR="$(pwd)"
 LA="$HOME/Library/LaunchAgents"
 BOT_PLIST="$LA/com.tgstudio.cake-bot.plist"
 API_PLIST="$LA/xyz.tg-studio.api.plist"
-PB=/usr/libexec/PlistBuddy
+PB="${PLISTBUDDY:-/usr/libexec/PlistBuddy}"
 
 say() { printf '\n\033[1m%s\033[0m\n' "$1"; }
 die() { printf '\n\033[31m✘ %s\033[0m\n' "$1"; exit 1; }
@@ -77,7 +77,16 @@ if [ -f "$API_PLIST" ]; then
   done
   launchctl unload "$API_PLIST" 2>/dev/null || true
   launchctl load "$API_PLIST"
-  echo "✔ API перезапущен с настройками склада"
+  # На старом iMac API поднимается ~20 с — ждём /health до 60 с, иначе проверка ниже соврёт
+  API_URL="$(envget API_URL)"; API_URL="${API_URL:-http://127.0.0.1:8098/api/cake}"; HEALTH="${API_URL%%/api/*}/health"
+  printf "Жду API (%s)" "$HEALTH"
+  for _ in $(seq 1 30); do
+    curl -fs -m 2 "$HEALTH" | grep -q '"cake"' && { UP=1; break; }
+    printf "."; sleep 2
+  done
+  echo
+  [ -n "${UP:-}" ] && echo "✔ API перезапущен с настройками склада" \
+    || echo "⚠ API не ответил за 60 с: tail ~/Library/Logs/tgs-api.log"
 else
   echo "⚠ API студии на этом iMac не установлен ($API_PLIST нет)."
   echo "  Бот ответит руководителю кнопками, но склад будет в демо-режиме."

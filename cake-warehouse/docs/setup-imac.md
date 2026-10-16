@@ -1,20 +1,44 @@
-<!-- изменено 2026-10-16 22:50 -->
+<!-- изменено 2026-10-16 23:40 -->
 # Установка на iMac
 
 Всё работает на iMac: API (Python) с базой SQLite и бот (Node.js).
-Наружу API открыт через Cloudflare Tunnel (`https://api.tg-studio.xyz`),
+Наружу API открывается через Cloudflare Tunnel (`https://api.tg-studio.xyz`;
+на iMac пока **не подключён** — есть туннели budni и spihki, решает Денис;
+без него страницы на github.io работают в демо-режиме),
 бот сам ходит в Telegram — входящих соединений ему не нужно.
 
 ## 1. Что нужно
+
+Python 3.12 и Node.js 18–20, клон репозитория:
 
 ```bash
 brew install python@3.12 node
 git clone https://github.com/birsiti/TG-Studio.git ~/tg-studio
 ```
 
+**macOS 10.15 Catalina (наш iMac).** brew эту систему не поддерживает и
+собирает всё из исходников — не использовать.
+- Python 3.12 — установщик `.pkg` с python.org → `/usr/local/bin/python3.12`.
+- Node — **только ветка 20** (Node 22+ на Catalina не запускается), готовая
+  сборка в `~/.local/node`:
+  ```bash
+  V=v20.20.2   # последняя 20.x с nodejs.org/dist/latest-v20.x/
+  mkdir -p ~/.local && cd ~/.local
+  curl -fsSLO https://nodejs.org/dist/$V/node-$V-darwin-x64.tar.gz
+  tar xzf node-$V-darwin-x64.tar.gz && rm node-$V-darwin-x64.tar.gz
+  ln -sfn node-$V-darwin-x64 node
+  echo 'export PATH="$HOME/.local/node/bin:$PATH"' >> ~/.zprofile
+  ```
+  Новый терминал (или по ssh `export PATH="$HOME/.local/node/bin:$PATH"`)
+  перед `install.sh` — скрипт возьмёт путь к node и пропишет его в автозапуск.
+
 ## 2. API
 
 Общая установка API студии — `api/README.md` (venv, launchd, туннель).
+**Порт 8098**: 8097 на iMac занят витриной studio.tg-studio.xyz
+(`~/tgstudio-bot`, `uvicorn web:app`) — её не трогать. В plist API —
+`--port 8098`, проверка — `curl http://127.0.0.1:8098/health`; в
+`cake-bot/.env` — `API_URL=http://127.0.0.1:8098/api/cake` (по умолчанию).
 Для склада в plist API (`~/Library/LaunchAgents/xyz.tg-studio.api.plist`,
 раздел `EnvironmentVariables`) добавьте:
 
@@ -28,7 +52,9 @@ git clone https://github.com/birsiti/TG-Studio.git ~/tg-studio
 обязательны все три.
 
 Перезапуск: `launchctl kickstart -k gui/$(id -u)/xyz.tg-studio.api`.
-Проверка: `curl https://api.tg-studio.xyz/health` → в списке есть `cake`.
+Проверка: `curl http://127.0.0.1:8098/health` → в списке есть `cake`
+(снаружи, когда будет туннель, — `curl https://api.tg-studio.xyz/health`).
+На старом iMac API поднимается ~20 секунд после перезапуска.
 
 База: `TGS_DATA_DIR/cake.db`. При первом запуске она создаётся с
 демо-данными. **Перед боевым запуском** остановите API, удалите
@@ -86,6 +112,13 @@ sqlite3 "$TGS_DATA_DIR/cake.db" ".backup $HOME/backup/cake-$(date +%F).db"
 
 @BotFather → `/revoke` → новый токен → `bash cake-bot/install.sh`,
 на вопрос «Заменить?» ответить `y`. Скрипт обновит бота и API.
+
+Без терминала (по ssh, через Claude Code) вопрос не задаётся и старый
+токен остаётся — новый передаётся только так:
+```bash
+cd ~/tg-studio/cake-bot && CAKE_TOKEN='новый токен' bash install.sh </dev/null
+```
+id руководителя и служебный ключ возьмутся из `.env`.
 
 Код и страницы трогать не нужно.
 

@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-16 21:00 -->
+<!-- изменено 2026-10-16 23:40 -->
 # API студии TG-Studio
 
 Один процесс на Python 3.12 (FastAPI + SQLite) обслуживает все демо-боты
@@ -13,8 +13,8 @@
 cd api
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn server:app --port 8097
-curl http://localhost:8097/health
+uvicorn server:app --port 8098
+curl http://localhost:8098/health
 pytest -q            # тесты всех ботов
 ```
 
@@ -47,7 +47,7 @@ GET  /health           {"ok": true, "time": ..., "bots": [...]}
 
 Фронт (`kit/core.js` → `Kit.createApi`) при недоступности API тихо
 переключается на моки (`<бот>/mock.js`) — демо никогда не ломается.
-Для локальной проверки фронта с живым API: `…/client.html?api=http://localhost:8097`.
+Для локальной проверки фронта с живым API: `…/client.html?api=http://localhost:8098`.
 
 ## Переменные окружения
 
@@ -100,7 +100,11 @@ tests/           pytest (FastAPI TestClient) — на каждого бота
 
 ## Выкатка на iMac (api.tg-studio.xyz)
 
-1. Python 3.12: `brew install python@3.12`.
+**Порт 8098.** На iMac порт 8097 занят витриной studio.tg-studio.xyz
+(`by.tgstudio.web`, `~/tgstudio-bot`, `uvicorn web:app`) — её не трогать.
+
+1. Python 3.12: `brew install python@3.12`; на macOS 10.15 Catalina brew не
+   работает — установщик `.pkg` с python.org (ставится в `/usr/local/bin/python3.12`).
 2. Код: `git clone https://github.com/birsiti/TG-Studio.git ~/tg-studio && cd ~/tg-studio/api`,
    затем venv и `pip install -r requirements.txt` (см. «Быстрый старт»).
 3. Автозапуск через launchd — `~/Library/LaunchAgents/xyz.tg-studio.api.plist`:
@@ -114,7 +118,7 @@ tests/           pytest (FastAPI TestClient) — на каждого бота
      <key>ProgramArguments</key><array>
        <string>/Users/USER/tg-studio/api/.venv/bin/uvicorn</string>
        <string>server:app</string><string>--host</string><string>127.0.0.1</string>
-       <string>--port</string><string>8097</string><string>--proxy-headers</string>
+       <string>--port</string><string>8098</string><string>--proxy-headers</string>
      </array>
      <key>EnvironmentVariables</key><dict>
        <key>TGS_DATA_DIR</key><string>/Users/USER/tg-studio-data</string>
@@ -132,11 +136,12 @@ tests/           pytest (FastAPI TestClient) — на каждого бота
    `launchctl load ~/Library/LaunchAgents/xyz.tg-studio.api.plist`
 4. Наружу — Cloudflare Tunnel: `cloudflared tunnel create tgs-api`,
    в `~/.cloudflared/config.yml` — `ingress: - hostname: api.tg-studio.xyz
-   service: http://127.0.0.1:8097` и `- service: http_status:404`, затем
+   service: http://127.0.0.1:8098` и `- service: http_status:404`, затем
    `cloudflared tunnel route dns tgs-api api.tg-studio.xyz` и
    `sudo cloudflared service install`. Cloudflare сам передаёт
    `cf-connecting-ip` — по нему считается лимит частоты.
-5. Проверка: `curl https://api.tg-studio.xyz/health`.
+5. Проверка: `curl http://127.0.0.1:8098/health`, снаружи — `curl https://api.tg-studio.xyz/health`.
+   Бот склада: в `cake-bot/.env` — `API_URL=http://127.0.0.1:8098/api/cake` (это значение по умолчанию).
 6. Бэкап: базы — обычные файлы SQLite; горячая копия:
    `sqlite3 data/carwash.db ".backup backup/carwash-$(date +%F).db"`.
 7. Обновление: `git pull && launchctl kickstart -k gui/$(id -u)/xyz.tg-studio.api`.
