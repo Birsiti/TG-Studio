@@ -1,0 +1,381 @@
+<!-- изменено 2026-10-16 17:30 -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>ТОРТОВОЗ — кладовщик</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="../kit/core.js"></script>
+<link rel="stylesheet" href="../kit/base.css">
+<link rel="stylesheet" href="brand.css">
+<script src="mock.js"></script>
+</head>
+<body>
+<div class="app has-tabbar">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark" id="mark"></div><div class="brand-text"><span class="brand-name">ТОРТОВОЗ</span><span class="brand-role">Кладовщик</span></div></div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="refreshBtn" type="button" aria-label="Обновить"></button>
+      <button class="icon-btn" type="button" data-theme-toggle aria-label="Оформление"></button>
+    </div>
+  </header>
+  <div id="modeNote"></div>
+
+  <section data-panel="stock" hidden>
+    <div class="page-head"><h1 class="page-title">Остатки</h1><p class="page-sub" id="stockSub"></p></div>
+    <div class="search"><span id="searchIc"></span><input class="input" id="q" type="search" placeholder="Название или артикул" autocomplete="off"></div>
+    <div class="section" id="stockList"></div>
+  </section>
+
+  <section data-panel="income" hidden>
+    <div class="page-head"><h1 class="page-title">Приход</h1><p class="page-sub">Сколько тортов пришло с производства</p></div>
+    <div class="field-row">
+      <label class="field"><span class="field-label">Дата</span><input class="input" type="date" id="inDate"></label>
+      <label class="field"><span class="field-label">Откуда</span><input class="input" id="inNote" maxlength="200" placeholder="Цех"></label>
+    </div>
+    <div class="card section" id="inList"></div>
+  </section>
+
+  <section data-panel="trips" hidden>
+    <div class="page-head"><h1 class="page-title">Рейсы</h1><p class="page-sub">Сборка → отгрузка → приёмка возврата</p></div>
+    <button class="add-tile" type="button" id="tripAdd"></button>
+    <div id="tripList"></div>
+  </section>
+
+  <section data-panel="tara" hidden>
+    <div class="page-head"><h1 class="page-title">Тара</h1><p class="page-sub">Оборотная тара: сколько на складе и сколько должен каждый город</p></div>
+    <div class="stats" id="taraStats"></div>
+    <div class="section"><div class="section-head"><h2 class="section-title">Долг по городам</h2></div><div id="taraCities"></div></div>
+  </section>
+
+  <section data-panel="log" hidden>
+    <div class="page-head"><h1 class="page-title">Журнал</h1><p class="page-sub">Все движения тортов</p></div>
+    <div class="chips scroll" id="logRange"></div>
+    <div class="chips scroll" id="logType" style="margin-top:8px"></div>
+    <div class="section" id="logList"></div>
+    <button class="btn btn-ghost btn-block section" type="button" id="logCsv"></button>
+  </section>
+</div>
+
+<div class="actionbar over-tabbar is-hidden" id="inBar"><div class="actionbar-inner">
+  <div class="total"><div class="total-label">К приходу</div><div class="total-value" id="inTotal">0 шт</div></div>
+  <button class="btn btn-primary" type="button" id="inSave">Оприходовать</button>
+</div></div>
+
+<nav class="tabbar"><div class="tabbar-inner">
+  <button type="button" data-tab="stock"><span data-ic="box"></span>Остатки</button>
+  <button type="button" data-tab="income"><span data-ic="download"></span>Приход</button>
+  <button type="button" data-tab="trips"><span data-ic="truck"></span>Рейсы</button>
+  <button type="button" data-tab="tara"><span data-ic="layers"></span>Тара</button>
+  <button type="button" data-tab="log"><span data-ic="list"></span>Журнал</button>
+</div></nav>
+
+<script>
+(function(){
+  "use strict";
+  const {html, icon, $, $$, date: D, num, haptic} = Kit;
+  const api = Kit.createApi({bot:'cake', mock: window.CakeMock});
+  $('#mark').innerHTML = icon('box');
+  $('#refreshBtn').innerHTML = icon('refresh');
+  $('#searchIc').outerHTML = String(icon('search'));
+  $('#tripAdd').innerHTML = html`${icon('plus')}Новый рейс`;
+  $('#logCsv').innerHTML = html`${icon('download')}Выгрузить CSV`;
+  $$('[data-ic]').forEach(el=> el.outerHTML = String(icon(el.dataset.ic)));
+
+  const TRIP_ST = {draft:['На сборке','pill-warn'], shipped:['В пути','pill-info'], reported:['Ждёт приёмки','pill-accent'], closed:['Закрыт','pill-ok'], cancelled:['Отменён','pill-muted']};
+  const SIGN = {'in':'+', ship:'−', 'return':'+', writeoff:'−', adjust:'±'};
+  let REFS = {products:[], cities:[], staff:[], tara:[], moveTypes:{}}, STOCK = [], TRIPS = [], TARA = null, SHIFT = [];
+  const P = id=> REFS.products.find(x=>x.id === id) || {name:'?'};
+  const C = id=> REFS.cities.find(x=>x.id === id) || {name:'?', code:'—'};
+  const S = id=> REFS.staff.find(x=>x.id === id);
+  const T = id=> REFS.tara.find(x=>x.id === id) || {name:'?'};
+  const pcs = n=> num(n) + ' шт';
+  const fail = r=> { Kit.toast(r.message || ({network:'Нет связи', forbidden:'Нет доступа'})[r.error] || 'Не получилось', 'error'); haptic('error'); };
+  const stockOf = id=> (STOCK.find(x=>x.id === id) || {qty:0}).qty;
+
+  async function loadRefs(){
+    const r = await api('getRefs');
+    if(!r.ok){ fail(r); return; }
+    REFS = r;
+    if(api.mode() === 'demo') $('#modeNote').innerHTML = String(html`<p class="mode-note">Демо-режим: сервер недоступен, данные хранятся только в этом браузере.</p>`);
+  }
+  async function loadStock(){ const r = await api('getStock'); if(r.ok) STOCK = r.items; return r; }
+
+  /* ============ ОСТАТКИ ============ */
+  async function renderStock(){
+    const r = await loadStock();
+    if(!r.ok){ fail(r); return; }
+    const low = STOCK.filter(i=>i.minQty && i.qty < i.minQty).length;
+    $('#stockSub').textContent = `${pcs(r.total)} на складе` + (low ? ` · мало: ${low}` : '');
+    drawStock();
+  }
+  function drawStock(){
+    const q = $('#q').value.trim().toLowerCase();
+    const list = STOCK.filter(i=>!q || i.name.toLowerCase().includes(q) || i.sku.toLowerCase().includes(q));
+    $('#stockList').innerHTML = list.length ? String(html`<div class="list">${list.map(i=>html`<button class="row" type="button" data-p="${i.id}">
+      <span class="row-main"><span class="row-title">${Kit.nobr(i.name)}</span>
+        <span class="row-sub">${i.sku}${i.lastIn ? ' · приход ' + D.label(i.lastIn).toLowerCase() : ''}${i.onRoad ? ' · в пути ' + i.onRoad : ''}</span></span>
+      <span class="row-end"><span class="qty${i.minQty && i.qty < i.minQty ? ' is-low' : ''}">${num(i.qty)}<span class="qty-unit">шт</span></span>
+        ${i.minQty && i.qty < i.minQty ? html`<span class="pill pill-danger">мало</span>` : ''}</span>
+    </button>`)}</div>`) : String(html`<div class="empty">${icon('search')}<div class="empty-title">Ничего не нашлось</div></div>`);
+  }
+  $('#q').addEventListener('input', Kit.debounce(drawStock, 120));
+  Kit.on($('#stockList'), 'click', '[data-p]', (e, el)=> openProduct(STOCK.find(x=>x.id === el.dataset.p)));
+
+  function openProduct(i){
+    if(!i) return;
+    const sh = Kit.sheet({title:i.name, sub:`${i.sku} · на складе ${pcs(i.qty)}`, body: html`
+      <div class="kv"><span class="k">Срок годности</span><span class="v">${i.shelfDays ? Kit.plural(i.shelfDays, 'сутки', 'суток', 'суток') : '—'}</span></div>
+      <div class="kv"><span class="k">Минимальный остаток</span><span class="v">${i.minQty || '—'}</span></div>
+      <div class="kv"><span class="k">В пути</span><span class="v">${pcs(i.onRoad)}</span></div>
+      <div class="section"><div class="eyebrow" style="margin-bottom:8px">Действие</div>
+        <div class="seg" id="pMode"><button type="button" data-v="count" class="is-on">Пересчитать</button><button type="button" data-v="off">Списать</button></div></div>
+      <label class="field section"><span class="field-label" id="pQtyLbl">Насчитали по факту, шт</span><input class="input" id="pQty" type="number" inputmode="numeric" min="0" value="${i.qty}"></label>
+      <label class="field" id="pWhyBox" hidden><span class="field-label">Причина</span><input class="input" id="pWhy" maxlength="200" placeholder="Истёк срок, помят, брак"></label>`,
+      actions: html`<button class="btn btn-primary btn-block" type="button" id="pGo">Сохранить</button>`});
+    let mode = 'count';
+    Kit.on(sh.$('#pMode'), 'click', '[data-v]', (e, el)=>{
+      mode = el.dataset.v; $$('#pMode button', sh.el).forEach(b=>b.classList.toggle('is-on', b === el)); haptic('select');
+      sh.$('#pQtyLbl').textContent = mode === 'count' ? 'Насчитали по факту, шт' : 'Сколько списать, шт';
+      sh.$('#pQty').value = mode === 'count' ? i.qty : 1; sh.$('#pWhyBox').hidden = mode === 'count';
+    });
+    sh.$('#pGo').addEventListener('click', async ()=>{
+      const n = parseInt(sh.$('#pQty').value, 10);
+      if(!(n >= 0)){ Kit.toast('Укажите количество', 'error'); return; }
+      const btn = sh.$('#pGo'); Kit.busy(btn, true);
+      const r = mode === 'count' ? await api('adjustStock', {productId:i.id, actual:n}) : await api('writeOff', {productId:i.id, qty:n, reason:sh.$('#pWhy').value.trim()});
+      Kit.busy(btn, false);
+      if(!r.ok){ fail(r); return; }
+      haptic('success'); sh.close();
+      Kit.toast(mode === 'count' ? (r.delta ? `Расхождение ${r.delta > 0 ? '+' : ''}${r.delta} — записано` : 'Сошлось') : 'Списано', 'ok');
+      renderStock();
+    });
+  }
+
+  /* ============ ПРИХОД ============ */
+  function renderIncome(){
+    $('#inDate').value = D.today();
+    const act = REFS.products.filter(p=>p.active);
+    $('#inList').innerHTML = String(html`${act.map(p=>html`<div class="qrow" data-row="${p.id}">
+      <span class="qrow-name">${Kit.nobr(p.name)}<small>${p.sku} · на складе ${stockOf(p.id)}</small></span>
+      <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-in="${p.id}">
+    </div>`)}`);
+    inTotal();
+  }
+  function inLines(){ return $$('[data-in]').map(el=>({productId:el.dataset.in, qty:parseInt(el.value, 10) || 0})).filter(l=>l.qty > 0); }
+  function inTotal(){
+    const t = inLines().reduce((s, l)=>s + l.qty, 0);
+    $('#inTotal').textContent = pcs(t);
+    $$('[data-row]').forEach(r=> r.classList.toggle('is-on', (parseInt($('[data-in]', r).value, 10) || 0) > 0));
+    $('#inBar').classList.toggle('is-hidden', !t);
+  }
+  $('#inList').addEventListener('input', inTotal);
+  $('#inSave').addEventListener('click', async ()=>{
+    const lines = inLines();
+    if(!lines.length) return;
+    Kit.busy($('#inSave'), true);
+    const r = await api('addIncome', {date:$('#inDate').value || D.today(), note:$('#inNote').value.trim(), lines});
+    Kit.busy($('#inSave'), false);
+    if(!r.ok){ fail(r); return; }
+    haptic('success'); Kit.toast(`Оприходовано ${pcs(r.added)}`, 'ok');
+    $('#inNote').value = '';
+    await loadStock(); renderIncome();
+  });
+
+  /* ============ РЕЙСЫ ============ */
+  async function renderTrips(){
+    const [r, s] = await Promise.all([api('getTrips'), api('getShifts', {from:D.today(), to:D.today()})]);
+    if(!r.ok){ fail(r); return; }
+    TRIPS = r.trips; SHIFT = (s.ok && s.days[D.today()]) || [];
+    const groups = [['reported','Ждут приёмки'], ['draft','На сборке'], ['shipped','В пути'], ['closed','Закрытые']];
+    const out = groups.map(([st, title])=>{
+      let list = TRIPS.filter(t=>t.status === st);
+      if(st === 'closed') list = list.slice(0, 15);
+      if(!list.length) return '';
+      return html`<div class="section"><div class="section-head"><h2 class="section-title">${title}</h2><span class="hint">${list.length}</span></div>${list.map(waybill)}</div>`;
+    });
+    $('#tripList').innerHTML = TRIPS.length ? String(html`${out}`) : String(html`<div class="empty">${icon('truck')}<div class="empty-title">Рейсов пока нет</div>Соберите первый рейс в город</div>`);
+  }
+  function waybill(t){
+    const c = C(t.cityId), d = S(t.driverId), st = TRIP_ST[t.status];
+    const total = t.lines.reduce((s, l)=>s + l.qty, 0);
+    const tara = t.taraOut.map(l=>`${T(l.taraId).name.split(' ')[0]} ${l.qty}`).join(', ');
+    return html`<div class="waybill"><button class="waybill-head" type="button" data-t="${t.id}">
+        <span class="code is-accent">${c.code || c.name.slice(0, 3).toUpperCase()}</span>
+        <span class="waybill-main"><span class="waybill-title">${c.name}\u00a0·\u00a0№${t.num}</span>
+          <span class="waybill-sub" style="display:block">${D.label(t.date)} · ${d ? d.name : 'водитель не выбран'}</span></span>
+        <span class="pill ${st[1]}">${st[0]}</span></button>
+      <div class="waybill-tear"></div>
+      <div class="waybill-body"><span>Тортов <b>${total}</b></span><span>Позиций <b>${t.lines.length}</b></span>${tara ? html`<span>Тара <b>${tara}</b></span>` : ''}</div></div>`;
+  }
+  Kit.on($('#tripList'), 'click', '[data-t]', (e, el)=> openTrip(TRIPS.find(x=>x.id === el.dataset.t)));
+  $('#tripAdd').addEventListener('click', ()=> editTrip(null));
+
+  function openTrip(t){
+    if(!t) return;
+    const c = C(t.cityId), d = S(t.driverId);
+    const rep = t.report ? JSON.parse(t.report) : null;
+    const closed = t.status === 'closed';
+    const sh = Kit.sheet({title:`${c.name} · №${t.num}`, sub:`${D.label(t.date)} · ${TRIP_ST[t.status][0]}`, body: html`
+      <div class="kv"><span class="k">Водитель</span><span class="v">${d ? d.name : '—'}</span></div>
+      ${d && d.car ? html`<div class="kv"><span class="k">Машина</span><span class="v">${d.car}</span></div>` : ''}
+      ${t.note ? html`<div class="kv"><span class="k">Комментарий</span><span class="v">${t.note}</span></div>` : ''}
+      <div class="section"><div class="eyebrow" style="margin-bottom:8px">Состав</div>
+        ${t.lines.map(l=>html`<div class="kv"><span class="k">${P(l.productId).name}</span><span class="v mono">${l.qty}${closed ? html` <span class="hint">→ ${l.delivered}${l.back ? ' · возв ' + l.back : ''}${l.spoiled ? ' · брак ' + l.spoiled : ''}</span>` : ''}</span></div>`)}</div>
+      ${t.taraOut.length ? html`<div class="section"><div class="eyebrow" style="margin-bottom:8px">Тара</div>${t.taraOut.map(l=>{ const b = (t.taraBack.find(x=>x.taraId === l.taraId) || {}).qty; return html`<div class="kv"><span class="k">${T(l.taraId).name}</span><span class="v mono">${l.qty}${closed ? ' → вернули ' + (b || 0) : ''}</span></div>`; })}</div>` : ''}
+      ${rep ? html`<div class="section"><div class="eyebrow" style="margin-bottom:8px">Отчёт водителя</div><p class="hint">Возврат: ${rep.returns.length ? rep.returns.map(r=>`${P(r.productId).name} ${r.back}${r.spoiled ? ' (брак ' + r.spoiled + ')' : ''}`).join(', ') : 'нет'}. Тара: ${rep.taraBack.map(l=>T(l.taraId).name + ' ' + l.qty).join(', ') || 'нет'}.${rep.comment ? ' «' + rep.comment + '»' : ''}</p></div>` : ''}`,
+      actions: t.status === 'draft' ? html`<button class="btn btn-ghost" type="button" data-a="edit">${icon('edit')}Изменить</button><button class="btn btn-primary" type="button" data-a="ship">${icon('truck')}Отгрузить</button>`
+        : /shipped|reported/.test(t.status) ? html`<button class="btn btn-primary btn-block" type="button" data-a="close">${icon('check')}Принять рейс</button>` : ''});
+    Kit.on(sh.el, 'click', '[data-a]', async (e, el)=>{
+      const a = el.dataset.a;
+      if(a === 'edit'){ sh.close(); editTrip(t); return; }
+      if(a === 'close'){ sh.close(); acceptTrip(t); return; }
+      if(!await Kit.confirm(`Отгрузить ${t.lines.reduce((s, l)=>s + l.qty, 0)} шт в ${c.name}? Остаток спишется со склада.`, 'Отгрузить')) return;
+      Kit.busy(el, true); const r = await api('shipTrip', {id:t.id}); Kit.busy(el, false);
+      if(!r.ok){ fail(r); return; }
+      haptic('success'); Kit.toast('Рейс отгружен', 'ok'); sh.close(); renderTrips(); loadStock();
+    });
+  }
+
+  async function editTrip(t){
+    await loadStock();
+    const st = {date:t ? t.date : D.today(), cityId:t ? t.cityId : '', driverId:t ? t.driverId : ''};
+    const qty = {}; (t ? t.lines : []).forEach(l=> qty[l.productId] = l.qty);
+    const tq = {}; (t ? t.taraOut : []).forEach(l=> tq[l.taraId] = l.qty);
+    const drivers = REFS.staff.filter(s=>s.role === 'driver' && s.active).sort((a, b)=> SHIFT.includes(b.id) - SHIFT.includes(a.id));
+    const days = [0, 1, 2].map(n=>D.add(D.today(), n));
+    if(t && !days.includes(t.date)) days.unshift(t.date);
+    const sh = Kit.sheet({title:t ? `Рейс №${t.num}` : 'Новый рейс', sub:'Сборка: остаток спишется при отгрузке', body: html`
+      <div class="eyebrow" style="margin-bottom:8px">Дата</div>
+      <div class="chips" id="eDate">${days.map(d=>html`<button type="button" class="chip${st.date === d ? ' is-on' : ''}" data-v="${d}">${D.label(d)}</button>`)}</div>
+      <div class="eyebrow section" style="margin-bottom:8px">Город</div>
+      <div class="chips" id="eCity">${REFS.cities.filter(c=>c.active || c.id === st.cityId).map(c=>html`<button type="button" class="chip${st.cityId === c.id ? ' is-on' : ''}" data-v="${c.id}">${c.name}</button>`)}</div>
+      <div class="eyebrow section" style="margin-bottom:8px">Водитель</div>
+      <div class="chips" id="eDrv">${drivers.map(s=>html`<button type="button" class="chip${st.driverId === s.id ? ' is-on' : ''}" data-v="${s.id}">${s.name.split(' ')[0]}${SHIFT.includes(s.id) ? ' · на смене' : ''}</button>`)}</div>
+      <div class="eyebrow section" style="margin-bottom:4px">Торты</div>
+      <div>${REFS.products.filter(p=>p.active).map(p=>html`<div class="qrow${qty[p.id] ? ' is-on' : ''}"><span class="qrow-name">${Kit.nobr(p.name)}<small>на складе ${stockOf(p.id)}</small></span>
+        <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-q="${p.id}" value="${qty[p.id] || ''}"></div>`)}</div>
+      <div class="eyebrow section" style="margin-bottom:4px">Тара с собой</div>
+      <div>${REFS.tara.filter(x=>x.active).map(x=>html`<div class="qrow"><span class="qrow-name">${x.name}</span><input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-tq="${x.id}" value="${tq[x.id] || ''}"></div>`)}</div>
+      <label class="field section"><span class="field-label">Комментарий</span><input class="input" id="eNote" maxlength="300" value="${t ? t.note : ''}"></label>`,
+      actions: html`${t ? html`<button class="btn btn-danger-soft" type="button" id="eCancel">Отменить рейс</button>` : ''}<button class="btn btn-primary" type="button" id="eSave">Сохранить</button>`});
+    [['#eDate','date'], ['#eCity','cityId'], ['#eDrv','driverId']].forEach(([sel, key])=>{
+      Kit.on(sh.$(sel), 'click', '[data-v]', (e, el)=>{ st[key] = el.dataset.v; $$(sel + ' .chip', sh.el).forEach(b=>b.classList.toggle('is-on', b === el)); haptic('select'); });
+    });
+    sh.el.addEventListener('input', e=>{ const r = e.target.closest('.qrow'); if(r && e.target.dataset.q) r.classList.toggle('is-on', (parseInt(e.target.value, 10) || 0) > 0); });
+    sh.$('#eSave').addEventListener('click', async ()=>{
+      if(!st.cityId){ Kit.toast('Выберите город', 'error'); return; }
+      const lines = $$('[data-q]', sh.el).map(el=>({productId:el.dataset.q, qty:parseInt(el.value, 10) || 0})).filter(l=>l.qty > 0);
+      const over = lines.filter(l=>l.qty > stockOf(l.productId));
+      if(over.length) Kit.toast('Больше, чем на складе: ' + over.map(l=>P(l.productId).name).join(', '), 'error');
+      const taraOut = $$('[data-tq]', sh.el).map(el=>({taraId:el.dataset.tq, qty:parseInt(el.value, 10) || 0})).filter(l=>l.qty > 0);
+      Kit.busy(sh.$('#eSave'), true);
+      const r = await api('saveTrip', {id:t ? t.id : undefined, date:st.date, cityId:st.cityId, driverId:st.driverId || undefined, lines, taraOut, note:sh.$('#eNote').value.trim()});
+      Kit.busy(sh.$('#eSave'), false);
+      if(!r.ok){ fail(r); return; }
+      haptic('success'); sh.close(); renderTrips(); openTrip(r.trip);
+    });
+    if(t) sh.$('#eCancel').addEventListener('click', async ()=>{
+      if(!await Kit.confirm('Отменить рейс? Восстановить его будет нельзя.', 'Отменить рейс', true)) return;
+      const r = await api('cancelTrip', {id:t.id});
+      if(!r.ok){ fail(r); return; }
+      sh.close(); Kit.toast('Рейс отменён'); renderTrips();
+    });
+  }
+
+  function acceptTrip(t){
+    const rep = t.report ? JSON.parse(t.report) : {returns:[], taraBack:[]};
+    const rb = {}; rep.returns.forEach(r=> rb[r.productId] = r);
+    const tb = {}; rep.taraBack.forEach(l=> tb[l.taraId] = l.qty);
+    const sh = Kit.sheet({title:`Приёмка · ${C(t.cityId).name} №${t.num}`, sub:rep.returns.length || rep.taraBack.length ? 'Заполнено по отчёту водителя — сверьте' : 'Что вернулось из рейса', body: html`
+      <div class="qrow" style="color:var(--ink-3);font-size:13px"><span class="qrow-name" style="font-weight:400">Торт · уехало</span><span style="width:84px;text-align:center">Годные</span><span style="width:84px;text-align:center">Брак</span></div>
+      ${t.lines.map(l=>html`<div class="qrow"><span class="qrow-name">${Kit.nobr(P(l.productId).name)}<small>уехало ${l.qty}</small></span>
+        <input class="input" type="number" inputmode="numeric" min="0" max="${l.qty}" placeholder="0" data-back="${l.productId}" value="${(rb[l.productId] || {}).back || ''}">
+        <input class="input" type="number" inputmode="numeric" min="0" max="${l.qty}" placeholder="0" data-spoil="${l.productId}" value="${(rb[l.productId] || {}).spoiled || ''}"></div>`)}
+      <p class="hint">Годные вернутся на остаток. Брак уже списан отгрузкой — просто фиксируется в рейсе.</p>
+      ${t.taraOut.length ? html`<div class="eyebrow section" style="margin-bottom:4px">Тара вернулась</div>
+        ${t.taraOut.map(l=>html`<div class="qrow"><span class="qrow-name">${T(l.taraId).name}<small>уехало ${l.qty}</small></span><input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-tb="${l.taraId}" value="${tb[l.taraId] != null ? tb[l.taraId] : l.qty}"></div>`)}` : ''}`,
+      actions: html`<button class="btn btn-primary btn-block" type="button" id="aGo">${icon('check')}Закрыть рейс</button>`});
+    sh.$('#aGo').addEventListener('click', async ()=>{
+      const v = el=> parseInt(el.value, 10) || 0;
+      const returns = t.lines.map(l=>({productId:l.productId, back:v(sh.$(`[data-back="${l.productId}"]`)), spoiled:v(sh.$(`[data-spoil="${l.productId}"]`))})).filter(r=>r.back || r.spoiled);
+      const taraBack = $$('[data-tb]', sh.el).map(el=>({taraId:el.dataset.tb, qty:v(el)})).filter(l=>l.qty > 0);
+      Kit.busy(sh.$('#aGo'), true);
+      const r = await api('closeTrip', {id:t.id, returns, taraBack});
+      Kit.busy(sh.$('#aGo'), false);
+      if(!r.ok){ fail(r); return; }
+      haptic('success'); sh.close(); Kit.toast('Рейс закрыт', 'ok'); renderTrips(); loadStock();
+    });
+  }
+
+  /* ============ ТАРА ============ */
+  async function renderTara(){
+    const r = await api('getTara');
+    if(!r.ok){ fail(r); return; }
+    TARA = r;
+    $('#taraStats').innerHTML = String(html`${r.types.filter(t=>t.active).map(t=>html`<div class="stat"><div class="stat-label">${t.name}</div><div class="stat-value">${num(t.inStock)}</div><div class="stat-delta">на складе · в городах ${num(t.out)}</div></div>`)}`);
+    $('#taraCities').innerHTML = String(html`<div class="list">${r.cities.map(c=>{
+      const owe = r.types.filter(t=>c.balance[t.id]).map(t=>`${t.name.split(' ')[0]} ${c.balance[t.id]}`).join(' · ');
+      return html`<button class="row" type="button" data-c="${c.id}"><span class="row-code"><span class="code">${c.code || '—'}</span></span>
+        <span class="row-main"><span class="row-title">${c.name}</span><span class="row-sub">${owe || 'долга нет'}</span></span>${icon('right', 'row-chev')}</button>`;
+    })}</div>`);
+  }
+  Kit.on($('#taraCities'), 'click', '[data-c]', (e, el)=>{
+    const c = TARA.cities.find(x=>x.id === el.dataset.c); if(!c) return;
+    const types = TARA.types.filter(t=>t.active);
+    let dir = 'in', tid = types[0] && types[0].id;
+    const sh = Kit.sheet({title:c.name, sub:'Движение тары вне рейса', body: html`
+      ${types.map(t=>html`<div class="kv"><span class="k">${t.name}</span><span class="v mono">должны ${c.balance[t.id] || 0}</span></div>`)}
+      <div class="seg section" id="tDir"><button type="button" data-v="in" class="is-on">Вернули</button><button type="button" data-v="out">Отдали</button></div>
+      <div class="chips section" id="tType">${types.map((t, i)=>html`<button type="button" class="chip${i ? '' : ' is-on'}" data-v="${t.id}">${t.name}</button>`)}</div>
+      <div class="field-row section"><label class="field"><span class="field-label">Сколько</span><input class="input" id="tQty" type="number" inputmode="numeric" min="1"></label>
+        <label class="field"><span class="field-label">Комментарий</span><input class="input" id="tNote" maxlength="200"></label></div>`,
+      actions: html`<button class="btn btn-primary btn-block" type="button" id="tGo">Записать</button>`});
+    Kit.on(sh.$('#tDir'), 'click', '[data-v]', (e2, b)=>{ dir = b.dataset.v; $$('#tDir button', sh.el).forEach(x=>x.classList.toggle('is-on', x === b)); haptic('select'); });
+    Kit.on(sh.$('#tType'), 'click', '[data-v]', (e2, b)=>{ tid = b.dataset.v; $$('#tType .chip', sh.el).forEach(x=>x.classList.toggle('is-on', x === b)); haptic('select'); });
+    sh.$('#tGo').addEventListener('click', async ()=>{
+      const q = parseInt(sh.$('#tQty').value, 10);
+      if(!(q > 0)){ Kit.toast('Укажите количество', 'error'); return; }
+      const r = await api('taraMove', {cityId:c.id, taraId:tid, qty:q, dir, note:sh.$('#tNote').value.trim()});
+      if(!r.ok){ fail(r); return; }
+      haptic('success'); sh.close(); Kit.toast(`Записано. Долг: ${r.balance}`, 'ok'); renderTara();
+    });
+  });
+
+  /* ============ ЖУРНАЛ ============ */
+  const RANGES = [['0','Сегодня'], ['6','7 дней'], ['29','30 дней']];
+  let logRange = '6', logType = '', LOG = [];
+  async function renderLog(){
+    $('#logRange').innerHTML = String(html`${RANGES.map(([v, l])=>html`<button type="button" class="chip${logRange === v ? ' is-on' : ''}" data-r="${v}">${l}</button>`)}`);
+    $('#logType').innerHTML = String(html`<button type="button" class="chip${logType ? '' : ' is-on'}" data-y="">Все</button>${Object.entries(REFS.moveTypes).map(([k, l])=>html`<button type="button" class="chip${logType === k ? ' is-on' : ''}" data-y="${k}">${l}</button>`)}`);
+    const r = await api('getMoves', {from:D.add(D.today(), -parseInt(logRange, 10)), to:D.today(), type:logType || undefined});
+    if(!r.ok){ fail(r); return; }
+    LOG = r.moves;
+    let last = '';
+    $('#logList').innerHTML = LOG.length ? String(html`${LOG.map(m=>{
+      const head = m.date !== last ? html`<div class="eyebrow" style="margin:16px 0 6px">${D.label(m.date)}</div>` : ''; last = m.date;
+      return html`${head}<div class="row" style="cursor:default"><span class="row-main"><span class="row-title">${P(m.productId).name}</span>
+        <span class="row-sub">${REFS.moveTypes[m.type]}${m.cityId ? ' · ' + C(m.cityId).name : ''}${m.note ? ' · ' + m.note : ''}</span></span>
+        <span class="row-end"><span class="qty" style="color:${m.qty < 0 ? 'var(--danger)' : 'var(--ok)'}">${m.qty > 0 ? '+' : '−'}${Math.abs(m.qty)}</span></span></div>`;
+    })}`) : String(html`<div class="empty">${icon('list')}<div class="empty-title">Движений нет</div></div>`);
+  }
+  Kit.on($('#logRange'), 'click', '[data-r]', (e, el)=>{ logRange = el.dataset.r; haptic('select'); renderLog(); });
+  Kit.on($('#logType'), 'click', '[data-y]', (e, el)=>{ logType = el.dataset.y; haptic('select'); renderLog(); });
+  $('#logCsv').addEventListener('click', ()=>{
+    Kit.csv(`sklad-${D.today()}.csv`, [['Дата','Тип','Торт','Артикул','Кол-во','Город','Рейс','Комментарий']].concat(
+      LOG.map(m=>[m.date, REFS.moveTypes[m.type], P(m.productId).name, P(m.productId).sku, m.qty, m.cityId ? C(m.cityId).name : '', m.tripId || '', m.note])));
+  });
+
+  /* ============ СТАРТ ============ */
+  const RENDER = {stock:renderStock, income:renderIncome, trips:renderTrips, tara:renderTara, log:renderLog};
+  let current = 'stock';
+  $('#refreshBtn').addEventListener('click', async ()=>{ haptic('light'); await loadRefs(); await loadStock(); RENDER[current](); });
+  Kit.ready(async ()=>{
+    await loadRefs(); await loadStock();
+    Kit.tabs({onChange(tab){ current = tab; $('#inBar').classList.toggle('is-hidden', tab !== 'income' || !inLines().length); RENDER[tab](); }});
+  });
+})();
+</script>
+</body>
+</html>

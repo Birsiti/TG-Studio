@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-08 03:22 -->
+<!-- изменено 2026-10-16 17:30 -->
 # API студии TG-Studio
 
 Один процесс на Python 3.12 (FastAPI + SQLite) обслуживает все демо-боты
@@ -27,7 +27,7 @@ POST /api/<бот>        тело: {"action": "...", "userId": "...", ...payloa
 GET  /health           {"ok": true, "time": ..., "bots": [...]}
 ```
 
-Боты: `carwash`, `toolrent`, `versta`, `barbershop`, `most`, `studio`.
+Боты: `carwash`, `toolrent`, `versta`, `barbershop`, `most`, `studio`, `cake`.
 
 - **userId** — `tg.initDataUnsafe.user.id` из Telegram, вне Telegram —
   постоянный `web-…` id из localStorage (это делает `kit/core.js`).
@@ -42,7 +42,7 @@ GET  /health           {"ok": true, "time": ..., "bots": [...]}
   удаляются самые старые пользовательские строки (`seed=0`), демо-данные
   не трогаются. Плюс лимиты на пользователя (активные записи, машины и т.п.).
 - Коды ошибок: `bad_request`, `bad_json`, `unknown_action`, `unknown_bot`,
-  `no_user`, `not_found`, `slot_unavailable`, `limit`, `too_many`,
+  `no_user`, `not_found`, `slot_unavailable`, `no_stock`, `bad_state`, `forbidden`, `limit`, `too_many`,
   `rate_limited`, `too_large`, `server_error`.
 
 Фронт (`kit/core.js` → `Kit.createApi`) при недоступности API тихо
@@ -57,6 +57,7 @@ GET  /health           {"ok": true, "time": ..., "bots": [...]}
 | `TGS_RATE_ALL` | `120` | Запросов в минуту с IP |
 | `TGS_RATE_WRITE` | `30` | Изменяющих запросов в минуту с IP |
 | `TGS_LEADS_WEBHOOK` | `https://tg-studio-leads.birsiti.workers.dev` | Куда пересылать заявки studio (пусто — не пересылать) |
+| `TGS_CAKE_ADMINS` | пусто | Склад тортов: tg id через запятую; если задано — `cake` доступен только им и сотрудникам с tg id из справочника |
 | `TGS_STUDIO_KEY` | пусто | Ключ владельца: реальные заявки видны только в `dashboard.html?key=<ключ>` (без ключа — демо-заявки) |
 
 ## Заявки TG-Studio (studio)

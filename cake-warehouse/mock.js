@@ -1,0 +1,200 @@
+// изменено 2026-10-16 17:30
+/* ============================================================
+   mock.js — офлайн-двойник API склада (api/bots/cake.py).
+   Тот же контракт action; состояние в localStorage, общее для
+   sklad / driver / admin в одном браузере.
+   ============================================================ */
+window.CakeMock = (function(){
+  "use strict";
+  var KEY = 'tgs-mock-cake-v1';
+  var D = Kit.date;
+  var MOVE_TYPES = {'in':'Приход', ship:'Отгрузка', 'return':'Возврат', writeoff:'Списание', adjust:'Инвентаризация'};
+  var PRODUCTS = [['napoleon','Наполеон','T-101',1200,5,20],['medovik','Медовик','T-102',1100,7,20],['praga','Прага','T-103',1000,5,15],
+    ['velvet','Красный бархат','T-104',1300,4,10],['ptichye','Птичье молоко','T-105',900,5,15],['cheese','Чизкейк Нью-Йорк','T-106',1000,4,10],
+    ['esterhazy','Эстерхази','T-107',900,6,8],['kievsky','Киевский','T-108',1000,7,10],['smetannik','Сметанник','T-109',1200,3,12],['truffle','Трюфельный','T-110',1100,5,10]];
+  var CITIES = [['brest','Брест','БРС'],['grodno','Гродно','ГРД'],['gomel','Гомель','ГМЛ'],['mogilev','Могилёв','МГЛ'],
+    ['vitebsk','Витебск','ВТБ'],['baranovichi','Барановичи','БРН'],['pinsk','Пинск','ПНС'],['lida','Лида','ЛИД']];
+  var STAFF = [['sk-anna','Анна Литвинович','storekeeper','+375291234501',''],['sk-oleg','Олег Ткачук','storekeeper','+375291234502',''],
+    ['dr-ivan','Иван Кравец','driver','+375291234511','Iveco Daily · 4521 AB-7'],['dr-sergey','Сергей Мороз','driver','+375291234512','ГАЗель Next · 7718 KE-7'],
+    ['dr-pavel','Павел Гриб','driver','+375291234513','Ford Transit · 3304 MO-7'],['dr-artur','Артур Лис','driver','+375291234514','Iveco Daily · 0912 HA-7']];
+
+  function rng(seed){ var s = seed >>> 0; return function(){ s = (s * 1664525 + 1013904223) >>> 0; return s / 4294967296; }; }
+  function ri(r, a, b){ return a + Math.floor(r() * (b - a + 1)); }
+  function sample(r, arr, n){ var a = arr.slice(), out = []; while(out.length < n && a.length) out.push(a.splice(Math.floor(r() * a.length), 1)[0]); return out; }
+  function now(){ return new Date().toISOString(); }
+  function err(code, message){ return {ok:false, error:code, message:message || ''}; }
+
+  var S = null;
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+  function load(){
+    if(S) return S;
+    try{ S = JSON.parse(localStorage.getItem(KEY)); }catch(e){ S = null; }
+    if(!S || S.v !== 1) { S = seed(); save(); }
+    return S;
+  }
+
+  function seed(){
+    var r = rng(42), today = D.today();
+    var st = {v:1, products:[], cities:[], staff:[], tara:[], moves:[], trips:[], taraMoves:[], shifts:{}, moveId:0, taraId:0, num:0};
+    PRODUCTS.forEach(function(p, i){ st.products.push({id:p[0], name:p[1], sku:p[2], weightG:p[3], shelfDays:p[4], minQty:p[5], sort:i, active:true}); });
+    CITIES.forEach(function(c, i){ st.cities.push({id:c[0], name:c[1], code:c[2], sort:i, active:true}); });
+    STAFF.forEach(function(s){ st.staff.push({id:s[0], name:s[1], role:s[2], phone:s[3], car:s[4], tgId:'', active:true}); });
+    st.tara = [{id:'crate', name:'Лоток кондитерский', total:600, sort:0, active:true}, {id:'thermo', name:'Термобокс', total:80, sort:1, active:true}];
+    var drivers = ['dr-ivan','dr-sergey','dr-pavel','dr-artur'], pids = PRODUCTS.map(function(p){ return p[0]; }), cids = CITIES.map(function(c){ return c[0]; });
+    var stock = {}; pids.forEach(function(p){ stock[p] = 0; });
+    function mv(type, day, pid, q, extra){ st.moves.push(Object.assign({id:++st.moveId, type:type, date:day, productId:pid, qty:q, cityId:null, tripId:null, note:'', createdAt:now()}, extra || {})); stock[pid] += q; }
+    function tm(day, tid, cid, q, trip){ st.taraMoves.push({id:++st.taraId, date:day, taraId:tid, cityId:cid, qty:q, tripId:trip || null, note:''}); }
+    for(var back = 14; back >= 0; back--){
+      var day = D.add(today, -back);
+      st.shifts[day] = [back % 2 ? 'sk-oleg' : 'sk-anna'].concat(sample(r, drivers, 3));
+      pids.forEach(function(p){ mv('in', day, p, ri(r, 14, 30), {note:'Цех'}); });
+      if(back === 0) break;
+      sample(r, cids, 4).forEach(function(cid){
+        var tid = 'R-S' + (++st.num), lines = [];
+        sample(r, pids, 6).forEach(function(pid){ var q = Math.min(stock[pid], ri(r, 3, 8)); if(q){ lines.push({productId:pid, qty:q}); mv('ship', day, pid, -q, {cityId:cid, tripId:tid}); } });
+        var crates = Math.floor(lines.reduce(function(s, l){ return s + l.qty; }, 0) / 2) + 1, backCr = crates - ri(r, 0, 3);
+        tm(day, 'crate', cid, crates, tid); tm(day, 'crate', cid, -backCr, tid);
+        var closed = lines.map(function(l){ var b = r() < .25 ? 1 : 0; if(b) mv('return', day, l.productId, b, {cityId:cid, tripId:tid}); return Object.assign({}, l, {back:b, spoiled:0, delivered:l.qty - b}); });
+        st.trips.push({id:tid, num:st.num, date:day, cityId:cid, driverId:drivers[ri(r, 0, 3)], status:'closed', lines:closed,
+          taraOut:[{taraId:'crate', qty:crates}], taraBack:[{taraId:'crate', qty:backCr}], report:'', note:'', createdAt:day + 'T07:20:00', shippedAt:day + 'T07:40:00', reportedAt:null, closedAt:day + 'T18:30:00'});
+      });
+    }
+    [['shipped','brest','dr-ivan'],['draft','gomel','dr-sergey']].forEach(function(t){
+      var tid = 'R-S' + (++st.num), lines = sample(r, pids, 5).map(function(p){ return {productId:p, qty:ri(r, 4, 8)}; });
+      var tara = [{taraId:'crate', qty:16}, {taraId:'thermo', qty:2}];
+      if(t[0] === 'shipped'){ lines.forEach(function(l){ mv('ship', today, l.productId, -l.qty, {cityId:t[1], tripId:tid}); }); tara.forEach(function(l){ tm(today, l.taraId, t[1], l.qty, tid); }); }
+      st.trips.push({id:tid, num:st.num, date:today, cityId:t[1], driverId:t[2], status:t[0], lines:lines, taraOut:tara, taraBack:[], report:'', note:'', createdAt:now(), shippedAt:t[0] === 'shipped' ? now() : null, reportedAt:null, closedAt:null});
+    });
+    return st;
+  }
+
+  function stockMap(){ var m = {}; S.moves.forEach(function(x){ m[x.productId] = (m[x.productId] || 0) + x.qty; }); return m; }
+  function taraDebt(){ var m = {}; S.taraMoves.forEach(function(x){ var k = x.cityId + '|' + x.taraId; m[k] = (m[k] || 0) + x.qty; }); return m; }
+  function byId(list, id){ for(var i = 0; i < list.length; i++) if(list[i].id === id) return list[i]; return null; }
+  function addMove(type, pid, q, extra){ S.moves.push(Object.assign({id:++S.moveId, type:type, date:D.today(), productId:pid, qty:q, cityId:null, tripId:null, note:'', createdAt:now()}, extra || {})); }
+  function addTara(tid, cid, q, trip, note){ S.taraMoves.push({id:++S.taraId, date:D.today(), taraId:tid, cityId:cid, qty:q, tripId:trip || null, note:note || ''}); }
+  function lines(arr, allowEmpty){
+    var m = {}, out = [];
+    (arr || []).forEach(function(x){ var q = Math.max(0, parseInt(x.qty, 10) || 0); if(q && byId(S.products, x.productId)) m[x.productId] = (m[x.productId] || 0) + q; });
+    Object.keys(m).forEach(function(k){ out.push({productId:k, qty:m[k]}); });
+    if(!out.length && !allowEmpty) return null;
+    return out;
+  }
+  function taraLines(arr){ var m = {}, out = []; (arr || []).forEach(function(x){ var q = parseInt(x.qty, 10) || 0; if(q > 0) m[x.taraId] = (m[x.taraId] || 0) + q; }); Object.keys(m).forEach(function(k){ out.push({taraId:k, qty:m[k]}); }); return out; }
+  function shortage(ls){
+    var st = stockMap(), short = [];
+    ls.forEach(function(l){ var have = st[l.productId] || 0; if(l.qty > have) short.push(byId(S.products, l.productId).name + ': есть ' + have + ', нужно ' + l.qty); });
+    return short.length ? 'Не хватает: ' + short.join('; ') : '';
+  }
+  function returns(arr, trip){
+    var shipped = {}; trip.lines.forEach(function(l){ shipped[l.productId] = l.qty; });
+    var out = [];
+    for(var i = 0; i < (arr || []).length; i++){
+      var x = arr[i], b = parseInt(x.back, 10) || 0, s = parseInt(x.spoiled, 10) || 0;
+      if(!(x.productId in shipped) || b < 0 || s < 0 || b + s > shipped[x.productId]) return null;
+      if(b || s) out.push({productId:x.productId, back:b, spoiled:s});
+    }
+    return out;
+  }
+  function upsert(list, obj){ var o = byId(list, obj.id); if(o) Object.assign(o, obj); else list.push(obj); return byId(list, obj.id); }
+  function inRange(d, a, b){ return d >= a && d <= b; }
+
+  var A = {
+    getRefs: function(){ return {products:S.products, cities:S.cities, staff:S.staff, tara:S.tara, moveTypes:MOVE_TYPES}; },
+    getMe: function(){ return {staff:null, restricted:false}; },
+    saveProduct: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); return {product:upsert(S.products, {id:p.id || Kit.uid('p'), name:p.name, sku:p.sku || '', weightG:+p.weightG || 0, shelfDays:+p.shelfDays || 0, minQty:+p.minQty || 0, sort:p.sort != null ? p.sort : S.products.length, active:p.active !== false})}; },
+    saveCity: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); return {city:upsert(S.cities, {id:p.id || Kit.uid('c'), name:p.name, code:String(p.code || '').toUpperCase().slice(0, 4), sort:S.cities.length, active:p.active !== false})}; },
+    saveStaff: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Имя'); if(p.tgId && !/^\d+$/.test(p.tgId)) return err('bad_request', 'tgId: только цифры'); return {staff:upsert(S.staff, {id:p.id || Kit.uid('s'), name:p.name, role:p.role, phone:p.phone || '', car:p.car || '', tgId:p.tgId || '', active:p.active !== false})}; },
+    saveTara: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); return {tara:upsert(S.tara, {id:p.id || Kit.uid('t'), name:p.name, total:+p.total || 0, sort:S.tara.length, active:p.active !== false})}; },
+
+    getStock: function(){
+      var st = stockMap(), lastIn = {}, road = {};
+      S.moves.forEach(function(m){ if(m.type === 'in' && (!lastIn[m.productId] || m.date > lastIn[m.productId])) lastIn[m.productId] = m.date; });
+      S.trips.forEach(function(t){ if(t.status === 'shipped' || t.status === 'reported') t.lines.forEach(function(l){ road[l.productId] = (road[l.productId] || 0) + l.qty; }); });
+      var items = S.products.filter(function(p){ return p.active || st[p.id]; }).map(function(p){ return Object.assign({}, p, {qty:st[p.id] || 0, lastIn:lastIn[p.id] || null, onRoad:road[p.id] || 0}); });
+      return {items:items, total:items.reduce(function(s, i){ return s + i.qty; }, 0)};
+    },
+    addIncome: function(p){ var ls = lines(p.lines); if(!ls) return err('bad_request', 'Пустой список'); ls.forEach(function(l){ addMove('in', l.productId, l.qty, {date:p.date || D.today(), note:p.note || ''}); }); return {added:ls.reduce(function(s, l){ return s + l.qty; }, 0)}; },
+    writeOff: function(p){ var q = parseInt(p.qty, 10) || 0; if(q < 1 || !p.reason) return err('bad_request'); var s = shortage([{productId:p.productId, qty:q}]); if(s) return err('no_stock', s); addMove('writeoff', p.productId, -q, {note:p.reason}); return {qty:stockMap()[p.productId] || 0}; },
+    adjustStock: function(p){ var a = parseInt(p.actual, 10); if(!(a >= 0)) return err('bad_request'); var d = a - (stockMap()[p.productId] || 0); if(d) addMove('adjust', p.productId, d, {note:p.note || 'Пересчёт'}); return {delta:d, qty:a}; },
+    getMoves: function(p){ var to = p.to || D.today(), from = p.from || D.add(to, -6); return {from:from, to:to, moves:S.moves.filter(function(m){ return inRange(m.date, from, to) && (!p.type || m.type === p.type); }).sort(function(a, b){ return a.date === b.date ? b.id - a.id : (a.date < b.date ? 1 : -1); }).slice(0, 500)}; },
+
+    getTrips: function(p){ var from = p.from || D.add(D.today(), -7), to = p.to || D.add(D.today(), 7); return {trips:S.trips.filter(function(t){ return inRange(t.date, from, to) || /draft|shipped|reported/.test(t.status); }).sort(function(a, b){ return a.date === b.date ? b.num - a.num : (a.date < b.date ? 1 : -1); })}; },
+    saveTrip: function(p){
+      if(!byId(S.cities, p.cityId)) return err('not_found', 'Нет такого города');
+      var ls = lines(p.lines, true), data = {date:p.date || D.today(), cityId:p.cityId, driverId:p.driverId || null, lines:ls, taraOut:taraLines(p.taraOut), note:p.note || ''};
+      if(p.id){ var t = byId(S.trips, p.id); if(!t) return err('not_found'); if(t.status !== 'draft') return err('bad_state', 'Отгруженный рейс не редактируется'); Object.assign(t, data); return {trip:t}; }
+      var nt = Object.assign({id:'R-' + Kit.uid('M').slice(2), num:++S.num, status:'draft', taraBack:[], report:'', createdAt:now(), shippedAt:null, reportedAt:null, closedAt:null}, data);
+      S.trips.push(nt); return {trip:nt};
+    },
+    shipTrip: function(p){
+      var t = byId(S.trips, p.id); if(!t) return err('not_found'); if(t.status !== 'draft') return err('bad_state', 'Рейс уже отгружен');
+      if(!t.lines.length) return err('bad_request', 'В рейсе нет тортов'); if(!t.driverId) return err('bad_request', 'Не выбран водитель');
+      var s = shortage(t.lines); if(s) return err('no_stock', s);
+      t.lines.forEach(function(l){ addMove('ship', l.productId, -l.qty, {cityId:t.cityId, tripId:t.id}); });
+      t.taraOut.forEach(function(l){ addTara(l.taraId, t.cityId, l.qty, t.id); });
+      t.status = 'shipped'; t.shippedAt = now(); return {trip:t};
+    },
+    cancelTrip: function(p){ var t = byId(S.trips, p.id); if(!t) return err('not_found'); if(t.status !== 'draft') return err('bad_state', 'Отменить можно только рейс на сборке'); t.status = 'cancelled'; return {trip:t}; },
+    reportTrip: function(p){
+      var t = byId(S.trips, p.id); if(!t) return err('not_found'); if(!/shipped|reported/.test(t.status)) return err('bad_state', 'Рейс не в пути');
+      var rs = returns(p.returns, t); if(!rs) return err('bad_request', 'Возврат больше, чем уехало');
+      t.report = JSON.stringify({returns:rs, taraBack:taraLines(p.taraBack), comment:p.comment || ''}); t.status = 'reported'; t.reportedAt = now(); return {trip:t};
+    },
+    closeTrip: function(p){
+      var t = byId(S.trips, p.id); if(!t) return err('not_found'); if(!/shipped|reported/.test(t.status)) return err('bad_state', 'Рейс не в пути');
+      var rs = returns(p.returns, t); if(!rs) return err('bad_request', 'Возврат больше, чем уехало');
+      var tb = taraLines(p.taraBack), by = {};
+      rs.forEach(function(r){ by[r.productId] = r; if(r.back) addMove('return', r.productId, r.back, {cityId:t.cityId, tripId:t.id}); });
+      tb.forEach(function(l){ addTara(l.taraId, t.cityId, -l.qty, t.id); });
+      t.lines = t.lines.map(function(l){ var r = by[l.productId] || {}, b = r.back || 0, s = r.spoiled || 0; return Object.assign({}, l, {back:b, spoiled:s, delivered:l.qty - b - s}); });
+      t.taraBack = tb; t.status = 'closed'; t.closedAt = now(); return {trip:t};
+    },
+    getMyTrips: function(p){
+      var d = p.driverId && byId(S.staff, p.driverId); if(!d) return {driver:null, trips:[]};
+      var since = D.add(D.today(), -14);
+      return {driver:d, trips:S.trips.filter(function(t){ return t.driverId === d.id && t.status !== 'cancelled' && (/draft|shipped|reported/.test(t.status) || t.date >= since); }).sort(function(a, b){ return a.date === b.date ? b.num - a.num : (a.date < b.date ? 1 : -1); }).slice(0, 30)};
+    },
+
+    getTara: function(){
+      var debt = taraDebt();
+      var types = S.tara.map(function(t){ var out = 0; Object.keys(debt).forEach(function(k){ if(k.split('|')[1] === t.id) out += debt[k]; }); return Object.assign({}, t, {out:out, inStock:t.total - out}); });
+      var cities = S.cities.map(function(c){ var b = {}; types.forEach(function(t){ b[t.id] = debt[c.id + '|' + t.id] || 0; }); return Object.assign({}, c, {balance:b}); })
+        .filter(function(c){ return c.active || Object.keys(c.balance).some(function(k){ return c.balance[k]; }); });
+      return {types:types, cities:cities, history:S.taraMoves.slice(-60).reverse()};
+    },
+    taraMove: function(p){ var q = parseInt(p.qty, 10) || 0; if(q < 1) return err('bad_request'); addTara(p.taraId, p.cityId, (p.dir === 'out' ? 1 : -1) * q, null, p.note); return {balance:taraDebt()[p.cityId + '|' + p.taraId] || 0}; },
+
+    getShifts: function(p){ var from = p.from || D.today(), to = p.to || D.add(from, 6), days = {}; Object.keys(S.shifts).forEach(function(d){ if(inRange(d, from, to) && S.shifts[d].length) days[d] = S.shifts[d]; }); return {days:days, from:from, to:to}; },
+    setShift: function(p){ var ids = (p.staffIds || []).filter(function(id, i, a){ return byId(S.staff, id) && a.indexOf(id) === i; }); S.shifts[p.date] = ids; return {date:p.date, staffIds:ids}; },
+
+    getOverview: function(p){
+      var days = p.days || 14, today = D.today(), from = D.add(today, -(days - 1)), byDay = {}, byCity = {}, top = {}, ret = 0, wo = 0;
+      S.moves.forEach(function(m){
+        if(m.date < from) return;
+        if(m.type === 'ship'){ byDay[m.date] = (byDay[m.date] || 0) - m.qty; byCity[m.cityId] = (byCity[m.cityId] || 0) - m.qty; top[m.productId] = (top[m.productId] || 0) - m.qty; }
+        if(m.type === 'return') ret += m.qty;
+        if(m.type === 'writeoff') wo -= m.qty;
+      });
+      var series = []; for(var i = 0; i < days; i++){ var d = D.add(from, i); series.push({date:d, value:byDay[d] || 0}); }
+      var st = stockMap(), trips = {draft:0, shipped:0, reported:0}, debt = taraDebt(), taraOut = 0;
+      S.trips.forEach(function(t){ if(t.status in trips) trips[t.status]++; });
+      Object.keys(debt).forEach(function(k){ taraOut += debt[k]; });
+      function sorted(o, key){ return Object.keys(o).map(function(k){ var r = {qty:o[k]}; r[key] = k; return r; }).sort(function(a, b){ return b.qty - a.qty; }); }
+      return {stockTotal:Object.keys(st).reduce(function(s, k){ return s + st[k]; }, 0),
+        lowStock:S.products.filter(function(x){ return x.active && x.minQty && (st[x.id] || 0) < x.minQty; }).map(function(x){ return x.name; }),
+        shippedToday:byDay[today] || 0, shippedPeriod:series.reduce(function(s, x){ return s + x.value; }, 0), returnedPeriod:ret, writtenOffPeriod:wo,
+        trips:trips, series:series, byCity:sorted(byCity, 'cityId'), topProducts:sorted(top, 'productId').slice(0, 5), taraOut:taraOut, onShift:S.shifts[today] || []};
+    }
+  };
+
+  return function(action, payload){
+    load();
+    var fn = A[action];
+    if(!fn) return {ok:false, error:'unknown_action'};
+    var res = fn(payload || {});
+    if(res && res.ok === false) return res;
+    save();
+    return Object.assign({ok:true}, res);
+  };
+})();

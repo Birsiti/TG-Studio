@@ -1,0 +1,93 @@
+/* изменено 2026-10-16 17:30 */
+/* ============================================================
+   ТОРТОВОЗ — фирменный слой поверх kit/base.css.
+   Характер: кондитерский склад с холодовой цепью. Шоколад и сливки,
+   малиновый акцент, мятный «холод». Округлый Montserrat Alternates,
+   моноширинные коды городов как на транспортной бирке, термо-плашка
+   «+2…+6 °C», рейс — накладная с отрывной линией.
+   ============================================================ */
+@import url('https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@600;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&family=Space+Mono:wght@400;700&display=swap');
+
+:root{
+  --font-display:'Montserrat Alternates', 'Nunito Sans', sans-serif;
+  --font-body:'Nunito Sans', system-ui, sans-serif;
+  --font-mono:'Space Mono', ui-monospace, monospace;
+  --display-weight:700;
+  --r-xl:24px; --r-lg:18px; --r-md:14px; --r-sm:10px;
+  --btn-radius:16px; --chip-radius:999px;
+  --cold:#2BB3A3;
+}
+:root[data-theme="light"]{
+  --bg:#F7F1EA; --surface:#FFFCF8; --surface-2:#F0E7DC; --surface-3:#E6D9CA;
+  --ink:#2B1D18; --ink-2:#6E5A50; --ink-3:#A3918A;
+  --line:#EADFD2; --line-2:#D9C8B6;
+  --accent:#B3264E; --accent-2:#951E40; --accent-ink:#FFFFFF; --accent-soft:rgba(179,38,78,.09);
+  --ok:#1E7D5A; --ok-soft:rgba(30,125,90,.11);
+  --warn:#B06A00; --warn-soft:rgba(214,138,20,.15);
+  --danger:#C42B2B; --danger-soft:rgba(196,43,43,.10);
+  --cold-soft:rgba(43,179,163,.13); --cold-ink:#137A6F;
+  --shadow-1:0 1px 2px rgba(43,29,24,.06), 0 2px 10px rgba(43,29,24,.04);
+  --shadow-2:0 18px 44px rgba(43,29,24,.22);
+}
+:root[data-theme="dark"]{
+  --bg:#18110F; --surface:#221917; --surface-2:#2C211E; --surface-3:#382B27;
+  --ink:#F6ECE4; --ink-2:#BFA99E; --ink-3:#7F6C64;
+  --line:#33261F; --line-2:#463631;
+  --accent:#FF6F96; --accent-2:#F0517D; --accent-ink:#2B0B15; --accent-soft:rgba(255,111,150,.14);
+  --ok:#4FCB97; --ok-soft:rgba(79,203,151,.14);
+  --warn:#F2B44B; --warn-soft:rgba(242,180,75,.15);
+  --danger:#FF7A6E; --danger-soft:rgba(255,122,110,.14);
+  --cold-soft:rgba(43,179,163,.16); --cold-ink:#5FDCCB;
+  --shadow-1:none;
+  --shadow-2:0 18px 44px rgba(0,0,0,.6);
+}
+
+.brand-mark{ background:var(--accent); color:var(--accent-ink); border-radius:14px 14px 14px 4px; }
+.brand-name{ letter-spacing:.03em; }
+.page-title{ letter-spacing:-.01em; }
+.stat-value{ font-family:var(--font-display); }
+
+/* Термо-плашка холодовой цепи */
+.thermo{ display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:999px;
+  background:var(--cold-soft); color:var(--cold-ink); font-family:var(--font-mono); font-size:13px; font-weight:700; white-space:nowrap; }
+.thermo .ic{ width:14px; height:14px; }
+
+/* Код города — как на транспортной бирке */
+.code{ display:inline-grid; place-items:center; min-width:46px; height:28px; padding:0 6px; border:1.5px solid currentColor;
+  border-radius:6px; font-family:var(--font-mono); font-weight:700; font-size:13px; letter-spacing:.06em; color:var(--ink); flex:none; }
+.code.is-accent{ color:var(--accent); }
+.row-code{ width:56px; display:grid; place-items:center; flex:none; }
+
+/* Количество — крупные моноширинные цифры */
+.qty{ font-family:var(--font-mono); font-weight:700; font-size:18px; white-space:nowrap; }
+.qty.is-low{ color:var(--danger); }
+.qty-unit{ font-size:13px; color:var(--ink-3); margin-left:2px; font-weight:400; }
+
+/* Рейс — накладная с отрывной линией */
+.waybill{ background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--shadow-1);
+  position:relative; overflow:hidden; }
+.waybill + .waybill{ margin-top:12px; }
+.waybill-head{ display:flex; align-items:center; gap:12px; padding:14px 16px; width:100%; text-align:left; }
+.waybill-main{ flex:1; min-width:0; }
+.waybill-title{ font-weight:800; font-size:17px; }
+.waybill-sub{ color:var(--ink-2); font-size:14px; margin-top:2px; }
+.waybill-tear{ height:0; border-top:2px dashed var(--line-2); margin:0 16px; position:relative; }
+.waybill-tear::before, .waybill-tear::after{ content:''; position:absolute; top:-9px; width:16px; height:16px; border-radius:50%; background:var(--bg); border:1px solid var(--line); }
+.waybill-tear::before{ left:-25px; } .waybill-tear::after{ right:-25px; }
+.waybill-body{ padding:12px 16px 14px; display:flex; flex-wrap:wrap; gap:6px 14px; color:var(--ink-2); font-size:14px; }
+.waybill-body b{ color:var(--ink); font-family:var(--font-mono); }
+
+/* Строка-счётчик в формах прихода/рейса/возврата */
+.qrow{ display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px dashed var(--line); }
+.qrow:last-child{ border-bottom:0; }
+.qrow-name{ flex:1; min-width:0; font-weight:600; }
+.qrow-name small{ display:block; color:var(--ink-3); font-weight:400; font-size:13px; }
+.qrow .input{ width:84px; text-align:center; font-family:var(--font-mono); font-weight:700; padding-left:6px; padding-right:6px; }
+.qrow.is-on .qrow-name{ color:var(--accent); }
+
+.mode-note{ margin:0 0 12px; padding:10px 14px; border-radius:var(--r-md); background:var(--warn-soft); color:var(--warn); font-size:14px; }
+
+/* Нижняя кнопка над вкладками (приход у кладовщика) */
+.actionbar.over-tabbar{ bottom:max(70px, calc(62px + var(--safe-bottom))); z-index:39; padding-bottom:12px; border-bottom:1px solid var(--line); }
+.actionbar.over-tabbar.is-hidden{ transform:none; opacity:0; visibility:hidden; }
+[data-panel="income"]{ padding-bottom:84px; }
