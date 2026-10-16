@@ -1,4 +1,4 @@
-// изменено 2026-10-17 09:20
+// изменено 2026-10-17 11:40
 /* Вкладка «Сборка»: заявки на дату и лист с галочками в порядке обхода склада
    (по часовой стрелке от двери). Сейчас — по заявке, со следующей недели — весь маршрут за круг. */
 (function(){
@@ -107,12 +107,13 @@
       if(a === 'edit'){ sh.close(); Cake.editOrder(o); return; }
       if(a === 'reopen'){ const r = await api('reopenPick', {id:o.id}); if(!r.ok){ fail(r); return; } Object.assign(o, r.order); redraw(); draw(); return; }
       const left = o.lines.length - o.checked.length;
-      if(left){ Kit.toast(`Не отмечено строк: ${left}`, 'error'); haptic('warning'); return; }
-      finish(o, ()=>{ redraw(); draw(); });
+      // Собрали, не отмечая по строкам, — одно подтверждение вместо 14 галочек
+      if(left && !await Kit.confirm(`Не отмечено строк: ${left} из ${o.lines.length}. Всё уже собрано? Отметим все строки разом.`, 'Да, всё собрано')) return;
+      finish(o, ()=>{ redraw(); draw(); }, left > 0);
     });
   }
 
-  function finish(o, after){
+  function finish(o, after, all){
     let saved = ''; try{ saved = localStorage.getItem(PICKER_KEY) || ''; }catch(e){}
     const sh = Kit.sheet({title:'Сборку осуществил', sub:`Заявка №${o.num}`, body: html`
       <label class="field"><span class="field-label">ФИО сборщика</span><input class="input" id="pkWho" maxlength="60" value="${saved}" autocomplete="name"></label>
@@ -123,7 +124,7 @@
       if(!who){ Kit.toast('Укажите, кто собрал', 'error'); return; }
       try{ localStorage.setItem(PICKER_KEY, who); }catch(e2){}
       Kit.busy(el, true);
-      const r = await api('finishPick', Object.assign({id:o.id, picker:who}, boxes !== '' ? {boxes:+boxes} : {}));
+      const r = await api('finishPick', Object.assign({id:o.id, picker:who}, boxes !== '' ? {boxes:+boxes} : {}, all ? {all:true} : {}));
       Kit.busy(el, false);
       if(!r.ok){ fail(r); return; }
       Object.assign(o, r.order); haptic('success'); Kit.toast(`Заявка №${o.num} собрана`, 'ok'); sh.close(); after();
