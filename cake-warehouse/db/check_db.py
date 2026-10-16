@@ -1,4 +1,4 @@
-# изменено 2026-10-16 23:00
+# изменено 2026-10-17 00:30
 """Собирает базу во временный файл из schema.sql + seed.sql и проверяет её.
 
     python3 cake-warehouse/db/check_db.py            — проверка
@@ -90,6 +90,19 @@ def check(conn: sqlite3.Connection) -> None:
     expect_error(conn, "INSERT INTO tara_moves (date, tara_id, driver_id, kind, qty) VALUES ('2026-10-18', 1, 10, 'out', -3)",
                  what="выдача с минусом")
     print("✔ ящики: водителю выдано 14, вернул 12, утерял 1 → долг 1; на складе 498 из 500")
+
+    # лист сборки по кругу: строки по номеру места, без места — в конце
+    conn.execute("UPDATE products SET place = 100 - id")  # условная карта: чем больше id, тем раньше на круге
+    conn.execute("UPDATE products SET place = NULL WHERE name = 'Экзотик'")
+    seq = [r[0] for r in conn.execute("SELECT name FROM v_pick_order WHERE number = '1103609' ORDER BY pick_seq, cat_sort, name")]
+    assert seq[-1] == "Экзотик" and len(seq) == 22, seq
+    places = [r[0] for r in conn.execute("SELECT place FROM v_pick_order WHERE number = '1103609' AND place IS NOT NULL ORDER BY pick_seq")]
+    assert places == sorted(places)
+    route = conn.execute("SELECT qty, split FROM v_pick_route WHERE route = 'Маршрут 3' AND name = 'Грильяжный'").fetchone()
+    assert route == (2, "1103609:2б"), route
+    total = one("SELECT SUM(qty) FROM v_pick_route WHERE route = 'Маршрут 3' AND date = '2026-10-17'")[0]
+    assert total == 105, total
+    print("✔ лист сборки: строки по местам, без места — в конце; маршрут 3 за круг — 105 шт с раскладкой по заявкам")
 
     # защита учёта
     expect_error(conn, "UPDATE stock_moves SET qty = 1 WHERE id = 1", what="правка журнала")

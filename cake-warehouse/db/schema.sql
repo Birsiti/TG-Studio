@@ -1,4 +1,4 @@
--- изменено 2026-10-16 23:00
+-- изменено 2026-10-17 00:30
 -- ============================================================
 -- ТОРТОВОЗ — база склада тортов (SQLite 3.35+, файл на iMac).
 --
@@ -34,6 +34,7 @@ CREATE TABLE IF NOT EXISTS products (
   weight_g     INTEGER NOT NULL CHECK (weight_g > 0),  -- вес единицы
   is_weighted  INTEGER NOT NULL DEFAULT 0 CHECK (is_weighted IN (0, 1)), -- «Весовой» в заявке
   sku          TEXT,                             -- артикул (заполнит клиент)
+  place        INTEGER CHECK (place IS NULL OR place > 0), -- место на складе: № по кругу против часовой стрелки от двери
   shelf_days   INTEGER CHECK (shelf_days IS NULL OR shelf_days > 0),
   min_qty      INTEGER NOT NULL DEFAULT 0 CHECK (min_qty >= 0),
   active       INTEGER NOT NULL DEFAULT 1 CHECK (active IN (0, 1)),
@@ -42,6 +43,7 @@ CREATE TABLE IF NOT EXISTS products (
   UNIQUE (category_id, name, weight_g)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS ux_products_sku ON products(sku) WHERE sku IS NOT NULL;
+CREATE INDEX IF NOT EXISTS ix_products_place ON products(place);
 
 CREATE TABLE IF NOT EXISTS routes (
   id      INTEGER PRIMARY KEY,
@@ -301,3 +303,29 @@ SELECT t.id AS tara_id, t.name, t.total,
 FROM tara_types t
 LEFT JOIN tara_moves m ON m.tara_id = t.id
 GROUP BY t.id;
+
+-- Лист сборки одной заявки: строки в порядке обхода склада по кругу.
+-- Товары без места — в конце (pick_seq = 1000000), чтобы их не потеряли.
+CREATE VIEW IF NOT EXISTS v_pick_order AS
+SELECT o.id AS order_id, o.number, o.date, r.name AS route, l.line_no,
+       COALESCE(p.place, 1000000) AS pick_seq, p.place, c.sort AS cat_sort, c.name AS category,
+       p.name, p.weight_g, l.qty, l.places, l.is_bonus
+FROM orders o
+JOIN routes r ON r.id = o.route_id
+JOIN order_lines l ON l.order_id = o.id
+JOIN products p ON p.id = l.product_id
+JOIN categories c ON c.id = p.category_id;
+
+-- Лист сборки всего маршрута за один круг: сумма по товару + раскладка по заявкам
+CREATE VIEW IF NOT EXISTS v_pick_route AS
+SELECT o.date, r.name AS route, COALESCE(p.place, 1000000) AS pick_seq, p.place, c.sort AS cat_sort,
+       c.name AS category, p.id AS product_id, p.name, p.weight_g,
+       SUM(l.qty) AS qty, SUM(l.places) AS places,
+       GROUP_CONCAT(o.number || ':' || l.qty || CASE WHEN l.is_bonus THEN 'б' ELSE '' END, ' ') AS split
+FROM orders o
+JOIN routes r ON r.id = o.route_id
+JOIN order_lines l ON l.order_id = o.id
+JOIN products p ON p.id = l.product_id
+JOIN categories c ON c.id = p.category_id
+WHERE o.status <> 'cancelled'
+GROUP BY o.date, r.id, p.id;
