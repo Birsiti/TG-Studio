@@ -95,6 +95,7 @@ def test_route_to_trip(api):
     assert t["taraOut"] == [{"taraId": "box", "qty": 4}] and "№300000" in t["note"]
     city = next(c for c in api("cake", "getRefs")["cities"] if c["id"] == t["cityId"])
     assert city["name"] == "Маршрут 2"
+    assert [c["name"] for c in api("cake", "getRefs")["cities"][:2]] == ["Маршрут 2", "Маршрут 3"]  # маршруты первыми, по порядку
     assert all(o["tripId"] == t["id"] for o in api("cake", "getOrders", date=day)["orders"] if o["id"] in ids)
     assert api("cake", "routeToTrip", date=day, route="Маршрут 2")["error"] == "not_found"  # повторно не создаётся
     assert api("cake", "reopenPick", id=ids[0])["error"] == "bad_state"
