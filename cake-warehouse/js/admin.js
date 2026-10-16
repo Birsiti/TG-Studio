@@ -1,4 +1,4 @@
-// изменено 2026-10-17 01:30
+// изменено 2026-10-17 09:00
 /* Экран руководителя склада: сводка, смены, справочники. */
 (function(){
   "use strict";
@@ -68,13 +68,14 @@
   /* ============ СПРАВОЧНИКИ ============ */
   const KINDS = {
     products:{label:'Торты', add:'Новый торт', save:'saveProduct', key:'product',
-      sub:x=>`${x.cat} · ${W(x.weightG) || 'вес —'}${x.shelfDays ? ' · ' + x.shelfDays + ' сут' : ''}${x.minQty ? ' · мин. ' + x.minQty : ''}`,
+      sub:x=>`${x.cat} · ${W(x.weightG) || 'вес —'}${x.perBox > 1 ? ' · ' + x.perBox + ' шт в коробке' : ''}${x.shelfDays ? ' · ' + x.shelfDays + ' сут' : ''}${x.minQty ? ' · мин. ' + x.minQty : ''}`,
       fields:x=>html`<label class="field"><span class="field-label">Название</span><input class="input" name="name" maxlength="80" value="${x.name || ''}"></label>
         <label class="field section"><span class="field-label">Категория</span><select class="select" name="cat">${REFS.cats.map(c=>html`<option value="${c}" ${(x.cat || REFS.cats[0]) === c ? Kit.raw('selected') : ''}>${c}</option>`)}</select></label>
         <div class="field-row section"><label class="field"><span class="field-label">Артикул</span><input class="input" name="sku" maxlength="30" value="${x.sku || ''}"></label>
         <label class="field"><span class="field-label">Вес, г</span><input class="input" name="weightG" type="number" inputmode="numeric" value="${x.weightG || ''}"></label></div>
         <div class="field-row section"><label class="field"><span class="field-label">Срок, суток</span><input class="input" name="shelfDays" type="number" inputmode="numeric" value="${x.shelfDays || ''}"></label>
-        <label class="field"><span class="field-label">Мин. остаток</span><input class="input" name="minQty" type="number" inputmode="numeric" value="${x.minQty || ''}"></label></div>`},
+        <label class="field"><span class="field-label">Мин. остаток</span><input class="input" name="minQty" type="number" inputmode="numeric" value="${x.minQty || ''}"></label></div>
+        <label class="field section"><span class="field-label">Штук в одном грузовом месте (коробке)</span><input class="input" name="perBox" type="number" inputmode="numeric" min="1" value="${x.perBox || 1}"></label>`},
     cities:{label:'Города', add:'Новый город', save:'saveCity', key:'city', sub:x=>x.code || '—',
       fields:x=>html`<div class="field-row"><label class="field"><span class="field-label">Город</span><input class="input" name="name" maxlength="60" value="${x.name || ''}"></label>
         <label class="field" style="flex:0 0 110px"><span class="field-label">Код</span><input class="input mono" name="code" maxlength="4" value="${x.code || ''}" placeholder="БРС"></label></div>`},

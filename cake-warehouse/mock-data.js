@@ -1,4 +1,4 @@
-// изменено 2026-10-17 01:30
+// изменено 2026-10-17 09:00
 /* Данные демо-режима: каталог (сгенерирован из api/bots/cake/catalog.py),
    демо-справочники и генерация истории за 2 недели. Логика — в mock.js. */
 window.CakeMockData = (function(){
@@ -117,7 +117,7 @@ window.CakeMockData = (function(){
   function seed(){
     var r = rng(42), today = D.today();
     var st = {v:3, products:[], cities:[], staff:[], tara:[], moves:[], trips:[], taraMoves:[], shifts:{}, moveId:0, taraId:0, num:0};
-    PRODUCTS.forEach(function(p, i){ st.products.push({id:p[0], cat:p[1], name:p[2], sku:'', weightG:p[3], shelfDays:0, minQty:0, sort:i, active:true}); });
+    PRODUCTS.forEach(function(p, i){ st.products.push({id:p[0], cat:p[1], name:p[2], sku:'', weightG:p[3], shelfDays:0, minQty:0, perBox:1, sort:i, active:true}); });
     CITIES.forEach(function(c, i){ st.cities.push({id:c[0], name:c[1], code:c[2], sort:i, active:true}); });
     STAFF.forEach(function(s){ st.staff.push({id:s[0], name:s[1], role:s[2], phone:s[3], car:s[4], tgId:'', active:true}); });
     st.tara = [{id:'box', name:'Ящик', total:500, sort:0, active:true}];

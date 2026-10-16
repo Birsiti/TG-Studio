@@ -1,4 +1,4 @@
-// изменено 2026-10-17 04:10
+// изменено 2026-10-17 09:00
 /* ============================================================
    mock.js — офлайн-двойник API склада (api/bots/cake/). Данные — mock-data.js.
    Действия других тем добавляются через CakeMock.register (mock-picking.js).
@@ -57,7 +57,7 @@ window.CakeMock = (function(){
   var A = {
     getRefs: function(){ return {products:S.products, cities:S.cities, staff:S.staff, tara:S.tara, moveTypes:MOVE_TYPES, cats:CATS}; },
     getMe: function(){ return {staff:null, restricted:false}; },
-    saveProduct: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); return {product:upsert(S.products, {id:p.id || Kit.uid('p'), cat:p.cat || CATS[0], name:p.name, sku:p.sku || '', weightG:+p.weightG || 0, shelfDays:+p.shelfDays || 0, minQty:+p.minQty || 0, sort:p.sort != null ? p.sort : S.products.length, active:p.active !== false})}; },
+    saveProduct: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); var old = p.id && byId(S.products, p.id) || {}; var w = +p.weightG || old.weightG || 0; if(!w) return err('bad_request', 'Укажите вес, г — как на упаковке'); return {product:upsert(S.products, {id:p.id || Kit.uid('p'), cat:p.cat || CATS[0], name:p.name, sku:p.sku || '', weightG:w, shelfDays:+p.shelfDays || 0, minQty:+p.minQty || 0, perBox:Math.max(1, +p.perBox || old.perBox || 1), sort:old.sort != null ? old.sort : S.products.length, active:p.active !== false})}; },
     saveCity: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); return {city:upsert(S.cities, {id:p.id || Kit.uid('c'), name:p.name, code:String(p.code || '').toUpperCase().slice(0, 4), sort:S.cities.length, active:p.active !== false})}; },
     saveStaff: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Имя'); if(p.tgId && !/^\d+$/.test(p.tgId)) return err('bad_request', 'tgId: только цифры'); return {staff:upsert(S.staff, {id:p.id || Kit.uid('s'), name:p.name, role:p.role, phone:p.phone || '', car:p.car || '', tgId:p.tgId || '', active:p.active !== false})}; },
     saveTara: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); return {tara:upsert(S.tara, {id:p.id || Kit.uid('t'), name:p.name, total:+p.total || 0, sort:S.tara.length, active:p.active !== false})}; },

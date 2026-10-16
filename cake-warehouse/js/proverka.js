@@ -1,4 +1,4 @@
-// изменено 2026-10-17 08:00
+// изменено 2026-10-17 09:10
 /* Проверка карты склада: черновик мест по фото (karta-draft.js) → «Верно» / поправить → загрузить на склад.
    Отметки хранятся в этом телефоне (localStorage) — проверку можно прервать и продолжить. */
 window.Karta = (function(){
@@ -8,7 +8,7 @@ window.Karta = (function(){
   const K = {draft: window.CakeKartaDraft || [], marks: {}, places: {}, filter: 'todo'};
   try{ K.marks = JSON.parse(localStorage.getItem(KEY)) || {}; }catch(e){ K.marks = {}; }
   K.save = ()=>{ try{ localStorage.setItem(KEY, JSON.stringify(K.marks)); }catch(e){} };
-  // Решение по месту: {status:'ok'|'skip', productId?, product?:{name,cat,weightG}, createdId?}
+  // Решение по месту: {status:'ok'|'skip', productId?, product?:{name,cat,weightG,perBox}, createdId?, weightG, perBox}
   K.mark = row=> K.marks[row.place];
   const isNew = row=> !row.productId;
 
@@ -19,10 +19,15 @@ window.Karta = (function(){
     if(m.product) return {product:m.product};
     return row.productId ? {productId:row.productId} : {product:{name:row.name, cat:row.cat, weightG:row.weightG}};
   };
+  // Вес и «шт в грузовом месте»: правка с проверки → товар → черновик
+  K.pack = function(row){
+    const m = K.mark(row) || {}, c = K.current(row), p = c.productId ? Cake.P(c.productId) : c.product;
+    return {weightG:m.weightG || p.weightG || 0, perBox:m.perBox || p.perBox || 1};
+  };
   K.label = function(row){
-    const c = K.current(row);
-    if(c.productId){ const p = Cake.P(c.productId); return {name:p.name, sub:[p.cat, Cake.W(p.weightG)].filter(Boolean).join(' · '), isNew:false}; }
-    return {name:c.product.name, sub:[c.product.cat, Cake.W(c.product.weightG) || 'вес ?'].join(' · '), isNew:true};
+    const c = K.current(row), k = K.pack(row), p = c.productId ? Cake.P(c.productId) : c.product;
+    const sub = [p.cat, Cake.W(k.weightG) || 'вес ?', k.perBox > 1 ? `${k.perBox} шт = 1 место` : '1 шт = 1 место'].join(' · ');
+    return {name:p.name, sub, isNew:!c.productId, noWeight:!k.weightG};
   };
 
   const FILTERS = [['todo','Не проверено'], ['ask','Вопросы'], ['new','Новые'], ['all','Все']];
