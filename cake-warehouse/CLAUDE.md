@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 04:40 -->
+<!-- изменено 2026-10-17 08:20 -->
 # cake-warehouse — ТОРТОВОЗ
 
 Склад тортов с развозом по городам. Бренд «ТОРТОВОЗ» — рабочее название,
@@ -13,6 +13,7 @@
 | `brand.css` | Шоколад + сливки, малиновый акцент, мятный «холод»; Montserrat Alternates / Nunito Sans / Space Mono; код города `.code`, накладная `.waybill`, термо-плашка `.thermo` | |
 | `js/` | Логика экранов: `common.js` (общее), `sklad-*.js` (по вкладке), `driver.js`, `admin.js` | |
 | `mock.js`, `mock-data.js` | `CakeMock` — двойник контракта в localStorage; данные отдельно | |
+| `proverka.html` | Руководитель: проверка карты склада по фото (`karta-draft.js` из `db/places-photos.csv`) → загрузка мест | рабочий |
 | `mock-orders.js`, `mock-picking.js` | Демо сборки: заявки с фото (генерируется `db/gen_mock_orders.py`) и действия | |
 
 Документация — `docs/` (начать с `docs/README.md`). Правило: файл — одна тема, до ~200 строк.

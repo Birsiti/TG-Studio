@@ -1,3 +1,4 @@
+// изменено 2026-10-17 08:00
 // Кто пишет боту и какие кнопки ему показать.
 
 const ROLE_RU = { admin: 'Руководитель', storekeeper: 'Кладовщик', driver: 'Водитель' };
@@ -20,7 +21,7 @@ function webApp(text, base, file) {
 
 // Кнопки Web App (открываются только в личке с ботом)
 function keyboard(role, base) {
-  if (role === 'admin') return [webApp('Склад и сводка', base, 'admin.html'), webApp('Кладовщик', base, 'sklad.html'), webApp('Водитель', base, 'driver.html')];
+  if (role === 'admin') return [webApp('Склад и сводка', base, 'admin.html'), webApp('Кладовщик', base, 'sklad.html'), webApp('Водитель', base, 'driver.html'), webApp('Проверка карты склада', base, 'proverka.html')];
   if (role === 'storekeeper') return [webApp('Открыть склад', base, 'sklad.html')];
   if (role === 'driver') return [webApp('Мои рейсы', base, 'driver.html')];
   return [];

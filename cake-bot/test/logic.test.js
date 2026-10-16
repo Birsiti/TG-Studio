@@ -29,7 +29,8 @@ test('роль: руководитель из ADMIN_IDS, сотрудник по
 test('кнопки Web App ведут на страницы своей роли', () => {
   const kb = keyboard('driver', 'https://x.io/cw');
   assert.equal(kb[0][0].web_app.url, 'https://x.io/cw/driver.html');
-  assert.equal(keyboard('admin', 'https://x.io/cw').length, 3);
+  assert.equal(keyboard('admin', 'https://x.io/cw').length, 4);
+  assert.match(keyboard('admin', 'https://x.io/cw')[3][0].web_app.url, /proverka\.html$/);
   assert.deepEqual(keyboard(null, 'https://x.io/cw'), []);
 });
 
