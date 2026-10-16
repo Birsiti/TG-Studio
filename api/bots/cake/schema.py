@@ -1,4 +1,4 @@
-# изменено 2026-10-17 04:00
+# изменено 2026-10-17 05:30
 """Схема базы склада (SQLite) и общие константы."""
 
 SCHEMA = """
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS tara_moves(
   qty INTEGER NOT NULL, trip_id TEXT, note TEXT NOT NULL DEFAULT '', user_id TEXT, created_at TEXT NOT NULL,
   seed INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS shifts(date TEXT NOT NULL, staff_id TEXT NOT NULL, PRIMARY KEY(date, staff_id));
--- Сборка по кругу: место торта на складе (№ по кругу против часовой от двери), точки разгрузки, заявки
+-- Сборка по кругу: место торта на складе (№ по кругу по часовой от двери), точки разгрузки, заявки
 CREATE TABLE IF NOT EXISTS places(product_id TEXT PRIMARY KEY, place INTEGER NOT NULL);
 CREATE TABLE IF NOT EXISTS points(
   id TEXT PRIMARY KEY, customer TEXT NOT NULL, address TEXT NOT NULL, route TEXT NOT NULL DEFAULT '',
