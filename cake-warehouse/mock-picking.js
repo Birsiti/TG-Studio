@@ -1,4 +1,4 @@
-// изменено 2026-10-17 16:50
+// изменено 2026-10-17 18:30
 /* ============================================================
    mock-picking.js — сборка по кругу в демо-режиме (двойник api/bots/cake/picking.py).
    Точки и заявки — mock-orders.js; в демо заявки с фото стоят на сегодня.
@@ -19,8 +19,26 @@
       CakeKartaDraft.forEach(function(r){ if(r.productId && !S.places[r.productId] && byId(S.products, r.productId)) S.places[r.productId] = r.place; });
       S.placesV1 = true;
     }
+    if(!S.batch1810 && CakeMockOrders.batch1810){ seedBatch(S, CakeMockOrders.batch1810); S.batch1810 = true; }
     S.points.forEach(function(p){ if(p.route) routeCity(S, p.route); });
     return S;
+  }
+  // Товары, добавленные в каталог позже (как seed_added_products), и заявки 18.10 — в старое демо, один раз
+  function seedBatch(S, b){
+    CakeMockData.PRODUCTS.forEach(function(p, i){
+      if(byId(S.products, p[0]) || S.products.some(function(x){ return x.cat === p[1] && x.name === p[2] && x.weightG === p[3]; })) return;
+      S.products.push({id:p[0], cat:p[1], name:p[2], sku:'', weightG:p[3], shelfDays:0, minQty:0, perBox:1, sort:i, active:true});
+    });
+    if(byId(S.products, 'p095') && !S.places.p095) S.places.p095 = 22;
+    // торт завели руками под другим id — заявки ведём на него
+    var same = function(id){ var p = byId(CakeMockData.PRODUCTS.map(function(x){ return {id:x[0], cat:x[1], name:x[2], w:x[3]}; }), id);
+      var m = p && S.products.filter(function(x){ return x.cat === p.cat && x.name === p.name && x.weightG === p.w; })[0]; return m ? m.id : id; };
+    b.points.forEach(function(p){ if(!byId(S.points, p.id)) S.points.push(Object.assign({}, p)); });
+    b.orders.forEach(function(o){
+      if(byId(S.orders, o.id)) return;
+      S.orders.push(Object.assign({}, o, {date:b.day, checked:[], status:'new', picker:'', boxes:null, pickedAt:null, tripId:null,
+        lines:o.lines.map(function(l){ return Object.assign({}, l, {productId:same(l.productId)}); })}));
+    });
   }
   // Маршрут — направление рейса, как город (так же, как route_city в API)
   function routeCity(S, route){

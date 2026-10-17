@@ -171,11 +171,11 @@ window.CakeKartaDraft = [
 },
 {
 "place": 22,
-"productId": null,
+"productId": "p095",
 "name": "Красный бархат",
 "cat": "Пирожное",
-"weightG": 0,
-"note": "НЕТ В АССОРТИМЕНТЕ — завести товар; вес не виден"
+"weightG": 500,
+"note": ""
 },
 {
 "place": 23,
