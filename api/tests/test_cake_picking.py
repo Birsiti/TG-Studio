@@ -12,7 +12,7 @@ def order(api, num):
 
 def test_orders_from_photos_match_paper(api):
     r = api("cake", "getOrders", date="2026-10-17")
-    assert len(r["orders"]) == 11 and r["routes"] == ["Маршрут 2", "Маршрут 3"] and len(r["points"]) == 24
+    assert len(r["orders"]) == 11 and r["routes"] == ["Дзержинск", "Маршрут 2", "Маршрут 3"] and len(r["points"]) == 34
     for num, (qty, places) in PAPER.items():
         o = order(api, num)
         q = sum(ln["qty"] for ln in o["lines"])
@@ -115,7 +115,7 @@ def test_route_to_trip(api):
     assert t["taraOut"] == [{"taraId": "box", "qty": 4}] and "№300000" in t["note"]
     city = next(c for c in api("cake", "getRefs")["cities"] if c["id"] == t["cityId"])
     assert city["name"] == "Маршрут 2"
-    assert [c["name"] for c in api("cake", "getRefs")["cities"][:2]] == ["Маршрут 2", "Маршрут 3"]  # маршруты первыми, по порядку
+    assert [c["name"] for c in api("cake", "getRefs")["cities"][:3]] == ["Дзержинск", "Маршрут 2", "Маршрут 3"]  # маршруты первыми, по порядку
     assert all(o["tripId"] == t["id"] for o in api("cake", "getOrders", date=day)["orders"] if o["id"] in ids)
     assert api("cake", "routeToTrip", date=day, route="Маршрут 2")["error"] == "not_found"  # повторно не создаётся
     assert api("cake", "reopenPick", id=ids[0])["error"] == "bad_state"
@@ -174,3 +174,21 @@ def test_big_photo_fits_body_limit(client):
     big = base64.b64encode(b"\xff" * (2 * 1024 * 1024)).decode()  # 2 МБ фото — больше 64 КБ общего предела студии
     r = call(client, "cake", "addOrderFile", user="web-x", orderId="nope", mime="image/jpeg", data=big)
     assert r["error"] == "not_found"  # дошло до действия, а не «too_large»
+
+
+def test_orders_1810_from_photos(client, api):
+    """Заявки 18.10 (маршрут «Дзержинск») сверены с «Итого» листов; в старую базу досеиваются один раз."""
+    from bots.cake.orders_1810 import TOTALS
+    # база, где заявок 18.10 и «Красного бархата» ещё нет (как на iMac до обновления)
+    conn = cake_bot.connect()
+    conn.executescript("DELETE FROM orders WHERE date='2026-10-18'; DELETE FROM points WHERE id LIKE 'dzr-%';"
+                       "DELETE FROM products WHERE id='p095'; DELETE FROM places WHERE product_id='p095';"
+                       "DELETE FROM meta WHERE k='orders_1810';")
+    conn.close()
+    cake_bot._ready = False
+    r = api("cake", "getOrders", date="2026-10-18")
+    got = {o["num"]: sum(ln["qty"] + ln["bonus"] for ln in o["lines"]) for o in r["orders"]}
+    assert got == {k: v[0] for k, v in TOTALS.items()} and "Дзержинск" in r["routes"]
+    assert r["places"]["p095"] == 22  # Красный бархат — новый товар на месте 22
+    cake_bot._ready = False  # повторный старт — без дублей
+    assert len(api("cake", "getOrders", date="2026-10-18")["orders"]) == 11
