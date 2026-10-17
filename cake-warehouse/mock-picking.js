@@ -33,7 +33,7 @@
       if(byId(S.products, p[0]) || S.products.some(function(x){ return x.cat === p[1] && x.name === p[2] && x.weightG === p[3]; })) return;
       S.products.push({id:p[0], cat:p[1], name:p[2], sku:'', weightG:p[3], shelfDays:0, minQty:0, perBox:1, sort:i, active:true});
     });
-    if(byId(S.products, 'p095') && !S.places.p095) S.places.p095 = 22;
+    [['p095', 22], ['p099', 54]].forEach(function(x){ if(byId(S.products, x[0]) && !S.places[x[0]]) S.places[x[0]] = x[1]; });  // с карты склада
     // торт завели руками под другим id — заявки ведём на него
     var same = function(id){ var p = byId(CakeMockData.PRODUCTS.map(function(x){ return {id:x[0], cat:x[1], name:x[2], w:x[3]}; }), id);
       var m = p && S.products.filter(function(x){ return x.cat === p.cat && x.name === p.name && x.weightG === p.w; })[0]; return m ? m.id : id; };
