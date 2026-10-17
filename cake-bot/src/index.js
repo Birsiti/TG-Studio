@@ -34,7 +34,7 @@ async function pollUpdates() {
     } catch (err) {
       if (stopping) break;
       console.error('[bot] getUpdates:', err.message);
-      if (/409|webhook/i.test(err.message)) console.error('[bot] На токене висит webhook (LEADTEX или другой сервис): бот не получит сообщения, пока его не снять. См. npm run check.');
+      if (/409|webhook|conflict|terminated by other/i.test(err.message)) console.error('[bot] Токен занят: webhook (LEADTEX или другой сервис) или второй запущенный бот. Пока не освободить — сообщения не придут. См. npm run check.');
       await sleep(backoff);
       backoff = Math.min(backoff * 2, 60000);
     }
@@ -55,14 +55,29 @@ async function watchSafely() {
   }
 }
 
+// Сводка: API на iMac после перезапуска поднимается до пары минут — пробуем ещё 5 раз через 3 минуты
+async function digestWithRetry() {
+  for (let i = 0; i < 6 && !stopping; i++) {
+    try {
+      return await runDigestJob();
+    } catch (err) {
+      console.error(`[digest] ошибка (попытка ${i + 1}):`, err.message);
+      await sleep(180000);
+    }
+  }
+}
+
 async function main() {
   const me = await tg.call('getMe');
+  const st = store.get();  // сменили токен на другого бота — его счётчик сообщений свой, старый offset не годится
+  if (st.botId && st.botId !== me.id) store.save({ botId: me.id, updateOffset: 0, trips: null, orders: null });
+  else if (!st.botId) store.save({ botId: me.id });
   console.log(`Запуск @${me.username}. API ${config.apiUrl}, сводка "${config.digestCron}" (${config.timezone}).`);
   await tg.call('setMyCommands', { commands: [{ command: 'start', description: 'Открыть склад' }, { command: 'id', description: 'Мой Telegram id' }] }).catch(() => {});
 
   await watchSafely();
   setInterval(watchSafely, config.watchSeconds * 1000);
-  cron.schedule(config.digestCron, () => runDigestJob().catch((err) => console.error('[digest] ошибка:', err.message)), { timezone: config.timezone });
+  cron.schedule(config.digestCron, digestWithRetry, { timezone: config.timezone });
   await pollUpdates();
 }
 

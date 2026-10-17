@@ -118,7 +118,7 @@ def v_int(p: dict, key: str, *, lo: int = 0, hi: int = 10**9, required: bool = T
         f = float(v)
     except (TypeError, ValueError):
         raise ApiError("bad_request", f"{key}: ожидается число")
-    if f != f or f != int(f):
+    if f != f or f in (float("inf"), float("-inf")) or f != int(f):
         raise ApiError("bad_request", f"{key}: ожидается целое")
     i = int(f)
     if not lo <= i <= hi:

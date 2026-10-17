@@ -1,5 +1,5 @@
 #!/bin/bash
-# изменено 2026-10-17 01:20
+# изменено 2026-10-17 12:55
 # Установка бота склада на iMac одной командой (как taxi-morning-digest:
 # бот живёт на iMac, .env + автозапуск launchd, без LEADTEX).
 #   cd ~/tg-studio/cake-bot && bash install.sh
@@ -17,6 +17,8 @@ say() { printf '\n\033[1m%s\033[0m\n' "$1"; }
 die() { printf '\n\033[31m✘ %s\033[0m\n' "$1"; exit 1; }
 ask() { [ -t 0 ] && read -rp "$1" a || a="${2:-}"; echo "$a"; }  # без терминала — ответ по умолчанию
 envget() { [ -f .env ] && grep -E "^$1=" .env | head -1 | cut -d= -f2- || true; }
+# Токен — в адресе запроса; передаём curl через stdin, чтобы не светить его в списке процессов (ps)
+tgcall() { printf 'url = "%s/%s"\n' "$TG" "$1" | curl -s -K -; }
 json() { node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d||'{}');$1})"; }
 
 command -v node >/dev/null || die "Нет Node.js. Установите: brew install node"
@@ -32,11 +34,11 @@ if [ -z "$TOKEN" ]; then
   read -rsp "Вставьте токен от @BotFather (не отображается): " TOKEN; echo
 fi
 TG="${TELEGRAM_API:-https://api.telegram.org}/bot$TOKEN"
-BOT_NAME="$(curl -s "$TG/getMe" | json 'console.log(j.ok?j.result.username:"")')"
+BOT_NAME="$(tgcall getMe | json 'console.log(j.ok?j.result.username:"")')"
 [ -n "$BOT_NAME" ] || die "Telegram не принял токен. Проверьте его в @BotFather."
 echo "✔ Бот @$BOT_NAME"
 # Бот получает сообщения сам (long polling) — webhook от прежних сервисов снимаем
-curl -s "$TG/deleteWebhook" >/dev/null
+tgcall deleteWebhook >/dev/null
 
 say "2/5 Руководитель"
 ADMINS="${CAKE_ADMINS:-$(envget ADMIN_IDS)}"
@@ -45,9 +47,13 @@ if [ -n "$ADMINS" ] && [ -z "${CAKE_ADMINS:-}" ]; then
   [[ "$(ask 'Оставить? [Y/n] ')" =~ ^[nNнН] ]] && ADMINS=""
 fi
 if [ -z "$ADMINS" ]; then
+  # Запущенный бот забирал бы сообщения себе (409) — на время ожидания останавливаем
+  launchctl unload "$BOT_PLIST" 2>/dev/null || true
+  # Старые сообщения (от кого угодно) пропускаем — ждём только новый /start
+  LAST="$(tgcall 'getUpdates?offset=-1' | json 'const u=(j.result||[]).pop();console.log(u?u.update_id+1:0)' || echo 0)"
   echo "Напишите боту @$BOT_NAME /start с телефона руководителя. Жду до 5 минут…"
   for _ in $(seq 1 60); do
-    WHO="$(curl -s "$TG/getUpdates?timeout=5" | json 'const u=(j.result||[]).filter(x=>x.message&&x.message.from).pop();if(u)console.log(u.message.from.id+" "+(u.message.from.first_name||""))' || true)"
+    WHO="$(tgcall "getUpdates?timeout=5&offset=$LAST" | json 'const u=(j.result||[]).filter(x=>x.message&&x.message.from&&/^\/start/.test(x.message.text||"")).pop();if(u)console.log(u.message.from.id+" "+(u.message.from.first_name||""))' || true)"
     [ -n "$WHO" ] && break
   done
   [ -n "${WHO:-}" ] || die "Сообщение не пришло. Запустите скрипт ещё раз."
@@ -78,6 +84,7 @@ if [ -f "$API_PLIST" ]; then
   # Без ProcessType launchd запускает агента как Background (урезанные CPU и диск): старт 29 с вместо 1 с
   $PB -c "Delete :ProcessType" "$API_PLIST" 2>/dev/null || true
   $PB -c "Add :ProcessType string Interactive" "$API_PLIST"
+  chmod 600 "$API_PLIST"  # в нём токен и служебный ключ
   # Прогрев: на HDD холодный импорт FastAPI — до 2 минут; читаем файлы в кэш ОС,
   # пока старый API ещё работает, — перезапуск после этого занимает секунды
   [ -x ../api/.venv/bin/python ] && (cd ../api && .venv/bin/python -c "import server" >/dev/null 2>&1) || true

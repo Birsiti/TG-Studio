@@ -103,3 +103,17 @@ test('сборка: событие «собрано» и текст руково
   assert.match(t, /Собрал: Кобзев\nЯщиков: 6/);
   assert.doesNotMatch(texts.pickedForAdmin({ ...o, picker: '' }, null), /Собрал/);  // смена собирает вместе
 });
+
+test('состояние больше 2000: текущие не обрезаются, событие не повторяется', () => {
+  const { diffOrders } = require('../src/events');
+  const prev = {};
+  for (let i = 0; i < 2000; i++) prev[`O-OLD${i}`] = 'picked';
+  const now = Array.from({ length: 40 }, (_, i) => ({ id: `O-NEW${i}`, status: 'picked' }));
+  let r = diffOrders(prev, now);
+  assert.equal(r.events.length, 40);
+  for (let k = 0; k < 3; k++) {
+    r = diffOrders(r.next, now);
+    assert.equal(r.events.length, 0);
+  }
+  assert.ok(Object.keys(r.next).length <= 2000 && 'O-NEW0' in r.next && !('O-OLD0' in r.next));
+});

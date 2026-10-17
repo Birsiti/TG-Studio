@@ -1,4 +1,4 @@
-// изменено 2026-10-17 01:30
+// изменено 2026-10-17 13:20
 /* Вкладка «Остатки»: список по категориям, пересчёт и списание. */
 (function(){
   "use strict";
@@ -47,7 +47,8 @@
     });
     sh.$('#pGo').addEventListener('click', async ()=>{
       const n = parseInt(sh.$('#pQty').value, 10);
-      if(!(n >= 0)){ Kit.toast('Укажите количество', 'error'); return; }
+      if(!(n >= 0) || (mode !== 'count' && n < 1)){ Kit.toast('Укажите количество', 'error'); return; }
+      if(mode !== 'count' && sh.$('#pWhy').value.trim().length < 2){ Kit.toast('Укажите причину списания', 'error'); sh.$('#pWhy').focus(); return; }
       const btn = sh.$('#pGo'); Kit.busy(btn, true);
       const r = mode === 'count' ? await api('adjustStock', {productId:i.id, actual:n}) : await api('writeOff', {productId:i.id, qty:n, reason:sh.$('#pWhy').value.trim()});
       Kit.busy(btn, false);

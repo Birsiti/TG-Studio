@@ -143,3 +143,51 @@ def test_service_key_for_bot(api, monkeypatch):
     assert api("cake", "getRefs", user=None, serviceKey="wrong")["error"] == "forbidden"
     assert api("cake", "getRefs", user=None, serviceKey="s3cret-key-for-bot")["ok"]
     assert api("cake", "getTrips", user=None, serviceKey="s3cret-key-for-bot")["ok"]
+
+
+def test_driver_sees_only_own(api, monkeypatch):
+    """Водитель: свои рейсы и отчёт. Склад, справочники и чужие рейсы — нет."""
+    monkeypatch.setenv("TGS_CAKE_ADMINS", "111")
+    api("cake", "saveStaff", user="111", id="dr-ivan", name="Иван Водитель", role="driver", tgId="777")
+    api("cake", "saveStaff", user="111", id="sk-test", name="Кладовщик Тест", role="storekeeper", tgId="888")
+    for act in ("getTrips", "getStock", "adjustStock", "saveStaff", "getOrders"):
+        assert api("cake", act, user="777")["error"] == "forbidden", act
+    assert api("cake", "getMyTrips", user="777")["driver"]["id"] == "dr-ivan" and api("cake", "getRefs", user="777")["ok"]
+    assert api("cake", "getTrips", user="888")["ok"]
+    assert api("cake", "saveStaff", user="888", name="Чужой", role="storekeeper", tgId="999")["error"] == "forbidden"
+    api("cake", "addIncome", user="111", lines=[{"productId": "p003", "qty": 5}])
+    other = api("cake", "saveTrip", user="111", cityId="lida", driverId="dr-pavel", lines=[{"productId": "p003", "qty": 1}])["trip"]
+    api("cake", "shipTrip", user="111", id=other["id"])
+    assert api("cake", "reportTrip", user="777", id=other["id"])["error"] == "forbidden"  # чужой рейс
+
+
+def test_token_without_admins_is_closed(api, monkeypatch):
+    tok = "123456:TEST-token"
+    monkeypatch.setenv("TGS_CAKE_BOT_TOKEN", tok)
+    assert api("cake", "getStock", initData=_signed(tok, 4242))["error"] == "forbidden"  # подписан, но не сотрудник
+
+
+def test_close_trip_returns_and_tara_checked(api):
+    api("cake", "addIncome", lines=[{"productId": "p003", "qty": 5}])
+    t = api("cake", "saveTrip", cityId="lida", driverId="dr-pavel", lines=[{"productId": "p003", "qty": 5}])["trip"]
+    api("cake", "shipTrip", id=t["id"])
+    q = stock_of(api, "p003")
+    dup = [{"productId": "p003", "back": 5}, {"productId": "p003", "back": 5}]
+    assert api("cake", "closeTrip", id=t["id"], returns=dup)["error"] == "bad_request"  # дважды — не удваиваем остаток
+    assert api("cake", "closeTrip", id=t["id"], taraBack=[{"taraId": "box", "qty": 99999}])["error"] == "bad_request"
+    assert stock_of(api, "p003") == q
+    assert api("cake", "closeTrip", id=t["id"], returns=[{"productId": "p003", "back": 5}])["trip"]["status"] == "closed"
+    assert stock_of(api, "p003") == q + 5
+
+
+def test_route_city_survives_rename(api):
+    pts = api("cake", "getOrders")["points"]
+    c = next(x for x in api("cake", "getRefs")["cities"] if x["id"] == "route-2")
+    api("cake", "saveCity", id="route-2", name="Маршрут 2 (Минск)", code=c["code"])
+    from bots.cake import bot as cake_bot
+    cake_bot._ready = False  # перезапуск: миграция не заводит второй «Маршрут 2»
+    assert sum(1 for x in api("cake", "getRefs")["cities"] if x["name"].startswith("Маршрут 2")) == 1 and pts
+
+
+def test_huge_number_is_bad_request(api):
+    assert api("cake", "addIncome", lines=[{"productId": "p003", "qty": "1e400"}])["error"] == "bad_request"

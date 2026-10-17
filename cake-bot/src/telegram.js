@@ -13,7 +13,11 @@ async function call(method, params = {}, timeoutMs = 15000) {
       signal: ctrl.signal,
     });
     const data = await res.json().catch(() => ({}));
-    if (!data.ok) throw new Error(`${method}: ${data.description || res.status}`);
+    if (!data.ok) {
+      const err = new Error(`${method}: ${data.description || res.status}`);
+      err.code = data.error_code || res.status;
+      throw err;
+    }
     return data.result;
   } finally {
     clearTimeout(timer);
@@ -26,15 +30,19 @@ function send(chatId, text, buttons) {
   return call('sendMessage', params);
 }
 
-// Рассылка нескольким; ошибка одному (заблокировал бота и т.п.) не мешает остальным
+// Рассылка нескольким; ошибка одному (заблокировал бота и т.п.) не мешает остальным.
+// Возвращает false, если сбой временный (нет сети, 429, 5xx) — такое событие стоит повторить.
 async function sendMany(chatIds, text, buttons) {
+  let ok = true;
   for (const id of new Set(chatIds.map(String))) {
     try {
       await send(id, text, buttons);
     } catch (err) {
       console.error(`[telegram] не отправлено ${id}: ${err.message}`);
+      if (!err.code || err.code === 429 || err.code >= 500) ok = false;
     }
   }
+  return ok;
 }
 
 module.exports = { call, send, sendMany };

@@ -11,11 +11,12 @@ from bots.cake.places_data import PLACES
 
 
 def route_city(conn, route: str) -> str:
-    """Маршрут — направление рейса, как город: строка в cities с тем же названием (создаётся при нужде)."""
-    cid = scalar(conn, "SELECT id FROM cities WHERE name=?", (route,))
+    """Маршрут — направление рейса, как город: строка в cities (создаётся при нужде).
+    «Маршрут 2» — всегда route-2, даже если город переименовали: иначе рейсы разъедутся по двум городам."""
+    digits = "".join(ch for ch in route if ch.isdigit())
+    cid = (digits and scalar(conn, "SELECT id FROM cities WHERE id=?", (f"route-{digits}",))) or scalar(conn, "SELECT id FROM cities WHERE name=?", (route,))
     if cid:
         return cid
-    digits = "".join(ch for ch in route if ch.isdigit())
     cid = f"route-{digits}" if digits and not scalar(conn, "SELECT 1 FROM cities WHERE id=?", (f"route-{digits}",)) else new_id("c")
     sort = (scalar(conn, "SELECT MIN(sort) FROM cities") or 0) - 1  # маршруты — первыми в списке
     conn.execute("INSERT INTO cities(id,name,code,sort) VALUES(?,?,?,?)", (cid, route, ("М" + digits)[:4] if digits else route[:3].upper(), sort))

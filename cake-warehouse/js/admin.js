@@ -15,7 +15,10 @@
   const W = g=> !g ? '' : g < 1000 ? g + ' г' : String(g / 1000).replace('.', ',') + ' кг';
   const L = id=> { const p = P(id); return p.name + (p.weightG ? ', ' + W(p.weightG) : ''); };
   const C = id=> REFS.cities.find(x=>x.id === id) || {name:'?'};
-  async function loadRefs(){ const r = await api('getRefs'); if(r.ok) REFS = r; else fail(r); }
+  async function loadRefs(){
+    const r = await api('getRefs'); if(r.ok) REFS = r; else fail(r);
+    if(api.mode() === 'demo') $('#modeNote').innerHTML = String(html`<p class="mode-note">Демо-режим: сервер недоступен, данные хранятся только в этом телефоне.</p>`);
+  }
 
   /* ============ СВОДКА ============ */
   async function renderOverview(){

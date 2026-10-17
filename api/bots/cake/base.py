@@ -1,8 +1,9 @@
-# изменено 2026-10-17 08:50
+# изменено 2026-10-17 12:40
 """Объект bot, проверка доступа, выдача строк в JSON и общие проверки строк."""
 from __future__ import annotations
 
 import hmac
+import logging
 import os
 
 from core import ApiError, Bot, Ctx, iso_now, jload, one, rows, scalar, v_id, v_int, v_list, verify_init_data
@@ -39,7 +40,15 @@ def _service(p: dict) -> bool:
     return bool(key) and isinstance(got, str) and hmac.compare_digest(got.encode(), key.encode())
 
 
-def _guard(ctx: Ctx, p: dict) -> None:
+# Водитель видит только своё: рейсы и отчёт о возврате. Остальное — склад (кладовщик и руководитель).
+DRIVER_ACTIONS = {"getMe", "getRefs", "getMyTrips", "reportTrip"}
+ADMIN_ACTIONS = {"saveStaff"}  # кого пускать в приложение — решает только руководитель
+_warned = False
+
+
+def _guard(ctx: Ctx, p: dict, name: str = "") -> None:
+    global _warned
+    ctx.role = "admin"  # открытое демо и служебный ключ бота — без ограничений
     if _service(p):
         ctx.user = None
         return
@@ -52,18 +61,24 @@ def _guard(ctx: Ctx, p: dict) -> None:
             raise ApiError("forbidden", "Откройте приложение из бота")
         ctx.user = uid
     admins = _admins()
-    if not admins:
+    if not admins and not token:
         return
+    if admins and not token and not _warned:
+        _warned = True  # userId без подписи подделать легко — боевой режим только вместе с токеном
+        logging.getLogger("cake").warning("TGS_CAKE_ADMINS без TGS_CAKE_BOT_TOKEN: userId не проверяется подписью")
     u = ctx.user
-    if u and (u in admins or scalar(ctx.conn, "SELECT 1 FROM staff WHERE tg_id=? AND active=1", (u,))):
-        return
-    raise ApiError("forbidden", "Нет доступа к складу")
+    role = "admin" if u and u in admins else (u and scalar(ctx.conn, "SELECT role FROM staff WHERE tg_id=? AND tg_id<>'' AND active=1", (u,)))
+    if not role:
+        raise ApiError("forbidden", "Нет доступа к складу")
+    if (role == "driver" and name not in DRIVER_ACTIONS) or (role != "admin" and name in ADMIN_ACTIONS):
+        raise ApiError("forbidden", "Нет доступа")
+    ctx.role = role
 
 
 def action(name: str, write: bool = False):
     def deco(fn):
         def wrapped(ctx: Ctx, p: dict) -> dict:
-            _guard(ctx, p)
+            _guard(ctx, p, name)
             return fn(ctx, p)
         return bot.action(name, write)(wrapped)
     return deco

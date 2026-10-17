@@ -63,5 +63,5 @@ def get_moves(ctx: Ctx, p: dict) -> dict:
     to = v_date(p, "to", required=False) or ctx.today
     frm = v_date(p, "from", required=False) or add_days(to, -6)
     t = v_enum(p, "type", list(MOVE_TYPES), required=False)
-    q = "SELECT * FROM moves WHERE date BETWEEN ? AND ?" + (" AND type=?" if t else "") + " ORDER BY date DESC, id DESC LIMIT 500"
+    q = "SELECT * FROM moves WHERE date BETWEEN ? AND ?" + (" AND type=?" if t else "") + " ORDER BY date DESC, id DESC LIMIT 5000"  # сводка за день не должна обрезаться
     return {"moves": [_move(r) for r in rows(ctx.conn, q, (frm, to, t) if t else (frm, to))], "from": frm, "to": to}

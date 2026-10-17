@@ -77,7 +77,7 @@ def cancel_trip(ctx: Ctx, p: dict) -> dict:
 def _returns(ctx: Ctx, p: dict, trip: dict) -> list[dict]:
     """[{productId, back, spoiled}] — не больше, чем уехало в рейсе."""
     shipped = {ln["productId"]: ln["qty"] for ln in jload(trip["lines"], [])}
-    out = []
+    out, seen = [], set()
     for x in v_list(p, "returns", max_items=MAX_LINES, required=False):
         if not isinstance(x, dict):
             raise ApiError("bad_request", "returns: ожидается объект")
@@ -86,6 +86,9 @@ def _returns(ctx: Ctx, p: dict, trip: dict) -> list[dict]:
         spoiled = v_int(x, "spoiled", hi=MAX_QTY, required=False)
         if pid not in shipped:
             raise ApiError("bad_request", "Этого торта не было в рейсе")
+        if pid in seen:  # повтор строки удвоил бы возврат на остаток
+            raise ApiError("bad_request", "Торт в возврате дважды")
+        seen.add(pid)
         if back + spoiled > shipped[pid]:
             raise ApiError("bad_request", "Возврат больше, чем уехало")
         if back or spoiled:
@@ -97,6 +100,8 @@ def _returns(ctx: Ctx, p: dict, trip: dict) -> list[dict]:
 def report_trip(ctx: Ctx, p: dict) -> dict:
     """Водитель: рейс развезён, вот что везу обратно."""
     t = _get_trip(ctx.conn, v_id(p, "id"))
+    if getattr(ctx, "role", "admin") == "driver" and t["driver_id"] != scalar(ctx.conn, "SELECT id FROM staff WHERE tg_id=? AND tg_id<>''", (ctx.user,)):
+        raise ApiError("forbidden", "Это не ваш рейс")
     if t["status"] not in ("shipped", "reported"):
         raise ApiError("bad_state", "Рейс не в пути")
     report = {"returns": _returns(ctx, p, t), "taraBack": _tara_lines(ctx.conn, p, "taraBack"),
@@ -114,6 +119,11 @@ def close_trip(ctx: Ctx, p: dict) -> dict:
         raise ApiError("bad_state", "Рейс не в пути")
     rets = _returns(ctx, p, t)
     tara_back = _tara_lines(ctx.conn, p, "taraBack")
+    debt = _tara_debt(ctx.conn)
+    for ln in tara_back:  # как в taraMove: вернуть можно не больше, чем на руках у водителя
+        has = debt.get((t["driver_id"], ln["taraId"]), 0)
+        if ln["qty"] > has:
+            raise ApiError("bad_request", f"У водителя на руках только {has}")
     for r in rets:
         if r["back"]:
             _add_move(ctx, "return", ctx.today, r["productId"], r["back"], city=t["city_id"], trip=t["id"])
