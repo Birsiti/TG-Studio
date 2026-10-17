@@ -1,4 +1,4 @@
-// изменено 2026-10-17 03:20
+// изменено 2026-10-17 20:10
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { roleOf, keyboard, idsOf } = require('../src/roles');
@@ -29,8 +29,7 @@ test('роль: руководитель из ADMIN_IDS, сотрудник по
 test('кнопки Web App ведут на страницы своей роли', () => {
   const kb = keyboard('driver', 'https://x.io/cw');
   assert.equal(kb[0][0].web_app.url, 'https://x.io/cw/driver.html');
-  assert.equal(keyboard('admin', 'https://x.io/cw').length, 4);
-  assert.match(keyboard('admin', 'https://x.io/cw')[3][0].web_app.url, /proverka\.html$/);
+  assert.equal(keyboard('admin', 'https://x.io/cw').length, 3);
   assert.deepEqual(keyboard(null, 'https://x.io/cw'), []);
 });
 

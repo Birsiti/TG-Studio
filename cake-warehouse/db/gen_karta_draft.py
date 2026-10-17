@@ -1,5 +1,5 @@
-# изменено 2026-10-17 07:50
-"""Черновик карты склада (db/places-photos.csv) → karta-draft.js для страницы проверки (proverka.html).
+# изменено 2026-10-17 20:10
+"""Черновик карты склада (db/places-photos.csv) → karta-draft.js (места по фото для демо) и places_data.py.
 
     python3 cake-warehouse/db/gen_karta_draft.py
 

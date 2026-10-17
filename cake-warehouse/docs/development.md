@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 17:00 -->
+<!-- изменено 2026-10-17 20:10 -->
 # Разработка
 
 ## Правило размера
@@ -25,7 +25,7 @@ cake-warehouse/                 Mini App (GitHub Pages)
   js/sklad-log.js                вкладка «Журнал»
   js/sklad-main.js               запуск экрана кладовщика
   js/driver.js  js/admin.js      экраны водителя и руководителя
-  proverka.html js/proverka*.js  проверка карты склада по фото (karta-draft.js из db/places-photos.csv)
+  proverka.html                  заглушка: перекидывает старые кнопки бота на admin.html
   mock-data.js                   демо: каталог (генерируется), справочники, история
   mock.js                        демо: двойник API в localStorage (CakeMock.register — для других тем)
   mock-orders.js                 демо: точки и заявки с фото (генерируется db/gen_mock_orders.py)
