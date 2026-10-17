@@ -1,4 +1,4 @@
-# изменено 2026-10-17 08:50
+# изменено 2026-10-17 21:00
 """Справочники: торты, города, сотрудники, тара; кто я."""
 from __future__ import annotations
 
@@ -60,12 +60,15 @@ def save_staff(ctx: Ctx, p: dict) -> dict:
     tg = v_str(p, "tgId", required=False, max_len=15)
     if tg and not tg.isdigit():
         raise ApiError("bad_request", "tgId: только цифры")
-    data = (v_str(p, "name", min_len=2, max_len=80), v_enum(p, "role", ROLES), v_phone(p, "phone", required=False),
-            v_str(p, "car", required=False, max_len=80), tg, 1 if v_bool(p, "active", default=True) else 0)
+    role = v_enum(p, "role", ROLES)
+    hired = role == "driver" and v_bool(p, "hired", default=False)  # своя машина фирмы или наёмный перевозчик
+    carrier = v_str(p, "carrier", required=False, max_len=80) if hired else ""
+    data = (v_str(p, "name", min_len=2, max_len=80), role, v_phone(p, "phone", required=False),
+            v_str(p, "car", required=False, max_len=80), tg, 1 if v_bool(p, "active", default=True) else 0, int(hired), carrier)
     if one(ctx.conn, "SELECT 1 FROM staff WHERE id=?", (sid,)):
-        ctx.conn.execute("UPDATE staff SET name=?,role=?,phone=?,car=?,tg_id=?,active=? WHERE id=?", (*data, sid))
+        ctx.conn.execute("UPDATE staff SET name=?,role=?,phone=?,car=?,tg_id=?,active=?,hired=?,carrier=? WHERE id=?", (*data, sid))
     else:
-        ctx.conn.execute("INSERT INTO staff(name,role,phone,car,tg_id,active,id) VALUES(?,?,?,?,?,?,?)", (*data, sid))
+        ctx.conn.execute("INSERT INTO staff(name,role,phone,car,tg_id,active,hired,carrier,id) VALUES(?,?,?,?,?,?,?,?,?)", (*data, sid))
     return {"staff": _staff(one(ctx.conn, "SELECT * FROM staff WHERE id=?", (sid,)))}
 
 

@@ -1,4 +1,4 @@
-// изменено 2026-10-17 15:30
+// изменено 2026-10-17 21:00
 /* Вкладка «Рейсы»: сборка → отгрузка → приёмка с возвратом тортов и ящиков. */
 (function(){
   "use strict";
@@ -43,7 +43,7 @@
     const closed = t.status === 'closed';
     const sh = Kit.sheet({title:`${c.name} · №${t.num}`, sub:`${D.label(t.date)} · ${TRIP_ST[t.status][0]}`, body: html`
       <div class="kv"><span class="k">Водитель</span><span class="v">${d ? d.name : '—'}</span></div>
-      ${d && d.car ? html`<div class="kv"><span class="k">Машина</span><span class="v">${d.car}</span></div>` : ''}
+      ${d && (d.car || d.hired) ? html`<div class="kv"><span class="k">Машина</span><span class="v">${d.hired ? `наёмная${d.carrier ? ' · ' + d.carrier : ''}${d.car ? ' · ' : ''}` : ''}${d.car || ''}</span></div>` : ''}
       ${t.odoOut != null ? html`<div class="kv"><span class="k">Спидометр</span><span class="v mono">${num(t.odoOut)}${t.odoBack != null ? ` → ${num(t.odoBack)} · ${num(t.odoBack - t.odoOut)} км` : ' → в пути'}</span></div>` : ''}
       ${t.note ? html`<div class="kv"><span class="k">Комментарий</span><span class="v">${t.note}</span></div>` : ''}
       <div class="section"><div class="eyebrow" style="margin-bottom:8px">Состав</div>
@@ -77,7 +77,7 @@
       <div class="eyebrow section" style="margin-bottom:8px">Куда — маршрут или город</div>
       <div class="chips" id="eCity">${Cake.refs.cities.filter(c=>c.active || c.id === st.cityId).map(c=>html`<button type="button" class="chip${st.cityId === c.id ? ' is-on' : ''}" data-v="${c.id}">${c.name}</button>`)}</div>
       <div class="eyebrow section" style="margin-bottom:8px">Водитель</div>
-      <div class="chips" id="eDrv">${drivers.map(s=>html`<button type="button" class="chip${st.driverId === s.id ? ' is-on' : ''}" data-v="${s.id}">${s.name.split(' ')[0]}${SHIFT.includes(s.id) ? ' · на смене' : ''}</button>`)}</div>
+      <div class="chips" id="eDrv">${drivers.map(s=>html`<button type="button" class="chip${st.driverId === s.id ? ' is-on' : ''}" data-v="${s.id}">${s.name.split(' ')[0]}${s.hired ? ' · наём.' : ''}${SHIFT.includes(s.id) ? ' · на смене' : ''}</button>`)}</div>
       <div class="section-head section" style="margin-bottom:8px"><span class="eyebrow">Торты</span><span class="hint" id="eSum"></span></div>
       <div class="search">${icon('search')}<input class="input" id="eQ" type="search" placeholder="Найти торт" autocomplete="off"></div>
       <div class="chips" style="margin-top:8px"><button type="button" class="chip" id="eOnly">Только выбранные</button></div>

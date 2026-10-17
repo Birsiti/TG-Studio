@@ -1,4 +1,4 @@
-# изменено 2026-10-17 08:50
+# изменено 2026-10-17 21:00
 from core import now
 
 
@@ -228,3 +228,20 @@ def test_odometer_migration_into_old_db(api):
     cake_bot._ready = False
     r = api("cake", "getTrips")["trips"]
     assert len(r) == n and all("odoOut" in t for t in r)
+
+
+def test_hired_driver(api):
+    """Водитель свой или наёмный (фирма-перевозчик); кладовщик наёмным не бывает. Старая база — колонки миграцией."""
+    s = api("cake", "saveStaff", id="dr-pavel", name="Павел Гриб", role="driver", hired=True, carrier="ИП Петров")["staff"]
+    assert s["hired"] is True and s["carrier"] == "ИП Петров"
+    s = api("cake", "saveStaff", id="dr-pavel", name="Павел Гриб", role="driver", hired=False, carrier="ИП Петров")["staff"]
+    assert s["hired"] is False and s["carrier"] == ""
+    assert api("cake", "saveStaff", name="Кладовщик", role="storekeeper", hired=True)["staff"]["hired"] is False
+    api("cake", "saveStaff", id="dr-pavel", name="Павел Гриб", role="driver", hired=True)
+    from bots.cake import bot as cake_bot
+    conn = cake_bot.connect()
+    conn.executescript("ALTER TABLE staff DROP COLUMN hired; ALTER TABLE staff DROP COLUMN carrier;")
+    conn.close()
+    cake_bot._ready = False
+    st = api("cake", "getRefs")["staff"]
+    assert all(x["hired"] is False for x in st) and any(x["id"] == "dr-pavel" for x in st)

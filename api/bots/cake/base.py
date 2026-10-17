@@ -1,4 +1,4 @@
-# изменено 2026-10-17 17:00
+# изменено 2026-10-17 21:00
 """Объект bot, проверка доступа, выдача строк в JSON и общие проверки строк."""
 from __future__ import annotations
 
@@ -21,6 +21,9 @@ def _migrate(conn, now):
     if "odo_out" not in {r["name"] for r in conn.execute("PRAGMA table_info(trips)").fetchall()}:
         conn.execute("ALTER TABLE trips ADD COLUMN odo_out INTEGER")  # спидометр — в базы, созданные раньше
         conn.execute("ALTER TABLE trips ADD COLUMN odo_back INTEGER")
+    if "hired" not in {r["name"] for r in conn.execute("PRAGMA table_info(staff)").fetchall()}:
+        conn.execute("ALTER TABLE staff ADD COLUMN hired INTEGER NOT NULL DEFAULT 0")  # наёмный водитель — машина чужой фирмы
+        conn.execute("ALTER TABLE staff ADD COLUMN carrier TEXT NOT NULL DEFAULT ''")
 
 
 bot = Bot("cake", SCHEMA, _seed, migrate=_migrate)
@@ -101,7 +104,7 @@ def _city(r):
 
 def _staff(r):
     return {"id": r["id"], "name": r["name"], "role": r["role"], "phone": r["phone"], "car": r["car"],
-            "tgId": r["tg_id"], "active": bool(r["active"])}
+            "hired": bool(r["hired"]), "carrier": r["carrier"], "tgId": r["tg_id"], "active": bool(r["active"])}
 
 
 def _tara(r):
