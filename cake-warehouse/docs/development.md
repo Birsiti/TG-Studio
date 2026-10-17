@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 14:00 -->
+<!-- изменено 2026-10-17 17:00 -->
 # Разработка
 
 ## Правило размера
@@ -18,6 +18,8 @@ cake-warehouse/                 Mini App (GitHub Pages)
   js/sklad-income.js             вкладка «Приход»
   js/sklad-pick.js               вкладка «Сборка»: заявки, лист по кругу, весь маршрут
   js/sklad-pick-edit.js          ввод заявки, места на складе
+  js/sklad-pick-files.js         фото и файлы заявки (сжатие в телефоне)
+  mock-files.js                  демо: файлы заявок в localStorage, finishAll
   js/sklad-trips.js              вкладка «Рейсы»
   js/sklad-tara.js               вкладка «Ящики»
   js/sklad-log.js                вкладка «Журнал»

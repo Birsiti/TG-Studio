@@ -1,4 +1,4 @@
-# изменено 2026-10-17 11:55
+# изменено 2026-10-17 16:00
 """Сборка по кругу: заявки точек на дату, лист с галочками, места тортов на складе, точки разгрузки.
 
 Остаток сборка не трогает — торты списываются отгрузкой рейса (trips.py).
@@ -47,13 +47,16 @@ def get_orders(ctx: Ctx, p: dict) -> dict:
         day = next((d for d in fresh if d >= ctx.today), fresh[-1] if fresh else ctx.today)
     rs = rows(ctx.conn, "SELECT * FROM orders WHERE date=? ORDER BY route, num", (day,))
     points = rows(ctx.conn, "SELECT * FROM points ORDER BY route, sort")
-    return {"date": day, "dates": dates, "orders": [_order(r) for r in rs], "points": [_point(r) for r in points],
+    files: dict[str, list] = {}
+    for f in rows(ctx.conn, "SELECT o.* FROM order_files o JOIN orders r ON r.id=o.order_id WHERE r.date=? ORDER BY o.created_at", (day,)):
+        files.setdefault(f["order_id"], []).append({"id": f["id"], "name": f["name"], "mime": f["mime"], "size": f["size"]})
+    return {"date": day, "dates": dates, "orders": [dict(_order(r), files=files.get(r["id"], [])) for r in rs], "points": [_point(r) for r in points],
             "routes": sorted({r["route"] for r in points if r["route"] and r["active"]}), "places": _places(ctx.conn)}
 
 
 def _order_lines(conn, p: dict) -> list[dict]:
     out: dict[str, dict] = {}
-    for x in v_list(p, "lines", max_items=MAX_LINES):
+    for x in v_list(p, "lines", max_items=MAX_LINES, required=False):
         if not isinstance(x, dict):
             raise ApiError("bad_request", "lines: ожидается объект")
         pid = v_id(x, "productId")
@@ -65,9 +68,7 @@ def _order_lines(conn, p: dict) -> list[dict]:
             ln = out.setdefault(pid, {"productId": pid, "qty": 0, "bonus": 0})
             ln["qty"] += q
             ln["bonus"] += b
-    if not out:
-        raise ApiError("bad_request", "В заявке нет тортов")
-    return list(out.values())
+    return list(out.values())  # пусто можно: заявка «по фото», строки внесут позже
 
 
 @action("saveOrder", write=True)
@@ -101,6 +102,8 @@ def delete_order(ctx: Ctx, p: dict) -> dict:
     o = _get_order(ctx.conn, v_id(p, "id"))
     if o["status"] != "new":
         raise ApiError("bad_state", "Собранную заявку удалить нельзя")
+    from bots.cake.order_files import drop_files  # поздний импорт: order_files пользуется помощниками отсюда
+    drop_files(ctx.conn, o["id"])
     ctx.conn.execute("DELETE FROM orders WHERE id=?", (o["id"],))
     return {}
 
@@ -196,6 +199,9 @@ def route_to_trip(ctx: Ctx, p: dict) -> dict:
     left = [r["num"] for r in rs if r["status"] != "picked"]
     if left:
         raise ApiError("bad_state", "Не собраны: №" + ", №".join(left))
+    bare = [r["num"] for r in rs if not jload(r["lines"], [])]
+    if bare:  # рейс списывает остаток по строкам — без них отгрузить нечего
+        raise ApiError("bad_state", "Внесите торты в заявки по фото: №" + ", №".join(bare))
     driver = v_id(p, "driverId", required=False)
     if driver and not scalar(ctx.conn, "SELECT 1 FROM staff WHERE id=? AND role='driver'", (driver,)):
         raise ApiError("not_found", "Нет такого водителя")

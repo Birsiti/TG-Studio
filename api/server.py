@@ -1,4 +1,4 @@
-# изменено 2026-10-08 02:15
+# изменено 2026-10-17 17:00
 """API студии TG-Studio: один процесс на все боты.
 
 Запуск:  uvicorn server:app --port 8098   (из папки api/; на iMac 8097 занят витриной studio)
@@ -108,13 +108,14 @@ async def handle(bot_name: str, request: Request):
     if not limiter.allow("all:" + ip, RATE_ALL):
         return fail("rate_limited", 429)
 
+    max_body = getattr(bot, "max_body", MAX_BODY)  # склад тортов принимает фото заявок — до 4 МБ
     declared = request.headers.get("content-length")
-    if declared and declared.isdigit() and int(declared) > MAX_BODY:
+    if declared and declared.isdigit() and int(declared) > max_body:
         return fail("too_large", 413)
     chunks, size = [], 0
     async for chunk in request.stream():
         size += len(chunk)
-        if size > MAX_BODY:
+        if size > max_body:
             return fail("too_large", 413)
         chunks.append(chunk)
     try:

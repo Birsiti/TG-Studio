@@ -1,4 +1,4 @@
-# изменено 2026-10-17 02:10
+# изменено 2026-10-17 17:00
 """Общее ядро API студии: SQLite на бота, реестр action, валидация,
 лимиты строк, демо-сид и ежедневное «освежение» демо-данных.
 
@@ -355,6 +355,7 @@ class Bot:
         self.seed = seed
         self.refresh = refresh
         self.migrate = migrate  # при каждом старте процесса после схемы и сида; должна быть идемпотентной
+        self.max_body = 64 * 1024  # предел тела запроса; бот с файлами может поднять
         self.actions: dict[str, Action] = {}
         self._ready = False
         self._refreshed_on: str | None = None

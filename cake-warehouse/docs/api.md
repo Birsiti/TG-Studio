@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 15:40 -->
+<!-- изменено 2026-10-17 17:00 -->
 # API склада
 
 ```
@@ -79,6 +79,9 @@ Content-Type: text/plain;charset=utf-8          (простой CORS-запро�
 | `deleteOrder` | `id` | только несобранная |
 | `checkLine` | `id`, `productId`, `done?` (по умолчанию `true`) | `order` с обновлёнными `checked` |
 | `finishPick` | `id`, `picker?` (смена собирает вместе — не спрашиваем), `boxes?`, `all?` (отметить все строки) | `status: picked`; `bad_state`, если отмечено не всё |
+| `finishAll` | `date`, `route?` | Все несобранные заявки дня — «Собрано» (собирали по бумаге); ящики пустые |
+| `addOrderFile` | `orderId`, `mime` (jpeg/png/webp/pdf), `data` (base64, ≤ 3 МБ), `name?` | Фото/файл заявки → `file`; на диске `TGS_DATA_DIR/cake-files/`. Тело запроса склада — до 4 МБ |
+| `getOrderFile` / `deleteOrderFile` | `id` | Файл с `data` (base64) / удалить |
 | `reopenPick` | `id` | обратно `new`; нельзя, если заявка уже в рейсе |
 | `routeToTrip` | `date`, `route`, `driverId?` | Все заявки маршрута на дату без рейса должны быть собраны → черновик рейса: торты с бонусами, ящики — сумма по заявкам, в комментарии номера заявок; `trip`, `orders`. Отмена рейса освобождает заявки |
 | `savePlaces` | `places[{productId, place}]` (0 — убрать место) | `saved`, `places` |

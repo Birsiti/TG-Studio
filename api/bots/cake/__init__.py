@@ -1,4 +1,4 @@
-# изменено 2026-10-17 05:30
+# изменено 2026-10-17 17:00
 """Склад тортов с развозом по городам (cake-warehouse/*.html).
 
 Рабочий учёт, а не витрина: нет ежедневного «освежения» и нет удаления
@@ -40,7 +40,7 @@ TGS_CAKE_SERVICE_KEY — служебный ключ бота склада (cake
   orders_data.py, orders_seed.py — заявки с фото накладных (и в старые базы — миграцией)
 """
 from bots.cake.base import bot
-from bots.cake import refs, stock, trips, tara, shifts, overview, picking, drivers  # noqa: F401 — регистрируют action
+from bots.cake import refs, stock, trips, tara, shifts, overview, picking, drivers, order_files  # noqa: F401 — регистрируют action
 from bots.cake.catalog import CATALOG, CATS, SEED_PRODUCTS  # noqa: F401 — для db/build_seed.py и import_places.py
 
 __all__ = ["bot", "CATALOG", "CATS", "SEED_PRODUCTS"]

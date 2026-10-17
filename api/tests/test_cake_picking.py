@@ -51,7 +51,7 @@ def test_save_order_and_places(api):
     assert o["lines"] == [{"productId": "p002", "qty": 4, "bonus": 1}] and o["route"] == pts[0]["route"]
     assert api("cake", "saveOrder", num="2000001", pointId=pts[0]["id"], lines=[{"productId": "p002", "qty": 1}])["error"] == "bad_request"
     assert api("cake", "saveOrder", num="2000002", pointId="nope", lines=[{"productId": "p002", "qty": 1}])["error"] == "not_found"
-    assert api("cake", "saveOrder", num="2000003", pointId=pts[0]["id"], lines=[])["error"] == "bad_request"
+    assert api("cake", "saveOrder", num="2000003", pointId=pts[0]["id"], lines=[{"productId": "nope", "qty": 1}])["error"] == "not_found"
     api("cake", "checkLine", id=o["id"], productId="p002")
     r = api("cake", "saveOrder", id=o["id"], num="2000001", date="2026-10-20", pointId=pts[0]["id"],
             lines=[{"productId": "p002", "qty": 2}, {"productId": "p003", "qty": 1}])
@@ -132,3 +132,45 @@ def test_product_weight_and_per_box(api):
     p = api("cake", "saveProduct", id=p["id"], name="Корзинка", cat="Пирожное")["product"]  # без полей — прежние значения
     assert p["weightG"] == 60 and p["perBox"] == 10
     assert next(x for x in api("cake", "getRefs")["products"] if x["id"] == "p001")["perBox"] == 1
+
+
+def test_order_files_and_photo_only_order(api):
+    import base64
+    pts = api("cake", "getOrders")["points"]
+    o = api("cake", "saveOrder", num="3000001", date="2026-10-21", pointId=pts[0]["id"])["order"]  # заявка по фото — без строк
+    assert o["lines"] == []
+    jpg = base64.b64encode(b"\xff\xd8\xff\xe0" + b"x" * 5000).decode()
+    f = api("cake", "addOrderFile", orderId=o["id"], name="Заявка.jpg", mime="image/jpeg", data=jpg)["file"]
+    assert f["size"] == 5004
+    assert api("cake", "addOrderFile", orderId=o["id"], mime="text/html", data=jpg)["error"] == "bad_request"
+    assert api("cake", "addOrderFile", orderId=o["id"], mime="image/jpeg", data="не base64!")["error"] == "bad_request"
+    r = api("cake", "getOrders", date="2026-10-21")
+    assert next(x for x in r["orders"] if x["id"] == o["id"])["files"] == [{"id": f["id"], "name": "Заявка.jpg", "mime": "image/jpeg", "size": 5004}]
+    assert api("cake", "getOrderFile", id=f["id"])["file"]["data"] == jpg
+    # маршрут с заявкой без строк не отгрузить
+    assert api("cake", "finishAll", date="2026-10-21")["done"] >= 1
+    err = api("cake", "routeToTrip", date="2026-10-21", route=pts[0]["route"])
+    assert err["error"] == "bad_state" and "3000001" in err["message"]
+    api("cake", "reopenPick", id=o["id"])
+    assert api("cake", "deleteOrder", id=o["id"])["ok"]
+    assert api("cake", "getOrderFile", id=f["id"])["error"] == "not_found"  # файлы удалены вместе с заявкой
+
+
+def test_finish_all_marks_day(api):
+    day = "2026-10-17"
+    left = [o for o in api("cake", "getOrders", date=day)["orders"] if o["status"] == "new"]
+    r = api("cake", "finishAll", date=day, route="Маршрут 3")
+    assert r["done"] == sum(1 for o in left if o["route"] == "Маршрут 3")
+    after = api("cake", "getOrders", date=day)["orders"]
+    assert all(o["status"] == "picked" and len(o["checked"]) == len(o["lines"]) for o in after if o["route"] == "Маршрут 3")
+    for o in after:
+        if o["route"] == "Маршрут 3":
+            api("cake", "reopenPick", id=o["id"])
+
+
+def test_big_photo_fits_body_limit(client):
+    import base64
+    from tests.conftest import call
+    big = base64.b64encode(b"\xff" * (2 * 1024 * 1024)).decode()  # 2 МБ фото — больше 64 КБ общего предела студии
+    r = call(client, "cake", "addOrderFile", user="web-x", orderId="nope", mime="image/jpeg", data=big)
+    assert r["error"] == "not_found"  # дошло до действия, а не «too_large»

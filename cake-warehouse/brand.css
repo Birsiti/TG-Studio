@@ -129,3 +129,10 @@
 .k-opt{ width:100%; text-align:left; }
 .k-opt.is-on .pick-box{ background:var(--ok); border-color:var(--ok); color:var(--surface); }
 .k-opt.is-on .qrow-name{ color:var(--accent); }
+
+/* Фото и файлы заявки */
+.pick-files{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:8px; }
+.pick-file{ aspect-ratio:3/4; border:1px solid var(--line); border-radius:var(--r-md); background:var(--surface-2, var(--surface)); overflow:hidden; padding:0; display:flex; align-items:center; justify-content:center; }
+.pick-file img{ width:100%; height:100%; object-fit:cover; display:block; }
+.pick-file-doc{ display:flex; flex-direction:column; align-items:center; gap:4px; font-weight:700; color:var(--ink-2); }
+.pick-photo{ width:100%; height:auto; border-radius:var(--r-md); display:block; }

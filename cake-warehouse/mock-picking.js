@@ -1,4 +1,4 @@
-// изменено 2026-10-17 13:30
+// изменено 2026-10-17 16:50
 /* ============================================================
    mock-picking.js — сборка по кругу в демо-режиме (двойник api/bots/cake/picking.py).
    Точки и заявки — mock-orders.js; в демо заявки с фото стоят на сегодня.
@@ -52,6 +52,8 @@
       if(!day){ var fresh = dates.filter(function(d){ return d >= D.add(D.today(), -7); }); day = fresh.filter(function(d){ return d >= D.today(); })[0] || fresh[fresh.length - 1] || D.today(); }
       var routes = S.points.filter(function(x){ return x.active && x.route; }).map(function(x){ return x.route; }).filter(function(r, i, a){ return a.indexOf(r) === i; }).sort();
       var list = S.orders.filter(function(o){ return o.date === day; }).sort(function(a, b){ return a.route.localeCompare(b.route) || a.num.localeCompare(b.num); });
+      var files = S.orderFiles || [];
+      list = list.map(function(o){ return Object.assign({}, o, {files:files.filter(function(f){ return f.orderId === o.id; }).map(function(f){ return {id:f.id, name:f.name, mime:f.mime, size:f.size}; })}); });
       return {date:day, dates:dates, orders:list, points:S.points, routes:routes, places:S.places};
     },
     saveOrder: function(p){
@@ -59,8 +61,7 @@
       if(!num) return err('bad_request', 'num: обязательное поле');
       if(!pt) return err('not_found', 'Нет такой точки');
       if(S.orders.some(function(o){ return o.num === num && o.id !== p.id; })) return err('bad_request', 'Заявка №' + num + ' уже есть');
-      var ls = lines(S, p.lines);
-      if(!ls.length) return err('bad_request', 'В заявке нет тортов');
+      var ls = lines(S, p.lines);  // пусто можно: заявка «по фото»
       var f = {num:num, date:p.date || D.today(), pointId:pt.id, route:pt.route, comment:p.comment || '', lines:ls};
       var o = p.id && order(S, p.id);
       if(o){
@@ -78,6 +79,7 @@
       if(!o) return err('not_found', 'Заявка не найдена');
       if(o.status !== 'new') return err('bad_state', 'Собранную заявку удалить нельзя');
       S.orders.splice(S.orders.indexOf(o), 1);
+      if(window.CakeMockFiles) CakeMockFiles.drop(S, o.id);
       return {};
     },
     checkLine: function(p){
@@ -123,6 +125,8 @@
       if(!list.length) return err('not_found', 'Нет заявок маршрута без рейса');
       var left = list.filter(function(o){ return o.status !== 'picked'; }).map(function(o){ return o.num; });
       if(left.length) return err('bad_state', 'Не собраны: №' + left.join(', №'));
+      var bare = list.filter(function(o){ return !o.lines.length; }).map(function(o){ return o.num; });
+      if(bare.length) return err('bad_state', 'Внесите торты в заявки по фото: №' + bare.join(', №'));
       var drv = p.driverId && byId(S.staff, p.driverId);
       if(p.driverId && (!drv || drv.role !== 'driver')) return err('not_found', 'Нет такого водителя');
       var m = {}, boxes = 0;

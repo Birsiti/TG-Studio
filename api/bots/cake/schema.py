@@ -1,4 +1,4 @@
-# изменено 2026-10-17 08:50
+# изменено 2026-10-17 17:00
 """Схема базы склада (SQLite) и общие константы."""
 
 SCHEMA = """
@@ -38,6 +38,11 @@ CREATE TABLE IF NOT EXISTS tara_moves(
 CREATE TABLE IF NOT EXISTS shifts(date TEXT NOT NULL, staff_id TEXT NOT NULL, PRIMARY KEY(date, staff_id));
 -- Сборка по кругу: место торта на складе (№ по кругу по часовой от двери), точки разгрузки, заявки
 CREATE TABLE IF NOT EXISTS places(product_id TEXT PRIMARY KEY, place INTEGER NOT NULL);
+-- Фото и файлы заявок: сам файл — на диске (TGS_DATA_DIR/cake-files/<id>), здесь — описание
+CREATE TABLE IF NOT EXISTS order_files(
+  id TEXT PRIMARY KEY, order_id TEXT NOT NULL, name TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL,
+  created_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS of_order ON order_files(order_id);
 CREATE TABLE IF NOT EXISTS points(
   id TEXT PRIMARY KEY, customer TEXT NOT NULL, address TEXT NOT NULL, route TEXT NOT NULL DEFAULT '',
   code TEXT NOT NULL DEFAULT '', sort INTEGER NOT NULL DEFAULT 0, active INTEGER NOT NULL DEFAULT 1,
