@@ -1,4 +1,4 @@
-// изменено 2026-10-17 15:20
+// изменено 2026-10-17 21:00
 /* Экран руководителя склада: сводка, смены, справочники. */
 (function(){
   "use strict";
@@ -83,10 +83,13 @@
       fields:x=>html`<div class="field-row"><label class="field"><span class="field-label">Город</span><input class="input" name="name" maxlength="60" value="${x.name || ''}"></label>
         <label class="field" style="flex:0 0 110px"><span class="field-label">Код</span><input class="input mono" name="code" maxlength="4" value="${x.code || ''}" placeholder="БРС"></label></div>`},
     staff:{label:'Люди', add:'Новый сотрудник', save:'saveStaff', key:'staff',
-      sub:x=>`${ROLE[x.role]}${x.car ? ' · ' + x.car : ''}${x.tgId ? ' · TG ' + x.tgId : ''}`,
+      sub:x=>`${ROLE[x.role]}${x.role === 'driver' ? (x.hired ? ' · наёмный' + (x.carrier ? ' (' + x.carrier + ')' : '') : ' · свой') : ''}${x.car ? ' · ' + x.car : ''}${x.tgId ? ' · TG ' + x.tgId : ''}`,
       fields:x=>html`<label class="field"><span class="field-label">Имя и фамилия</span><input class="input" name="name" maxlength="80" value="${x.name || ''}"></label>
         <div class="seg section" id="fRole">${Object.keys(ROLE).map(k=>html`<button type="button" data-v="${k}" class="${(x.role || 'driver') === k ? 'is-on' : ''}">${ROLE[k]}</button>`)}</div>
         <div class="field section"><span class="field-label">Телефон</span><div id="fPhone"></div></div>
+        <div class="section" id="fCarBox"${(x.role || 'driver') === 'driver' ? '' : Kit.raw(' hidden')}><span class="field-label">Чья машина</span>
+          <div class="seg" id="fHired"><button type="button" data-v="0" class="${x.hired ? '' : 'is-on'}">Своя (фирмы)</button><button type="button" data-v="1" class="${x.hired ? 'is-on' : ''}">Наёмный</button></div>
+          <label class="field section" id="fCarrierBox"${x.hired ? '' : Kit.raw(' hidden')}><span class="field-label">Фирма-перевозчик</span><input class="input" name="carrier" maxlength="80" value="${x.carrier || ''}" placeholder="ИП Петров"></label></div>
         <label class="field section"><span class="field-label">Машина и номер</span><input class="input" name="car" maxlength="80" value="${x.car || ''}" placeholder="Iveco Daily · 4521 AB-7"></label>
         <label class="field section"><span class="field-label">Telegram id — для входа в рабочем режиме</span><input class="input mono" name="tgId" inputmode="numeric" maxlength="15" value="${x.tgId || ''}"></label>`},
     tara:{label:'Тара', add:'Новый вид тары', save:'saveTara', key:'tara', sub:x=>`всего ${num(x.total)} шт`,
@@ -112,16 +115,17 @@
       <label class="row section" style="padding:0;border:0"><span class="row-main"><span class="row-title">Активен</span><span class="row-sub">Скрытые не предлагаются в рейсах и приходе</span></span>
         <span class="switch"><input type="checkbox" id="fAct" ${x.active !== false ? Kit.raw('checked') : ''}><span></span></span></label>`,
       actions: html`<button class="btn btn-primary btn-block" type="button" id="fSave">Сохранить</button>`});
-    let role = x.role || 'driver';
+    let role = x.role || 'driver', hired = !!x.hired;
     if(kind === 'staff'){
+      Kit.on(sh.$('#fHired'), 'click', '[data-v]', (e, el)=>{ hired = el.dataset.v === '1'; $$('#fHired button', sh.el).forEach(b=>b.classList.toggle('is-on', b === el)); sh.$('#fCarrierBox').hidden = !hired; haptic('select'); });
       sh.$('#fPhone').innerHTML = String(Kit.phone.field('fPh', x.phone || ''));
       Kit.phone.bind(sh.$('#fPh'));
-      Kit.on(sh.$('#fRole'), 'click', '[data-v]', (e, el)=>{ role = el.dataset.v; $$('#fRole button', sh.el).forEach(b=>b.classList.toggle('is-on', b === el)); haptic('select'); });
+      Kit.on(sh.$('#fRole'), 'click', '[data-v]', (e, el)=>{ role = el.dataset.v; $$('#fRole button', sh.el).forEach(b=>b.classList.toggle('is-on', b === el)); sh.$('#fCarBox').hidden = role !== 'driver'; haptic('select'); });
     }
     sh.$('#fSave').addEventListener('click', async ()=>{
       const p = {id:x.id, active:sh.$('#fAct').checked};
       $$('[name]', sh.el).forEach(el=> p[el.name] = el.value.trim());
-      if(kind === 'staff'){ p.role = role; p.phone = Kit.phone.value(sh.$('#fPh')) || undefined; }
+      if(kind === 'staff'){ p.role = role; p.phone = Kit.phone.value(sh.$('#fPh')) || undefined; p.hired = role === 'driver' && hired; }
       Kit.busy(sh.$('#fSave'), true);
       const r = await api(K.save, p);
       Kit.busy(sh.$('#fSave'), false);
