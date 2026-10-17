@@ -1,4 +1,4 @@
-// изменено 2026-10-17 18:30
+// изменено 2026-10-17 19:10
 /* ============================================================
    mock-picking.js — сборка по кругу в демо-режиме (двойник api/bots/cake/picking.py).
    Точки и заявки — mock-orders.js; в демо заявки с фото стоят на сегодня.
@@ -19,7 +19,11 @@
       CakeKartaDraft.forEach(function(r){ if(r.productId && !S.places[r.productId] && byId(S.products, r.productId)) S.places[r.productId] = r.place; });
       S.placesV1 = true;
     }
-    if(!S.batch1810 && CakeMockOrders.batch1810){ seedBatch(S, CakeMockOrders.batch1810); S.batch1810 = true; }
+    (CakeMockOrders.batches || []).forEach(function(b){ if(!S[b.key]){ seedBatch(S, b); S[b.key] = true; } });
+    if(!S.perboxV1 && CakeMockOrders.perBox){  // шт в коробке мелких пирожных — где ещё 1
+      Object.keys(CakeMockOrders.perBox).forEach(function(id){ var p = byId(S.products, id); if(p && (p.perBox || 1) === 1) p.perBox = CakeMockOrders.perBox[id]; });
+      S.perboxV1 = true;
+    }
     S.points.forEach(function(p){ if(p.route) routeCity(S, p.route); });
     return S;
   }
