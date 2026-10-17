@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 09:40 -->
+<!-- изменено 2026-10-17 15:40 -->
 # API склада
 
 ```
@@ -57,6 +57,8 @@ Content-Type: text/plain;charset=utf-8          (простой CORS-запро�
 | `reportTrip` | `id`, `returns[{productId, back, spoiled}]`, `taraBack[]`, `comment?` | Отчёт водителя → `reported` |
 | `closeTrip` | `id`, `returns[]`, `taraBack[]` | Годные — на остаток, ящики — с долга → `closed`; в строках `delivered` |
 | `getMyTrips` | `driverId?` (только в открытом демо) | `driver`, `trips`, `taraDebt` |
+| `setOdometer` | `id`, `kind` out/back, `km` | Спидометр рейса (`odoOut`/`odoBack` в рейсе). Водитель — свой рейс; back ≥ out, пробег ≤ 3000 км |
+| `getDriverStats` | `from?`, `to?` (по умолчанию 30 дней) | `drivers[{driverId, trips, points, km, kmGap, noOdo, shipped, back, spoiled, shortage, taraDebt}]` |
 
 ## Ящики (`tara.py`)
 

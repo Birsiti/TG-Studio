@@ -27,7 +27,8 @@ CREATE TABLE IF NOT EXISTS trips(
   id TEXT PRIMARY KEY, num INTEGER NOT NULL, date TEXT NOT NULL, city_id TEXT NOT NULL, driver_id TEXT,
   status TEXT NOT NULL, lines TEXT NOT NULL DEFAULT '[]', tara_out TEXT NOT NULL DEFAULT '[]',
   tara_back TEXT NOT NULL DEFAULT '[]', report TEXT NOT NULL DEFAULT '', note TEXT NOT NULL DEFAULT '',
-  created_at TEXT NOT NULL, shipped_at TEXT, reported_at TEXT, closed_at TEXT, seed INTEGER NOT NULL DEFAULT 0);
+  created_at TEXT NOT NULL, shipped_at TEXT, reported_at TEXT, closed_at TEXT, seed INTEGER NOT NULL DEFAULT 0,
+  odo_out INTEGER, odo_back INTEGER);  -- спидометр на выезде и при возврате, км
 CREATE INDEX IF NOT EXISTS ct_date ON trips(date);
 CREATE TABLE IF NOT EXISTS tara_moves(
   id INTEGER PRIMARY KEY AUTOINCREMENT, date TEXT NOT NULL, tara_id TEXT NOT NULL, driver_id TEXT NOT NULL,

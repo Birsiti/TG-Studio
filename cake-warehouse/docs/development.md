@@ -28,6 +28,8 @@ cake-warehouse/                 Mini App (GitHub Pages)
   mock.js                        демо: двойник API в localStorage (CakeMock.register — для других тем)
   mock-orders.js                 демо: точки и заявки с фото (генерируется db/gen_mock_orders.py)
   mock-picking.js                демо: действия сборки
+  mock-drivers.js                демо: спидометр и статистика водителей (двойник drivers.py)
+  js/admin-drivers.js            руководитель: вкладка «Водители»
   db/                            SQL-база под маршруты, листы сборки по кругу
   docs/                          эта документация
   source/                        фото заявок клиента
@@ -37,7 +39,7 @@ api/bots/cake/                  API (FastAPI + SQLite, общий сервер �
   __init__.py   bot и регистрация модулей
   schema.py     таблицы и константы        catalog.py   ассортимент и демо-справочники
   base.py       доступ, выдача JSON, общие проверки
-  refs.py  stock.py  trips.py  tara.py  shifts.py  overview.py  picking.py   действия по темам
+  refs.py  stock.py  trips.py  tara.py  shifts.py  overview.py  picking.py  drivers.py   действия по темам
   orders_data.py  orders_seed.py  заявки с фото (общие с db/) и их перенос в базу
   seed.py       демо-данные при первом запуске
 api/tests/test_cake.py, test_cake_picking.py   тесты API
@@ -48,7 +50,7 @@ cake-bot/                       Telegram-бот (Node 18+, iMac)
 ```
 
 Порядок скриптов на странице кладовщика: `telegram-web-app.js` →
-`../kit/core.js` → `mock-data.js` → `mock-orders.js` → `mock.js` → `mock-picking.js` → `js/common.js` →
+`../kit/core.js` → `mock-data.js` → `mock-orders.js` → `mock.js` → `mock-drivers.js` → `mock-picking.js` → `js/common.js` →
 вкладки → `js/sklad-main.js`. Вкладка регистрирует отрисовку в
 `Cake.tabs.<имя>`, общие данные — `Cake.refs`, `Cake.stock`.
 

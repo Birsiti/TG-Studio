@@ -191,3 +191,40 @@ def test_route_city_survives_rename(api):
 
 def test_huge_number_is_bad_request(api):
     assert api("cake", "addIncome", lines=[{"productId": "p003", "qty": "1e400"}])["error"] == "bad_request"
+
+
+def test_odometer_and_driver_stats(api, monkeypatch):
+    api("cake", "addIncome", lines=[{"productId": "p003", "qty": 10}])
+    t = api("cake", "saveTrip", cityId="lida", driverId="dr-pavel", lines=[{"productId": "p003", "qty": 10}],
+            taraOut=[{"taraId": "box", "qty": 2}])["trip"]
+    assert api("cake", "setOdometer", id=t["id"], kind="out", km=1000)["error"] == "bad_state"  # ещё на сборке
+    api("cake", "shipTrip", id=t["id"])
+    assert api("cake", "setOdometer", id=t["id"], kind="back", km=1100)["error"] == "bad_request"  # сначала выезд
+    assert api("cake", "setOdometer", id=t["id"], kind="out", km=1000)["trip"]["odoOut"] == 1000
+    assert api("cake", "setOdometer", id=t["id"], kind="back", km=990)["error"] == "bad_request"   # меньше выезда
+    assert api("cake", "setOdometer", id=t["id"], kind="back", km=9000)["error"] == "bad_request"  # опечатка
+    assert api("cake", "setOdometer", id=t["id"], kind="back", km=1185)["trip"]["odoBack"] == 1185
+    api("cake", "reportTrip", id=t["id"], returns=[{"productId": "p003", "back": 3}])
+    api("cake", "closeTrip", id=t["id"], returns=[{"productId": "p003", "back": 2}], taraBack=[{"taraId": "box", "qty": 1}])
+    t2 = api("cake", "saveTrip", cityId="lida", driverId="dr-pavel", lines=[{"productId": "p003", "qty": 1}])["trip"]
+    api("cake", "shipTrip", id=t2["id"])
+    api("cake", "setOdometer", id=t2["id"], kind="out", km=1200)  # 15 км между рейсами
+    d = next(x for x in api("cake", "getDriverStats")["drivers"] if x["driverId"] == "dr-pavel")
+    assert d["km"] >= 185 and d["kmGap"] >= 15 and d["shortage"] >= 1 and d["back"] >= 2 and d["taraDebt"] >= 1
+    # водитель — только свой рейс
+    monkeypatch.setenv("TGS_CAKE_ADMINS", "111")
+    api("cake", "saveStaff", user="111", id="dr-ivan", name="Иван Водитель", role="driver", tgId="777")
+    assert api("cake", "setOdometer", user="777", id=t2["id"], kind="back", km=1250)["error"] == "forbidden"
+    assert api("cake", "getDriverStats", user="777")["error"] == "forbidden"
+
+
+def test_odometer_migration_into_old_db(api):
+    """База iMac создана без спидометра — колонки добавятся при старте, рейсы целы."""
+    from bots.cake import bot as cake_bot
+    n = len(api("cake", "getTrips")["trips"])
+    conn = cake_bot.connect()
+    conn.executescript("ALTER TABLE trips DROP COLUMN odo_out; ALTER TABLE trips DROP COLUMN odo_back;")
+    conn.close()
+    cake_bot._ready = False
+    r = api("cake", "getTrips")["trips"]
+    assert len(r) == n and all("odoOut" in t for t in r)

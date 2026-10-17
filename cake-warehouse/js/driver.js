@@ -1,8 +1,8 @@
-// изменено 2026-10-17 01:30
+// изменено 2026-10-17 15:10
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
-  const {html, icon, $, $$, date: D, haptic} = Kit;
+  const {html, icon, $, $$, date: D, num, haptic} = Kit;
   const api = Kit.createApi({bot:'cake', mock: window.CakeMock});
   $('#mark').innerHTML = icon('truck');
   $('#refreshBtn').innerHTML = icon('refresh');
@@ -70,9 +70,33 @@
       <div class="eyebrow" style="margin-bottom:8px">Везёте</div>
       ${t.lines.map(l=>html`<div class="kv"><span class="k">${L(l.productId)}</span><span class="v mono">${l.qty}${t.status === 'closed' ? ' → ' + l.delivered : ''}</span></div>`)}
       ${t.taraOut.length ? html`<div class="eyebrow section" style="margin-bottom:8px">Тара</div>${t.taraOut.map(l=>html`<div class="kv"><span class="k">${T(l.taraId).name}</span><span class="v mono">${l.qty}</span></div>`)}` : ''}
-      ${t.note ? html`<p class="hint section">${t.note}</p>` : ''}`,
-      actions: /shipped|reported/.test(t.status) ? html`<button class="btn btn-primary btn-block" type="button" id="goRep">${icon('clipboard')}${t.status === 'reported' ? 'Исправить отчёт' : 'Сдать рейс'}</button>` : ''});
+      ${t.note ? html`<p class="hint section">${t.note}</p>` : ''}
+      ${odoBlock(t)}`,
+      actions: t.status === 'shipped' && t.odoOut == null ? html`<button class="btn btn-primary btn-block" type="button" id="goOut">${icon('truck')}Выезжаю</button>`
+        : /shipped|reported/.test(t.status) ? html`<button class="btn btn-primary btn-block" type="button" id="goRep">${icon('clipboard')}${t.status === 'reported' ? 'Исправить отчёт' : 'Сдать рейс'}</button>` : ''});
     const b = sh.$('#goRep'); if(b) b.addEventListener('click', ()=>{ sh.close(); report(t); });
+    const go = sh.$('#goOut'); if(go) go.addEventListener('click', async ()=>{
+      const km = odoValue(sh.$('#odoOut')); if(km == null) return;
+      Kit.busy(go, true); const r = await api('setOdometer', {id:t.id, kind:'out', km}); Kit.busy(go, false);
+      if(!r.ok){ fail(r); return; }
+      haptic('success'); sh.close(); Kit.toast('Хорошей дороги!', 'ok'); load();
+    });
+  }
+
+  // Спидометр: на выезде — поле перед «Выезжаю», потом — показания и пробег
+  function odoBlock(t){
+    if(t.status === 'shipped' && t.odoOut == null) return html`<label class="field section"><span class="field-label">Спидометр на выезде, км</span>
+      <input class="input" id="odoOut" type="number" inputmode="numeric" min="0" placeholder="например 84 310"></label>`;
+    if(t.odoOut == null) return '';
+    return html`<div class="eyebrow section" style="margin-bottom:8px">Спидометр</div>
+      <div class="kv"><span class="k">Выезд</span><span class="v mono">${num(t.odoOut)} км</span></div>
+      ${t.odoBack != null ? html`<div class="kv"><span class="k">Возврат</span><span class="v mono">${num(t.odoBack)} км</span></div>
+        <div class="kv"><span class="k">Пробег</span><span class="v mono">${num(t.odoBack - t.odoOut)} км</span></div>` : ''}`;
+  }
+  function odoValue(el){
+    const v = String(el.value).replace(/\s/g, '');
+    if(!/^\d{1,7}$/.test(v)){ Kit.toast('Укажите показания спидометра', 'error'); haptic('warning'); el.focus(); return null; }
+    return +v;
   }
 
   function report(t){
@@ -80,7 +104,11 @@
     const rb = {}; rep.returns.forEach(r=> rb[r.productId] = r);
     const tb = {}; rep.taraBack.forEach(l=> tb[l.taraId] = l.qty);
     const sh = Kit.sheet({title:'Отчёт по рейсу', sub:`${C(t.cityId).name} · что везёте обратно`, body: html`
-      <div class="qrow" style="color:var(--ink-3);font-size:13px"><span class="qrow-name" style="font-weight:400">Торт</span><span style="width:84px;text-align:center">Целые</span><span style="width:84px;text-align:center">Брак</span></div>
+      <div class="field-row">
+        ${t.odoOut == null ? html`<label class="field"><span class="field-label">Спидометр на выезде</span><input class="input" id="rOut" type="number" inputmode="numeric" min="0"></label>` : ''}
+        <label class="field"><span class="field-label">Спидометр сейчас, км</span><input class="input" id="rBack" type="number" inputmode="numeric" min="0" value="${t.odoBack != null ? t.odoBack : ''}" placeholder="${t.odoOut != null ? 'на выезде ' + num(t.odoOut) : ''}"></label>
+      </div>
+      <div class="qrow section" style="color:var(--ink-3);font-size:13px"><span class="qrow-name" style="font-weight:400">Торт</span><span style="width:84px;text-align:center">Целые</span><span style="width:84px;text-align:center">Брак</span></div>
       ${t.lines.map(l=>html`<div class="qrow"><span class="qrow-name">${Kit.nobr(P(l.productId).name)}<small>${W(P(l.productId).weightG)} · увезли ${l.qty}</small></span>
         <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-back="${l.productId}" value="${(rb[l.productId] || {}).back || ''}">
         <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-spoil="${l.productId}" value="${(rb[l.productId] || {}).spoiled || ''}"></div>`)}
@@ -92,7 +120,15 @@
       const v = el=> parseInt(el.value, 10) || 0;
       const returns = t.lines.map(l=>({productId:l.productId, back:v(sh.$(`[data-back="${l.productId}"]`)), spoiled:v(sh.$(`[data-spoil="${l.productId}"]`))})).filter(r=>r.back || r.spoiled);
       const taraBack = $$('[data-tb]', sh.el).map(el=>({taraId:el.dataset.tb, qty:v(el)})).filter(l=>l.qty > 0);
+      const out = sh.$('#rOut') ? odoValue(sh.$('#rOut')) : t.odoOut; if(out == null) return;
+      const back = odoValue(sh.$('#rBack')); if(back == null) return;
       Kit.busy(sh.$('#rGo'), true);
+      for(const [kind, km] of [['out', out], ['back', back]]){
+        if(km === (kind === 'out' ? t.odoOut : t.odoBack)) continue;
+        const o = await api('setOdometer', {id:t.id, kind, km});
+        if(!o.ok){ Kit.busy(sh.$('#rGo'), false); fail(o); return; }
+        t[kind === 'out' ? 'odoOut' : 'odoBack'] = km;
+      }
       const r = await api('reportTrip', {id:t.id, returns, taraBack, comment:sh.$('#rCom').value.trim()});
       Kit.busy(sh.$('#rGo'), false);
       if(!r.ok){ fail(r); return; }

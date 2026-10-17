@@ -18,6 +18,9 @@ def _seed(conn, now):
 def _migrate(conn, now):
     from bots.cake.orders_seed import migrate_picking  # сборка — и в уже работающие базы
     migrate_picking(conn, now)
+    if "odo_out" not in {r["name"] for r in conn.execute("PRAGMA table_info(trips)").fetchall()}:
+        conn.execute("ALTER TABLE trips ADD COLUMN odo_out INTEGER")  # спидометр — в базы, созданные раньше
+        conn.execute("ALTER TABLE trips ADD COLUMN odo_back INTEGER")
 
 
 bot = Bot("cake", SCHEMA, _seed, migrate=_migrate)
@@ -41,7 +44,7 @@ def _service(p: dict) -> bool:
 
 
 # Водитель видит только своё: рейсы и отчёт о возврате. Остальное — склад (кладовщик и руководитель).
-DRIVER_ACTIONS = {"getMe", "getRefs", "getMyTrips", "reportTrip"}
+DRIVER_ACTIONS = {"getMe", "getRefs", "getMyTrips", "reportTrip", "setOdometer"}
 ADMIN_ACTIONS = {"saveStaff"}  # кого пускать в приложение — решает только руководитель
 _warned = False
 
@@ -109,7 +112,7 @@ def _trip(r):
             "status": r["status"], "lines": jload(r["lines"], []), "taraOut": jload(r["tara_out"], []),
             "taraBack": jload(r["tara_back"], []), "report": r["report"], "note": r["note"],
             "createdAt": r["created_at"], "shippedAt": r["shipped_at"], "reportedAt": r["reported_at"],
-            "closedAt": r["closed_at"]}
+            "closedAt": r["closed_at"], "odoOut": r["odo_out"], "odoBack": r["odo_back"]}
 
 
 def _move(r):

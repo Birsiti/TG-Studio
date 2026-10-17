@@ -1,4 +1,4 @@
-// изменено 2026-10-17 04:20
+// изменено 2026-10-17 15:30
 /* Вкладка «Рейсы»: сборка → отгрузка → приёмка с возвратом тортов и ящиков. */
 (function(){
   "use strict";
@@ -44,6 +44,7 @@
     const sh = Kit.sheet({title:`${c.name} · №${t.num}`, sub:`${D.label(t.date)} · ${TRIP_ST[t.status][0]}`, body: html`
       <div class="kv"><span class="k">Водитель</span><span class="v">${d ? d.name : '—'}</span></div>
       ${d && d.car ? html`<div class="kv"><span class="k">Машина</span><span class="v">${d.car}</span></div>` : ''}
+      ${t.odoOut != null ? html`<div class="kv"><span class="k">Спидометр</span><span class="v mono">${num(t.odoOut)}${t.odoBack != null ? ` → ${num(t.odoBack)} · ${num(t.odoBack - t.odoOut)} км` : ' → в пути'}</span></div>` : ''}
       ${t.note ? html`<div class="kv"><span class="k">Комментарий</span><span class="v">${t.note}</span></div>` : ''}
       <div class="section"><div class="eyebrow" style="margin-bottom:8px">Состав</div>
         ${t.lines.map(l=>html`<div class="kv"><span class="k">${L(l.productId)}</span><span class="v mono">${l.qty}${closed ? html` <span class="hint">→ ${l.delivered}${l.back ? ' · возв ' + l.back : ''}${l.spoiled ? ' · брак ' + l.spoiled : ''}</span>` : ''}</span></div>`)}</div>
