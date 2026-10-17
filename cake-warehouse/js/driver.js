@@ -18,7 +18,8 @@
   const fail = r=> { Kit.toast(r.message || 'Не получилось', 'error'); haptic('error'); };
 
   async function load(){
-    const [refs, me] = await Promise.all([api('getRefs'), api('getMe')]);
+    const refs = await api('getRefs'), me = await api('getMe');  // по очереди: первый ответ решает, сервер или демо
+    if(api.mode() === 'demo') $('#modeNote').innerHTML = String(html`<p class="mode-note">Демо-режим: сервер недоступен, данные хранятся только в этом телефоне.</p>`);
     if(!refs.ok){ $('#view').innerHTML = String(html`<div class="empty">${icon('lock')}<div class="empty-title">Нет доступа</div>Попросите кладовщика добавить ваш Telegram в список водителей</div>`); return; }
     REFS = refs; restricted = me.ok && me.restricted;
     const picked = Kit.store(PICK_KEY);

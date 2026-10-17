@@ -1,4 +1,4 @@
-// изменено 2026-10-16 20:05
+// изменено 2026-10-17 13:10
 /* ============================================================
    kit/core.js — общий рантайм всех Mini App студии TG-Studio.
 
@@ -603,7 +603,7 @@
         return r.json().catch(function(){ throw new Error('bad json'); });
       }).then(function(data){
         if(!data || typeof data.ok !== 'boolean') throw new Error('bad shape');
-        state.mode = 'live';
+        if(state.mode === 'unknown') state.mode = 'live'; // ушли в демо — до перезапуска остаёмся там, не смешиваем данные
         if(!data.ok && data.error === 'rate_limited') toast('Слишком много запросов — подождите минуту', 'error');
         return data;
       }).catch(function(err){
@@ -668,6 +668,13 @@
   /* ============ CSV ============ */
   function csv(filename, rows){
     var text = rows.map(function(r){ return r.map(function(c){ c = String(c == null ? '' : c); return /[";\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(';'); }).join('\n');
+    function copy(){
+      var ok = function(){ toast('CSV скопирован — вставьте в Excel или заметки', 'ok'); };
+      var no = function(){ toast('Не удалось скопировать CSV', 'error'); };
+      if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, no); else no();
+    }
+    // В Telegram (iOS/Android) скачивание blob-ссылки молча не работает — копируем в буфер
+    if(inTelegram) return copy();
     var blob = new Blob(['﻿' + text], {type: 'text/csv;charset=utf-8'});
     try{
       var a = document.createElement('a');
@@ -675,9 +682,7 @@
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
       toast('Файл ' + filename + ' сохранён', 'ok');
-    }catch(e){
-      if(navigator.clipboard) navigator.clipboard.writeText(text).then(function(){ toast('CSV скопирован в буфер', 'ok'); });
-    }
+    }catch(e){ copy(); }
   }
 
   /* ============ ПРОЧЕЕ ============ */

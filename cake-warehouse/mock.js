@@ -1,4 +1,4 @@
-// изменено 2026-10-17 09:00
+// изменено 2026-10-17 13:30
 /* ============================================================
    mock.js — офлайн-двойник API склада (api/bots/cake/). Данные — mock-data.js.
    Действия других тем добавляются через CakeMock.register (mock-picking.js).
@@ -41,12 +41,16 @@ window.CakeMock = (function(){
     ls.forEach(function(l){ var have = st[l.productId] || 0; if(l.qty > have) short.push(byId(S.products, l.productId).name + ': есть ' + have + ', нужно ' + l.qty); });
     return short.length ? 'Не хватает: ' + short.join('; ') : '';
   }
+  // Возвраты как в API (_returns): строка-ошибка или список
   function returns(arr, trip){
     var shipped = {}; trip.lines.forEach(function(l){ shipped[l.productId] = l.qty; });
-    var out = [];
+    var out = [], seen = {};
     for(var i = 0; i < (arr || []).length; i++){
       var x = arr[i], b = parseInt(x.back, 10) || 0, s = parseInt(x.spoiled, 10) || 0;
-      if(!(x.productId in shipped) || b < 0 || s < 0 || b + s > shipped[x.productId]) return null;
+      if(!(x.productId in shipped)) return 'Этого торта не было в рейсе';
+      if(seen[x.productId]) return 'Торт в возврате дважды';
+      seen[x.productId] = true;
+      if(b < 0 || s < 0 || b + s > shipped[x.productId]) return 'Возврат больше, чем уехало';
       if(b || s) out.push({productId:x.productId, back:b, spoiled:s});
     }
     return out;
@@ -57,7 +61,7 @@ window.CakeMock = (function(){
   var A = {
     getRefs: function(){ return {products:S.products, cities:S.cities, staff:S.staff, tara:S.tara, moveTypes:MOVE_TYPES, cats:CATS}; },
     getMe: function(){ return {staff:null, restricted:false}; },
-    saveProduct: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); var old = p.id && byId(S.products, p.id) || {}; var w = +p.weightG || old.weightG || 0; if(!w) return err('bad_request', 'Укажите вес, г — как на упаковке'); return {product:upsert(S.products, {id:p.id || Kit.uid('p'), cat:p.cat || CATS[0], name:p.name, sku:p.sku || '', weightG:w, shelfDays:+p.shelfDays || 0, minQty:+p.minQty || 0, perBox:Math.max(1, +p.perBox || old.perBox || 1), sort:old.sort != null ? old.sort : S.products.length, active:p.active !== false})}; },
+    saveProduct: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); var old = p.id && byId(S.products, p.id) || {}; if(String(p.weightG) === '0' || String(p.perBox) === '0') return err('bad_request', 'вне диапазона'); var w = +p.weightG || old.weightG || 0; if(!w) return err('bad_request', 'Укажите вес, г — как на упаковке'); return {product:upsert(S.products, {id:p.id || Kit.uid('p'), cat:p.cat || CATS[0], name:p.name, sku:p.sku || '', weightG:w, shelfDays:+p.shelfDays || 0, minQty:+p.minQty || 0, perBox:Math.max(1, +p.perBox || old.perBox || 1), sort:old.sort != null ? old.sort : S.products.length, active:p.active !== false})}; },
     saveCity: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); return {city:upsert(S.cities, {id:p.id || Kit.uid('c'), name:p.name, code:String(p.code || '').toUpperCase().slice(0, 4), sort:S.cities.length, active:p.active !== false})}; },
     saveStaff: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Имя'); if(p.tgId && !/^\d+$/.test(p.tgId)) return err('bad_request', 'tgId: только цифры'); return {staff:upsert(S.staff, {id:p.id || Kit.uid('s'), name:p.name, role:p.role, phone:p.phone || '', car:p.car || '', tgId:p.tgId || '', active:p.active !== false})}; },
     saveTara: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); return {tara:upsert(S.tara, {id:p.id || Kit.uid('t'), name:p.name, total:+p.total || 0, sort:S.tara.length, active:p.active !== false})}; },
@@ -70,13 +74,14 @@ window.CakeMock = (function(){
       return {items:items, total:items.reduce(function(s, i){ return s + i.qty; }, 0)};
     },
     addIncome: function(p){ var ls = lines(p.lines); if(!ls) return err('bad_request', 'Пустой список'); ls.forEach(function(l){ addMove('in', l.productId, l.qty, {date:p.date || D.today(), note:p.note || ''}); }); return {added:ls.reduce(function(s, l){ return s + l.qty; }, 0)}; },
-    writeOff: function(p){ var q = parseInt(p.qty, 10) || 0; if(q < 1 || !p.reason) return err('bad_request'); var s = shortage([{productId:p.productId, qty:q}]); if(s) return err('no_stock', s); addMove('writeoff', p.productId, -q, {note:p.reason}); return {qty:stockMap()[p.productId] || 0}; },
+    writeOff: function(p){ var q = parseInt(p.qty, 10) || 0; if(q < 1) return err('bad_request', 'Укажите количество'); if(String(p.reason || '').trim().length < 2) return err('bad_request', 'Укажите причину списания'); var s = shortage([{productId:p.productId, qty:q}]); if(s) return err('no_stock', s); addMove('writeoff', p.productId, -q, {note:p.reason}); return {qty:stockMap()[p.productId] || 0}; },
     adjustStock: function(p){ var a = parseInt(p.actual, 10); if(!(a >= 0)) return err('bad_request'); var d = a - (stockMap()[p.productId] || 0); if(d) addMove('adjust', p.productId, d, {note:p.note || 'Пересчёт'}); return {delta:d, qty:a}; },
     getMoves: function(p){ var to = p.to || D.today(), from = p.from || D.add(to, -6); return {from:from, to:to, moves:S.moves.filter(function(m){ return inRange(m.date, from, to) && (!p.type || m.type === p.type); }).sort(function(a, b){ return a.date === b.date ? b.id - a.id : (a.date < b.date ? 1 : -1); }).slice(0, 500)}; },
 
     getTrips: function(p){ var from = p.from || D.add(D.today(), -7), to = p.to || D.add(D.today(), 7); return {trips:S.trips.filter(function(t){ return inRange(t.date, from, to) || /draft|shipped|reported/.test(t.status); }).sort(function(a, b){ return a.date === b.date ? b.num - a.num : (a.date < b.date ? 1 : -1); })}; },
     saveTrip: function(p){
       if(!byId(S.cities, p.cityId)) return err('not_found', 'Нет такого города');
+      if(p.driverId && (byId(S.staff, p.driverId) || {}).role !== 'driver') return err('not_found', 'Нет такого водителя');
       var ls = lines(p.lines, true), data = {date:p.date || D.today(), cityId:p.cityId, driverId:p.driverId || null, lines:ls, taraOut:taraLines(p.taraOut), note:p.note || ''};
       if(p.id){ var t = byId(S.trips, p.id); if(!t) return err('not_found'); if(t.status !== 'draft') return err('bad_state', 'Отгруженный рейс не редактируется'); Object.assign(t, data); return {trip:t}; }
       var nt = Object.assign({id:'R-' + Kit.uid('M').slice(2), num:++S.num, status:'draft', taraBack:[], report:'', createdAt:now(), shippedAt:null, reportedAt:null, closedAt:null}, data);
@@ -93,13 +98,14 @@ window.CakeMock = (function(){
     cancelTrip: function(p){ var t = byId(S.trips, p.id); if(!t) return err('not_found'); if(t.status !== 'draft') return err('bad_state', 'Отменить можно только рейс на сборке'); t.status = 'cancelled'; (S.orders || []).forEach(function(o){ if(o.tripId === t.id) o.tripId = null; }); return {trip:t}; },
     reportTrip: function(p){
       var t = byId(S.trips, p.id); if(!t) return err('not_found'); if(!/shipped|reported/.test(t.status)) return err('bad_state', 'Рейс не в пути');
-      var rs = returns(p.returns, t); if(!rs) return err('bad_request', 'Возврат больше, чем уехало');
+      var rs = returns(p.returns, t); if(typeof rs === 'string') return err('bad_request', rs);
       t.report = JSON.stringify({returns:rs, taraBack:taraLines(p.taraBack), comment:p.comment || ''}); t.status = 'reported'; t.reportedAt = now(); return {trip:t};
     },
     closeTrip: function(p){
       var t = byId(S.trips, p.id); if(!t) return err('not_found'); if(!/shipped|reported/.test(t.status)) return err('bad_state', 'Рейс не в пути');
-      var rs = returns(p.returns, t); if(!rs) return err('bad_request', 'Возврат больше, чем уехало');
-      var tb = taraLines(p.taraBack), by = {};
+      var rs = returns(p.returns, t); if(typeof rs === 'string') return err('bad_request', rs);
+      var tb = taraLines(p.taraBack), by = {}, debt = taraDebt();
+      for(var i = 0; i < tb.length; i++){ var has = debt[t.driverId + '|' + tb[i].taraId] || 0; if(tb[i].qty > has) return err('bad_request', 'У водителя на руках только ' + has); }
       rs.forEach(function(r){ by[r.productId] = r; if(r.back) addMove('return', r.productId, r.back, {cityId:t.cityId, tripId:t.id}); });
       tb.forEach(function(l){ addTara(l.taraId, t.driverId, 'back', l.qty, t.cityId, t.id); });
       t.lines = t.lines.map(function(l){ var r = by[l.productId] || {}, b = r.back || 0, s = r.spoiled || 0; return Object.assign({}, l, {back:b, spoiled:s, delivered:l.qty - b - s}); });

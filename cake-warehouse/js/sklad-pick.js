@@ -1,4 +1,4 @@
-// изменено 2026-10-17 12:25
+// изменено 2026-10-17 13:20
 /* Вкладка «Сборка»: заявки на дату и лист с галочками в порядке обхода склада
    (по часовой стрелке от двери). Сейчас — по заявке, со следующей недели — весь маршрут за круг. */
 (function(){
@@ -40,7 +40,7 @@
     $('#pkNote').innerHTML = unplaced ? String(html`<p class="mode-note">Не у всех тортов задано место на складе — такие строки идут в конце листа. ${html`<button class="link-btn" type="button" data-places>Задать места</button>`}</p>`) : '';
     if(PK.route && PK.mode === 'route'){
       const free = list.filter(o=>!o.tripId), ready = free.length && free.every(o=>o.status === 'picked');
-      $('#pkList').innerHTML = String(html`${routeSheet(list)}${free.length ? html`<button class="btn ${ready ? 'btn-primary' : 'btn-ghost'} btn-block section" type="button" data-ship>${icon('truck')}${ready ? 'Отгрузить маршрут водителю' : `Собрано ${free.length - free.filter(o=>o.status !== 'picked').length} из ${free.length} — отгрузка после сборки`}</button>` : html`<p class="hint section">Все заявки маршрута уже в рейсе — смотрите вкладку «Рейсы».</p>`}`);
+      $('#pkList').innerHTML = String(html`${routeSheet(free)}${free.length < list.length ? html`<p class="hint">Уже в рейсе: ${list.filter(o=>o.tripId).map(o=>'№' + o.num).join(', ')} — в лист не входят.</p>` : ''}${free.length ? html`<button class="btn ${ready ? 'btn-primary' : 'btn-ghost'} btn-block section" type="button" data-ship>${icon('truck')}${ready ? 'Отгрузить маршрут водителю' : `Собрано ${free.length - free.filter(o=>o.status !== 'picked').length} из ${free.length} — отгрузка после сборки`}</button>` : html`<p class="hint section">Все заявки маршрута уже в рейсе — смотрите вкладку «Рейсы».</p>`}`);
       return;
     }
     $('#pkList').innerHTML = list.length ? String(html`${list.map(card)}`)
@@ -121,7 +121,7 @@
       actions: html`<button class="btn btn-primary btn-block" type="button" data-ok>${icon('check')}Готово</button>`});
     Kit.on(sh.el, 'click', '[data-ok]', async (e, el)=>{
       const boxes = $('#pkBoxes', sh.el).value.trim();
-      if(!/^\d+$/.test(boxes)){ Kit.toast('Укажите количество ящиков', 'error'); haptic('warning'); $('#pkBoxes', sh.el).focus(); return; }
+      if(!/^\d{1,3}$/.test(boxes)){ Kit.toast('Укажите количество ящиков', 'error'); haptic('warning'); $('#pkBoxes', sh.el).focus(); return; }
       Kit.busy(el, true);
       const r = await api('finishPick', Object.assign({id:o.id, boxes:+boxes}, all ? {all:true} : {}));
       Kit.busy(el, false);

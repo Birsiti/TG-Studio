@@ -1,4 +1,4 @@
-// изменено 2026-10-17 11:10
+// изменено 2026-10-17 13:20
 /* Сборка: ввод и правка заявки, карта склада (место торта — № по кругу по часовой от двери),
    отгрузка собранного маршрута водителю (черновик рейса). */
 (function(){
@@ -7,11 +7,11 @@
   const {api, W, byCat, filterRows, nameKey, fail} = Cake;
   const PK = ()=> Cake.pick;
 
-  function productRows(val, attr){
-    const act = Cake.refs.products.filter(p=>p.active);
+  function productRows(val, attr, shown = val){
+    const act = Cake.refs.products.filter(p=>p.active || val(p.id));  // снятый с продажи торт в заявке не теряем
     return byCat(act, p=>html`<div class="qrow" data-row="${p.id}" data-name="${nameKey(p)}">
       <span class="qrow-name">${Kit.nobr(p.name)}<small>${W(p.weightG)}</small></span>
-      <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" ${attr}="${p.id}" value="${val(p.id) || ''}">
+      <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" ${attr}="${p.id}" value="${shown(p.id) || ''}">
     </div>`);
   }
   // Окно мест — по номерам, как идём по складу; без места — в конце (по категориям)
@@ -43,7 +43,7 @@
       <label class="field"><span class="field-label">Комментарий</span><input class="input" id="eoComment" maxlength="300" value="${o ? o.comment : ''}" placeholder="Бонусы, время доставки"></label>
       ${Object.keys(bonus).length ? html`<p class="hint">Бонусные строки сохраняются как есть: ${Object.keys(bonus).map(id=>Cake.L(id) + ' +' + bonus[id]).join(', ')}.</p>` : ''}
       <div class="search section"><span>${icon('search')}</span><input class="input" id="eoQ" type="search" placeholder="Найти торт" autocomplete="off"></div>
-      <div class="section" id="eoList">${productRows(id=>qty[id], 'data-eo')}</div>`,
+      <div class="section" id="eoList">${productRows(id=>qty[id] || bonus[id], 'data-eo', id=>qty[id])}</div>`,
       actions: html`${o ? html`<button class="btn btn-danger-soft" type="button" data-del>${icon('trash')}</button>` : ''}<button class="btn btn-primary btn-block" type="button" data-save>${icon('check')}Сохранить</button>`});
     mark(sh.el);
     $('#eoList', sh.el).addEventListener('input', ()=> mark(sh.el));
