@@ -1,4 +1,4 @@
-// изменено 2026-10-17 13:20
+// изменено 2026-10-17 16:30
 /* Вкладка «Сборка»: заявки на дату и лист с галочками в порядке обхода склада
    (по часовой стрелке от двери). Сейчас — по заявке, со следующей недели — весь маршрут за круг. */
 (function(){
@@ -43,7 +43,8 @@
       $('#pkList').innerHTML = String(html`${routeSheet(free)}${free.length < list.length ? html`<p class="hint">Уже в рейсе: ${list.filter(o=>o.tripId).map(o=>'№' + o.num).join(', ')} — в лист не входят.</p>` : ''}${free.length ? html`<button class="btn ${ready ? 'btn-primary' : 'btn-ghost'} btn-block section" type="button" data-ship>${icon('truck')}${ready ? 'Отгрузить маршрут водителю' : `Собрано ${free.length - free.filter(o=>o.status !== 'picked').length} из ${free.length} — отгрузка после сборки`}</button>` : html`<p class="hint section">Все заявки маршрута уже в рейсе — смотрите вкладку «Рейсы».</p>`}`);
       return;
     }
-    $('#pkList').innerHTML = list.length ? String(html`${list.map(card)}`)
+    const open = list.filter(o=>o.status === 'new' && !o.tripId).length;
+    $('#pkList').innerHTML = list.length ? String(html`${list.map(card)}${open ? html`<button class="btn btn-ghost btn-block section" type="button" data-all>${icon('check')}Отметить все собранными (${open})</button>` : ''}`)
       : String(html`<div class="empty">${icon('route')}<div class="empty-title">Заявок нет</div>На ${D.label(PK.date)} заявок не внесено</div>`);
   }
 
@@ -53,7 +54,7 @@
     return html`<button class="pick-card${done ? ' is-done' : ''}" type="button" data-o="${o.id}">
       <span class="pick-card-main"><span class="pick-card-title">№${o.num} · ${p.customer}</span>
         <span class="pick-card-sub">${p.address}</span>
-        <span class="pick-card-sub">${o.route} · ${total(o)} шт · мест ${boxes(o)}${o.comment ? ' · ' + o.comment : ''}</span></span>
+        <span class="pick-card-sub">${o.route} · ${n ? `${total(o)} шт · мест ${boxes(o)}` : 'по фото'}${(o.files || []).length ? ` · фото ${o.files.length}` : ''}${o.comment ? ' · ' + o.comment : ''}</span></span>
       <span class="pill ${st[1]}">${st[0]}</span></button>`;
   }
 
@@ -78,21 +79,37 @@
     const p = pt(o.pointId);
     const body = ()=>{
       const done = o.status === 'picked';
-      return html`<div class="progress"><span style="width:${Math.round(100 * o.checked.length / o.lines.length)}%"></span></div>
+      return html`${o.lines.length ? html`<div class="progress"><span style="width:${Math.round(100 * o.checked.length / o.lines.length)}%"></span></div>` : html`<p class="hint">Торты не внесены — собирайте по фото. Для отгрузки рейсом внесите их: «Изменить».</p>`}
         ${o.comment ? html`<p class="hint">${o.comment}</p>` : ''}
+        ${Cake.files.gallery(o)}
         <div class="section">${o.lines.slice().sort(byPlace).map(l=>{ const on = o.checked.includes(l.productId); return html`
           <button class="pick-row${on ? ' is-on' : ''}" type="button" data-l="${l.productId}" ${done ? 'disabled' : ''}>
             <span class="place${placeOf(l.productId) ? '' : ' is-none'}">${placeOf(l.productId) || '—'}</span>
             <span class="pick-name">${Kit.nobr(P(l.productId).name)}<small>${W(P(l.productId).weightG)}</small></span>
             ${qtyCell(l.qty, l.bonus)}
             <span class="pick-box">${on ? icon('check') : ''}</span></button>`; })}</div>
+        ${Cake.files.input('data-up')}
         ${done && o.boxes != null ? html`<div class="kv"><span class="k">Ящиков</span><span class="v">${o.boxes}</span></div>` : ''}`;
     };
-    const sub = ()=> `${p.customer} · ${o.route} · ${o.checked.length} из ${o.lines.length}`;
+    const sub = ()=> `${p.customer} · ${o.route} · ${o.lines.length ? `${o.checked.length} из ${o.lines.length}` : "по фото"}`;
     const actions = ()=> o.status === 'picked' ? html`<button class="btn btn-ghost" type="button" data-a="reopen">${icon('restore')}Вернуть в сборку</button><button class="btn btn-primary" type="button" data-a="ok">${icon('check')}ОК</button>`
       : html`<button class="btn btn-ghost" type="button" data-a="edit">${icon('edit')}Изменить</button><button class="btn btn-primary" type="button" data-a="finish">${icon('check')}Собрано</button>`;
     const sh = Kit.sheet({title:`Заявка №${o.num}`, sub:sub(), body:body(), actions:actions()});
-    const redraw = ()=>{ sh.body.innerHTML = String(body()); const s = $('.sheet-sub', sh.el); if(s) s.textContent = sub(); const a = $('.sheet-actions', sh.el); if(a) a.innerHTML = String(actions()); };
+    const redraw = ()=>{ sh.body.innerHTML = String(body()); Cake.files.fill(sh.body); const s = $('.sheet-sub', sh.el); if(s) s.textContent = sub(); const a = $('.sheet-actions', sh.el); if(a) a.innerHTML = String(actions()); };
+    Cake.files.fill(sh.body);
+    const refresh = async ()=>{  // список перезагружен — шторка и карточка держат один и тот же объект заявки
+      await PK.reload(); const i = PK.orders.findIndex(x=>x.id === o.id);
+      if(i >= 0){ Object.assign(o, PK.orders[i]); PK.orders[i] = o; }
+      redraw(); draw();
+    };
+    sh.el.addEventListener('change', async e=>{
+      if(!e.target.matches('[data-up]')) return;
+      const files = await Cake.files.prepare(e.target.files); if(!files.length) return;
+      Kit.toast('Загружаю…');
+      const n = await Cake.files.upload(o.id, files);
+      if(n){ haptic('success'); Kit.toast(`Прикреплено: ${n}`, 'ok'); await refresh(); }
+    });
+    Kit.on(sh.el, 'click', '[data-file]', (e, el)=> Cake.files.open(el.dataset.file, refresh));
     Kit.on(sh.el, 'click', '[data-l]', async (e, el)=>{
       const pid = el.dataset.l, done = !o.checked.includes(pid);
       o.checked = done ? o.checked.concat(pid) : o.checked.filter(x=>x !== pid);  // сразу, без ожидания сервера
@@ -135,6 +152,13 @@
   Kit.on($('#pkMode'), 'click', '[data-m]', (e, el)=>{ haptic('select'); PK.mode = el.dataset.m; draw(); });
   Kit.on($('#pkList'), 'click', '[data-o]', (e, el)=> openOrder(PK.orders.find(x=>x.id === el.dataset.o)));
   Kit.on($('#pkNote'), 'click', '[data-places]', ()=> Cake.editPlaces());
+  Kit.on($('#pkList'), 'click', '[data-all]', async ()=>{
+    const list = PK.orders.filter(o=>(!PK.route || o.route === PK.route) && o.status === 'new' && !o.tripId);
+    if(!await Kit.confirm(`Отметить собранными ${list.length} заявок${PK.route ? ' ' + PK.route : ''} на ${D.label(PK.date)}? Для тех, что собрали по бумаге и не отмечали в приложении. Ящики можно будет указать при отгрузке.`, 'Отметить')) return;
+    const r = await api('finishAll', Object.assign({date:PK.date}, PK.route ? {route:PK.route} : {}));
+    if(!r.ok){ fail(r); return; }
+    haptic('success'); Kit.toast(`Отмечено собранными: ${r.done}`, 'ok'); PK.reload();
+  });
   Kit.on($('#pkList'), 'click', '[data-ship]', ()=> Cake.shipRoute(PK.orders.filter(o=>o.route === PK.route && !o.tripId)));
 
   Cake.tabs.pick = renderPick;
