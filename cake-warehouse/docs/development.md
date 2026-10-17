@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-17 03:30 -->
+<!-- изменено 2026-10-17 14:00 -->
 # Разработка
 
 ## Правило размера
@@ -23,6 +23,7 @@ cake-warehouse/                 Mini App (GitHub Pages)
   js/sklad-log.js                вкладка «Журнал»
   js/sklad-main.js               запуск экрана кладовщика
   js/driver.js  js/admin.js      экраны водителя и руководителя
+  proverka.html js/proverka*.js  проверка карты склада по фото (karta-draft.js из db/places-photos.csv)
   mock-data.js                   демо: каталог (генерируется), справочники, история
   mock.js                        демо: двойник API в localStorage (CakeMock.register — для других тем)
   mock-orders.js                 демо: точки и заявки с фото (генерируется db/gen_mock_orders.py)
@@ -74,7 +75,14 @@ def name(ctx: Ctx, p: dict) -> dict:
     return {"result": ...}           # сервер добавит ok: true
 ```
 Ошибка — `raise ApiError("code", "текст")`. Такое же действие — в
-`mock.js` (объект `A`), иначе демо-режим сломается. Тест — в `test_cake.py`.
+`mock.js` (объект `A`) с **теми же проверками и текстами ошибок**, иначе демо
+ведёт себя иначе, чем сервер. Тест — в `test_cake.py`. Если действие нужно
+водителю — добавить в `DRIVER_ACTIONS` (`base.py`), иначе водитель получит
+`forbidden`.
+
+**Колонку в существующую таблицу.** Только через `migrate_picking`
+(`orders_seed.py`): `PRAGMA table_info` → `ALTER TABLE`, разовые данные — под
+флагом в `meta`. На iMac рабочая база, пересоздавать её нельзя.
 
 **Вкладку кладовщика.** Секция `<section data-panel="x">` и кнопка
 `data-tab="x"` в `sklad.html`, файл `js/sklad-x.js` по образцу соседних
@@ -83,6 +91,22 @@ def name(ctx: Ctx, p: dict) -> dict:
 **Товар в каталог.** `api/bots/cake/catalog.py` → затем
 `python3 cake-warehouse/db/gen_mock_catalog.py` (демо) и
 `python3 cake-warehouse/db/build_seed.py` (SQL-база).
+
+## Выкладка
+
+1. Тесты (выше) и проверка в браузере.
+2. `python3 cake-warehouse/db/bump_version.py` — метка `?v=` на скрипты,
+   иначе Telegram минут 10 показывает старые файлы.
+3. Коммит и push в `cake-warehouse`.
+4. Страницы: скопировать изменённые файлы `cake-warehouse/` (и `kit/core.js`,
+   если менялся) в рабочую копию ветки `gh-pages` (`git worktree add … origin/gh-pages`),
+   коммит, `git push origin <ветка>:gh-pages`. Сверить `cmp` — ничего не забыто.
+5. Сервер и бот на iMac — по порядку из [status.md](status.md#как-обновляется-imac).
+
+Сценарии в браузере (Playwright) с API: перед каждым сценарием свежая база
+и перезапуск сервера — иначе 429 (лимит запросов) или старый процесс на
+удалённой базе («no such table»). Быстрые клики по строкам сборки с живым
+сервером — ждать ответа, кнопки шторки перерисовываются.
 
 ## Соглашения студии
 
