@@ -427,11 +427,11 @@ window.CakeKartaDraft = [
 },
 {
 "place": 54,
-"productId": null,
+"productId": "p099",
 "name": "Ягодное наслаждение",
 "cat": "Набор пирожных",
-"weightG": 0,
-"note": "НЕТ В АССОРТИМЕНТЕ — завести товар; вес не виден"
+"weightG": 380,
+"note": ""
 },
 {
 "place": 55,

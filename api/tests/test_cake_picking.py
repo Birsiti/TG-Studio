@@ -12,7 +12,7 @@ def order(api, num):
 
 def test_orders_from_photos_match_paper(api):
     r = api("cake", "getOrders", date="2026-10-17")
-    assert len(r["orders"]) == 11 and r["routes"] == ["Дзержинск", "Маршрут 2", "Маршрут 3", "Маршрут 4"] and len(r["points"]) == 57
+    assert len(r["orders"]) == 11 and r["routes"] == ["Бобруйск", "Дзержинск", "Маршрут 2", "Маршрут 3", "Маршрут 4"] and len(r["points"]) == 61
     for num, (qty, places) in PAPER.items():
         o = order(api, num)
         q = sum(ln["qty"] for ln in o["lines"])
@@ -80,7 +80,7 @@ def test_places_from_photos_once(api):
 def test_migration_into_old_db(client, api):
     """База, созданная до сборки: таблиц заявок нет — при старте они появятся и заполнятся один раз."""
     conn = cake_bot.connect()
-    conn.executescript("DROP TABLE orders; DROP TABLE points; DROP TABLE places; DELETE FROM meta WHERE k IN ('orders_v1','orders_1810','orders_1810b');"
+    conn.executescript("DROP TABLE orders; DROP TABLE points; DROP TABLE places; DELETE FROM meta WHERE k IN ('orders_v1','orders_1810','orders_1810b','orders_1810c');"
                        # таблица заявок первой версии — без trip_id
                        "CREATE TABLE orders(id TEXT PRIMARY KEY, num TEXT NOT NULL UNIQUE, date TEXT NOT NULL, point_id TEXT NOT NULL,"
                        " route TEXT NOT NULL DEFAULT '', comment TEXT NOT NULL DEFAULT '', lines TEXT NOT NULL DEFAULT '[]',"
@@ -115,7 +115,7 @@ def test_route_to_trip(api):
     assert t["taraOut"] == [{"taraId": "box", "qty": 4}] and "№300000" in t["note"]
     city = next(c for c in api("cake", "getRefs")["cities"] if c["id"] == t["cityId"])
     assert city["name"] == "Маршрут 2"
-    assert [c["name"] for c in api("cake", "getRefs")["cities"][:3]] == ["Дзержинск", "Маршрут 2", "Маршрут 3"]  # маршруты первыми, по порядку
+    assert [c["name"] for c in api("cake", "getRefs")["cities"][:4]] == ["Бобруйск", "Дзержинск", "Маршрут 2", "Маршрут 3"]  # маршруты первыми, по порядку
     assert all(o["tripId"] == t["id"] for o in api("cake", "getOrders", date=day)["orders"] if o["id"] in ids)
     assert api("cake", "routeToTrip", date=day, route="Маршрут 2")["error"] == "not_found"  # повторно не создаётся
     assert api("cake", "reopenPick", id=ids[0])["error"] == "bad_state"
@@ -204,3 +204,12 @@ def test_orders_1810b_and_per_box(api):
            for o in r["orders"] if o["num"] in TOTALS}
     assert got == {k: v[:2] for k, v in TOTALS.items()} and "Маршрут 4" in r["routes"]
     assert per["p065"] == 10 and per["p092"] == 18 and per["p096"] == 10
+
+
+def test_orders_1810c_summaries(api):
+    """Сводные по маршрутам 2–4 и Бобруйск = «ВСЕГО» листов; на 18.10 всего 39 заявок."""
+    from bots.cake.orders_1810c import TOTALS
+    r = api("cake", "getOrders", date="2026-10-18")
+    got = {o["num"]: sum(ln["qty"] for ln in o["lines"]) for o in r["orders"] if o["num"] in TOTALS}
+    assert got == {k: v[0] for k, v in TOTALS.items()} and "Бобруйск" in r["routes"]
+    assert r["places"]["p099"] == 54 and len(r["orders"]) == 39

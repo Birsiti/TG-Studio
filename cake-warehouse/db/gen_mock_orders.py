@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "api"))
 from bots.cake.catalog import SEED_PRODUCTS  # noqa: E402
 from bots.cake.orders_data import ORDERS, POINTS  # noqa: E402
-from bots.cake import orders_1810, orders_1810b  # noqa: E402
+from bots.cake import orders_1810, orders_1810b, orders_1810c  # noqa: E402
 
 TARGET = ROOT / "cake-warehouse" / "mock-orders.js"
 
@@ -41,7 +41,7 @@ def main() -> None:
     points, orders = build(POINTS, ORDERS)
     # пачки после запуска — досеиваются в старое демо по своему ключу, со своей датой
     batches = []
-    for key, mod in (("batch1810", orders_1810), ("batch1810b", orders_1810b)):
+    for key, mod in (("batch1810", orders_1810), ("batch1810b", orders_1810b), ("batch1810c", orders_1810c)):
         bp, bo = build(mod.POINTS, mod.ORDERS)
         batches.append({"key": key, "day": mod.DAY, "points": bp, "orders": bo})
     per_box = {pid: n for pid, cat, name, w in SEED_PRODUCTS for (c, nm, ww), n in orders_1810b.PER_BOX.items() if (cat, name, w) == (c, nm, ww)}

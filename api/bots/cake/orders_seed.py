@@ -6,8 +6,10 @@ from __future__ import annotations
 from datetime import datetime
 
 from core import iso_now, jdump, new_id, scalar
-from bots.cake import orders_1810, orders_1810b
+from bots.cake import orders_1810, orders_1810b, orders_1810c
 from bots.cake.catalog import SEED_PRODUCTS
+
+ADDED_PLACES = {"p095": 22, "p099": 54}  # Красный бархат, Ягодное наслаждение
 from bots.cake.orders_data import DAY, ORDERS, POINTS
 from bots.cake.places_data import PLACES
 
@@ -36,6 +38,7 @@ def migrate_picking(conn, now: datetime) -> None:
     seed_added_products(conn)
     seed_batch(conn, "orders_1810", orders_1810.POINTS, orders_1810.ORDERS, orders_1810.DAY)
     seed_batch(conn, "orders_1810b", orders_1810b.POINTS, orders_1810b.ORDERS, orders_1810b.DAY)
+    seed_batch(conn, "orders_1810c", orders_1810c.POINTS, orders_1810c.ORDERS, orders_1810c.DAY)
     seed_per_box(conn)
     routes = [r["route"] for r in conn.execute("SELECT DISTINCT route FROM points WHERE route<>'' ORDER BY route").fetchall()]
     for i, route in enumerate(routes):  # маршруты — первыми и по порядку: 2, 3, … (каждый старт, идемпотентно)
@@ -59,7 +62,8 @@ def seed_added_products(conn) -> None:
     for i, (pid, cat, name, w) in enumerate(SEED_PRODUCTS):
         if (cat, name, w) not in have:
             conn.execute("INSERT OR IGNORE INTO products(id,cat,name,weight_g,sort,seed) VALUES(?,?,?,?,?,1)", (pid, cat, name, w, i))
-    conn.execute("INSERT OR IGNORE INTO places(product_id,place) SELECT id,22 FROM products WHERE id='p095'")  # Красный бархат
+    for pid, place in ADDED_PLACES.items():  # новые товары с карты склада по фото
+        conn.execute("INSERT OR IGNORE INTO places(product_id,place) SELECT id,? FROM products WHERE id=?", (place, pid))
 
 
 def seed_per_box(conn) -> None:
