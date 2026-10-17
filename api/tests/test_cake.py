@@ -104,7 +104,7 @@ def test_access_list(api, monkeypatch):
 
 def test_catalog_from_client(api):
     r = api("cake", "getRefs")
-    assert sum(1 for p in r["products"] if len(p["id"]) == 4) == 95 and r["cats"][0] == "Торт"
+    assert sum(1 for p in r["products"] if len(p["id"]) == 4) == 97 and r["cats"][0] == "Торт"
     names = {(p["cat"], p["name"], p["weightG"]) for p in r["products"]}
     assert ("Венский десерт", "Вишня в коньяке", 620) in names and ("Набор пирожных", "Honey Бум фисташка", 310) in names
     assert {t["name"] for t in r["tara"]} == {"Ящик"}

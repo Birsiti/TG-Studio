@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from core import iso_now, jdump, new_id, scalar
-from bots.cake import orders_1810
+from bots.cake import orders_1810, orders_1810b
 from bots.cake.catalog import SEED_PRODUCTS
 from bots.cake.orders_data import DAY, ORDERS, POINTS
 from bots.cake.places_data import PLACES
@@ -35,6 +35,8 @@ def migrate_picking(conn, now: datetime) -> None:
     seed_places(conn)
     seed_added_products(conn)
     seed_batch(conn, "orders_1810", orders_1810.POINTS, orders_1810.ORDERS, orders_1810.DAY)
+    seed_batch(conn, "orders_1810b", orders_1810b.POINTS, orders_1810b.ORDERS, orders_1810b.DAY)
+    seed_per_box(conn)
     routes = [r["route"] for r in conn.execute("SELECT DISTINCT route FROM points WHERE route<>'' ORDER BY route").fetchall()]
     for i, route in enumerate(routes):  # маршруты — первыми и по порядку: 2, 3, … (каждый старт, идемпотентно)
         conn.execute("UPDATE cities SET sort=? WHERE id=?", (i - len(routes), route_city(conn, route)))
@@ -58,6 +60,16 @@ def seed_added_products(conn) -> None:
         if (cat, name, w) not in have:
             conn.execute("INSERT OR IGNORE INTO products(id,cat,name,weight_g,sort,seed) VALUES(?,?,?,?,?,1)", (pid, cat, name, w, i))
     conn.execute("INSERT OR IGNORE INTO places(product_id,place) SELECT id,22 FROM products WHERE id='p095'")  # Красный бархат
+
+
+def seed_per_box(conn) -> None:
+    """«Шт в коробке» мелких пирожных по колонке «груз. мест» накладных — один раз и только там,
+    где ещё стоит 1 (заданное в приложении не перетираем)."""
+    if scalar(conn, "SELECT v FROM meta WHERE k='perbox_v1'") is not None:
+        return
+    for (cat, name, w), n in orders_1810b.PER_BOX.items():
+        conn.execute("UPDATE products SET per_box=? WHERE cat=? AND name=? AND weight_g=? AND per_box=1", (n, cat, name, w))
+    conn.execute("INSERT INTO meta(k,v) VALUES('perbox_v1',?)", (iso_now(),))
 
 
 def seed_orders(conn, now: datetime) -> None:

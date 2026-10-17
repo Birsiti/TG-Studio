@@ -44,7 +44,8 @@ CATALOG = {
 SEED_PRODUCTS = [(f"p{i + 1:03d}", cat, name, w) for i, (cat, name, w) in
                  enumerate((c, n, w) for c in CATS for n, w in CATALOG[c])]
 # Добавленные позже — только в конец: id старых (p001…p094) уже в рабочей базе и в заявках
-ADDED = [("Пирожное", "Красный бархат", 500)]  # заявки 18.10, место 22 на карте склада
+ADDED = [("Пирожное", "Красный бархат", 500),  # заявки 18.10, место 22 на карте склада
+         ("Пирожное", "Наполеон", 75), ("Торт", "Вкус наслаждения", 1000)]  # заявки 18.10, вторая пачка
 SEED_PRODUCTS += [(f"p{len(SEED_PRODUCTS) + i + 1:03d}", cat, name, w) for i, (cat, name, w) in enumerate(ADDED)]
 SEED_CITIES = [("brest", "Брест", "БРС"), ("grodno", "Гродно", "ГРД"), ("gomel", "Гомель", "ГМЛ"),
                ("mogilev", "Могилёв", "МГЛ"), ("vitebsk", "Витебск", "ВТБ"), ("baranovichi", "Барановичи", "БРН"),

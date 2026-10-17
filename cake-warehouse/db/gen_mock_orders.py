@@ -1,4 +1,4 @@
-# изменено 2026-10-17 18:20
+# изменено 2026-10-17 19:10
 """Сгенерировать mock-orders.js (точки и заявки демо-режима) из api/bots/cake/orders_data.py.
 
     python3 cake-warehouse/db/gen_mock_orders.py
@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "api"))
 from bots.cake.catalog import SEED_PRODUCTS  # noqa: E402
 from bots.cake.orders_data import ORDERS, POINTS  # noqa: E402
-from bots.cake import orders_1810  # noqa: E402
+from bots.cake import orders_1810, orders_1810b  # noqa: E402
 
 TARGET = ROOT / "cake-warehouse" / "mock-orders.js"
 
@@ -39,14 +39,19 @@ def build(POINTS, ORDERS):
 
 def main() -> None:
     points, orders = build(POINTS, ORDERS)
-    p2, o2 = build(orders_1810.POINTS, orders_1810.ORDERS)  # заявки 18.10 — досеиваются в демо отдельно, со своей датой
+    # пачки после запуска — досеиваются в старое демо по своему ключу, со своей датой
+    batches = []
+    for key, mod in (("batch1810", orders_1810), ("batch1810b", orders_1810b)):
+        bp, bo = build(mod.POINTS, mod.ORDERS)
+        batches.append({"key": key, "day": mod.DAY, "points": bp, "orders": bo})
+    per_box = {pid: n for pid, cat, name, w in SEED_PRODUCTS for (c, nm, ww), n in orders_1810b.PER_BOX.items() if (cat, name, w) == (c, nm, ww)}
     dump = lambda x: json.dumps(x, ensure_ascii=False, separators=(",", ":"))  # noqa: E731
     TARGET.write_text(
         "// изменено 2026-10-17 02:40\n"
         "// СГЕНЕРИРОВАНО db/gen_mock_orders.py из api/bots/cake/orders_data.py — руками не править.\n"
         "// Точки разгрузки и заявки с фото накладных для демо-режима.\n"
         f"window.CakeMockOrders = {{\n  points: {dump(points)},\n  orders: {dump(orders)},\n"
-        f"  batch1810: {{day: {dump(orders_1810.DAY)}, points: {dump(p2)}, orders: {dump(o2)}}}\n}};\n", encoding="utf-8")
+        f"  batches: {dump(batches)},\n  perBox: {dump(per_box)}\n}};\n", encoding="utf-8")
     print(f"{TARGET.relative_to(ROOT)}: {len(points)} точек, {len(orders)} заявок")
 
 
