@@ -1,4 +1,4 @@
-// изменено 2026-10-17 09:00
+// изменено 2026-10-17 15:20
 /* Экран руководителя склада: сводка, смены, справочники. */
 (function(){
   "use strict";
@@ -132,7 +132,7 @@
   }
 
   /* ============ СТАРТ ============ */
-  const RENDER = {overview:renderOverview, shifts:renderShifts, refs:renderRefs};
+  const RENDER = {overview:renderOverview, drivers:()=>window.CakeDriverStats(api, REFS.staff), shifts:renderShifts, refs:renderRefs};
   let current = 'overview';
   $('#refreshBtn').addEventListener('click', async ()=>{ haptic('light'); await loadRefs(); RENDER[current](); });
   Kit.ready(async ()=>{ await loadRefs(); Kit.tabs({onChange(tab){ current = tab; RENDER[tab](); }}); });
