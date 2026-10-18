@@ -1,4 +1,4 @@
-// изменено 2026-10-17 21:00
+// изменено 2026-10-18 09:00
 /* Экран руководителя склада: сводка, смены, справочники. */
 (function(){
   "use strict";
@@ -17,6 +17,7 @@
   const C = id=> REFS.cities.find(x=>x.id === id) || {name:'?'};
   async function loadRefs(){
     const r = await api('getRefs'); if(r.ok) REFS = r; else fail(r);
+    if(r.ok && !loadRefs.hello){ loadRefs.hello = true; api('hello', {page:'admin'}); }  // журнал «кто заходит»
     if(api.mode() === 'demo') $('#modeNote').innerHTML = String(html`<p class="mode-note">Демо-режим: сервер недоступен, данные хранятся только в этом телефоне.</p>`);
   }
 
@@ -100,6 +101,8 @@
   function renderRefs(){
     $('#refSeg').innerHTML = String(html`${Object.keys(KINDS).map(k=>html`<button type="button" data-k="${k}" class="${k === kind ? 'is-on' : ''}">${KINDS[k].label}</button>`)}`);
     $('#refAdd').innerHTML = String(html`${icon('plus')}${KINDS[kind].add}`);
+    $('#refVisits').hidden = kind !== 'staff';
+    $('#refVisits').innerHTML = String(html`${icon('users')}Кто заходит в бота`);
     const list = REFS[kind];
     $('#refList').innerHTML = String(html`<div class="list">${list.map(x=>html`<button class="row" type="button" data-id="${x.id}"${x.active ? '' : Kit.raw(' style="opacity:.55"')}>
       ${kind === 'cities' ? html`<span class="row-code"><span class="code">${x.code || '—'}</span></span>` : kind === 'staff' ? html`<span class="avatar">${Kit.initials(x.name)}</span>` : ''}
@@ -107,6 +110,32 @@
   }
   Kit.on($('#refSeg'), 'click', '[data-k]', (e, el)=>{ kind = el.dataset.k; haptic('select'); renderRefs(); });
   $('#refAdd').addEventListener('click', ()=> editRef({active:true}));
+  $('#refVisits').addEventListener('click', openVisits);
+
+  /* Кто заходит: все, кто писал боту или открывал приложение, и последние входы */
+  const WHERE = {bot:'бот', sklad:'склад', admin:'сводка', driver:'водитель'};
+  const ROLE_ALL = Object.assign({admin:'Руководитель'}, ROLE);
+  const at = s=> D.when(s.slice(0, 10), s.slice(11, 16));
+  async function openVisits(){
+    const r = await api('getVisits', {limit:100});
+    if(!r.ok){ fail(r); return; }
+    const who = v=> v.staffName || v.name || 'без имени';
+    const byId = {}; r.people.forEach(v=> byId[v.tgId] = v);
+    const sh = Kit.sheet({title:'Кто заходит', sub:`${r.people.length} чел. · новые приходят вам в личку`, body: r.people.length ? html`
+      <div class="list">${r.people.map(v=>html`<div class="row"><span class="avatar">${Kit.initials(who(v))}</span>
+        <span class="row-main"><span class="row-title">${who(v)}${v.username ? html` <span class="hint">@${v.username}</span>` : ''}</span>
+          <span class="row-sub">${v.role ? ROLE_ALL[v.role] : html`<b style="color:var(--danger)">нет доступа</b>`} · ${at(v.lastAt)}</span>
+          <span class="row-sub">id ${v.tgId} · бот ${v.starts} · прил. ${v.opens}</span></span>
+        ${v.role ? '' : html`<button class="icon-btn" type="button" data-add="${v.tgId}" aria-label="Добавить в Люди">${icon('plus')}</button>`}</div>`)}</div>
+      <p class="hint section">«+» — добавить человека в «Люди» с его Telegram id.</p>
+      <div class="section"><div class="eyebrow" style="margin-bottom:8px">Последние входы</div>
+        ${r.log.map(l=>html`<div class="kv"><span class="k">${at(l.at)} · ${WHERE[l.page] || l.page}</span><span class="v">${byId[l.tgId] ? who(byId[l.tgId]) : l.tgId}</span></div>`)}</div>`
+      : html`<div class="empty">${icon('users')}<div class="empty-title">Пока никого</div>Здесь появятся все, кто напишет боту или откроет склад</div>`});
+    Kit.on(sh.el, 'click', '[data-add]', (e, el)=>{
+      const v = byId[el.dataset.add]; sh.close();
+      editRef({active:true, role:'driver', tgId:v.tgId, name:v.name});
+    });
+  }
   Kit.on($('#refList'), 'click', '[data-id]', (e, el)=> editRef(REFS[kind].find(x=>x.id === el.dataset.id)));
 
   function editRef(x){

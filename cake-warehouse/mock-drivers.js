@@ -1,6 +1,6 @@
-// изменено 2026-10-17 15:00
+// изменено 2026-10-18 09:00
 /* ============================================================
-   mock-drivers.js — спидометр рейса и статистика водителей в демо-режиме
+   mock-drivers.js — спидометр рейса, статистика водителей и «кто заходит» в демо-режиме
    (двойник api/bots/cake/drivers.py, те же проверки и тексты ошибок).
    ============================================================ */
 (function(){
@@ -62,6 +62,37 @@
         });
       S.taraMoves.forEach(function(m){ if(out[m.driverId]) out[m.driverId].taraDebt += m.qty; });
       return {from:from, to:to, drivers:Object.keys(out).map(function(k){ return out[k]; }).sort(function(a, b){ return b.trips - a.trips; })};
+    }
+  });
+
+  // Кто заходит (двойник visits.py): в демо видно только этот телефон
+  var QUIET_MIN = 30, LOG_KEEP = 5000;
+  function touch(S, tg, page, name, username){
+    S.visitors = S.visitors || []; S.visitLog = S.visitLog || [];
+    var at = U.now(), v = byId(S.visitors, tg), col = page === 'bot' ? 'starts' : 'opens';
+    if(v){ v.lastAt = at; v.lastPage = page; v[col]++; if(name) v.name = name; if(username) v.username = username; }
+    else { v = {id:tg, tgId:tg, name:name || '', username:username || '', firstAt:at, lastAt:at, lastPage:page, starts:0, opens:0}; v[col] = 1; S.visitors.push(v); }
+    var last = S.visitLog.filter(function(x){ return x.tgId === tg && x.page === page; }).pop();
+    if(!last || (Date.parse(at) - Date.parse(last.at)) / 60000 >= QUIET_MIN){ S.visitLog.push({tgId:tg, at:at, page:page}); if(S.visitLog.length > LOG_KEEP) S.visitLog.splice(0, S.visitLog.length - LOG_KEEP); }
+  }
+  CakeMock.register({
+    hello: function(p){
+      if(['sklad', 'admin', 'driver'].indexOf(p.page) < 0) return err('bad_request', 'page');
+      var u = Kit.user; touch(U.state(), String(u.id), p.page, [u.firstName, u.lastName].filter(Boolean).join(' '), u.username); return {};
+    },
+    logVisit: function(p){
+      if(!/^\d+$/.test(p.tgId || '')) return err('bad_request', 'tgId: только цифры');
+      var S = U.state(), isNew = !byId(S.visitors || [], p.tgId); touch(S, p.tgId, 'bot', p.name, p.username); return {isNew:isNew};
+    },
+    getVisits: function(p){
+      var S = U.state(), staff = {};
+      S.staff.forEach(function(s){ if(s.tgId) staff[s.tgId] = s; });
+      var people = (S.visitors || []).slice().sort(function(a, b){ return a.lastAt < b.lastAt ? 1 : -1; }).map(function(v){
+        var s = staff[v.tgId];
+        var role = v.tgId === String(Kit.user.id) ? 'admin' : s && s.active ? s.role : null;  // в демо этот телефон — руководитель
+        return Object.assign({}, v, {staffId:s ? s.id : null, staffName:s ? s.name : '', role:role});
+      });
+      return {people:people, log:(S.visitLog || []).slice(-(p.limit || 200)).reverse()};
     }
   });
 })();
