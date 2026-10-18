@@ -1,4 +1,4 @@
-# изменено 2026-10-17 21:00
+# изменено 2026-10-18 09:00
 from core import now
 
 
@@ -245,3 +245,22 @@ def test_hired_driver(api):
     cake_bot._ready = False
     st = api("cake", "getRefs")["staff"]
     assert all(x["hired"] is False for x in st) and any(x["id"] == "dr-pavel" for x in st)
+
+
+def test_visits(api, monkeypatch):
+    """Кто заходит: бот отмечает /start (isNew — впервые), страницы — hello; список видит только руководитель."""
+    assert api("cake", "logVisit", tgId="555", name="Новый Человек", username="newbie")["isNew"] is True
+    assert api("cake", "logVisit", tgId="555", name="Новый Человек")["isNew"] is False
+    assert api("cake", "logVisit", tgId="55a")["error"] == "bad_request"
+    v = api("cake", "getVisits")
+    p = next(x for x in v["people"] if x["tgId"] == "555")
+    assert p["starts"] == 2 and p["username"] == "newbie" and p["role"] is None
+    assert len([x for x in v["log"] if x["tgId"] == "555"]) == 1  # повтор за 30 минут — одна строка журнала
+    monkeypatch.setenv("TGS_CAKE_ADMINS", "111")
+    api("cake", "saveStaff", user="111", id="dr-ivan", name="Иван Водитель", role="driver", tgId="777")
+    assert api("cake", "hello", user="777", page="driver")["ok"]
+    assert api("cake", "getVisits", user="777")["error"] == "forbidden"
+    assert api("cake", "logVisit", user="777", tgId="777")["error"] == "forbidden"
+    v = api("cake", "getVisits", user="111")
+    me = next(x for x in v["people"] if x["tgId"] == "777")
+    assert me["role"] == "driver" and me["opens"] == 1 and me["staffName"] == "Иван Водитель"

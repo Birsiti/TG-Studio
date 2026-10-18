@@ -1,4 +1,4 @@
-// изменено 2026-10-17 15:10
+// изменено 2026-10-18 09:00
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
@@ -22,6 +22,7 @@
     if(api.mode() === 'demo') $('#modeNote').innerHTML = String(html`<p class="mode-note">Демо-режим: сервер недоступен, данные хранятся только в этом телефоне.</p>`);
     if(!refs.ok){ $('#view').innerHTML = String(html`<div class="empty">${icon('lock')}<div class="empty-title">Нет доступа</div>Попросите кладовщика добавить ваш Telegram в список водителей</div>`); return; }
     REFS = refs; restricted = me.ok && me.restricted;
+    if(!load.hello){ load.hello = true; api('hello', {page:'driver'}); }  // журнал «кто заходит»
     const picked = Kit.store(PICK_KEY);
     const r = await api('getMyTrips', {driverId:(me.ok && me.staff) ? undefined : picked || undefined});
     ME = r.ok ? r.driver : null; TRIPS = r.ok ? r.trips : []; DEBT = (r.ok && r.taraDebt) || [];

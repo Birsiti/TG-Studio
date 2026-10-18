@@ -1,4 +1,4 @@
-// изменено 2026-10-17 11:55
+// изменено 2026-10-18 09:00
 // Тексты сообщений. Обычный текст без разметки — не нужно экранировать.
 
 function weight(g) {
@@ -89,4 +89,14 @@ function pickedForAdmin(o, point) {
   return `Собрана заявка №${o.num}${where}\n${o.route ? o.route + ' · ' : ''}${qty} шт${bonus ? ` + ${bonus} бонус` : ''}, позиций ${o.lines.length}${o.picker ? `\nСобрал: ${o.picker}` : ''}${o.boxes != null ? `\nЯщиков: ${o.boxes}` : ''}`;
 }
 
-module.exports = { pickedForAdmin, weight, makeLookup, shippedForDriver, reportedForStore, closedForDriver, digest };
+// Руководителю: человек впервые написал боту
+function newVisitor(from, role) {
+  const name = [from.first_name, from.last_name].filter(Boolean).join(' ') || 'без имени';
+  const who = `${name}${from.username ? ' (@' + from.username + ')' : ''}, id ${from.id}`;
+  return role
+    ? `👋 Впервые зашёл в бота: ${who} — ${ROLE_LOWER[role] || role}.`
+    : `👋 Новый пользователь в боте: ${who}.\nДоступа нет. Чтобы пустить — «Склад и сводка» → «Справочники» → «Люди», впишите этот id.`;
+}
+const ROLE_LOWER = { admin: 'руководитель', storekeeper: 'кладовщик', driver: 'водитель' };
+
+module.exports = { newVisitor, pickedForAdmin, weight, makeLookup, shippedForDriver, reportedForStore, closedForDriver, digest };
