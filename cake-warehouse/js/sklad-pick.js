@@ -1,4 +1,4 @@
-// изменено 2026-10-17 16:30
+// изменено 2026-10-18 13:30
 /* Вкладка «Сборка»: заявки на дату и лист с галочками в порядке обхода склада
    (по часовой стрелке от двери). Сейчас — по заявке, со следующей недели — весь маршрут за круг. */
 (function(){
@@ -36,8 +36,6 @@
     $$('#pkMode button').forEach(b=> b.classList.toggle('is-on', b.dataset.m === PK.mode));
     $('#pkMode').hidden = !PK.route;
     const list = PK.orders.filter(o=>!PK.route || o.route === PK.route);
-    const unplaced = PK.orders.some(o=>o.lines.some(l=>!placeOf(l.productId)));
-    $('#pkNote').innerHTML = unplaced ? String(html`<p class="mode-note">Не у всех тортов задано место на складе — такие строки идут в конце листа. ${html`<button class="link-btn" type="button" data-places>Задать места</button>`}</p>`) : '';
     if(PK.route && PK.mode === 'route'){
       const free = list.filter(o=>!o.tripId), ready = free.length && free.every(o=>o.status === 'picked');
       $('#pkList').innerHTML = String(html`${routeSheet(free)}${free.length < list.length ? html`<p class="hint">Уже в рейсе: ${list.filter(o=>o.tripId).map(o=>'№' + o.num).join(', ')} — в лист не входят.</p>` : ''}${free.length ? html`<button class="btn ${ready ? 'btn-primary' : 'btn-ghost'} btn-block section" type="button" data-ship>${icon('truck')}${ready ? 'Отгрузить маршрут водителю' : `Собрано ${free.length - free.filter(o=>o.status !== 'picked').length} из ${free.length} — отгрузка после сборки`}</button>` : html`<p class="hint section">Все заявки маршрута уже в рейсе — смотрите вкладку «Рейсы».</p>`}`);
@@ -69,7 +67,6 @@
     if(!rows.length) return html`<div class="empty">${icon('route')}<div class="empty-title">Заявок нет</div></div>`;
     return html`<p class="hint">${list.length} заявок · ${rows.reduce((s, r)=>s + r.qty + r.bonus, 0)} шт. Берём всё за один круг, на середине раскладываем по заявкам.</p>
       <div class="card section">${rows.map(r=>html`<div class="pick-row is-static">
-        <span class="place${placeOf(r.productId) ? '' : ' is-none'}">${placeOf(r.productId) || '—'}</span>
         <span class="pick-name">${Kit.nobr(P(r.productId).name)}<small>${W(P(r.productId).weightG)} · ${r.by.join(' · ')}</small></span>
         ${qtyCell(r.qty, r.bonus)}</div>`)}</div>`;
   }
@@ -84,7 +81,6 @@
         ${Cake.files.gallery(o)}
         <div class="section">${o.lines.slice().sort(byPlace).map(l=>{ const on = o.checked.includes(l.productId); return html`
           <button class="pick-row${on ? ' is-on' : ''}" type="button" data-l="${l.productId}" ${done ? 'disabled' : ''}>
-            <span class="place${placeOf(l.productId) ? '' : ' is-none'}">${placeOf(l.productId) || '—'}</span>
             <span class="pick-name">${Kit.nobr(P(l.productId).name)}<small>${W(P(l.productId).weightG)}</small></span>
             ${qtyCell(l.qty, l.bonus)}
             <span class="pick-box">${on ? icon('check') : ''}</span></button>`; })}</div>
@@ -151,7 +147,6 @@
   Kit.on($('#pkRoutes'), 'click', '[data-r]', (e, el)=>{ haptic('select'); PK.route = el.dataset.r; if(!PK.route) PK.mode = 'order'; draw(); });
   Kit.on($('#pkMode'), 'click', '[data-m]', (e, el)=>{ haptic('select'); PK.mode = el.dataset.m; draw(); });
   Kit.on($('#pkList'), 'click', '[data-o]', (e, el)=> openOrder(PK.orders.find(x=>x.id === el.dataset.o)));
-  Kit.on($('#pkNote'), 'click', '[data-places]', ()=> Cake.editPlaces());
   Kit.on($('#pkList'), 'click', '[data-all]', async ()=>{
     const list = PK.orders.filter(o=>(!PK.route || o.route === PK.route) && o.status === 'new' && !o.tripId);
     if(!await Kit.confirm(`Отметить собранными ${list.length} заявок${PK.route ? ' ' + PK.route : ''} на ${D.label(PK.date)}? Для тех, что собрали по бумаге и не отмечали в приложении. Ящики можно будет указать при отгрузке.`, 'Отметить')) return;
