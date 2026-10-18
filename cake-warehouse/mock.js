@@ -18,7 +18,7 @@ window.CakeMock = (function(){
   function load(){
     if(S) return S;
     try{ S = JSON.parse(localStorage.getItem(KEY)); }catch(e){ S = null; }
-    if(!S || S.v !== 3) { S = M.seed(); save(); }
+    if(!S || S.v !== 4) { S = M.seed(); save(); }  // v4: маршруты клиента вместо городов, рейсы с точками
     return S;
   }
 

@@ -1,4 +1,4 @@
-// изменено 2026-10-17 09:00
+// изменено 2026-10-18 14:30
 /* Данные демо-режима: каталог (сгенерирован из api/bots/cake/catalog.py),
    демо-справочники и генерация истории за 2 недели. Логика — в mock.js. */
 window.CakeMockData = (function(){
@@ -108,8 +108,9 @@ window.CakeMockData = (function(){
     ["p098", "Сладости мучные", "Ягодные маффины с вишней", 140],
     ["p099", "Набор пирожных", "Ягодное наслаждение", 380]
   ];
-  var CITIES = [['brest','Брест','БРС'],['grodno','Гродно','ГРД'],['gomel','Гомель','ГМЛ'],['mogilev','Могилёв','МГЛ'],
-    ['vitebsk','Витебск','ВТБ'],['baranovichi','Барановичи','БРН'],['pinsk','Пинск','ПНС'],['lida','Лида','ЛИД']];
+  // Направления — маршруты клиента (как в заявках с фото): рейсы истории едут туда же, куда заявки
+  var CITIES = [['route-2','Маршрут 2','М2'],['route-3','Маршрут 3','М3'],['route-4','Маршрут 4','М4'],
+    ['dzerzhinsk','Дзержинск','ДЗР'],['bobruisk','Бобруйск','БРБ'],['borisov','Борисов','БРВ']];
   var STAFF = [['sk-anna','Анна Литвинович','storekeeper','+375291234501',''],['sk-oleg','Олег Ткачук','storekeeper','+375291234502',''],
     ['dr-ivan','Иван Кравец','driver','+375291234511','Iveco Daily · 4521 AB-7'],['dr-sergey','Сергей Мороз','driver','+375291234512','ГАЗель Next · 7718 KE-7'],
     ['dr-pavel','Павел Гриб','driver','+375291234513','Ford Transit · 3304 MO-7'],['dr-artur','Артур Лис','driver','+375291234514','Iveco Daily · 0912 HA-7']];
@@ -121,7 +122,7 @@ window.CakeMockData = (function(){
 
   function seed(){
     var r = rng(42), today = D.today();
-    var st = {v:3, products:[], cities:[], staff:[], tara:[], moves:[], trips:[], taraMoves:[], shifts:{}, moveId:0, taraId:0, num:0};
+    var st = {v:4, products:[], cities:[], staff:[], tara:[], moves:[], trips:[], taraMoves:[], shifts:{}, moveId:0, taraId:0, num:0};
     PRODUCTS.forEach(function(p, i){ st.products.push({id:p[0], cat:p[1], name:p[2], sku:'', weightG:p[3], shelfDays:0, minQty:0, perBox:1, sort:i, active:true}); });
     CITIES.forEach(function(c, i){ st.cities.push({id:c[0], name:c[1], code:c[2], sort:i, active:true}); });
     STAFF.forEach(function(s){ st.staff.push({id:s[0], name:s[1], role:s[2], phone:s[3], car:s[4], tgId:'', active:true}); });
@@ -146,12 +147,7 @@ window.CakeMockData = (function(){
           taraOut:[{taraId:'box', qty:crates}], taraBack:[{taraId:'box', qty:backCr}], report:'', note:'', createdAt:day + 'T07:20:00', shippedAt:day + 'T07:40:00', reportedAt:null, closedAt:day + 'T18:30:00'});
       });
     }
-    [['shipped','brest','dr-ivan'],['draft','gomel','dr-sergey']].forEach(function(t){
-      var tid = 'R-S' + (++st.num), lines = sample(r, pids, 12).map(function(p){ return {productId:p, qty:Math.min(stock[p], ri(r, 1, 4))}; }).filter(function(l){ return l.qty; });
-      var tara = [{taraId:'box', qty:16}];
-      if(t[0] === 'shipped'){ lines.forEach(function(l){ mv('ship', today, l.productId, -l.qty, {cityId:t[1], tripId:tid}); }); tara.forEach(function(l){ tm(today, l.taraId, t[2], 'out', l.qty, t[1], tid); }); }
-      st.trips.push({id:tid, num:st.num, date:today, cityId:t[1], driverId:t[2], status:t[0], lines:lines, taraOut:tara, taraBack:[], report:'', note:'', createdAt:now(), shippedAt:t[0] === 'shipped' ? now() : null, reportedAt:null, closedAt:null});
-    });
+    // рейсы на сегодня — с точками из заявок, их собирает mock-stops.js (showcase)
     return st;
   }
 
