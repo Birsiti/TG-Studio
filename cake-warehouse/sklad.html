@@ -6,17 +6,17 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>ТОРТОВОЗ — кладовщик</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="../kit/core.js?v=2610180932"></script>
-<script src="js/home-back.js?v=2610180932"></script>
-<link rel="stylesheet" href="../kit/base.css?v=2610180932">
-<link rel="stylesheet" href="brand.css?v=2610180932">
-<script src="mock-data.js?v=2610180932"></script>
-<script src="mock-orders.js?v=2610180932"></script>
-<script src="mock.js?v=2610180932"></script>
-<script src="mock-drivers.js?v=2610180932"></script>
-<script src="mock-picking.js?v=2610180932"></script>
-<script src="mock-files.js?v=2610180932"></script>
-<script src="karta-draft.js?v=2610180932"></script>
+<script src="../kit/core.js?v=2610180945"></script>
+<script src="js/home-back.js?v=2610180945"></script>
+<link rel="stylesheet" href="../kit/base.css?v=2610180945">
+<link rel="stylesheet" href="brand.css?v=2610180945">
+<script src="mock-data.js?v=2610180945"></script>
+<script src="mock-orders.js?v=2610180945"></script>
+<script src="mock.js?v=2610180945"></script>
+<script src="mock-drivers.js?v=2610180945"></script>
+<script src="mock-picking.js?v=2610180945"></script>
+<script src="mock-files.js?v=2610180945"></script>
+<script src="karta-draft.js?v=2610180945"></script>
 </head>
 <body>
 <div class="app has-tabbar">
@@ -42,12 +42,14 @@
       <label class="field"><span class="field-label">Дата</span><input class="input" type="date" id="inDate"></label>
       <label class="field"><span class="field-label">Откуда</span><input class="input" id="inNote" maxlength="200" placeholder="Цех"></label>
     </div>
+    <button class="btn btn-ghost btn-block section" type="button" id="inFile"></button>
     <div class="search section"><span data-ic="search"></span><input class="input" id="inQ" type="search" placeholder="Найти торт" autocomplete="off"></div>
     <div class="card section" id="inList"></div>
   </section>
 
   <section data-panel="pick" hidden>
     <div class="page-head"><h1 class="page-title">Сборка</h1><p class="page-sub">Лист в порядке обхода склада — по часовой стрелке от двери</p></div>
+    <button class="btn btn-ghost btn-block" type="button" id="pkFile" style="margin-bottom:12px"></button>
     <div class="chips scroll" id="pkDates"></div>
     <div class="chips scroll" id="pkRoutes" style="margin-top:8px"></div>
     <div class="seg seg-grid section" id="pkMode" hidden><button type="button" data-m="order">По заявке</button><button type="button" data-m="route">Весь маршрут</button></div>
@@ -93,15 +95,16 @@
   <button type="button" data-tab="log"><span data-ic="list"></span>Журнал</button>
 </div></nav>
 
-<script src="js/common.js?v=2610180932"></script>
-<script src="js/sklad-stock.js?v=2610180932"></script>
-<script src="js/sklad-income.js?v=2610180932"></script>
-<script src="js/sklad-pick-files.js?v=2610180932"></script>
-<script src="js/sklad-pick.js?v=2610180932"></script>
-<script src="js/sklad-pick-edit.js?v=2610180932"></script>
-<script src="js/sklad-trips.js?v=2610180932"></script>
-<script src="js/sklad-tara.js?v=2610180932"></script>
-<script src="js/sklad-log.js?v=2610180932"></script>
-<script src="js/sklad-main.js?v=2610180932"></script>
+<script src="js/common.js?v=2610180945"></script>
+<script src="js/sklad-stock.js?v=2610180945"></script>
+<script src="js/sklad-income.js?v=2610180945"></script>
+<script src="js/sklad-pick-files.js?v=2610180945"></script>
+<script src="js/sklad-pick.js?v=2610180945"></script>
+<script src="js/sklad-pick-edit.js?v=2610180945"></script>
+<script src="js/sklad-trips.js?v=2610180945"></script>
+<script src="js/sklad-tara.js?v=2610180945"></script>
+<script src="js/sklad-log.js?v=2610180945"></script>
+<script src="js/import-file.js?v=2610180945"></script>
+<script src="js/sklad-main.js?v=2610180945"></script>
 </body>
 </html>

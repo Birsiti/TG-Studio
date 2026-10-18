@@ -1,7 +1,7 @@
-// изменено 2026-10-18 11:00
+// изменено 2026-10-18 12:00
 // Кто пишет боту и какие кнопки ему показать.
 
-const ROLE_RU = { admin: 'Руководитель', storekeeper: 'Кладовщик', driver: 'Водитель' };
+const ROLE_RU = { admin: 'Руководитель', storekeeper: 'Кладовщик', logist: 'Логист', driver: 'Водитель' };
 
 function roleOf(tgId, staff, adminIds) {
   const id = String(tgId);

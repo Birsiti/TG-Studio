@@ -1,4 +1,4 @@
-# изменено 2026-10-18 09:00
+# изменено 2026-10-18 12:00
 from core import now
 
 
@@ -264,3 +264,14 @@ def test_visits(api, monkeypatch):
     v = api("cake", "getVisits", user="111")
     me = next(x for x in v["people"] if x["tgId"] == "777")
     assert me["role"] == "driver" and me["opens"] == 1 and me["staffName"] == "Иван Водитель"
+
+
+def test_logist_role(api, monkeypatch):
+    """Логист — права склада (заявки, рейсы, статистика водителей), но не «Люди» и не «Кто заходит»."""
+    monkeypatch.setenv("TGS_CAKE_ADMINS", "111")
+    assert api("cake", "saveStaff", user="111", id="lg-test", name="Логист Тест", role="logist", tgId="999")["staff"]["role"] == "logist"
+    for act in ("getOrders", "getTrips", "getDriverStats", "getTara"):
+        assert api("cake", act, user="999")["ok"], act
+    assert api("cake", "savePoint", user="999", customer="Кафе", address="ул. Тест, 1", route="Маршрут 9")["ok"]
+    assert api("cake", "getVisits", user="999")["error"] == "forbidden"
+    assert api("cake", "saveStaff", user="999", name="Хакер", role="driver")["error"] == "forbidden"
