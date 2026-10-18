@@ -1,9 +1,11 @@
-// изменено 2026-10-17 03:00
+// изменено 2026-10-18 12:00
 /* Запуск экрана кладовщика: иконки, вкладки, кнопка «Обновить». */
 (function(){
   "use strict";
   const {html, icon, $, $$, haptic} = Kit;
-  $('#mark').innerHTML = icon('box');
+  const logist = document.body.dataset.role === 'logist';  // logist.html — те же вкладки, свой набор
+  $('#mark').innerHTML = icon(logist ? 'route' : 'box');
+  if(window.CakeDriverStats) Cake.tabs.drivers = ()=> CakeDriverStats(Cake.api, Cake.refs.staff);
   $('#refreshBtn').innerHTML = icon('refresh');
   $('#searchIc').outerHTML = String(icon('search'));
   $('#tripAdd').innerHTML = html`${icon('plus')}Новый рейс`;
@@ -11,6 +13,10 @@
   $('#pkPlaces').innerHTML = html`${icon('pin')}Места на складе`;
   $('#pkAdd').addEventListener('click', ()=> Cake.editOrder(null));
   $('#pkPlaces').addEventListener('click', ()=> Cake.editPlaces());
+  $('#inFile').innerHTML = html`${icon('upload')}Загрузить приход из файла (Excel, CSV)`;
+  $('#pkFile').innerHTML = html`${icon('upload')}Загрузить заявки из файла (Excel, CSV)`;
+  $('#inFile').addEventListener('click', ()=> Cake.importFile.income());
+  $('#pkFile').addEventListener('click', ()=> Cake.importFile.orders());
   $('#logCsv').innerHTML = html`${icon('download')}Выгрузить CSV`;
   $$('[data-ic]').forEach(el=> el.outerHTML = String(icon(el.dataset.ic)));
 

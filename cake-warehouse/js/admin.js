@@ -1,4 +1,4 @@
-// изменено 2026-10-18 10:00
+// изменено 2026-10-18 12:00
 /* Экран руководителя склада: сводка, смены, справочники. */
 (function(){
   "use strict";
@@ -8,7 +8,7 @@
   $('#refreshBtn').innerHTML = icon('refresh');
   $$('[data-ic]').forEach(el=> el.outerHTML = String(icon(el.dataset.ic)));
 
-  const ROLE = {storekeeper:'Кладовщик', driver:'Водитель'};
+  const ROLE = {storekeeper:'Кладовщик', logist:'Логист', driver:'Водитель'};
   let REFS = {products:[], cities:[], staff:[], tara:[]};
   const fail = r=> { Kit.toast(r.message || 'Не получилось', 'error'); haptic('error'); };
   const P = id=> REFS.products.find(x=>x.id === id) || {name:'?'};

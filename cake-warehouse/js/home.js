@@ -1,4 +1,4 @@
-// изменено 2026-10-18 11:00
+// изменено 2026-10-18 12:00
 /* Главная (кнопка «Открыть» в боте): три входа — руководитель, кладовщик, водитель.
    В рабочем режиме сотрудник сразу попадает на свой экран, руководитель выбирает сам. */
 (function(){
@@ -6,10 +6,11 @@
   const {html, icon, $, haptic} = Kit;
   const api = Kit.createApi({bot:'cake', mock: window.CakeMock});
   $('#mark').innerHTML = icon('box');
-  const ROLE_PAGE = {driver:'driver.html', storekeeper:'sklad.html'};
+  const ROLE_PAGE = {driver:'driver.html', storekeeper:'sklad.html', logist:'logist.html'};
   const DOORS = [
-    ['admin.html', 'chart', 'Склад и сводка', 'Руководитель: остатки, рейсы, водители, ящики, утренняя сводка'],
-    ['sklad.html', 'box', 'Кладовщик', 'Заявки магазинов, сборка по кругу склада, отгрузка рейсом'],
+    ['admin.html', 'chart', 'Склад и сводка', 'Руководитель: сводка, водители, смены, справочники, кто заходит'],
+    ['logist.html', 'route', 'Логист', 'Заявки из файла по маршрутам, рейсы и водители, ящики'],
+    ['sklad.html', 'box', 'Кладовщик', 'Приход из файла, сборка по кругу склада, отгрузка рейсом'],
     ['driver.html', 'truck', 'Водитель', 'Свои рейсы, спидометр, возвраты тортов и ящиков']
   ];
   const go = url=> location.href = url + '?home=1';
