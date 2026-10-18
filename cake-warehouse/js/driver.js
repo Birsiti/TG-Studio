@@ -1,4 +1,4 @@
-// изменено 2026-10-18 10:00
+// изменено 2026-10-18 13:00
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
@@ -49,7 +49,7 @@
         <span class="waybill-main"><span class="waybill-title">${c.name}\u00a0·\u00a0№${t.num}</span><span class="waybill-sub" style="display:block">${D.label(t.date)}</span></span>
         <span class="pill ${st[1]}">${st[0]}</span></button>
       <div class="waybill-tear"></div>
-      <div class="waybill-body"><span>Тортов <b>${total}</b></span>${t.taraOut.map(l=>html`<span>${T(l.taraId).name.split(' ')[0]} <b>${l.qty}</b></span>`)}</div></div>`;
+      <div class="waybill-body">${(t.stops || []).length ? html`<span>Точек <b>${t.stops.length}</b></span>` : ''}<span>Тортов <b>${total}</b></span>${t.taraOut.map(l=>html`<span>${T(l.taraId).name.split(' ')[0]} <b>${l.qty}</b></span>`)}</div></div>`;
   }
 
   function renderPick(){
@@ -68,13 +68,16 @@
     if(!t) return;
     const c = C(t.cityId);
     const sh = Kit.sheet({title:`${c.name} · №${t.num}`, sub:`${D.label(t.date)} · ${ST[t.status][0]}`, body: html`
-      <div class="eyebrow" style="margin-bottom:8px">Везёте</div>
+      ${stopsBlock(t)}
+      <div class="eyebrow${(t.stops || []).length ? ' section' : ''}" style="margin-bottom:8px">Везёте</div>
       ${t.lines.map(l=>html`<div class="kv"><span class="k">${L(l.productId)}</span><span class="v mono">${l.qty}${t.status === 'closed' ? ' → ' + l.delivered : ''}</span></div>`)}
       ${t.taraOut.length ? html`<div class="eyebrow section" style="margin-bottom:8px">Тара</div>${t.taraOut.map(l=>html`<div class="kv"><span class="k">${T(l.taraId).name}</span><span class="v mono">${l.qty}</span></div>`)}` : ''}
       ${t.note ? html`<p class="hint section">${t.note}</p>` : ''}
       ${odoBlock(t)}`,
       actions: t.status === 'shipped' && t.odoOut == null ? html`<button class="btn btn-primary btn-block" type="button" id="goOut">${icon('truck')}Выезжаю</button>`
         : /shipped|reported/.test(t.status) ? html`<button class="btn btn-primary btn-block" type="button" id="goRep">${icon('clipboard')}${t.status === 'reported' ? 'Исправить отчёт' : 'Сдать рейс'}</button>` : ''});
+    Kit.on(sh.el, 'click', '[data-map]', (e, el)=>{ haptic('light'); CakeMap.one(el.dataset.map); });
+    const all = sh.$('#mapAll'); if(all) all.addEventListener('click', ()=>{ haptic('light'); CakeMap.route(t.stops.map(s=>s.address)); });
     const b = sh.$('#goRep'); if(b) b.addEventListener('click', ()=>{ sh.close(); report(t); });
     const go = sh.$('#goOut'); if(go) go.addEventListener('click', async ()=>{
       const km = odoValue(sh.$('#odoOut')); if(km == null) return;
@@ -82,6 +85,19 @@
       if(!r.ok){ fail(r); return; }
       haptic('success'); sh.close(); Kit.toast('Хорошей дороги!', 'ok'); load();
     });
+  }
+
+  // Маршрут: заявки по порядку объезда — №, заказчик, адрес, сколько везти, кнопка на карту
+  function stopsBlock(t){
+    const S = t.stops || [];
+    if(!S.length) return '';
+    return html`<div class="section-head" style="margin-bottom:8px"><span class="eyebrow">Маршрут · ${S.length} ${S.length === 1 ? 'точка' : S.length < 5 ? 'точки' : 'точек'}</span></div>
+      ${S.length > 1 ? html`<button class="btn btn-ghost btn-block" type="button" id="mapAll" style="margin-bottom:8px">${icon('route')}Весь маршрут на карте</button>` : ''}
+      <div class="list">${S.map((s, i)=>html`<div class="row stop-row"><span class="avatar">${i + 1}</span>
+        <span class="row-main"><span class="row-title">№${s.num} · ${s.customer}</span>
+          <span class="row-sub">${s.address}</span>
+          <span class="row-sub">${s.qty} шт${s.boxes ? ' · ящиков ' + s.boxes : ''}${s.comment ? ' · ' + s.comment : ''}</span></span>
+        <button class="icon-btn" type="button" data-map="${s.address}" aria-label="На карте">${icon('pin')}</button></div>`)}</div>`;
   }
 
   // Спидометр: на выезде — поле перед «Выезжаю», потом — показания и пробег

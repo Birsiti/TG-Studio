@@ -1,4 +1,4 @@
-// изменено 2026-10-17 21:00
+// изменено 2026-10-18 13:00
 /* Вкладка «Рейсы»: сборка → отгрузка → приёмка с возвратом тортов и ящиков. */
 (function(){
   "use strict";
@@ -31,7 +31,7 @@
           <span class="waybill-sub" style="display:block">${D.label(t.date)} · ${d ? d.name : 'водитель не выбран'}</span></span>
         <span class="pill ${st[1]}">${st[0]}</span></button>
       <div class="waybill-tear"></div>
-      <div class="waybill-body"><span>Тортов <b>${total}</b></span><span>Позиций <b>${t.lines.length}</b></span>${tara ? html`<span>Тара <b>${tara}</b></span>` : ''}</div></div>`;
+      <div class="waybill-body">${(t.stops || []).length ? html`<span>Точек <b>${t.stops.length}</b></span>` : ''}<span>Тортов <b>${total}</b></span><span>Позиций <b>${t.lines.length}</b></span>${tara ? html`<span>Тара <b>${tara}</b></span>` : ''}</div></div>`;
   }
   Kit.on($('#tripList'), 'click', '[data-t]', (e, el)=> openTrip(TRIPS.find(x=>x.id === el.dataset.t)));
   $('#tripAdd').addEventListener('click', ()=> editTrip(null));
@@ -46,12 +46,15 @@
       ${d && (d.car || d.hired) ? html`<div class="kv"><span class="k">Машина</span><span class="v">${d.hired ? `наёмная${d.carrier ? ' · ' + d.carrier : ''}${d.car ? ' · ' : ''}` : ''}${d.car || ''}</span></div>` : ''}
       ${t.odoOut != null ? html`<div class="kv"><span class="k">Спидометр</span><span class="v mono">${num(t.odoOut)}${t.odoBack != null ? ` → ${num(t.odoBack)} · ${num(t.odoBack - t.odoOut)} км` : ' → в пути'}</span></div>` : ''}
       ${t.note ? html`<div class="kv"><span class="k">Комментарий</span><span class="v">${t.note}</span></div>` : ''}
+      ${stopsView(t)}
       <div class="section"><div class="eyebrow" style="margin-bottom:8px">Состав</div>
         ${t.lines.map(l=>html`<div class="kv"><span class="k">${L(l.productId)}</span><span class="v mono">${l.qty}${closed ? html` <span class="hint">→ ${l.delivered}${l.back ? ' · возв ' + l.back : ''}${l.spoiled ? ' · брак ' + l.spoiled : ''}</span>` : ''}</span></div>`)}</div>
       ${t.taraOut.length ? html`<div class="section"><div class="eyebrow" style="margin-bottom:8px">Тара</div>${t.taraOut.map(l=>{ const b = (t.taraBack.find(x=>x.taraId === l.taraId) || {}).qty; return html`<div class="kv"><span class="k">${T(l.taraId).name}</span><span class="v mono">${l.qty}${closed ? ' → вернули ' + (b || 0) : ''}</span></div>`; })}</div>` : ''}
       ${rep ? html`<div class="section"><div class="eyebrow" style="margin-bottom:8px">Отчёт водителя</div><p class="hint">Возврат: ${rep.returns.length ? rep.returns.map(r=>`${L(r.productId)} — ${r.back}${r.spoiled ? ' (брак ' + r.spoiled + ')' : ''}`).join(', ') : 'нет'}. Тара: ${rep.taraBack.map(l=>T(l.taraId).name + ' ' + l.qty).join(', ') || 'нет'}.${rep.comment ? ' «' + rep.comment + '»' : ''}</p></div>` : ''}`,
       actions: t.status === 'draft' ? html`<button class="btn btn-ghost" type="button" data-a="edit">${icon('edit')}Изменить</button><button class="btn btn-primary" type="button" data-a="ship">${icon('truck')}Отгрузить</button>`
         : /shipped|reported/.test(t.status) ? html`<button class="btn btn-primary btn-block" type="button" data-a="close">${icon('check')}Принять рейс</button>` : ''});
+    Kit.on(sh.el, 'click', '[data-map]', (e, el)=>{ haptic('light'); CakeMap.one(el.dataset.map); });
+    Kit.on(sh.el, 'click', '#mapAll', ()=>{ haptic('light'); CakeMap.route(t.stops.map(s=>s.address)); });
     Kit.on(sh.el, 'click', '[data-a]', async (e, el)=>{
       const a = el.dataset.a;
       if(a === 'edit'){ sh.close(); editTrip(t); return; }
@@ -61,6 +64,19 @@
       if(!r.ok){ fail(r); return; }
       haptic('success'); Kit.toast('Рейс отгружен', 'ok'); sh.close(); renderTrips(); loadStock();
     });
+  }
+
+  // Точки рейса: № заявки, заказчик, адрес, штук; кнопка на карту
+  const ORD_ST = {new:['Собирается','pill-warn'], picked:['Собрано','pill-ok']};
+  function stopsView(t){
+    const S = t.stops || [];
+    if(!S.length) return '';
+    return html`<div class="section"><div class="section-head" style="margin-bottom:8px"><span class="eyebrow">Маршрут · точек ${S.length}</span>
+        ${S.length > 1 ? html`<button class="link-btn" type="button" id="mapAll">${icon('route')}на карте</button>` : ''}</div>
+      <div class="list">${S.map((s, i)=>html`<div class="row stop-row"><span class="avatar">${i + 1}</span>
+        <span class="row-main"><span class="row-title">№${s.num} · ${s.customer}</span><span class="row-sub">${s.address}</span>
+          <span class="row-sub">${s.qty} шт${s.boxes ? ' · ящиков ' + s.boxes : ''} · <span class="pill ${ORD_ST[s.status][1]}">${ORD_ST[s.status][0]}</span></span></span>
+        <button class="icon-btn" type="button" data-map="${s.address}" aria-label="На карте">${icon('pin')}</button></div>`)}</div></div>`;
   }
 
   async function editTrip(t){
@@ -74,10 +90,15 @@
     const sh = Kit.sheet({title:t ? `Рейс №${t.num}` : 'Новый рейс', sub:'Сборка: остаток спишется при отгрузке', body: html`
       <div class="eyebrow" style="margin-bottom:8px">Дата</div>
       <div class="chips" id="eDate">${days.map(d=>html`<button type="button" class="chip${st.date === d ? ' is-on' : ''}" data-v="${d}">${D.label(d)}</button>`)}</div>
-      <div class="eyebrow section" style="margin-bottom:8px">Куда — маршрут или город</div>
+      <div class="eyebrow section" style="margin-bottom:8px">Куда — маршрут или город <span class="hint" style="text-transform:none;letter-spacing:0">(с заявками — сам)</span></div>
       <div class="chips" id="eCity">${Cake.refs.cities.filter(c=>c.active || c.id === st.cityId).map(c=>html`<button type="button" class="chip${st.cityId === c.id ? ' is-on' : ''}" data-v="${c.id}">${c.name}</button>`)}</div>
       <div class="eyebrow section" style="margin-bottom:8px">Водитель</div>
       <div class="chips" id="eDrv">${drivers.map(s=>html`<button type="button" class="chip${st.driverId === s.id ? ' is-on' : ''}" data-v="${s.id}">${s.name.split(' ')[0]}${s.hired ? ' · наём.' : ''}${SHIFT.includes(s.id) ? ' · на смене' : ''}</button>`)}</div>
+      <div class="section-head section" style="margin-bottom:8px"><span class="eyebrow">Заявки — точки маршрута</span><span class="hint" id="eOrdSum"></span></div>
+      <p class="hint" style="margin:0 0 8px">Отмечайте по порядку объезда — номер у заявки и есть порядок. Водитель увидит адреса и кнопки на карту.</p>
+      <div class="chips scroll" id="eRoutes"></div>
+      <div class="list" id="eOrders" style="margin-top:8px"></div>
+      <div id="eTorts">
       <div class="section-head section" style="margin-bottom:8px"><span class="eyebrow">Торты</span><span class="hint" id="eSum"></span></div>
       <div class="search">${icon('search')}<input class="input" id="eQ" type="search" placeholder="Найти торт" autocomplete="off"></div>
       <div class="chips" style="margin-top:8px"><button type="button" class="chip" id="eOnly">Только выбранные</button></div>
@@ -85,11 +106,40 @@
         <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-q="${p.id}" value="${qty[p.id] || ''}"></div>`)}</div>
       <div class="eyebrow section" style="margin-bottom:4px">Ящики водителю</div>
       <div>${Cake.refs.tara.filter(x=>x.active).map(x=>html`<div class="qrow"><span class="qrow-name">${x.name}</span><input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-tq="${x.id}" value="${tq[x.id] || ''}"></div>`)}</div>
+      </div>
+      <p class="hint section" id="eFromOrders" hidden>Торты и ящики рейса считаются из выбранных заявок — отгрузить можно, когда все они собраны.</p>
       <label class="field section"><span class="field-label">Комментарий</span><input class="input" id="eNote" maxlength="300" value="${t ? t.note : ''}"></label>`,
       actions: html`${t ? html`<button class="btn btn-danger-soft" type="button" id="eCancel">Отменить рейс</button>` : ''}<button class="btn btn-primary" type="button" id="eSave">Сохранить</button>`});
     [['#eDate','date'], ['#eCity','cityId'], ['#eDrv','driverId']].forEach(([sel, key])=>{
-      Kit.on(sh.$(sel), 'click', '[data-v]', (e, el)=>{ st[key] = el.dataset.v; $$(sel + ' .chip', sh.el).forEach(b=>b.classList.toggle('is-on', b === el)); haptic('select'); });
+      Kit.on(sh.$(sel), 'click', '[data-v]', (e, el)=>{ st[key] = el.dataset.v; $$(sel + ' .chip', sh.el).forEach(b=>b.classList.toggle('is-on', b === el)); haptic('select');
+        if(key === 'date') loadOrders(); else if(key === 'cityId'){ route = routeOf(); drawOrders(); } });
     });
+    // Заявки на дату рейса: свободные и уже в этом рейсе; выбор по порядку = порядок точек
+    let ORD = [], PTS = [], sel = (t && t.stops || []).map(s=>s.orderId), route = '';
+    const routeOf = ()=>{ const n = (Cake.refs.cities.find(c=>c.id === st.cityId) || {}).name; return ORD.some(o=>o.route === n) ? n : ''; };
+    const ptOf = id=> PTS.find(x=>x.id === id) || {customer:'?', address:''};
+    const qtyOf = o=> o.lines.reduce((s, l)=>s + l.qty + (l.bonus || 0), 0);
+    async function loadOrders(){
+      const r = await api('getOrders', {date:st.date});
+      ORD = r.ok ? r.orders.filter(o=>!o.tripId || (t && o.tripId === t.id)) : []; PTS = r.ok ? r.points : [];
+      sel = sel.filter(id=>ORD.some(o=>o.id === id)); route = routeOf(); drawOrders();
+    }
+    function drawOrders(){
+      const routes = [...new Set(ORD.map(o=>o.route).filter(Boolean))].sort();
+      sh.$('#eRoutes').innerHTML = String(html`<button class="chip${!route ? ' is-on' : ''}" type="button" data-r="">Все · ${ORD.length}</button>${routes.map(r=>html`<button class="chip${r === route ? ' is-on' : ''}" type="button" data-r="${r}">${r}</button>`)}`);
+      const list = ORD.filter(o=>!route || o.route === route || sel.includes(o.id)).sort((a, b)=> (sel.indexOf(a.id) + 1 || 999) - (sel.indexOf(b.id) + 1 || 999) || a.num.localeCompare(b.num));
+      sh.$('#eOrders').innerHTML = list.length ? String(html`${list.map(o=>{ const p = ptOf(o.pointId), i = sel.indexOf(o.id); return html`<button class="row pick-row${i >= 0 ? ' is-on' : ''}" type="button" data-o="${o.id}">
+          <span class="pick-box">${i >= 0 ? i + 1 : ''}</span>
+          <span class="row-main"><span class="row-title">№${o.num} · ${p.customer}</span><span class="row-sub">${p.address}</span>
+            <span class="row-sub">${o.route || 'без маршрута'} · ${qtyOf(o)} шт · <span class="pill ${ORD_ST[o.status][1]}">${ORD_ST[o.status][0]}</span></span></span></button>`; })}`)
+        : String(html`<div class="empty" style="padding:16px">${icon('route')}<div class="empty-title">Свободных заявок нет</div>На ${D.label(st.date)} заявок без рейса нет</div>`);
+      const n = sel.length, pcsSel = ORD.filter(o=>sel.includes(o.id)).reduce((s, o)=>s + qtyOf(o), 0);
+      sh.$('#eOrdSum').textContent = n ? `${n} точ. · ${pcs(pcsSel)}` : '';
+      sh.$('#eTorts').hidden = !!n; sh.$('#eFromOrders').hidden = !n;
+    }
+    Kit.on(sh.$('#eRoutes'), 'click', '[data-r]', (e, el)=>{ route = el.dataset.r; haptic('select'); drawOrders(); });
+    Kit.on(sh.$('#eOrders'), 'click', '[data-o]', (e, el)=>{ const id = el.dataset.o, i = sel.indexOf(id); if(i >= 0) sel.splice(i, 1); else sel.push(id); haptic('select'); drawOrders(); });
+    loadOrders();
     let only = false;
     const eSum = ()=>{ const ls = $$('[data-q]', sh.el).map(el=>parseInt(el.value, 10) || 0).filter(Boolean); sh.$('#eSum').textContent = ls.length ? `${ls.length} поз. · ${pcs(ls.reduce((a, b)=>a + b, 0))}` : ''; };
     const eFilter = ()=>{ filterRows(sh.$('#eList'), sh.$('#eQ').value); if(only){ $$('[data-name]', sh.el).forEach(r=>{ if(!r.classList.contains('is-on')) r.hidden = true; }); $$('.cat-group', sh.el).forEach(g=> g.hidden = !$$('[data-name]', g).some(r=>!r.hidden)); } };
@@ -98,15 +148,19 @@
     sh.$('#eQ').addEventListener('input', Kit.debounce(eFilter, 100));
     sh.$('#eOnly').addEventListener('click', ()=>{ only = !only; sh.$('#eOnly').classList.toggle('is-on', only); haptic('select'); eFilter(); });
     sh.$('#eSave').addEventListener('click', async ()=>{
-      if(!st.cityId){ Kit.toast('Выберите маршрут или город', 'error'); return; }
+      // направление рейса не выбрано — сервер возьмёт маршрут первой заявки
+      const byRoute = !st.cityId && sel.length ? ((ORD.find(o=>o.id === sel[0]) || {}).route || '') : '';
+      if(!st.cityId && !byRoute){ Kit.toast('Выберите маршрут или город — или отметьте заявки', 'error'); return; }
       const lines = $$('[data-q]', sh.el).map(el=>({productId:el.dataset.q, qty:parseInt(el.value, 10) || 0})).filter(l=>l.qty > 0);
-      const over = lines.filter(l=>l.qty > stockOf(l.productId));
+      const over = sel.length ? [] : lines.filter(l=>l.qty > stockOf(l.productId));
       if(over.length) Kit.toast('Больше, чем на складе: ' + over.map(l=>L(l.productId)).join(', '), 'error');
       const taraOut = $$('[data-tq]', sh.el).map(el=>({taraId:el.dataset.tq, qty:parseInt(el.value, 10) || 0})).filter(l=>l.qty > 0);
       Kit.busy(sh.$('#eSave'), true);
-      const r = await api('saveTrip', {id:t ? t.id : undefined, date:st.date, cityId:st.cityId, driverId:st.driverId || undefined, lines, taraOut, note:sh.$('#eNote').value.trim()});
+      let r = await api('saveTrip', {id:t ? t.id : undefined, date:st.date, cityId:st.cityId || undefined, route:byRoute || undefined, driverId:st.driverId || undefined, lines:sel.length ? [] : lines, taraOut:sel.length ? [] : taraOut, note:sh.$('#eNote').value.trim()});
+      if(r.ok && (sel.length || (t && (t.stops || []).length))) r = await api('setTripOrders', {id:r.trip.id, orderIds:sel});
       Kit.busy(sh.$('#eSave'), false);
-      if(!r.ok){ fail(r); return; }
+      if(!r.ok){ fail(r); renderTrips(); return; }
+      if(byRoute) await Cake.loadRefs();  // мог появиться новый маршрут-направление
       haptic('success'); sh.close(); renderTrips(); openTrip(r.trip);
     });
     if(t) sh.$('#eCancel').addEventListener('click', async ()=>{
