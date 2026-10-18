@@ -1,4 +1,4 @@
-// изменено 2026-10-18 09:00
+// изменено 2026-10-18 10:00
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { roleOf, keyboard, idsOf } = require('../src/roles');
@@ -32,6 +32,19 @@ test('новый пользователь: руководителю — имя, 
   assert.match(t, /^🎂 /);
   assert.match(t, /Справочники/);
   assert.match(texts.newVisitor({ id: 7, first_name: 'Иван' }, 'driver'), /Иван, id 7 — водитель/);
+});
+
+test('гостевой вход /demo: до конца дня, на N дней, off; гость — сообщение руководителю', () => {
+  const { demoCommand, demoOpen } = require('../src/commands');
+  assert.equal(demoCommand('/demo', '2026-10-18'), '2026-10-18');
+  assert.equal(demoCommand('/demo 3', '2026-10-31'), '2026-11-02');
+  assert.equal(demoCommand('/demo off', '2026-10-18'), null);
+  assert.equal(demoOpen('2026-10-18', '2026-10-18'), true);
+  assert.equal(demoOpen('2026-10-18', '2026-10-19'), false);
+  assert.equal(demoOpen(null, '2026-10-18'), false);
+  assert.match(texts.newVisitor({ id: 9, first_name: 'Ольга' }, null, true), /^🎂 Гость открыл демо: Ольга, id 9/);
+  assert.match(texts.demoState('2026-10-18'), /18\.10\.2026/);
+  assert.ok(texts.guestWelcome('Ольга').length < 4096);
 });
 
 test('кнопки Web App ведут на страницы своей роли', () => {

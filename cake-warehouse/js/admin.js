@@ -1,4 +1,4 @@
-// изменено 2026-10-18 09:00
+// изменено 2026-10-18 10:00
 /* Экран руководителя склада: сводка, смены, справочники. */
 (function(){
   "use strict";
@@ -18,7 +18,7 @@
   async function loadRefs(){
     const r = await api('getRefs'); if(r.ok) REFS = r; else fail(r);
     if(r.ok && !loadRefs.hello){ loadRefs.hello = true; api('hello', {page:'admin'}); }  // журнал «кто заходит»
-    if(api.mode() === 'demo') $('#modeNote').innerHTML = String(html`<p class="mode-note">Демо-режим: сервер недоступен, данные хранятся только в этом телефоне.</p>`);
+    if(api.mode() === 'demo') $('#modeNote').innerHTML = String(html`<p class="mode-note">Демо-версия: данные примерные и хранятся только в этом телефоне.</p>`);
   }
 
   /* ============ СВОДКА ============ */

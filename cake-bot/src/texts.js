@@ -1,4 +1,4 @@
-// изменено 2026-10-18 09:30
+// изменено 2026-10-18 10:00
 // Тексты сообщений. Обычный текст без разметки — не нужно экранировать.
 
 function weight(g) {
@@ -90,13 +90,36 @@ function pickedForAdmin(o, point) {
 }
 
 // Руководителю: человек впервые написал боту
-function newVisitor(from, role) {
+function newVisitor(from, role, guest = false) {
   const name = [from.first_name, from.last_name].filter(Boolean).join(' ') || 'без имени';
   const who = `${name}${from.username ? ' (@' + from.username + ')' : ''}, id ${from.id}`;
+  if (guest) return `🎂 Гость открыл демо: ${who}.`;
   return role
     ? `🎂 Впервые зашёл в бота: ${who} — ${ROLE_LOWER[role] || role}.`
     : `🎂 Новый пользователь в боте: ${who}.\nДоступа нет. Чтобы пустить — «Склад и сводка» → «Справочники» → «Люди», впишите этот id.`;
 }
+// Гостевой вход (/demo): короткая презентация для тех, кто впервые видит приложение в Telegram
+function guestWelcome(firstName) {
+  return [
+    `🎂 ${firstName ? firstName + ', д' : 'Д'}обро пожаловать в ТОРТОВОЗ — склад тортов прямо в Telegram.`,
+    '',
+    'Ничего устанавливать не нужно: нажмите кнопку ниже — приложение откроется здесь же, поверх чата.',
+    '',
+    '📊 Склад и сводка — для руководителя: остатки, рейсы, водители (км, возвраты, недостачи), ящики.',
+    '📦 Кладовщик — заявки магазинов, сборка по кругу склада, отгрузка рейсом.',
+    '🚚 Водитель — свои рейсы, спидометр, возвраты тортов и ящиков.',
+    '',
+    'Это демо: данные примерные, всё, что вы нажмёте, остаётся только в вашем телефоне — смело пробуйте.',
+    'Закрыть приложение — «Закрыть» вверху, вернуться — /start.',
+  ].join('\n');
+}
+
+function demoState(until) {
+  if (!until) return 'Гостевой вход закрыт. Снова в бота пускаются только люди из «Справочники» → «Люди».';
+  const [y, m, d] = until.split('-');
+  return `Гостевой вход открыт до конца дня ${d}.${m}.${y}: любой, кто нажмёт /start, увидит демо со всеми экранами. О каждом госте придёт сообщение.\n\nНа несколько дней — /demo 3, закрыть — /demo off.`;
+}
+
 const ROLE_LOWER = { admin: 'руководитель', storekeeper: 'кладовщик', driver: 'водитель' };
 
-module.exports = { newVisitor, pickedForAdmin, weight, makeLookup, shippedForDriver, reportedForStore, closedForDriver, digest };
+module.exports = { newVisitor, guestWelcome, demoState, pickedForAdmin, weight, makeLookup, shippedForDriver, reportedForStore, closedForDriver, digest };

@@ -1,9 +1,11 @@
-// изменено 2026-10-18 09:00
+// изменено 2026-10-18 10:00
 // Ответы на сообщения пользователей.
 const config = require('./config');
 const tg = require('./telegram');
 const { api, refs } = require('./api');
 const texts = require('./texts');
+const store = require('./store');
+const { dayKey } = require('./digest-job');
 const { ROLE_RU, roleOf, staffName, keyboard } = require('./roles');
 
 async function handleMessage(msg) {
@@ -15,6 +17,12 @@ async function handleMessage(msg) {
     return tg.send(msg.chat.id, `Ваш Telegram id: ${id}\n\nПередайте его руководителю — он добавит вас в «Справочники → Люди».`);
   }
 
+  if (/^\/demo\b/.test(text) && config.adminIds.includes(id)) {
+    const until = demoCommand(text, dayKey());
+    store.save({ demoUntil: until });
+    return tg.send(msg.chat.id, texts.demoState(until));
+  }
+
   let r;
   try {
     r = await refs();
@@ -23,7 +31,11 @@ async function handleMessage(msg) {
     r = null;
   }
   const role = roleOf(id, r ? r.staff : [], config.adminIds);
-  await noteVisit(msg.from, role);
+  const guest = !role && demoOpen(store.get().demoUntil, dayKey());
+  await noteVisit(msg.from, role, guest);
+  if (guest) {
+    return tg.send(msg.chat.id, texts.guestWelcome(msg.from.first_name || ''), keyboard('admin', config.webappBase));
+  }
   if (!r && role !== 'admin') {
     return tg.send(msg.chat.id, `Склад сейчас недоступен (сервер не отвечает). Попробуйте через пару минут.\n\nВаш Telegram id: ${id}`);
   }
@@ -36,14 +48,26 @@ async function handleMessage(msg) {
 }
 
 // Журнал «кто заходит» (API) и сообщение руководителям о новом человеке
-async function noteVisit(from, role) {
+async function noteVisit(from, role, guest = false) {
   try {
     const name = [from.first_name, from.last_name].filter(Boolean).join(' ');
     const v = await api('logVisit', { tgId: String(from.id), name, username: from.username || '' });
-    if (v.isNew && role !== 'admin') await tg.sendMany(config.adminIds, texts.newVisitor(from, role));
+    if (v.isNew && role !== 'admin') await tg.sendMany(config.adminIds, texts.newVisitor(from, role, guest));
   } catch (err) {
     console.error('[bot] журнал входов:', err.message);
   }
 }
 
-module.exports = { handleMessage, noteVisit };
+// Гостевой вход для показа: /demo — до конца дня, /demo 3 — на 3 дня, /demo off — закрыть.
+// Гости видят те же экраны, но приложение без туннеля работает в демо (данные в их телефоне).
+function demoCommand(text, today) {
+  const arg = text.split(/\s+/)[1] || '';
+  if (/^(off|выкл|нет|0)$/i.test(arg)) return null;
+  const days = Math.min(30, Math.max(1, parseInt(arg, 10) || 1));
+  const d = new Date(`${today}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days - 1);
+  return d.toISOString().slice(0, 10);
+}
+const demoOpen = (until, today) => !!until && until >= today;
+
+module.exports = { handleMessage, noteVisit, demoCommand, demoOpen };
