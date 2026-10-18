@@ -1,4 +1,4 @@
-// изменено 2026-10-18 16:00
+// изменено 2026-10-18 16:30
 /* Вкладка «Рейсы»: сборка → отгрузка → приёмка с возвратом тортов и ящиков. */
 (function(){
   "use strict";
@@ -59,11 +59,38 @@
       const a = el.dataset.a;
       if(a === 'edit'){ sh.close(); editTrip(t); return; }
       if(a === 'close'){ sh.close(); acceptTrip(t); return; }
-      if(!await Kit.confirm(`Отгрузить ${t.lines.reduce((s, l)=>s + l.qty, 0)} шт в ${c.name}? Остаток спишется со склада.`, 'Отгрузить')) return;
-      Kit.busy(el, true); const r = await api('shipTrip', {id:t.id}); Kit.busy(el, false);
-      if(!r.ok){ fail(r); return; }
-      haptic('success'); Kit.toast('Рейс отгружен', 'ok'); sh.close(); renderTrips(); loadStock();
+      Kit.busy(el, true); const tara = await api('getTara'); Kit.busy(el, false);
+      const d = tara.ok && (tara.drivers.find(x=>x.id === t.driverId) || null);
+      const debt = d ? Cake.refs.tara.filter(x=>(d.tara[x.id] || {}).debt > 0).map(x=>({taraId:x.id, qty:d.tara[x.id].debt})) : [];
+      const total = t.lines.reduce((s, l)=>s + l.qty, 0);
+      if(!debt.length){
+        if(!await Kit.confirm(`Отгрузить ${total} шт в ${c.name}? Остаток спишется со склада.`, 'Отгрузить')) return;
+        return ship(el, {id:t.id});
+      }
+      shipSheet(t, d, debt, total, c, ()=>{ sh.close(); });
     });
+    async function ship(el, payload, after){
+      Kit.busy(el, true); const r = await api('shipTrip', payload); Kit.busy(el, false);
+      if(!r.ok){ fail(r); return; }
+      const back = (payload.taraBack || []).reduce((s, l)=>s + l.qty, 0);
+      haptic('success'); Kit.toast(back ? `Рейс отгружен, принято ящиков: ${back}` : 'Рейс отгружен', 'ok'); sh.close(); if(after) after(); renderTrips(); loadStock();
+    }
+    // Водитель на погрузке — заодно сдаёт ящики с прошлых рейсов: кладовщик отмечает, сколько принял
+    function shipSheet(t, d, debt, total, c, closeTrip){
+      const s2 = Kit.sheet({title:`Отгрузка рейса №${t.num}`, sub:`${c.name} · ${total} шт · остаток спишется со склада`, body: html`
+        <div class="eyebrow" style="margin-bottom:4px">Ящики с прошлых рейсов</div>
+        <p class="hint" style="margin:0 0 8px">${d.name.split(' ')[0]} на погрузке — примите у него пустые ящики. Сколько сдал сейчас?</p>
+        ${debt.map(x=>html`<div class="qrow"><span class="qrow-name">${T(x.taraId).name}<small>на руках ${x.qty}</small></span>
+          <button class="chip" type="button" data-all="${x.taraId}" data-n="${x.qty}">все ${x.qty}</button>
+          <input class="input" type="number" inputmode="numeric" min="0" max="${x.qty}" placeholder="0" data-tb="${x.taraId}"></div>`)}
+        <p class="hint section">Не сдал — оставьте 0: ящики останутся за ним, их видно во вкладке «Ящики».${t.taraOut.length ? ` В этот рейс берёт: ${t.taraOut.map(l=>T(l.taraId).name + ' ' + l.qty).join(', ')}.` : ''}</p>`,
+        actions: html`<button class="btn btn-primary btn-block" type="button" id="sGo">${icon('truck')}Отгрузить</button>`});
+      Kit.on(s2.el, 'click', '[data-all]', (e, el)=>{ s2.$(`[data-tb="${el.dataset.all}"]`).value = el.dataset.n; haptic('select'); });
+      s2.$('#sGo').addEventListener('click', ()=>{
+        const taraBack = $$('[data-tb]', s2.el).map(el=>({taraId:el.dataset.tb, qty:parseInt(el.value, 10) || 0})).filter(l=>l.qty > 0);
+        ship(s2.$('#sGo'), {id:t.id, taraBack}, ()=>{ s2.close(); closeTrip(); });
+      });
+    }
   }
 
   // Точки рейса: № заявки, заказчик, адрес, штук; кнопка на карту

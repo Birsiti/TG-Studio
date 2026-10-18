@@ -1,4 +1,4 @@
-// изменено 2026-10-18 16:00
+// изменено 2026-10-18 16:30
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
@@ -71,7 +71,8 @@
       ${stopsBlock(t)}
       <div class="eyebrow${(t.stops || []).length ? ' section' : ''}" style="margin-bottom:8px">Везёте</div>
       ${t.lines.map(l=>html`<div class="kv"><span class="k">${L(l.productId)}</span><span class="v mono">${l.qty}${t.status === 'closed' ? ' → ' + l.delivered : ''}</span></div>`)}
-      ${t.taraOut.length ? html`<div class="eyebrow section" style="margin-bottom:8px">Тара</div>${t.taraOut.map(l=>html`<div class="kv"><span class="k">${T(l.taraId).name}</span><span class="v mono">${l.qty}</span></div>`)}` : ''}
+      ${t.taraOut.length ? html`<div class="eyebrow section" style="margin-bottom:8px">Тара</div>${t.taraOut.map(l=>html`<div class="kv"><span class="k">${T(l.taraId).name} в этом рейсе</span><span class="v mono">${l.qty}</span></div>`)}` : ''}
+      ${boxesNote(t)}
       ${t.note ? html`<p class="hint section">${t.note}</p>` : ''}
       ${odoBlock(t)}`,
       // спидометр — рядом с кнопкой: эта полоса остаётся над клавиатурой, поле в карточке клавиатура закрывала
@@ -185,6 +186,15 @@
     return +v;
   }
 
+  // Ящики: на погрузке сдать пустые с прошлых рейсов (отдельно на склад не ездить), в конце — что вернул
+  function boxesNote(t){
+    const onHands = DEBT.reduce((a, d)=>a + d.qty, 0);
+    if(!onHands) return '';
+    if(t.status === 'draft') return html`<p class="mode-note section">${icon('layers')} На руках ${onHands} ящ. с прошлых рейсов — сдайте кладовщику при погрузке.</p>`;
+    if(/shipped|reported/.test(t.status)) return html`<div class="kv"><span class="k">Всего ящиков на руках</span><span class="v mono">${onHands}</span></div>`;
+    return '';
+  }
+
   // Брак с точек — сразу в отчёт рейса (водитель везёт его обратно)
   function fromStops(t){
     const m = {};
@@ -206,6 +216,7 @@
         <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-back="${l.productId}" value="${(rb[l.productId] || {}).back || ''}">
         <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-spoil="${l.productId}" value="${(rb[l.productId] || {}).spoiled || ''}"></div>`)}
       ${t.taraOut.length ? html`<div class="eyebrow section" style="margin-bottom:4px">Ящики сдаю</div>
+        ${DEBT.reduce((a, d)=>a + d.qty, 0) > t.taraOut.reduce((a, l)=>a + l.qty, 0) ? html`<p class="hint" style="margin:0 0 4px">Всего на руках ${DEBT.reduce((a, d)=>a + d.qty, 0)} — можно сдать и ящики с прошлых рейсов.</p>` : ''}
         ${t.taraOut.map(l=>html`<div class="qrow"><span class="qrow-name">${T(l.taraId).name}<small>увезли ${l.qty}</small></span><input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-tb="${l.taraId}" value="${tb[l.taraId] != null ? tb[l.taraId] : ''}"></div>`)}` : ''}
       <label class="field section"><span class="field-label">Комментарий для склада</span><textarea class="textarea" id="rCom" maxlength="300" rows="2">${rep.comment || ''}</textarea></label>`,
       actions: html`<button class="btn btn-primary btn-block" type="button" id="rGo">${icon('send')}Отправить на склад</button>`});

@@ -1,4 +1,4 @@
-// изменено 2026-10-18 16:00
+// изменено 2026-10-18 16:30
 /* ============================================================
    mock-stops.js — точки рейса в демо-режиме (двойник api/bots/cake/stops.py):
    логист даёт водителю заявки, торты и ящики рейса — из заявок, отгрузка — только собранные.
@@ -89,7 +89,13 @@
         if(bare.length) return err('bad_state', 'Внесите торты в заявки по фото: №' + nums(bare));
         sync(t.id);
       }
-      var r = O.shipTrip(p); return bad(r) ? r : {trip:withStops(r.trip)};
+      // ящики с прошлых рейсов — сданы на погрузке (как shipTrip.taraBack в trips.py)
+      var back = (p.taraBack || []).filter(function(l){ return l && +l.qty > 0; }), debt = {};
+      if(t) S.taraMoves.forEach(function(m){ if(m.driverId === t.driverId) debt[m.taraId] = (debt[m.taraId] || 0) + m.qty; });
+      for(var i = 0; i < back.length; i++){ var has = debt[back[i].taraId] || 0; if(+back[i].qty > has) return err('bad_request', 'У водителя на руках только ' + has); }
+      var r = O.shipTrip(p); if(bad(r)) return r;
+      back.forEach(function(l){ S.taraMoves.push({id:++S.taraId, date:Kit.date.today(), taraId:l.taraId, driverId:t.driverId, kind:'back', qty:-Math.abs(+l.qty), cityId:t.cityId, tripId:null, note:'Сдал при погрузке рейса №' + t.num}); });
+      return {trip:withStops(r.trip)};
     },
     saveOrder: function(p){ var r = O.saveOrder(p); if(!bad(r)) sync(r.order.tripId); return r; },
     finishPick: function(p){ var r = O.finishPick(p); if(!bad(r)) sync(r.order.tripId); return r; },
