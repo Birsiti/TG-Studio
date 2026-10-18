@@ -1,4 +1,4 @@
-# изменено 2026-10-17 04:00
+# изменено 2026-10-18 13:00
 """Сборка по кругу: заявки с фото, галочки, места, точки, миграция в старую базу."""
 from bots.cake import bot as cake_bot
 
@@ -118,10 +118,13 @@ def test_route_to_trip(api):
     assert [c["name"] for c in api("cake", "getRefs")["cities"][:4]] == ["Бобруйск", "Дзержинск", "Маршрут 2", "Маршрут 3"]  # маршруты первыми, по порядку
     assert all(o["tripId"] == t["id"] for o in api("cake", "getOrders", date=day)["orders"] if o["id"] in ids)
     assert api("cake", "routeToTrip", date=day, route="Маршрут 2")["error"] == "not_found"  # повторно не создаётся
-    assert api("cake", "reopenPick", id=ids[0])["error"] == "bad_state"
+    assert api("cake", "reopenPick", id=ids[0])["order"]["status"] == "new"  # рейс ещё на сборке — вернуть можно
+    assert "Не собраны" in api("cake", "shipTrip", id=t["id"])["message"]  # но отгрузить без неё нельзя
+    api("cake", "finishPick", id=ids[0], all=True, boxes=2)
     assert api("cake", "cancelTrip", id=t["id"])["trip"]["status"] == "cancelled"
     t2 = api("cake", "routeToTrip", date=day, route="Маршрут 2", driverId="dr-ivan")["trip"]
     assert api("cake", "shipTrip", id=t2["id"])["trip"]["status"] == "shipped"
+    assert api("cake", "reopenPick", id=ids[0])["error"] == "bad_state"  # уехала — назад нельзя
 
 
 def test_product_weight_and_per_box(api):
@@ -213,3 +216,48 @@ def test_orders_1810c_summaries(api):
     got = {o["num"]: sum(ln["qty"] for ln in o["lines"]) for o in r["orders"] if o["num"] in TOTALS}
     assert got == {k: v[0] for k, v in TOTALS.items()} and "Бобруйск" in r["routes"]
     assert r["places"]["p099"] == 54 and len(r["orders"]) == 39
+
+
+def test_trip_stops(api):
+    """Логист даёт водителю заявки (точки): торты рейса — из заявок, адреса видит водитель, отгрузка — только собранные."""
+    day = "2026-10-25"
+    pts = api("cake", "getOrders")["points"]
+    a = api("cake", "saveOrder", num="T-1", date=day, pointId=pts[0]["id"], lines=[{"productId": "p001", "qty": 3, "bonus": 1}])["order"]
+    b = api("cake", "saveOrder", num="T-2", date=day, pointId=pts[1]["id"], lines=[{"productId": "p001", "qty": 2}, {"productId": "p002", "qty": 1}])["order"]
+    other = api("cake", "saveOrder", num="T-3", date="2026-10-26", pointId=pts[2]["id"], lines=[{"productId": "p002", "qty": 1}])["order"]
+    city = api("cake", "getRefs")["cities"][0]["id"]
+    t = api("cake", "saveTrip", date=day, cityId=city, driverId="dr-ivan", lines=[])["trip"]
+    assert api("cake", "setTripOrders", id=t["id"], orderIds=[other["id"]])["error"] == "bad_request"  # другая дата
+    t = api("cake", "setTripOrders", id=t["id"], orderIds=[b["id"], a["id"]])["trip"]
+    assert [s["num"] for s in t["stops"]] == ["T-2", "T-1"] and t["stops"][0]["address"] == pts[1]["address"]
+    assert sorted((l["productId"], l["qty"]) for l in t["lines"]) == [("p001", 6), ("p002", 1)]
+    t2 = api("cake", "saveTrip", date=day, route="Маршрут 7", lines=[])["trip"]  # без города — по маршруту
+    assert next(c for c in api("cake", "getRefs")["cities"] if c["id"] == t2["cityId"])["name"] == "Маршрут 7"
+    assert api("cake", "saveTrip", date=day, lines=[])["error"] == "bad_request"
+    assert api("cake", "setTripOrders", id=t2["id"], orderIds=[a["id"]])["error"] == "bad_state"  # уже в другом рейсе
+    api("cake", "saveOrder", id=a["id"], num="T-1", date=day, pointId=pts[0]["id"], lines=[{"productId": "p001", "qty": 5}])
+    t = next(x for x in api("cake", "getTrips")["trips"] if x["id"] == t["id"])
+    assert sorted((l["productId"], l["qty"]) for l in t["lines"]) == [("p001", 7), ("p002", 1)]  # правка заявки — в рейсе
+    assert "Не собраны: №T-2, №T-1" in api("cake", "shipTrip", id=t["id"])["message"]
+    api("cake", "adjustStock", productId="p001", qty=50)
+    api("cake", "adjustStock", productId="p002", qty=50)
+    for o in (a, b):
+        api("cake", "finishPick", id=o["id"], all=True, boxes=1)
+    t = api("cake", "shipTrip", id=t["id"])["trip"]
+    assert t["status"] == "shipped" and t["taraOut"] == [{"taraId": "box", "qty": 2}] and len(t["stops"]) == 2
+    mine = api("cake", "getMyTrips", driverId="dr-ivan")["trips"]
+    assert [s["num"] for s in next(x for x in mine if x["id"] == t["id"])["stops"]] == ["T-2", "T-1"]
+    assert api("cake", "setTripOrders", id=t["id"], orderIds=[])["error"] == "bad_state"
+
+
+
+def test_stop_column_migration(api):
+    """База iMac без orders.stop — колонка добавится при старте, заявки и рейсы целы."""
+    from bots.cake import bot as cake_bot
+    n = len(api("cake", "getOrders")["orders"])
+    conn = cake_bot.connect()
+    conn.executescript("ALTER TABLE orders DROP COLUMN stop;")
+    conn.close()
+    cake_bot._ready = False
+    assert len(api("cake", "getOrders")["orders"]) == n
+    assert all("stops" in t for t in api("cake", "getTrips")["trips"])

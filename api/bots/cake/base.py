@@ -1,4 +1,4 @@
-# изменено 2026-10-18 09:00
+# изменено 2026-10-18 13:00
 """Объект bot, проверка доступа, выдача строк в JSON и общие проверки строк."""
 from __future__ import annotations
 
@@ -21,6 +21,8 @@ def _migrate(conn, now):
     if "odo_out" not in {r["name"] for r in conn.execute("PRAGMA table_info(trips)").fetchall()}:
         conn.execute("ALTER TABLE trips ADD COLUMN odo_out INTEGER")  # спидометр — в базы, созданные раньше
         conn.execute("ALTER TABLE trips ADD COLUMN odo_back INTEGER")
+    if "stop" not in {r["name"] for r in conn.execute("PRAGMA table_info(orders)").fetchall()}:
+        conn.execute("ALTER TABLE orders ADD COLUMN stop INTEGER NOT NULL DEFAULT 0")  # порядок точки в рейсе
     if "hired" not in {r["name"] for r in conn.execute("PRAGMA table_info(staff)").fetchall()}:
         conn.execute("ALTER TABLE staff ADD COLUMN hired INTEGER NOT NULL DEFAULT 0")  # наёмный водитель — машина чужой фирмы
         conn.execute("ALTER TABLE staff ADD COLUMN carrier TEXT NOT NULL DEFAULT ''")
@@ -48,7 +50,7 @@ def _service(p: dict) -> bool:
 
 
 # Водитель видит только своё: рейсы и отчёт о возврате. Остальное — склад (кладовщик и руководитель).
-DRIVER_ACTIONS = {"getMe", "getRefs", "getMyTrips", "reportTrip", "setOdometer", "hello"}
+DRIVER_ACTIONS = {"getMe", "getRefs", "getMyTrips", "reportTrip", "setOdometer", "hello"}  # точки рейса приходят в getMyTrips
 ADMIN_ACTIONS = {"saveStaff", "getVisits", "logVisit"}  # кого пускать в приложение — решает только руководитель
 _warned = False
 

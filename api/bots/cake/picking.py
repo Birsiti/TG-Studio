@@ -1,4 +1,4 @@
-# изменено 2026-10-17 16:00
+# изменено 2026-10-18 13:00
 """Сборка по кругу: заявки точек на дату, лист с галочками, места тортов на складе, точки разгрузки.
 
 Остаток сборка не трогает — торты списываются отгрузкой рейса (trips.py).
@@ -10,6 +10,7 @@ from core import ApiError, Ctx, add_days, iso_now, jdump, jload, new_id, one, ro
 from bots.cake.base import _get_trip, _next_sort, _trip, action
 from bots.cake.orders_seed import route_city
 from bots.cake.schema import MAX_LINES, MAX_QTY
+from bots.cake.stops import sync_trip, trip_out
 
 MAX_PLACE = 9999
 
@@ -90,6 +91,7 @@ def save_order(ctx: Ctx, p: dict) -> dict:
         checked = [x for x in jload(_get_order(ctx.conn, oid)["checked"], []) if x in keep]
         ctx.conn.execute("UPDATE orders SET num=?,date=?,point_id=?,route=?,comment=?,lines=?,checked=? WHERE id=?",
                          (*f, jdump(checked), oid))
+        sync_trip(ctx.conn, _get_order(ctx.conn, oid)["trip_id"])
     else:
         oid = new_id("O")
         ctx.conn.execute("INSERT INTO orders(num,date,point_id,route,comment,lines,id,created_at) VALUES(?,?,?,?,?,?,?,?)",
@@ -105,6 +107,7 @@ def delete_order(ctx: Ctx, p: dict) -> dict:
     from bots.cake.order_files import drop_files  # поздний импорт: order_files пользуется помощниками отсюда
     drop_files(ctx.conn, o["id"])
     ctx.conn.execute("DELETE FROM orders WHERE id=?", (o["id"],))
+    sync_trip(ctx.conn, o["trip_id"])
     return {}
 
 
@@ -139,14 +142,15 @@ def finish_pick(ctx: Ctx, p: dict) -> dict:
         raise ApiError("bad_state", f"Не отмечено строк: {len(left)}")
     ctx.conn.execute("UPDATE orders SET status='picked', picker=?, boxes=?, picked_at=? WHERE id=?",
                      (picker, boxes, iso_now(), o["id"]))
+    sync_trip(ctx.conn, o["trip_id"])  # ящики собранной заявки — в рейс
     return {"order": _order(_get_order(ctx.conn, o["id"]))}
 
 
 @action("reopenPick", write=True)
 def reopen_pick(ctx: Ctx, p: dict) -> dict:
     o = _get_order(ctx.conn, v_id(p, "id"))
-    if o["trip_id"]:
-        raise ApiError("bad_state", "Заявка уже в рейсе — сначала отмените рейс")
+    if o["trip_id"] and scalar(ctx.conn, "SELECT status FROM trips WHERE id=?", (o["trip_id"],)) != "draft":
+        raise ApiError("bad_state", "Заявка уже уехала в рейсе")
     ctx.conn.execute("UPDATE orders SET status='new', picked_at=NULL WHERE id=?", (o["id"],))
     return {"order": _order(_get_order(ctx.conn, o["id"]))}
 
@@ -219,5 +223,6 @@ def route_to_trip(ctx: Ctx, p: dict) -> dict:
                       jdump([{"productId": k, "qty": v} for k, v in lines.items()]),
                       jdump([{"taraId": box, "qty": boxes}] if box and boxes else []),
                       "Заявки: №" + ", №".join(r["num"] for r in rs), iso_now()))
-    ctx.conn.execute(f"UPDATE orders SET trip_id=? WHERE id IN ({','.join('?' * len(rs))})", (tid, *[r["id"] for r in rs]))
-    return {"trip": _trip(_get_trip(ctx.conn, tid)), "orders": len(rs)}
+    for i, r in enumerate(rs, 1):  # порядок точек — по номерам, логист может поменять
+        ctx.conn.execute("UPDATE orders SET trip_id=?, stop=? WHERE id=?", (tid, i, r["id"]))
+    return {"trip": trip_out(ctx.conn, tid), "orders": len(rs)}

@@ -1,4 +1,4 @@
-// изменено 2026-10-18 12:00
+// изменено 2026-10-18 13:00
 // Тексты сообщений. Обычный текст без разметки — не нужно экранировать.
 
 function weight(g) {
@@ -30,7 +30,8 @@ function tripTitle(t, L) {
 function shippedForDriver(t, L) {
   const lines = t.lines.map((l) => `• ${L.product(l.productId)} — ${l.qty}`).join('\n');
   const out = boxes(t.taraOut);
-  return `${tripTitle(t, L)} отгружен вам.\n\n${lines}\n\nВсего ${sum(t.lines, (l) => l.qty)} шт${out ? `\nЯщиков выдано: ${out} — за вами, верните на склад` : ''}\n\nПосле развоза сдайте отчёт в «Мои рейсы».`;
+  const stops = (t.stops || []).map((s, i) => `${i + 1}. №${s.num} — ${s.customer}, ${s.address} (${s.qty} шт)`).join('\n');
+  return `${tripTitle(t, L)} отгружен вам.${stops ? `\n\nМаршрут:\n${stops}` : ''}\n\n${lines}\n\nВсего ${sum(t.lines, (l) => l.qty)} шт${out ? `\nЯщиков выдано: ${out} — за вами, верните на склад` : ''}\n\nАдреса и карта — «Открыть» → «Водитель». После развоза сдайте отчёт там же.`;
 }
 
 function reportedForStore(t, L) {

@@ -1,4 +1,4 @@
-# изменено 2026-10-17 04:00
+# изменено 2026-10-18 13:00
 """Рейсы: сборка → отгрузка → отчёт водителя → приёмка; рейсы водителя."""
 from __future__ import annotations
 
@@ -6,6 +6,8 @@ from core import ApiError, Ctx, add_days, iso_now, jdump, jload, new_id, one, ro
 from bots.cake.base import (_add_move, _add_tara, _check_stock, _get_trip, _lines, _restricted, _staff, _tara_debt,
                             _tara_lines, _trip, action)
 from bots.cake.schema import MAX_LINES, MAX_QTY
+from bots.cake.orders_seed import route_city
+from bots.cake.stops import check_ship, sync_trip, trip_out, with_stops
 
 
 @action("getTrips")
@@ -14,11 +16,12 @@ def get_trips(ctx: Ctx, p: dict) -> dict:
     frm = v_date(p, "from", required=False) or add_days(ctx.today, -7)
     rs = rows(ctx.conn, "SELECT * FROM trips WHERE (date BETWEEN ? AND ?) OR status IN ('draft','shipped','reported') "
                         "ORDER BY date DESC, num DESC", (frm, to))
-    return {"trips": [_trip(r) for r in rs]}
+    return {"trips": with_stops(ctx.conn, [_trip(r) for r in rs])}
 
 
 def _trip_fields(ctx: Ctx, p: dict) -> tuple:
-    city = v_id(p, "cityId")
+    route = v_str(p, "route", required=False, max_len=40)  # без города — направление по маршруту заявок
+    city = v_id(p, "cityId", required=not route) or route_city(ctx.conn, route)
     if not scalar(ctx.conn, "SELECT 1 FROM cities WHERE id=?", (city,)):
         raise ApiError("not_found", "Нет такого города")
     driver = v_id(p, "driverId", required=False)
@@ -42,7 +45,8 @@ def save_trip(ctx: Ctx, p: dict) -> dict:
         num = (scalar(ctx.conn, "SELECT MAX(num) FROM trips") or 0) + 1
         ctx.conn.execute("INSERT INTO trips(date,city_id,driver_id,lines,tara_out,note,id,num,status,created_at) "
                          "VALUES(?,?,?,?,?,?,?,?,'draft',?)", (*f, tid, num, iso_now()))
-    return {"trip": _trip(_get_trip(ctx.conn, tid))}
+    sync_trip(ctx.conn, tid)  # с заявками торты и ящики — из заявок, не из формы
+    return {"trip": trip_out(ctx.conn, tid)}
 
 
 @action("shipTrip", write=True)
@@ -50,6 +54,8 @@ def ship_trip(ctx: Ctx, p: dict) -> dict:
     t = _get_trip(ctx.conn, v_id(p, "id"))
     if t["status"] != "draft":
         raise ApiError("bad_state", "Рейс уже отгружен")
+    check_ship(ctx.conn, t["id"])
+    t = _get_trip(ctx.conn, t["id"])
     lines = jload(t["lines"], [])
     if not lines:
         raise ApiError("bad_request", "В рейсе нет тортов")
@@ -61,7 +67,7 @@ def ship_trip(ctx: Ctx, p: dict) -> dict:
     for ln in jload(t["tara_out"], []):
         _add_tara(ctx, ctx.today, ln["taraId"], t["driver_id"], "out", ln["qty"], city=t["city_id"], trip=t["id"])
     ctx.conn.execute("UPDATE trips SET status='shipped', shipped_at=? WHERE id=?", (iso_now(), t["id"]))
-    return {"trip": _trip(_get_trip(ctx.conn, t["id"]))}
+    return {"trip": trip_out(ctx.conn, t["id"])}
 
 
 @action("cancelTrip", write=True)
@@ -152,4 +158,4 @@ def get_my_trips(ctx: Ctx, p: dict) -> dict:
               (did, add_days(ctx.today, -14)))
     drv = one(ctx.conn, "SELECT * FROM staff WHERE id=?", (did,))
     debt = [{"taraId": tid, "qty": q} for (d, tid), q in _tara_debt(ctx.conn).items() if d == did and q]
-    return {"driver": _staff(drv) if drv else None, "trips": [_trip(r) for r in rs], "taraDebt": debt}
+    return {"driver": _staff(drv) if drv else None, "trips": with_stops(ctx.conn, [_trip(r) for r in rs]), "taraDebt": debt}

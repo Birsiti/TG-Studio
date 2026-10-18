@@ -1,4 +1,4 @@
-// изменено 2026-10-18 11:00
+// изменено 2026-10-18 13:00
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { roleOf, menuButton, idsOf } = require('../src/roles');
@@ -46,6 +46,13 @@ test('гостевой вход /demo: до конца дня, на N дней, 
   assert.match(texts.demoState('2026-10-18'), /18\.10\.2026/);
   assert.ok(texts.guestWelcome('Ольга').length < 4096);
   assert.ok(texts.BOT_DESCRIPTION.length <= 512 && texts.BOT_SHORT.length <= 120);
+});
+
+test('водителю при отгрузке — точки маршрута по порядку с адресами', () => {
+  const t = { num: 5, cityId: 'c1', driverId: 'dr', lines: [{ productId: 'p1', qty: 3 }], taraOut: [],
+    stops: [{ num: 'A-1', customer: 'Зорина', address: 'Минск, Гинтовта 12', qty: 2 }, { num: 'A-2', customer: 'Кафе', address: 'Минск, Притыцкого 1', qty: 1 }] };
+  const m = texts.shippedForDriver(t, L);
+  assert.match(m, /1\. №A-1 — Зорина, Минск, Гинтовта 12 \(2 шт\)\n2\. №A-2/);
 });
 
 test('кнопка «Открыть» внизу ведёт на главную приложения', () => {

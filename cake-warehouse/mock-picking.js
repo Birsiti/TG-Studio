@@ -1,4 +1,4 @@
-// изменено 2026-10-17 19:10
+// изменено 2026-10-18 13:00
 /* ============================================================
    mock-picking.js — сборка по кругу в демо-режиме (двойник api/bots/cake/picking.py).
    Точки и заявки — mock-orders.js; в демо заявки с фото стоят на сегодня.
@@ -53,6 +53,7 @@
     S.cities.splice(at, 0, {id:id, name:route, code:d ? ('М' + d).slice(0, 4) : route.slice(0, 3).toUpperCase(), sort:-1, active:true});
     return id;
   }
+  U.routeCity = routeCity;  // mock-stops.js: рейс без города — по маршруту заявок
   function order(S, id){ return byId(S.orders, id); }
   function lines(S, arr){
     var m = {}, out = [];
