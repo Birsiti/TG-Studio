@@ -1,4 +1,4 @@
-// изменено 2026-10-18 15:00
+// изменено 2026-10-18 15:15
 /* Главная (кнопка «Открыть» в боте): три входа — руководитель, кладовщик, водитель.
    В рабочем режиме сотрудник сразу попадает на свой экран, руководитель выбирает сам. */
 (function(){
@@ -12,13 +12,6 @@
     ['logist.html', 'route', 'Логист', 'Заявки из файла, рейсы водителям по адресам'],
     ['sklad.html', 'box', 'Кладовщик', 'Приход из файла, сборка заявок, отгрузка рейсом'],
     ['driver.html', 'truck', 'Водитель', 'Маршрут с адресами и картой, спидометр, возвраты']
-  ];
-  // Знакомство без подсказчика: 4 шага, каждый открывает свой экран (только в демо)
-  const TOUR = [
-    ['logist.html', 'Логист → «Загрузить заявки из файла» → «Попробовать на примере»: три заявки магазинов за пару секунд'],
-    ['logist.html', 'Логист → «Рейсы» → «Новый рейс»: выбрать водителя и отметить заявки по порядку объезда'],
-    ['driver.html', 'Водитель → Иван → «Маршрут 2»: адреса точек, «Весь маршрут на карте», «Выезжаю»'],
-    ['admin.html', 'Склад и сводка → «Водители»: рейсы, километры, возвраты, недостачи — свои и наёмные']
   ];
   const go = url=> location.replace(url + '?home=1');  // без лишней истории: «Назад» на экране возвращает сюда
 
@@ -35,10 +28,7 @@
         <p class="page-sub">Склад тортов прямо в Telegram — выберите, кем войти</p></div>
       <div class="list">${DOORS.map(([url, ic, title, sub])=>html`<button class="row home-door" type="button" data-go="${url}">
         <span class="avatar">${icon(ic)}</span><span class="row-main"><span class="row-title">${title}</span><span class="row-sub">${sub}</span></span>${icon('right', 'row-chev')}</button>`)}</div>
-      ${api.mode() === 'demo' ? html`<div class="section"><div class="section-head"><h2 class="section-title">С чего начать</h2><span class="hint">3 минуты</span></div>
-        <div class="list">${TOUR.map(([url, text], i)=>html`<button class="row home-door" type="button" data-go="${url}"><span class="avatar">${i + 1}</span>
-          <span class="row-main"><span class="row-sub" style="color:var(--ink)">${text}</span></span>${icon('right', 'row-chev')}</button>`)}</div></div>
-        <p class="mode-note section">Демо-версия: данные примерные и хранятся только в этом телефоне — смело пробуйте всё, сломать ничего нельзя.</p>` : ''}
+      ${api.mode() === 'demo' ? html`<p class="mode-note section">Демо-версия: данные примерные и хранятся только в этом телефоне — смело пробуйте всё, сломать ничего нельзя.</p>` : ''}
       <p class="hint section" style="text-align:center">Вернуться сюда — «Назад» вверху</p>`);
   }
   Kit.on($('#view'), 'click', '[data-go]', (e, el)=>{ haptic('light'); go(el.dataset.go); });
