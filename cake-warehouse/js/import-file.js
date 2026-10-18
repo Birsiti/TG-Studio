@@ -1,4 +1,4 @@
-// изменено 2026-10-18 12:00
+// изменено 2026-10-18 15:00
 /* Загрузка из файла (Excel .xlsx/.xls или CSV): приход с производства и заявки магазинов.
    Шапку таблицы ищем сами по словам («Наименование», «Кол-во», «Заказчик», «Адрес», «Маршрут», «№ заявки»…),
    торт сопоставляем с ассортиментом по названию и весу (вес из названия «0,8 кг» или колонки «Вес»).
@@ -151,18 +151,37 @@
     Kit.openLink(url);
   }
 
-  // Выбрать файл → предпросмотр → onApply(items) с узнанными тортами
+  // Откуда файл: с телефона или пример (для знакомства — своего Excel под рукой может не быть)
   function pick(kind, onApply){
+    const sh = Kit.sheet({title:kind === 'orders' ? 'Заявки из файла' : 'Приход из файла', sub:'Excel или CSV — из 1С или любой таблицы', body:html`
+      <button class="btn btn-primary btn-block" type="button" data-src="file">${icon('upload')}Выбрать файл на телефоне</button>
+      <button class="btn btn-ghost btn-block section" type="button" data-src="sample">${icon('play')}Попробовать на примере</button>
+      <p class="hint section">${kind === 'orders' ? 'Пример — 3 заявки магазинов Маршрутов 2 и 3: № заявки, заказчик, адрес, маршрут, торты.' : 'Пример — накладная цеха на 10 тортов.'}
+        Нужны колонки «Наименование» и «Кол-во»${kind === 'orders' ? ', для заявок ещё «Заказчик», «Адрес», «Маршрут», «№ заявки»' : ''}.</p>
+      <div>${sampleBtn(kind)}</div>`});
+    Kit.on(sh.el, 'click', '[data-sample]', (e, el)=> openSample(el.dataset.sample));
+    Kit.on(sh.el, 'click', '[data-src]', async (e, el)=>{
+      if(el.dataset.src === 'file'){ sh.close(); chooseFile(kind, onApply); return; }
+      Kit.busy(el, true);
+      try{
+        const r = await fetch(SAMPLES[kind]); if(!r.ok) throw new Error('Пример не загрузился — проверьте интернет');
+        const file = new File([await r.arrayBuffer()], SAMPLES[kind].split('/').pop());
+        sh.close(); handle(kind, file, onApply);
+      }catch(err){ Kit.busy(el, false); Kit.toast(err.message, 'error'); }
+    });
+  }
+  function chooseFile(kind, onApply){
     const inp = document.createElement('input');
     inp.type = 'file'; inp.accept = '.xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv';
-    inp.addEventListener('change', async ()=>{
-      const f = inp.files && inp.files[0]; if(!f) return;
-      let res;
-      try{ res = parse(await readRows(f)); }catch(e){ res = {error:e.message || 'Не получилось прочитать файл'}; }
-      if(res.error){ haptic('error'); Kit.sheet({title:'Файл не подошёл', body:html`<p>${res.error}</p><div class="section">${sampleBtn(kind)}</div>`}).el.addEventListener('click', e=>{ const b = e.target.closest('[data-sample]'); if(b) openSample(b.dataset.sample); }); return; }
-      preview(kind, f.name, res, onApply);
-    });
+    inp.addEventListener('change', ()=>{ const f = inp.files && inp.files[0]; if(f) handle(kind, f, onApply); });
     inp.click();
+  }
+  // Файл → предпросмотр → onApply(items) с узнанными тортами
+  async function handle(kind, f, onApply){
+    let res;
+    try{ res = parse(await readRows(f)); }catch(e){ res = {error:e.message || 'Не получилось прочитать файл'}; }
+    if(res.error){ haptic('error'); Kit.sheet({title:'Файл не подошёл', body:html`<p>${res.error}</p><div class="section">${sampleBtn(kind)}</div>`}).el.addEventListener('click', e=>{ const b = e.target.closest('[data-sample]'); if(b) openSample(b.dataset.sample); }); return; }
+    preview(kind, f.name, res, onApply);
   }
 
   function preview(kind, fileName, res, onApply){
