@@ -1,4 +1,4 @@
-// изменено 2026-10-18 13:00
+// изменено 2026-10-18 16:00
 /* Вкладка «Рейсы»: сборка → отгрузка → приёмка с возвратом тортов и ящиков. */
 (function(){
   "use strict";
@@ -68,6 +68,16 @@
 
   // Точки рейса: № заявки, заказчик, адрес, штук; кнопка на карту
   const ORD_ST = {new:['Собирается','pill-warn'], picked:['Собрано','pill-ok']};
+  // На сборке — собрана ли заявка; в пути и после — сдал ли водитель точку и с какими замечаниями
+  function stopPill(t, s){
+    if(t.status === 'draft') return html`<span class="pill ${ORD_ST[s.status][1]}">${ORD_ST[s.status][0]}</span>`;
+    if(!s.report) return html`<span class="pill pill-muted">Не сдана</span>`;
+    return s.report.ok ? html`<span class="pill pill-ok">Сдана</span>` : html`<span class="pill pill-warn">С замечаниями</span>`;
+  }
+  const stopIssues = rep=> [rep.lines.map(l=>{
+      const what = [l.short && 'недостача ' + l.short, l.spoiled && 'брак ' + l.spoiled, l.resort && `пересорт ${l.resort}${l.resortTo ? ' (привезли ' + P(l.resortTo).name + ')' : ''}`].filter(Boolean).join(', ');
+      return `${P(l.productId).name}: ${what}`; }).join('; '), rep.comment && `«${rep.comment}»`].filter(Boolean).join(' · ');
+
   function stopsView(t){
     const S = t.stops || [];
     if(!S.length) return '';
@@ -75,7 +85,9 @@
         ${S.length > 1 ? html`<button class="link-btn" type="button" id="mapAll">${icon('route')}на карте</button>` : ''}</div>
       <div class="list">${S.map((s, i)=>html`<div class="row stop-row"><span class="avatar">${i + 1}</span>
         <span class="row-main"><span class="row-title">№${s.num} · ${s.customer}</span><span class="row-sub">${s.address}</span>
-          <span class="row-sub">${s.qty} шт${s.boxes ? ' · ящиков ' + s.boxes : ''} · <span class="pill ${ORD_ST[s.status][1]}">${ORD_ST[s.status][0]}</span></span></span>
+          <span class="row-sub">${s.qty} шт${s.boxes ? ' · ящиков ' + s.boxes : ''} · ${stopPill(t, s)}</span>
+          ${s.report && !s.report.ok ? html`<span class="row-sub stop-issues">${stopIssues(s.report)}</span>` : ''}
+          ${s.photos ? html`<span class="row-sub">фото с точки: ${s.photos} — в карточке заявки</span>` : ''}</span>
         <button class="icon-btn" type="button" data-map="${s.address}" aria-label="На карте">${icon('pin')}</button></div>`)}</div></div>`;
   }
 

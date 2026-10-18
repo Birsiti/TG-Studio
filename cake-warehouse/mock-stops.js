@@ -1,4 +1,4 @@
-// изменено 2026-10-18 14:30
+// изменено 2026-10-18 16:00
 /* ============================================================
    mock-stops.js — точки рейса в демо-режиме (двойник api/bots/cake/stops.py):
    логист даёт водителю заявки, торты и ящики рейса — из заявок, отгрузка — только собранные.
@@ -14,13 +14,23 @@
     return (S.orders || []).filter(function(o){ return o.tripId === tid; })
       .sort(function(a, b){ return (a.stop || 0) - (b.stop || 0) || a.num.localeCompare(b.num); });
   }
+  var STOP_PHOTO = 'Фото с точки', MAX_STOP_PHOTOS = 6;
   function withStops(t){
-    var S = U.state();
+    var S = U.state(), reps = S.stopReports || {};
     return Object.assign({}, t, {stops:onTrip(S, t.id).map(function(o){
       var pt = byId(S.points, o.pointId) || {customer:'?', address:''};
       return {orderId:o.id, num:o.num, pointId:o.pointId, customer:pt.customer, address:pt.address, route:o.route, status:o.status,
-        boxes:o.boxes, comment:o.comment || '', qty:o.lines.reduce(function(s, l){ return s + l.qty + (l.bonus || 0); }, 0)};
+        boxes:o.boxes, comment:o.comment || '', lines:o.lines, qty:o.lines.reduce(function(s, l){ return s + l.qty + (l.bonus || 0); }, 0),
+        photos:(S.orderFiles || []).filter(function(f){ return f.orderId === o.id && f.name === STOP_PHOTO; }).length, report:reps[o.id] || null};
     })});
+  }
+  // Точка рейса, который у водителя (в пути / ждёт приёмки) — как _driver_stop в stops.py
+  function driverStop(S, oid){
+    var o = byId(S.orders || [], oid);
+    if(!o || !o.tripId) return err('not_found', 'Точка не найдена');
+    var t = byId(S.trips, o.tripId);
+    if(!t || !/shipped|reported/.test(t.status)) return err('bad_state', 'Рейс не в пути');
+    return {o:o, t:t};
   }
   function sync(tid){
     if(!tid) return;
@@ -95,6 +105,31 @@
       var r = O.routeToTrip(p); if(bad(r)) return r;
       onTrip(U.state(), r.trip.id).sort(function(a, b){ return a.num.localeCompare(b.num); }).forEach(function(o, i){ o.stop = i + 1; });
       return {trip:withStops(r.trip), orders:r.orders};
+    },
+    reportStop: function(p){
+      var S = U.state(), x = driverStop(S, p.orderId); if(bad(x)) return x;
+      var have = {}; x.o.lines.forEach(function(l){ have[l.productId] = (have[l.productId] || 0) + l.qty + (l.bonus || 0); });
+      var out = [], seen = {}, ls = p.lines || [];
+      for(var i = 0; i < ls.length; i++){
+        var l = ls[i], pid = l.productId;
+        if(!(pid in have)) return err('not_found', 'Этого торта нет в заявке');
+        if(seen[pid]) return err('bad_request', 'Торт в отчёте дважды'); seen[pid] = 1;
+        var sh = +l.short || 0, sp = +l.spoiled || 0, rs = +l.resort || 0;
+        if(sh < 0 || sp < 0 || rs < 0) return err('bad_request', 'Количество не может быть меньше нуля');
+        if(sh + sp + rs > have[pid]) return err('bad_request', 'Замечаний больше, чем везли: ' + have[pid] + ' шт');
+        if(rs && l.resortTo && !byId(S.products, l.resortTo)) return err('not_found', 'Нет такого торта');
+        if(sh || sp || rs){ var r = {productId:pid, short:sh, spoiled:sp, resort:rs}; if(rs && l.resortTo) r.resortTo = l.resortTo; out.push(r); }
+      }
+      var comment = String(p.comment || '').trim().slice(0, 300);
+      S.stopReports = S.stopReports || {};
+      S.stopReports[x.o.id] = {ok:!out.length && !comment, lines:out, comment:comment, at:U.now()};
+      return {trip:withStops(x.t)};
+    },
+    addStopPhoto: function(p){
+      var S = U.state(), x = driverStop(S, p.orderId); if(bad(x)) return x;
+      if((S.orderFiles || []).filter(function(f){ return f.orderId === x.o.id && f.name === STOP_PHOTO; }).length >= MAX_STOP_PHOTOS) return err('bad_request', 'С точки уже ' + MAX_STOP_PHOTOS + ' фото');
+      if(!/^image\//.test(p.mime || '')) return err('bad_request', 'Можно только фото');
+      return CakeMock.orig('addOrderFile')(Object.assign({}, p, {name:STOP_PHOTO}));
     },
     setTripOrders: function(p){
       var S = U.state(), t = byId(S.trips, p.id);
