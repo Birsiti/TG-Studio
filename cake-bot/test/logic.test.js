@@ -1,4 +1,4 @@
-// изменено 2026-10-18 13:00
+// изменено 2026-10-18 16:00
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { roleOf, menuButton, idsOf } = require('../src/roles');
@@ -53,6 +53,18 @@ test('водителю при отгрузке — точки маршрута �
     stops: [{ num: 'A-1', customer: 'Зорина', address: 'Минск, Гинтовта 12', qty: 2 }, { num: 'A-2', customer: 'Кафе', address: 'Минск, Притыцкого 1', qty: 1 }] };
   const m = texts.shippedForDriver(t, L);
   assert.match(m, /1\. №A-1 — Зорина, Минск, Гинтовта 12 \(2 шт\)\n2\. №A-2/);
+});
+
+test('точка с замечаниями — складу: что и сколько, комментарий, фото', () => {
+  const t = { num: 5, cityId: 'c1', driverId: 'dr', lines: [], taraOut: [] };
+  const s = { num: 'A-1', customer: 'Зорина', address: 'Минск, Гинтовта 12', photos: 2,
+    report: { ok: false, at: 'x', comment: 'помята коробка', lines: [{ productId: 'p1', short: 1, spoiled: 2, resort: 0 }, { productId: 'p2', short: 0, spoiled: 0, resort: 1, resortTo: 'p1' }] } };
+  const m = texts.stopIssue(t, s, L);
+  assert.match(m, /точка №A-1 сдана с замечаниями/);
+  assert.match(m, /недостача 1, брак 2/);
+  assert.match(m, /пересорт 1 \(привезли Сникерс/);
+  assert.match(m, /«помята коробка»/);
+  assert.match(m, /Фото: 2/);
 });
 
 test('кнопка «Открыть» внизу ведёт на главную приложения', () => {

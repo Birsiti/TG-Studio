@@ -1,4 +1,4 @@
-# изменено 2026-10-17 16:00
+# изменено 2026-10-18 16:00
 """Фото и файлы заявок (снимок бумажной заявки, PDF от точки) и «отметить все заявки дня собранными».
 
 Файл лежит на диске iMac: TGS_DATA_DIR/cake-files/<id>; в базе — имя, тип, размер.
@@ -30,7 +30,11 @@ def drop_files(conn, order_id: str) -> None:
 
 @action("addOrderFile", write=True)
 def add_order_file(ctx: Ctx, p: dict) -> dict:
-    o = _get_order(ctx.conn, v_id(p, "orderId"))
+    return {"file": save_file(ctx, _get_order(ctx.conn, v_id(p, "orderId")), p)}
+
+
+def save_file(ctx: Ctx, o: dict, p: dict, default_name: str = "") -> dict:
+    """Файл к заявке из {name, mime, data(base64)}: проверки, диск, строка в order_files."""
     mime = v_str(p, "mime", max_len=40)
     if mime not in MIMES:
         raise ApiError("bad_request", "Можно фото (JPEG, PNG) или PDF")
@@ -48,10 +52,10 @@ def add_order_file(ctx: Ctx, p: dict) -> dict:
     fid = new_id("F")
     FILES_DIR.mkdir(parents=True, exist_ok=True)
     _path(fid).write_bytes(data)
-    name = v_str(p, "name", required=False, max_len=120) or ("Фото" if mime.startswith("image/") else "Файл")
+    name = default_name or v_str(p, "name", required=False, max_len=120) or ("Фото" if mime.startswith("image/") else "Файл")
     ctx.conn.execute("INSERT INTO order_files(id,order_id,name,mime,size,created_at) VALUES(?,?,?,?,?,?)",
                      (fid, o["id"], name, mime, len(data), iso_now()))
-    return {"file": {"id": fid, "name": name, "mime": mime, "size": len(data)}}
+    return {"id": fid, "name": name, "mime": mime, "size": len(data)}
 
 
 @action("getOrderFile")

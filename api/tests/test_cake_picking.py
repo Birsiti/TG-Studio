@@ -1,4 +1,4 @@
-# изменено 2026-10-18 13:00
+# изменено 2026-10-18 16:00
 """Сборка по кругу: заявки с фото, галочки, места, точки, миграция в старую базу."""
 from bots.cake import bot as cake_bot
 
@@ -239,8 +239,8 @@ def test_trip_stops(api):
     t = next(x for x in api("cake", "getTrips")["trips"] if x["id"] == t["id"])
     assert sorted((l["productId"], l["qty"]) for l in t["lines"]) == [("p001", 7), ("p002", 1)]  # правка заявки — в рейсе
     assert "Не собраны: №T-2, №T-1" in api("cake", "shipTrip", id=t["id"])["message"]
-    api("cake", "adjustStock", productId="p001", qty=50)
-    api("cake", "adjustStock", productId="p002", qty=50)
+    api("cake", "adjustStock", productId="p001", actual=50)
+    api("cake", "adjustStock", productId="p002", actual=50)
     for o in (a, b):
         api("cake", "finishPick", id=o["id"], all=True, boxes=1)
     t = api("cake", "shipTrip", id=t["id"])["trip"]
@@ -261,3 +261,37 @@ def test_stop_column_migration(api):
     cake_bot._ready = False
     assert len(api("cake", "getOrders")["orders"]) == n
     assert all("stops" in t for t in api("cake", "getTrips")["trips"])
+
+
+def test_stop_report(api, monkeypatch):
+    """Водитель сдаёт каждую точку: всё ок или недостача / брак / пересорт + фото; чужой рейс — нельзя."""
+    import base64
+    day = "2026-10-27"
+    pts = api("cake", "getOrders")["points"]
+    a = api("cake", "saveOrder", num="S-1", date=day, pointId=pts[0]["id"], lines=[{"productId": "p001", "qty": 5}, {"productId": "p002", "qty": 2, "bonus": 1}])["order"]
+    b = api("cake", "saveOrder", num="S-2", date=day, pointId=pts[1]["id"], lines=[{"productId": "p001", "qty": 1}])["order"]
+    for pid in ("p001", "p002"):
+        api("cake", "adjustStock", productId=pid, actual=50)
+    t = api("cake", "saveTrip", date=day, route="Маршрут 8", driverId="dr-ivan", lines=[])["trip"]
+    api("cake", "setTripOrders", id=t["id"], orderIds=[a["id"], b["id"]])
+    assert api("cake", "reportStop", orderId=a["id"])["error"] == "bad_state"  # рейс ещё не уехал
+    for o in (a, b):
+        api("cake", "finishPick", id=o["id"], all=True, boxes=1)
+    r = api("cake", "shipTrip", id=t["id"]); assert r["ok"], r
+    assert api("cake", "reportStop", orderId=a["id"], lines=[{"productId": "p001", "short": 4, "spoiled": 2}])["error"] == "bad_request"  # больше, чем везли
+    assert api("cake", "reportStop", orderId=a["id"], lines=[{"productId": "p009", "short": 1}])["error"] == "not_found"
+    t = api("cake", "reportStop", orderId=a["id"], comment="Коробка помята",
+            lines=[{"productId": "p001", "short": 1, "spoiled": 1}, {"productId": "p002", "resort": 1, "resortTo": "p003"}])["trip"]
+    s = t["stops"][0]
+    assert s["report"]["ok"] is False and s["report"]["lines"][1] == {"productId": "p002", "short": 0, "spoiled": 0, "resort": 1, "resortTo": "p003"}
+    assert api("cake", "reportStop", orderId=b["id"])["trip"]["stops"][1]["report"]["ok"] is True  # всё сдано
+    jpg = base64.b64encode(b"\xff\xd8\xff\xe0" + b"0" * 100).decode()
+    assert api("cake", "addStopPhoto", orderId=a["id"], mime="application/pdf", data=jpg)["error"] == "bad_request"
+    assert api("cake", "addStopPhoto", orderId=a["id"], mime="image/jpeg", data=jpg)["file"]["name"] == "Фото с точки"
+    mine = api("cake", "getMyTrips", driverId="dr-ivan")["trips"]
+    assert next(x for x in mine if x["id"] == t["id"])["stops"][0]["photos"] == 1
+    monkeypatch.setenv("TGS_CAKE_ADMINS", "111")
+    api("cake", "saveStaff", user="111", id="dr-sergey", name="Сергей", role="driver", tgId="555")
+    assert api("cake", "reportStop", user="555", orderId=a["id"])["error"] == "forbidden"
+    api("cake", "saveStaff", user="111", id="dr-ivan", name="Иван", role="driver", tgId="777")
+    assert api("cake", "reportStop", user="777", orderId=b["id"])["ok"]

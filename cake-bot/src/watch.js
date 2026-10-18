@@ -1,4 +1,4 @@
-// изменено 2026-10-18 12:00
+// изменено 2026-10-18 16:00
 // Раз в WATCH_SECONDS смотрим рейсы и заявки и рассылаем уведомления о переходах.
 const config = require('./config');
 const tg = require('./telegram');
@@ -36,7 +36,29 @@ async function checkTrips() {
   }
   // Пишем состояние после рассылки; не дошедшее из-за сбоя сети повторится на следующей проверке
   store.save({ trips: next });
-  return events.length + await checkOrders();
+  return events.length + await checkStops(trips, r, L) + await checkOrders();
+}
+
+// Водитель сдал точку с замечаниями (недостача, брак, пересорт) → складу, логистам, руководителю.
+// Первый запуск только запоминает уже сданные точки — без рассылки по старым.
+async function checkStops(trips, r, L) {
+  const prev = store.get().stops;
+  const next = {};
+  const fresh = [];
+  for (const t of trips) {
+    for (const s of t.stops || []) {
+      if (!s.report) continue;
+      next[s.orderId] = s.report.at;
+      if (prev && prev[s.orderId] !== s.report.at && !s.report.ok) fresh.push({ t, s });
+    }
+  }
+  const to = idsOf(r.staff, 'storekeeper').concat(idsOf(r.staff, 'logist'), config.adminIds);
+  for (const { t, s } of fresh) {
+    const ok = await tg.sendMany(to, texts.stopIssue(t, s, L));
+    if (!ok) { if (prev && s.orderId in prev) next[s.orderId] = prev[s.orderId]; else delete next[s.orderId]; }
+  }
+  store.save({ stops: next });
+  return fresh.length;
 }
 
 // Заявка собрана → руководителям. Заявки — на ближайшую дату (как на экране «Сборка»).

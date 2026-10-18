@@ -1,4 +1,4 @@
-// изменено 2026-10-18 15:30
+// изменено 2026-10-18 16:00
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
@@ -79,8 +79,13 @@
         <button class="btn btn-primary" type="button" id="goOut">${icon('truck')}Выезжаю</button>`
         : /shipped|reported/.test(t.status) ? html`<button class="btn btn-primary btn-block" type="button" id="goRep">${icon('clipboard')}${t.status === 'reported' ? 'Исправить отчёт' : 'Сдать рейс'}</button>` : ''});
     Kit.on(sh.el, 'click', '[data-map]', (e, el)=>{ haptic('light'); CakeMap.one(el.dataset.map); });
+    Kit.on(sh.el, 'click', '[data-stop]', (e, el)=>{ if(e.target.closest('[data-map]')) return; haptic('light'); sh.close(); openStop(t, t.stops.find(s=>s.orderId === el.dataset.stop)); });
     const all = sh.$('#mapAll'); if(all) all.addEventListener('click', ()=>{ haptic('light'); CakeMap.route(t.stops.map(s=>s.address)); });
-    const b = sh.$('#goRep'); if(b) b.addEventListener('click', ()=>{ sh.close(); report(t); });
+    const b = sh.$('#goRep'); if(b) b.addEventListener('click', async ()=>{
+      const left = (t.stops || []).filter(s=>!s.report).length;
+      if(left && !await Kit.confirm(`Не сданы точки: ${left} из ${t.stops.length}. Всё равно сдать рейс?`, 'Сдать рейс')) return;
+      sh.close(); report(t);
+    });
     const go = sh.$('#goOut'); if(go) go.addEventListener('click', async ()=>{
       const km = odoValue(sh.$('#odoOut')); if(km == null) return;
       Kit.busy(go, true); const r = await api('setOdometer', {id:t.id, kind:'out', km}); Kit.busy(go, false);
@@ -93,13 +98,76 @@
   function stopsBlock(t){
     const S = t.stops || [];
     if(!S.length) return '';
-    return html`<div class="section-head" style="margin-bottom:8px"><span class="eyebrow">Маршрут · ${S.length} ${S.length === 1 ? 'точка' : S.length < 5 ? 'точки' : 'точек'}</span></div>
+    const done = S.filter(s=>s.report).length, live = /shipped|reported/.test(t.status);
+    return html`<div class="section-head" style="margin-bottom:8px"><span class="eyebrow">Маршрут · ${S.length} ${S.length === 1 ? 'точка' : S.length < 5 ? 'точки' : 'точек'}</span>
+        ${live ? html`<span class="hint">сдано ${done} из ${S.length}</span>` : ''}</div>
       ${S.length > 1 ? html`<button class="btn btn-ghost btn-block" type="button" id="mapAll" style="margin-bottom:8px">${icon('route')}Весь маршрут на карте</button>` : ''}
-      <div class="list">${S.map((s, i)=>html`<div class="row stop-row"><span class="avatar">${i + 1}</span>
+      ${live && done < S.length ? html`<p class="hint" style="margin:0 0 8px">Нажмите на точку, чтобы сдать её: всё в порядке или недостача, брак, пересорт с фото.</p>` : ''}
+      <div class="list">${S.map((s, i)=>{ const st = stopState(s); return html`<div class="row stop-row" data-stop="${s.orderId}" role="button" tabindex="0"><span class="avatar">${i + 1}</span>
         <span class="row-main"><span class="row-title">№${s.num} · ${s.customer}</span>
           <span class="row-sub">${s.address}</span>
-          <span class="row-sub">${s.qty} шт${s.boxes ? ' · ящиков ' + s.boxes : ''}${s.comment ? ' · ' + s.comment : ''}</span></span>
-        <button class="icon-btn" type="button" data-map="${s.address}" aria-label="На карте">${icon('pin')}</button></div>`)}</div>`;
+          <span class="row-sub">${s.qty} шт${s.boxes ? ' · ящиков ' + s.boxes : ''}${s.comment ? ' · ' + s.comment : ''}</span>
+          ${st ? html`<span class="row-sub"><span class="pill ${st[1]}">${st[0]}</span>${s.photos ? html` <span class="hint">фото ${s.photos}</span>` : ''}</span>` : ''}</span>
+        <button class="icon-btn" type="button" data-map="${s.address}" aria-label="На карте">${icon('pin')}</button></div>`; })}</div>`;
+  }
+  const stopState = s=> !s.report ? null : s.report.ok ? ['Сдано', 'pill-ok'] : ['Сдано с замечаниями', 'pill-warn'];
+  const issueText = rep=> rep.lines.map(l=>[l.short && 'недостача ' + l.short, l.spoiled && 'брак ' + l.spoiled, l.resort && 'пересорт ' + l.resort].filter(Boolean).map(x=>`${P(l.productId).name}: ${x}`).join(', ')).join('; ');
+
+  // Сдать точку: всё в порядке — одной кнопкой; замечания — по строкам заявки (недостача, брак, пересорт), фото и комментарий
+  function openStop(t, s){
+    if(!s) return;
+    const live = /shipped|reported/.test(t.status), rep = s.report, prev = {};
+    (rep ? rep.lines : []).forEach(l=> prev[l.productId] = l);
+    let issues = !!(rep && !rep.ok), photos = [];
+    const opt = sel=> html`<option value="">что привезли вместо — выберите</option>${REFS.products.filter(p=>p.active).map(p=>html`<option value="${p.id}"${p.id === sel ? Kit.raw(' selected') : ''}>${p.name}, ${W(p.weightG)}</option>`)}`;
+    const n = (pid, k)=> (prev[pid] || {})[k] || '';
+    const sh = Kit.sheet({title:`Точка №${s.num}`, sub:`${s.customer} · ${s.qty} шт`, body: html`
+      <div class="kv"><span class="k">Адрес</span><span class="v">${s.address}</span></div>
+      ${s.comment ? html`<div class="kv"><span class="k">Заметка</span><span class="v">${s.comment}</span></div>` : ''}
+      <button class="btn btn-ghost btn-block section" type="button" data-map="${s.address}">${icon('pin')}Открыть на карте</button>
+      ${rep ? html`<p class="hint section"><span class="pill ${stopState(s)[1]}">${stopState(s)[0]}</span> ${D.when(rep.at.slice(0, 10), rep.at.slice(11, 16))}${rep.ok ? '' : ' · ' + issueText(rep)}${rep.comment ? ' · «' + rep.comment + '»' : ''}</p>` : ''}
+      <div class="section-head section" style="margin-bottom:4px"><span class="eyebrow">Отдать</span><span class="hint" id="spHint">${issues ? 'недостача · брак · пересорт' : ''}</span></div>
+      ${s.lines.map(l=>html`<div class="stop-line" data-line="${l.productId}">
+        <div class="qrow"><span class="qrow-name">${Kit.nobr(P(l.productId).name)}<small>${W(P(l.productId).weightG)}</small></span><span class="mono" style="font-weight:700">${l.qty + (l.bonus || 0)}</span></div>
+        <div class="stop-issue" ${issues ? '' : Kit.raw('hidden')}>
+          <label><span>Недостача</span><input class="input" type="number" inputmode="numeric" min="0" data-k="short" value="${n(l.productId, 'short')}" placeholder="0"></label>
+          <label><span>Брак</span><input class="input" type="number" inputmode="numeric" min="0" data-k="spoiled" value="${n(l.productId, 'spoiled')}" placeholder="0"></label>
+          <label><span>Пересорт</span><input class="input" type="number" inputmode="numeric" min="0" data-k="resort" value="${n(l.productId, 'resort')}" placeholder="0"></label>
+        </div>
+        <select class="input select stop-resort" data-k="resortTo" ${n(l.productId, 'resort') ? '' : Kit.raw('hidden')}>${opt(n(l.productId, 'resortTo'))}</select></div>`)}
+      <div id="spMore" ${issues ? '' : Kit.raw('hidden')}>
+        <div class="section"><span class="field-label">Фото: брак, коробки, накладная с отметкой${s.photos ? ` · уже ${s.photos}` : ''}</span>
+          <label class="btn btn-ghost btn-block" style="margin-top:6px">${icon('plus')}Сфотографировать / выбрать<input type="file" accept="image/*" multiple hidden id="spFile"></label>
+          <div class="pick-files section" id="spThumbs"></div></div>
+        <label class="field section"><span class="field-label">Комментарий</span><textarea class="textarea" id="spCom" maxlength="300" rows="2" placeholder="Что случилось, кто принял">${rep ? rep.comment : ''}</textarea></label>
+      </div>`,
+      actions: !live ? '' : html`<button class="btn btn-ghost" type="button" id="spIssue" ${issues ? Kit.raw('hidden') : ''}>${icon('alert')}Есть замечания</button>
+        <button class="btn btn-primary" type="button" id="spGo">${icon('check')}<span id="spGoText">${issues ? 'Сдать с замечаниями' : 'Всё сдано'}</span></button>`});
+    Kit.on(sh.el, 'click', '[data-map]', (e, el)=>{ haptic('light'); CakeMap.one(el.dataset.map); });
+    if(!live) return;
+    const setIssues = ()=>{ issues = true; $$('.stop-issue', sh.el).forEach(x=> x.hidden = false); sh.$('#spMore').hidden = false; sh.$('#spIssue').hidden = true;
+      sh.$('#spGoText').textContent = 'Сдать с замечаниями'; sh.$('#spHint').textContent = 'недостача · брак · пересорт'; haptic('select'); };
+    sh.$('#spIssue').addEventListener('click', setIssues);
+    sh.el.addEventListener('input', e=>{ if(e.target.dataset.k === 'resort'){ const box = e.target.closest('.stop-line'); $('.stop-resort', box).hidden = !(parseInt(e.target.value, 10) > 0); } });
+    sh.$('#spFile').addEventListener('change', async e=>{
+      const got = await Cake.files.prepare(e.target.files); e.target.value = '';
+      photos = photos.concat(got).slice(0, 6);
+      sh.$('#spThumbs').innerHTML = String(html`${photos.map(f=>html`<span class="pick-file"><img alt="" src="data:${f.mime};base64,${f.data}"></span>`)}`);
+    });
+    sh.$('#spGo').addEventListener('click', async ()=>{
+      const v = (box, k)=> parseInt($(`[data-k="${k}"]`, box).value, 10) || 0;
+      const lines = issues ? $$('.stop-line', sh.el).map(box=>({productId:box.dataset.line, short:v(box, 'short'), spoiled:v(box, 'spoiled'), resort:v(box, 'resort'), resortTo:$('[data-k="resortTo"]', box).value || undefined}))
+        .filter(l=>l.short || l.spoiled || l.resort) : [];
+      const comment = issues ? sh.$('#spCom').value.trim() : '';
+      if(issues && !lines.length && !comment && !photos.length){ Kit.toast('Укажите, что не так: количество, комментарий или фото', 'error'); haptic('warning'); return; }
+      const go = sh.$('#spGo'); Kit.busy(go, true);
+      const r = await api('reportStop', {orderId:s.orderId, lines, comment});
+      if(!r.ok){ Kit.busy(go, false); fail(r); return; }
+      for(const f of photos){ const x = await api('addStopPhoto', Object.assign({orderId:s.orderId}, f)); if(!x.ok){ fail(x); break; } }
+      Kit.busy(go, false); haptic('success'); sh.close();
+      Kit.toast(lines.length || comment ? 'Точка сдана с замечаниями — склад увидит' : 'Точка сдана', 'ok');
+      await load(); openTrip(TRIPS.find(x=>x.id === t.id));
+    });
   }
 
   // Спидометр: на выезде — поле перед «Выезжаю», потом — показания и пробег
@@ -117,8 +185,15 @@
     return +v;
   }
 
+  // Брак с точек — сразу в отчёт рейса (водитель везёт его обратно)
+  function fromStops(t){
+    const m = {};
+    (t.stops || []).forEach(s=> (s.report ? s.report.lines : []).forEach(l=>{ if(l.spoiled) m[l.productId] = (m[l.productId] || 0) + l.spoiled; }));
+    return Object.keys(m).map(pid=>({productId:pid, back:0, spoiled:m[pid]}));
+  }
+
   function report(t){
-    const rep = t.report ? JSON.parse(t.report) : {returns:[], taraBack:[], comment:''};
+    const rep = t.report ? JSON.parse(t.report) : {returns:fromStops(t), taraBack:[], comment:''};
     const rb = {}; rep.returns.forEach(r=> rb[r.productId] = r);
     const tb = {}; rep.taraBack.forEach(l=> tb[l.taraId] = l.qty);
     const sh = Kit.sheet({title:'Отчёт по рейсу', sub:`${C(t.cityId).name} · что везёте обратно`, body: html`

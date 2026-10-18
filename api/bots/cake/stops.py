@@ -1,25 +1,34 @@
-# изменено 2026-10-18 13:00
+# изменено 2026-10-18 16:00
 """Точки рейса: логист добавляет водителю заявки (№, заказчик, адрес) — это его маршрут.
 Торты и ящики рейса считаются из заявок (sync_trip): при каждом изменении заявки и перед отгрузкой."""
 from __future__ import annotations
 
-from core import ApiError, Ctx, jdump, jload, rows, scalar, v_id, v_list
+from core import ApiError, Ctx, iso_now, jdump, jload, one, rows, scalar, v_id, v_int, v_list, v_str
 from bots.cake.base import _get_trip, _trip, action
+from bots.cake.schema import MAX_QTY
 
 MAX_STOPS = 60
+STOP_PHOTO = "Фото с точки"  # так называются фото водителя в файлах заявки — склад видит их в карточке заявки
+MAX_STOP_PHOTOS = 6
 
 
 def stops_of(conn, trip_ids: list[str]) -> dict[str, list[dict]]:
     if not trip_ids:
         return {}
     out: dict[str, list[dict]] = {}
-    for r in rows(conn, f"SELECT o.*, p.customer, p.address FROM orders o JOIN points p ON p.id=o.point_id "
-                        f"WHERE o.trip_id IN ({','.join('?' * len(trip_ids))}) ORDER BY o.stop, o.num", trip_ids):
+    q = ",".join("?" * len(trip_ids))
+    photos = {r["order_id"]: r["n"] for r in rows(conn, f"SELECT f.order_id, COUNT(*) n FROM order_files f JOIN orders o ON o.id=f.order_id "
+                                                        f"WHERE o.trip_id IN ({q}) AND f.name=? GROUP BY f.order_id", (*trip_ids, STOP_PHOTO))}
+    for r in rows(conn, f"SELECT o.*, p.customer, p.address, s.ok AS s_ok, s.lines AS s_lines, s.comment AS s_comment, s.at AS s_at "
+                        f"FROM orders o JOIN points p ON p.id=o.point_id LEFT JOIN stop_reports s ON s.order_id=o.id "
+                        f"WHERE o.trip_id IN ({q}) ORDER BY o.stop, o.num", trip_ids):
         ls = jload(r["lines"], [])
         out.setdefault(r["trip_id"], []).append({
             "orderId": r["id"], "num": r["num"], "pointId": r["point_id"], "customer": r["customer"], "address": r["address"],
-            "route": r["route"], "status": r["status"], "boxes": r["boxes"], "comment": r["comment"],
-            "qty": sum(ln["qty"] + ln.get("bonus", 0) for ln in ls)})
+            "route": r["route"], "status": r["status"], "boxes": r["boxes"], "comment": r["comment"], "lines": ls,
+            "qty": sum(ln["qty"] + ln.get("bonus", 0) for ln in ls), "photos": photos.get(r["id"], 0),
+            "report": {"ok": bool(r["s_ok"]), "lines": jload(r["s_lines"], []), "comment": r["s_comment"], "at": r["s_at"]}
+            if r["s_at"] else None})
     return out
 
 
@@ -90,3 +99,63 @@ def set_trip_orders(ctx: Ctx, p: dict) -> dict:
         ctx.conn.execute("UPDATE trips SET note=? WHERE id=? AND (note='' OR note LIKE 'Заявки: №%')",
                          ("Заявки: №" + ", №".join(found[i]["num"] for i in ids), t["id"]))
     return {"trip": trip_out(ctx.conn, t["id"])}
+
+
+def _driver_stop(ctx: Ctx, oid: str) -> tuple[dict, dict]:
+    """Заявка-точка рейса, который сейчас у водителя (в пути или ждёт приёмки); водитель — только своего рейса."""
+    o = one(ctx.conn, "SELECT * FROM orders WHERE id=?", (oid,))
+    if not o or not o["trip_id"]:
+        raise ApiError("not_found", "Точка не найдена")
+    t = _get_trip(ctx.conn, o["trip_id"])
+    if getattr(ctx, "role", "admin") == "driver" and t["driver_id"] != scalar(ctx.conn, "SELECT id FROM staff WHERE tg_id=? AND tg_id<>''", (ctx.user,)):
+        raise ApiError("forbidden", "Это не ваш рейс")
+    if t["status"] not in ("shipped", "reported"):
+        raise ApiError("bad_state", "Рейс не в пути")
+    return o, t
+
+
+@action("reportStop", write=True)
+def report_stop(ctx: Ctx, p: dict) -> dict:
+    """Водитель сдал точку: по строкам заявки — недостача, брак, пересорт (привезли не тот торт).
+    Без строк — «всё сдано». Повторно — перезаписывает, пока склад не принял рейс."""
+    o, t = _driver_stop(ctx, v_id(p, "orderId"))
+    have = {}
+    for ln in jload(o["lines"], []):
+        have[ln["productId"]] = have.get(ln["productId"], 0) + ln["qty"] + ln.get("bonus", 0)
+    out, seen = [], set()
+    for x in v_list(p, "lines", max_items=200, required=False):
+        if not isinstance(x, dict):
+            raise ApiError("bad_request", "lines: ожидается объект")
+        pid = v_id(x, "productId")
+        if pid not in have:
+            raise ApiError("not_found", "Этого торта нет в заявке")
+        if pid in seen:
+            raise ApiError("bad_request", "Торт в отчёте дважды")
+        seen.add(pid)
+        short, spoiled, resort = (v_int(x, k, lo=0, hi=MAX_QTY, required=False) or 0 for k in ("short", "spoiled", "resort"))
+        if short + spoiled + resort > have[pid]:
+            raise ApiError("bad_request", f"Замечаний больше, чем везли: {have[pid]} шт")
+        to = v_id(x, "resortTo", required=False) if resort else None
+        if to and not scalar(ctx.conn, "SELECT 1 FROM products WHERE id=?", (to,)):
+            raise ApiError("not_found", "Нет такого торта")
+        if short or spoiled or resort:
+            out.append({"productId": pid, "short": short, "spoiled": spoiled, "resort": resort, **({"resortTo": to} if to else {})})
+    comment = v_str(p, "comment", required=False, max_len=300)
+    ok = not out and not comment
+    ctx.conn.execute("INSERT INTO stop_reports(order_id,trip_id,ok,lines,comment,at) VALUES(?,?,?,?,?,?) "
+                     "ON CONFLICT(order_id) DO UPDATE SET trip_id=excluded.trip_id, ok=excluded.ok, lines=excluded.lines, "
+                     "comment=excluded.comment, at=excluded.at", (o["id"], t["id"], int(ok), jdump(out), comment, iso_now()))
+    return {"trip": trip_out(ctx.conn, t["id"])}
+
+
+@action("addStopPhoto", write=True)
+def add_stop_photo(ctx: Ctx, p: dict) -> dict:
+    """Фотофиксация на точке (брак, недостача, накладная с отметкой) — в файлы заявки, склад видит в карточке."""
+    from bots.cake.order_files import save_file  # поздний импорт: order_files тянет picking
+    o, _t = _driver_stop(ctx, v_id(p, "orderId"))
+    if scalar(ctx.conn, "SELECT COUNT(*) FROM order_files WHERE order_id=? AND name=?", (o["id"], STOP_PHOTO)) >= MAX_STOP_PHOTOS:
+        raise ApiError("bad_request", f"С точки уже {MAX_STOP_PHOTOS} фото")
+    if not str(p.get("mime", "")).startswith("image/"):
+        raise ApiError("bad_request", "Можно только фото")
+    return {"file": save_file(ctx, o, p, STOP_PHOTO)}
+

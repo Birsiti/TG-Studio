@@ -1,4 +1,4 @@
-// изменено 2026-10-18 15:15
+// изменено 2026-10-18 16:00
 // Тексты сообщений. Обычный текст без разметки — не нужно экранировать.
 
 function weight(g) {
@@ -90,6 +90,18 @@ function pickedForAdmin(o, point) {
   return `Собрана заявка №${o.num}${where}\n${o.route ? o.route + ' · ' : ''}${qty} шт${bonus ? ` + ${bonus} бонус` : ''}, позиций ${o.lines.length}${o.picker ? `\nСобрал: ${o.picker}` : ''}${o.boxes != null ? `\nЯщиков: ${o.boxes}` : ''}`;
 }
 
+// Точка сдана с замечаниями — складу
+function stopIssue(t, s, L) {
+  const rep = s.report;
+  const lines = rep.lines.map((l) => {
+    const what = [l.short && `недостача ${l.short}`, l.spoiled && `брак ${l.spoiled}`,
+      l.resort && `пересорт ${l.resort}${l.resortTo ? ` (привезли ${L.product(l.resortTo)})` : ''}`].filter(Boolean).join(', ');
+    return `• ${L.product(l.productId)} — ${what}`;
+  });
+  return [`⚠️ ${tripTitle(t, L)}: точка №${s.num} сдана с замечаниями`, `${s.customer}, ${s.address}`, `Водитель: ${L.staff(t.driverId)}`,
+    ...lines, rep.comment ? `Комментарий: «${rep.comment}»` : '', s.photos ? `Фото: ${s.photos} — в карточке заявки` : ''].filter(Boolean).join('\n');
+}
+
 // Руководителю: человек впервые написал боту
 function newVisitor(from, role, guest = false) {
   const name = [from.first_name, from.last_name].filter(Boolean).join(' ') || 'без имени';
@@ -134,4 +146,4 @@ const BOT_SHORT = 'Склад тортов в Telegram: заявки, сборк
 
 const ROLE_LOWER = { admin: 'руководитель', storekeeper: 'кладовщик', logist: 'логист', driver: 'водитель' };
 
-module.exports = { BOT_DESCRIPTION, BOT_SHORT, newVisitor, guestWelcome, demoState, pickedForAdmin, weight, makeLookup, shippedForDriver, reportedForStore, closedForDriver, digest };
+module.exports = { stopIssue, BOT_DESCRIPTION, BOT_SHORT, newVisitor, guestWelcome, demoState, pickedForAdmin, weight, makeLookup, shippedForDriver, reportedForStore, closedForDriver, digest };

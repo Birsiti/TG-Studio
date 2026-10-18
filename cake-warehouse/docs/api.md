@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-18 13:00 -->
+<!-- изменено 2026-10-18 16:00 -->
 # API склада
 
 ```
@@ -29,6 +29,8 @@ Content-Type: text/plain;charset=utf-8          (простой CORS-запро�
 | `getMe` | — | `staff` (кто я по Telegram id или null), `restricted` |
 | `saveProduct` | `id?`, `name`, `cat`, `sku`, `weightG` (обязателен — вес с упаковки), `shelfDays`, `minQty`, `perBox` (шт в 1 грузовом месте, по умолчанию 1), `active` | `product`; при правке не переданные вес и `perBox` остаются прежними |
 | `saveCity` | `id?`, `name`, `code`, `active` | `city` |
+| `reportStop` | `orderId` (точка рейса в пути), `lines` [{productId, short, spoiled, resort, resortTo?}], `comment` — водитель только своего рейса | `trip` (точки с `report`) |
+| `addStopPhoto` | `orderId`, `mime` (фото), `data` (base64) — до 6 фото с точки | `file` |
 | `setTripOrders` | `id` (рейс на сборке), `orderIds` — заявки по порядку объезда (той же даты, не в другом рейсе; `[]` — снять) | `trip` |
 | `logVisit` | `tgId`, `name?`, `username?` — бот (служебный ключ), человек написал боту | `isNew` |
 | `hello` | `page` (`sklad`/`admin`/`driver`) — страница открылась, пишет `ctx.user` | — |
