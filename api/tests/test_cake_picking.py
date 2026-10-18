@@ -1,4 +1,4 @@
-# изменено 2026-10-18 16:00
+# изменено 2026-10-18 16:30
 """Сборка по кругу: заявки с фото, галочки, места, точки, миграция в старую базу."""
 from bots.cake import bot as cake_bot
 
@@ -295,3 +295,21 @@ def test_stop_report(api, monkeypatch):
     assert api("cake", "reportStop", user="555", orderId=a["id"])["error"] == "forbidden"
     api("cake", "saveStaff", user="111", id="dr-ivan", name="Иван", role="driver", tgId="777")
     assert api("cake", "reportStop", user="777", orderId=b["id"])["ok"]
+
+
+def test_tara_back_on_loading(api):
+    """На погрузке нового рейса водитель сдаёт ящики с прошлых: больше, чем на руках, — нельзя."""
+    day = "2026-10-28"
+    pts = api("cake", "getOrders")["points"]
+    debt = lambda: next(d for d in api("cake", "getTara")["drivers"] if d["id"] == "dr-pavel")["tara"]["box"]["debt"]  # noqa: E731
+    api("cake", "taraMove", driverId="dr-pavel", taraId="box", kind="out", qty=5)
+    had = debt()
+    o = api("cake", "saveOrder", num="B-1", date=day, pointId=pts[0]["id"], lines=[{"productId": "p001", "qty": 1}])["order"]
+    api("cake", "adjustStock", productId="p001", actual=20)
+    api("cake", "finishPick", id=o["id"], all=True, boxes=2)
+    t = api("cake", "saveTrip", date=day, route="Маршрут 9", driverId="dr-pavel", lines=[])["trip"]
+    api("cake", "setTripOrders", id=t["id"], orderIds=[o["id"]])
+    assert api("cake", "shipTrip", id=t["id"], taraBack=[{"taraId": "box", "qty": had + 1}])["error"] == "bad_request"
+    assert api("cake", "shipTrip", id=t["id"], taraBack=[{"taraId": "box", "qty": 3}])["trip"]["status"] == "shipped"
+    assert debt() == had - 3 + 2  # сдал 3 старых, взял 2 под этот рейс
+

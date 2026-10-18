@@ -1,4 +1,4 @@
-# изменено 2026-10-18 13:00
+# изменено 2026-10-18 16:30
 """Рейсы: сборка → отгрузка → отчёт водителя → приёмка; рейсы водителя."""
 from __future__ import annotations
 
@@ -62,6 +62,16 @@ def ship_trip(ctx: Ctx, p: dict) -> dict:
     if not t["driver_id"]:
         raise ApiError("bad_request", "Не выбран водитель")
     _check_stock(ctx.conn, lines)
+    # водитель на погрузке — сдаёт ящики с прошлых рейсов (отдельно на склад он не поедет)
+    back = _tara_lines(ctx.conn, p, "taraBack")
+    debt = _tara_debt(ctx.conn)
+    for ln in back:
+        has = debt.get((t["driver_id"], ln["taraId"]), 0)
+        if ln["qty"] > has:
+            raise ApiError("bad_request", f"У водителя на руках только {has}")
+    for ln in back:
+        _add_tara(ctx, ctx.today, ln["taraId"], t["driver_id"], "back", ln["qty"], city=t["city_id"],
+                  note=f"Сдал при погрузке рейса №{t['num']}")
     for ln in lines:
         _add_move(ctx, "ship", ctx.today, ln["productId"], -ln["qty"], city=t["city_id"], trip=t["id"])
     for ln in jload(t["tara_out"], []):
