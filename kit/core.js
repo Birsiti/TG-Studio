@@ -1,4 +1,4 @@
-// изменено 2026-10-18 12:00
+// изменено 2026-10-18 13:45
 /* ============================================================
    kit/core.js — общий рантайм всех Mini App студии TG-Studio.
 
@@ -389,6 +389,7 @@
   }
   if(inTelegram && tg.BackButton){
     try{ tg.BackButton.onClick(function(){ var fn = backStack[backStack.length - 1]; if(fn) fn(); }); }catch(e){}
+    backRefresh();  // кнопка Telegram переживает переход между страницами — на новой странице без шагов прячем («Закрыть»)
   }
   var back = {
     push: function(fn){ backStack.push(fn); backRefresh(); },
