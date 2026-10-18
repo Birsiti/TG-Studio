@@ -1,4 +1,4 @@
-// изменено 2026-10-18 09:00
+// изменено 2026-10-18 10:00
 /* Общее для страниц склада: API, справочники, остатки и помощники
    (название с весом, группы по категориям, поиск без перерисовки). */
 window.Cake = (function(){
@@ -38,7 +38,7 @@ window.Cake = (function(){
     C.refs = r;
     if(!C.helloSent){ C.helloSent = true; C.api('hello', {page:'sklad'}); }  // журнал «кто заходит»
     const note = $('#modeNote');
-    if(note && C.api.mode() === 'demo') note.innerHTML = String(html`<p class="mode-note">Демо-режим: сервер недоступен, данные хранятся только в этом браузере.</p>`);
+    if(note && C.api.mode() === 'demo') note.innerHTML = String(html`<p class="mode-note">Демо-версия: данные примерные и хранятся только в этом телефоне.</p>`);
   };
   C.loadStock = async function(){ const r = await C.api('getStock'); if(r.ok) C.stock = r.items; return r; };
   return C;

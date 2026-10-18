@@ -1,4 +1,4 @@
-// изменено 2026-10-18 09:00
+// изменено 2026-10-18 10:00
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
@@ -19,7 +19,7 @@
 
   async function load(){
     const refs = await api('getRefs'), me = await api('getMe');  // по очереди: первый ответ решает, сервер или демо
-    if(api.mode() === 'demo') $('#modeNote').innerHTML = String(html`<p class="mode-note">Демо-режим: сервер недоступен, данные хранятся только в этом телефоне.</p>`);
+    if(api.mode() === 'demo') $('#modeNote').innerHTML = String(html`<p class="mode-note">Демо-версия: данные примерные и хранятся только в этом телефоне.</p>`);
     if(!refs.ok){ $('#view').innerHTML = String(html`<div class="empty">${icon('lock')}<div class="empty-title">Нет доступа</div>Попросите кладовщика добавить ваш Telegram в список водителей</div>`); return; }
     REFS = refs; restricted = me.ok && me.restricted;
     if(!load.hello){ load.hello = true; api('hello', {page:'driver'}); }  // журнал «кто заходит»
