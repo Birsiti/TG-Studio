@@ -1,4 +1,4 @@
-// изменено 2026-10-18 09:00
+// изменено 2026-10-18 09:30
 // Тексты сообщений. Обычный текст без разметки — не нужно экранировать.
 
 function weight(g) {
@@ -94,8 +94,8 @@ function newVisitor(from, role) {
   const name = [from.first_name, from.last_name].filter(Boolean).join(' ') || 'без имени';
   const who = `${name}${from.username ? ' (@' + from.username + ')' : ''}, id ${from.id}`;
   return role
-    ? `👋 Впервые зашёл в бота: ${who} — ${ROLE_LOWER[role] || role}.`
-    : `👋 Новый пользователь в боте: ${who}.\nДоступа нет. Чтобы пустить — «Склад и сводка» → «Справочники» → «Люди», впишите этот id.`;
+    ? `🎂 Впервые зашёл в бота: ${who} — ${ROLE_LOWER[role] || role}.`
+    : `🎂 Новый пользователь в боте: ${who}.\nДоступа нет. Чтобы пустить — «Склад и сводка» → «Справочники» → «Люди», впишите этот id.`;
 }
 const ROLE_LOWER = { admin: 'руководитель', storekeeper: 'кладовщик', driver: 'водитель' };
 

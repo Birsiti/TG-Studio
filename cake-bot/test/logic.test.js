@@ -29,6 +29,7 @@ test('роль: руководитель из ADMIN_IDS, сотрудник по
 test('новый пользователь: руководителю — имя, @ник и id; без роли — подсказка, куда вписать', () => {
   const t = texts.newVisitor({ id: 555, first_name: 'Пётр', last_name: 'Ус', username: 'petr' }, null);
   assert.match(t, /Пётр Ус \(@petr\), id 555/);
+  assert.match(t, /^🎂 /);
   assert.match(t, /Справочники/);
   assert.match(texts.newVisitor({ id: 7, first_name: 'Иван' }, 'driver'), /Иван, id 7 — водитель/);
 });
