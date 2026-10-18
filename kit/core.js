@@ -1,4 +1,4 @@
-// изменено 2026-10-18 13:45
+// изменено 2026-10-18 15:45
 /* ============================================================
    kit/core.js — общий рантайм всех Mini App студии TG-Studio.
 
@@ -398,6 +398,25 @@
   };
 
   /* ============ ШТОРКИ ============ */
+  // Поле в шторке под клавиатурой: после фокуса (и когда клавиатура поменяла высоту) — прокрутить его в середину видимого
+  function keepFocusVisible(){
+    var el = document.activeElement;
+    if(!el || !/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || !el.closest('.sheet-body')) return;
+    var body = el.closest('.sheet-body'), vv = window.visualViewport;
+    // iOS: клавиатура может перекрыть страницу, не уменьшая её, — даём шторке место прокрутиться над ней
+    var kb = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+    body.style.paddingBottom = kb > 40 ? (kb + 24) + 'px' : '';
+    var r = el.getBoundingClientRect(), br = body.getBoundingClientRect();
+    var top = br.top + 8, bottom = Math.min(br.bottom, vv ? vv.offsetTop + vv.height : br.bottom) - 16;
+    if(r.bottom > bottom || r.top < top) body.scrollTop += (r.top + r.height / 2) - (top + bottom) / 2;
+  }
+  document.addEventListener('focusin', function(e){ if(e.target.closest && e.target.closest('.sheet-body')) setTimeout(keepFocusVisible, 350); });
+  document.addEventListener('focusout', function(e){
+    var body = e.target.closest && e.target.closest('.sheet-body');
+    if(body) setTimeout(function(){ if(!body.contains(document.activeElement)) body.style.paddingBottom = ''; }, 300);
+  });
+  if(window.visualViewport) window.visualViewport.addEventListener('resize', function(){ setTimeout(keepFocusVisible, 50); });
+  if(inTelegram && tg.onEvent){ try{ tg.onEvent('viewportChanged', function(){ setTimeout(keepFocusVisible, 50); }); }catch(e){} }
   var sheetLayer = null;
   function ensureLayer(){
     if(sheetLayer) return sheetLayer;
