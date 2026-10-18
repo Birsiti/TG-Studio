@@ -1,4 +1,4 @@
-// изменено 2026-10-18 13:00
+// изменено 2026-10-18 15:30
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
@@ -74,7 +74,9 @@
       ${t.taraOut.length ? html`<div class="eyebrow section" style="margin-bottom:8px">Тара</div>${t.taraOut.map(l=>html`<div class="kv"><span class="k">${T(l.taraId).name}</span><span class="v mono">${l.qty}</span></div>`)}` : ''}
       ${t.note ? html`<p class="hint section">${t.note}</p>` : ''}
       ${odoBlock(t)}`,
-      actions: t.status === 'shipped' && t.odoOut == null ? html`<button class="btn btn-primary btn-block" type="button" id="goOut">${icon('truck')}Выезжаю</button>`
+      // спидометр — рядом с кнопкой: эта полоса остаётся над клавиатурой, поле в карточке клавиатура закрывала
+      actions: t.status === 'shipped' && t.odoOut == null ? html`<input class="input odo-input" id="odoOut" type="number" inputmode="numeric" min="0" placeholder="Спидометр, км" aria-label="Спидометр на выезде, км">
+        <button class="btn btn-primary" type="button" id="goOut">${icon('truck')}Выезжаю</button>`
         : /shipped|reported/.test(t.status) ? html`<button class="btn btn-primary btn-block" type="button" id="goRep">${icon('clipboard')}${t.status === 'reported' ? 'Исправить отчёт' : 'Сдать рейс'}</button>` : ''});
     Kit.on(sh.el, 'click', '[data-map]', (e, el)=>{ haptic('light'); CakeMap.one(el.dataset.map); });
     const all = sh.$('#mapAll'); if(all) all.addEventListener('click', ()=>{ haptic('light'); CakeMap.route(t.stops.map(s=>s.address)); });
@@ -102,8 +104,7 @@
 
   // Спидометр: на выезде — поле перед «Выезжаю», потом — показания и пробег
   function odoBlock(t){
-    if(t.status === 'shipped' && t.odoOut == null) return html`<label class="field section"><span class="field-label">Спидометр на выезде, км</span>
-      <input class="input" id="odoOut" type="number" inputmode="numeric" min="0" placeholder="например 84 310"></label>`;
+    if(t.status === 'shipped' && t.odoOut == null) return html`<p class="hint section">Перед выездом впишите спидометр внизу и нажмите «Выезжаю».</p>`;
     if(t.odoOut == null) return '';
     return html`<div class="eyebrow section" style="margin-bottom:8px">Спидометр</div>
       <div class="kv"><span class="k">Выезд</span><span class="v mono">${num(t.odoOut)} км</span></div>

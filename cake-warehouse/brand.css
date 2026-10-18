@@ -1,4 +1,4 @@
-/* изменено 2026-10-18 13:00 */
+/* изменено 2026-10-18 15:30 */
 /* ============================================================
    ТОРТОВОЗ — фирменный слой поверх kit/base.css.
    Характер: кондитерский склад с холодовой цепью. Шоколад и сливки,
@@ -140,3 +140,4 @@
 .stop-row .icon-btn{ flex:none; }
 .pick-row .pick-box{ font-weight:800; font-size:14px; }
 #eOrders .pick-row{ padding-left:12px; padding-right:12px; }
+.sheet-actions .odo-input{ flex:1 1 0; min-width:0; text-align:center; font-family:var(--font-mono, inherit); }
