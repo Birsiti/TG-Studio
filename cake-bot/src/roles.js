@@ -1,4 +1,4 @@
-// изменено 2026-10-17 20:10
+// изменено 2026-10-18 11:00
 // Кто пишет боту и какие кнопки ему показать.
 
 const ROLE_RU = { admin: 'Руководитель', storekeeper: 'Кладовщик', driver: 'Водитель' };
@@ -15,16 +15,9 @@ function staffName(tgId, staff) {
   return s ? s.name : '';
 }
 
-function webApp(text, base, file) {
-  return [{ text, web_app: { url: `${base}/${file}` } }];
-}
-
-// Кнопки Web App (открываются только в личке с ботом)
-function keyboard(role, base) {
-  if (role === 'admin') return [webApp('Склад и сводка', base, 'admin.html'), webApp('Кладовщик', base, 'sklad.html'), webApp('Водитель', base, 'driver.html')];
-  if (role === 'storekeeper') return [webApp('Открыть склад', base, 'sklad.html')];
-  if (role === 'driver') return [webApp('Мои рейсы', base, 'driver.html')];
-  return [];
+// Кнопка «Открыть» внизу чата (menu button) — одна для всех, ведёт на главную приложения
+function menuButton(base) {
+  return { type: 'web_app', text: 'Открыть', web_app: { url: `${base}/index.html` } };
 }
 
 // Telegram id сотрудников с ролью (для рассылок)
@@ -32,4 +25,4 @@ function idsOf(staff, role) {
   return staff.filter((s) => s.active && s.role === role && s.tgId).map((s) => String(s.tgId));
 }
 
-module.exports = { ROLE_RU, roleOf, staffName, keyboard, idsOf };
+module.exports = { ROLE_RU, roleOf, staffName, menuButton, idsOf };

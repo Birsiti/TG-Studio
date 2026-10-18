@@ -1,11 +1,11 @@
-// изменено 2026-10-17 12:50
+// изменено 2026-10-18 11:00
 // Раз в WATCH_SECONDS смотрим рейсы и заявки и рассылаем уведомления о переходах.
 const config = require('./config');
 const tg = require('./telegram');
 const { api, refs } = require('./api');
 const store = require('./store');
 const { diffTrips, diffOrders } = require('./events');
-const { idsOf, keyboard } = require('./roles');
+const { idsOf } = require('./roles');
 const texts = require('./texts');
 
 // Оставить прошлый статус — тогда событие сработает снова
@@ -25,10 +25,10 @@ async function checkTrips() {
   for (const { kind, trip } of events) {
     let ok = true;
     if (kind === 'shipped') {
-      ok = await tg.sendMany(tgOf(trip.driverId), texts.shippedForDriver(trip, L), keyboard('driver', config.webappBase));
+      ok = await tg.sendMany(tgOf(trip.driverId), texts.shippedForDriver(trip, L));
     } else if (kind === 'reported') {
       const to = idsOf(r.staff, 'storekeeper').concat(config.adminIds);
-      ok = await tg.sendMany(to, texts.reportedForStore(trip, L), keyboard('storekeeper', config.webappBase));
+      ok = await tg.sendMany(to, texts.reportedForStore(trip, L));
     } else if (kind === 'closed') {
       ok = await tg.sendMany(tgOf(trip.driverId), texts.closedForDriver(trip, L));
     }

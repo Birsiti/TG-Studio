@@ -1,7 +1,7 @@
-// изменено 2026-10-18 10:00
+// изменено 2026-10-18 11:00
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { roleOf, keyboard, idsOf } = require('../src/roles');
+const { roleOf, menuButton, idsOf } = require('../src/roles');
 const { diffTrips } = require('../src/events');
 const texts = require('../src/texts');
 const { dayKey } = require('../src/digest-job');
@@ -45,13 +45,14 @@ test('гостевой вход /demo: до конца дня, на N дней, 
   assert.match(texts.newVisitor({ id: 9, first_name: 'Ольга' }, null, true), /^🎂 Гость открыл демо: Ольга, id 9/);
   assert.match(texts.demoState('2026-10-18'), /18\.10\.2026/);
   assert.ok(texts.guestWelcome('Ольга').length < 4096);
+  assert.ok(texts.BOT_DESCRIPTION.length <= 512 && texts.BOT_SHORT.length <= 120);
 });
 
-test('кнопки Web App ведут на страницы своей роли', () => {
-  const kb = keyboard('driver', 'https://x.io/cw');
-  assert.equal(kb[0][0].web_app.url, 'https://x.io/cw/driver.html');
-  assert.equal(keyboard('admin', 'https://x.io/cw').length, 3);
-  assert.deepEqual(keyboard(null, 'https://x.io/cw'), []);
+test('кнопка «Открыть» внизу ведёт на главную приложения', () => {
+  const m = menuButton('https://x.io/cw');
+  assert.equal(m.type, 'web_app');
+  assert.equal(m.text, 'Открыть');
+  assert.equal(m.web_app.url, 'https://x.io/cw/index.html');
 });
 
 test('события: первый запуск молчит, дальше — только переходы', () => {

@@ -1,3 +1,4 @@
+// изменено 2026-10-18 11:00
 // Точка входа. Держит процесс живым:
 // 1. long polling Telegram — отвечает на /start и /id кнопками Mini App;
 // 2. каждые WATCH_SECONDS проверяет рейсы и шлёт уведомления;
@@ -11,6 +12,8 @@ const store = require('./store');
 const { handleMessage } = require('./commands');
 const { checkTrips } = require('./watch');
 const { runDigestJob } = require('./digest-job');
+const { menuButton } = require('./roles');
+const texts = require('./texts');
 
 let stopping = false;
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -67,12 +70,23 @@ async function digestWithRetry() {
   }
 }
 
+// Как бот выглядит до первого сообщения: кнопка «Открыть» внизу, описание в пустом чате и в профиле
+async function presentBot() {
+  const steps = [
+    ['setChatMenuButton', { menu_button: menuButton(config.webappBase) }],
+    ['setMyDescription', { description: texts.BOT_DESCRIPTION }],
+    ['setMyShortDescription', { short_description: texts.BOT_SHORT }],
+  ];
+  for (const [method, params] of steps) await tg.call(method, params).catch((err) => console.error(`[bot] ${method}:`, err.message));
+}
+
 async function main() {
   const me = await tg.call('getMe');
   const st = store.get();  // сменили токен на другого бота — его счётчик сообщений свой, старый offset не годится
   if (st.botId && st.botId !== me.id) store.save({ botId: me.id, updateOffset: 0, trips: null, orders: null });
   else if (!st.botId) store.save({ botId: me.id });
   console.log(`Запуск @${me.username}. API ${config.apiUrl}, сводка "${config.digestCron}" (${config.timezone}).`);
+  await presentBot();
   await tg.call('setMyCommands', { commands: [{ command: 'start', description: 'Открыть склад' }, { command: 'id', description: 'Мой Telegram id' }] }).catch(() => {});
 
   await watchSafely();
