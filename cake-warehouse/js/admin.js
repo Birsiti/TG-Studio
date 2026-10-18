@@ -1,4 +1,4 @@
-// изменено 2026-10-18 12:00
+// изменено 2026-10-18 14:30
 /* Экран руководителя склада: сводка, смены, справочники. */
 (function(){
   "use strict";
@@ -72,7 +72,7 @@
   /* ============ СПРАВОЧНИКИ ============ */
   const KINDS = {
     products:{label:'Торты', add:'Новый торт', save:'saveProduct', key:'product',
-      sub:x=>`${x.cat} · ${W(x.weightG) || 'вес —'}${x.perBox > 1 ? ' · ' + x.perBox + ' шт в коробке' : ''}${x.shelfDays ? ' · ' + x.shelfDays + ' сут' : ''}${x.minQty ? ' · мин. ' + x.minQty : ''}`,
+      sub:x=>`${x.cat}${x.weightG ? '' : ' · вес —'}${x.perBox > 1 ? ' · ' + x.perBox + ' шт в коробке' : ''}${x.shelfDays ? ' · ' + x.shelfDays + ' сут' : ''}${x.minQty ? ' · мин. ' + x.minQty : ''}`,
       fields:x=>html`<label class="field"><span class="field-label">Название</span><input class="input" name="name" maxlength="80" value="${x.name || ''}"></label>
         <label class="field section"><span class="field-label">Категория</span><select class="select" name="cat">${REFS.cats.map(c=>html`<option value="${c}" ${(x.cat || REFS.cats[0]) === c ? Kit.raw('selected') : ''}>${c}</option>`)}</select></label>
         <div class="field-row section"><label class="field"><span class="field-label">Артикул</span><input class="input" name="sku" maxlength="30" value="${x.sku || ''}"></label>
