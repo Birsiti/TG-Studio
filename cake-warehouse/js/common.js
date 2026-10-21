@@ -1,4 +1,4 @@
-// изменено 2026-10-18 10:00
+// изменено 2026-10-22 01:15
 /* Общее для страниц склада: API, справочники, остатки и помощники
    (название с весом, группы по категориям, поиск без перерисовки). */
 window.Cake = (function(){
@@ -13,6 +13,9 @@ window.Cake = (function(){
   C.P = id=> C.refs.products.find(x=>x.id === id) || {name:'?'};
   C.W = g=> !g ? '' : g < 1000 ? g + ' г' : String(g / 1000).replace('.', ',') + ' кг';
   C.L = id=> { const p = C.P(id); return p.name + (p.weightG ? ', ' + C.W(p.weightG) : ''); };
+  C.photo = p=> (window.CakePhotos && CakePhotos.of(p)) || '';
+  C.thumb = p=> { const s = C.photo(p); return s ? html`<img class="thumb" src="${s}" alt="" loading="lazy" width="44" height="44">` : html`<span class="thumb thumb-none" aria-hidden="true"></span>`; };
+  C.photoBig = p=> { const s = C.photo(p); return s ? html`<img class="photo-big" src="${s}" alt="${p.name}">` : ''; };
   C.C = id=> C.refs.cities.find(x=>x.id === id) || {name:'?', code:'—'};
   C.S = id=> C.refs.staff.find(x=>x.id === id);
   C.T = id=> C.refs.tara.find(x=>x.id === id) || {name:'?'};

@@ -1,9 +1,9 @@
-// изменено 2026-10-17 13:15
+// изменено 2026-10-22 01:15
 /* Вкладка «Приход»: сколько тортов пришло с производства. */
 (function(){
   "use strict";
   const {html, icon, $, $$, date: D, num, haptic} = Kit;
-  const {api, P, W, L, C, S, T, CATS, byCat, filterRows, nameKey, pcs, fail, stockOf, loadStock} = Cake;
+  const {api, P, W, L, C, S, T, CATS, byCat, filterRows, nameKey, pcs, fail, stockOf, loadStock, thumb} = Cake;
 
   // Список строим заново только при новом справочнике: переход по вкладкам не стирает введённое
   let built = null;
@@ -15,7 +15,7 @@
     const act = Cake.refs.products.filter(p=>p.active);
     $('#inQ').value = '';
     $('#inList').innerHTML = String(byCat(act, p=>html`<div class="qrow" data-row="${p.id}" data-name="${nameKey(p)}">
-      <span class="qrow-name">${Kit.nobr(p.name)}<small>${W(p.weightG)} · на складе ${stockOf(p.id)}</small></span>
+      ${thumb(p)}<span class="qrow-name">${Kit.nobr(p.name)}<small>${W(p.weightG)} · на складе ${stockOf(p.id)}</small></span>
       <input class="input" type="number" inputmode="numeric" min="0" placeholder="0" data-in="${p.id}" value="${keep[p.id] || ''}">
     </div>`));
     inTotal();

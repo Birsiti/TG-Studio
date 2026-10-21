@@ -1,4 +1,4 @@
-// изменено 2026-10-18 14:30
+// изменено 2026-10-22 01:15
 /* Экран руководителя склада: сводка, смены, справочники. */
 (function(){
   "use strict";
@@ -105,7 +105,7 @@
     $('#refVisits').innerHTML = String(html`${icon('users')}Кто заходит в бота`);
     const list = REFS[kind];
     $('#refList').innerHTML = String(html`<div class="list">${list.map(x=>html`<button class="row" type="button" data-id="${x.id}"${x.active ? '' : Kit.raw(' style="opacity:.55"')}>
-      ${kind === 'cities' ? html`<span class="row-code"><span class="code">${x.code || '—'}</span></span>` : kind === 'staff' ? html`<span class="avatar">${Kit.initials(x.name)}</span>` : ''}
+      ${kind === 'cities' ? html`<span class="row-code"><span class="code">${x.code || '—'}</span></span>` : kind === 'staff' ? html`<span class="avatar">${Kit.initials(x.name)}</span>` : kind === 'products' ? (window.CakePhotos && CakePhotos.of(x) ? html`<img class="thumb" src="${CakePhotos.of(x)}" alt="" loading="lazy" width="44" height="44">` : html`<span class="thumb thumb-none" aria-hidden="true"></span>`) : ''}
       <span class="row-main"><span class="row-title">${Kit.nobr(x.name)}${kind === 'products' && x.weightG ? html` <span class="hint nowrap">${W(x.weightG)}</span>` : ''}</span><span class="row-sub">${KINDS[kind].sub(x)}${x.active ? '' : ' · скрыт'}</span></span>${icon('right', 'row-chev')}</button>`)}</div>`);
   }
   Kit.on($('#refSeg'), 'click', '[data-k]', (e, el)=>{ kind = el.dataset.k; haptic('select'); renderRefs(); });
