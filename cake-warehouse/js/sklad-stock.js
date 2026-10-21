@@ -1,9 +1,9 @@
-// изменено 2026-10-17 13:20
+// изменено 2026-10-22 01:15
 /* Вкладка «Остатки»: список по категориям, пересчёт и списание. */
 (function(){
   "use strict";
   const {html, icon, $, $$, date: D, num, haptic} = Kit;
-  const {api, P, W, L, C, S, T, CATS, byCat, filterRows, nameKey, pcs, fail, stockOf, loadStock} = Cake;
+  const {api, P, W, L, C, S, T, CATS, byCat, filterRows, nameKey, pcs, fail, stockOf, loadStock, thumb, photoBig} = Cake;
 
   async function renderStock(){
     const r = await loadStock();
@@ -18,7 +18,7 @@
     $('#stockCats').innerHTML = String(html`<button type="button" class="chip${stockCat ? '' : ' is-on'}" data-c="">Все</button>${CATS().map(c=>html`<button type="button" class="chip${stockCat === c ? ' is-on' : ''}" data-c="${c}">${c}</button>`)}<button type="button" class="chip${stockNonZero ? ' is-on' : ''}" data-nz="1">Есть на складе</button>`);
     const list = Cake.stock.filter(i=>(!q || nameKey(i).includes(q)) && (!stockCat || i.cat === stockCat) && (!stockNonZero || i.qty > 0));
     $('#stockList').innerHTML = list.length ? String(byCat(list, i=>html`<button class="row" type="button" data-p="${i.id}">
-      <span class="row-main"><span class="row-title">${Kit.nobr(i.name)} <span class="hint nowrap">${W(i.weightG)}</span></span>
+      ${thumb(i)}<span class="row-main"><span class="row-title">${Kit.nobr(i.name)} <span class="hint nowrap">${W(i.weightG)}</span></span>
         <span class="row-sub">${i.lastIn ? 'приход ' + D.label(i.lastIn).toLowerCase() : 'прихода не было'}${i.onRoad ? ' · в пути ' + i.onRoad : ''}</span></span>
       <span class="row-end"><span class="qty${i.minQty && i.qty < i.minQty ? ' is-low' : ''}">${num(i.qty)}<span class="qty-unit">шт</span></span>
         ${i.minQty && i.qty < i.minQty ? html`<span class="pill pill-danger">мало</span>` : ''}</span>
@@ -31,7 +31,7 @@
   function openProduct(i){
     if(!i) return;
     const sh = Kit.sheet({title:L(i.id), sub:`${i.cat} · на складе ${pcs(i.qty)}`, body: html`
-      <div class="kv"><span class="k">Срок годности</span><span class="v">${i.shelfDays ? Kit.plural(i.shelfDays, 'сутки', 'суток', 'суток') : '—'}</span></div>
+      ${photoBig(i)}<div class="kv"><span class="k">Срок годности</span><span class="v">${i.shelfDays ? Kit.plural(i.shelfDays, 'сутки', 'суток', 'суток') : '—'}</span></div>
       <div class="kv"><span class="k">Минимальный остаток</span><span class="v">${i.minQty || '—'}</span></div>
       <div class="kv"><span class="k">В пути</span><span class="v">${pcs(i.onRoad)}</span></div>
       <div class="section"><div class="eyebrow" style="margin-bottom:8px">Действие</div>
