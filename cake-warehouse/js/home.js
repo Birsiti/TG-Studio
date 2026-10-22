@@ -1,4 +1,4 @@
-// изменено 2026-10-22 17:10
+// изменено 2026-10-22 17:05
 /* Главная (кнопка «Открыть» в боте @Milano_BY_Bot): витрина «Милано» — герой с тортом, лента тортов,
    «Сделать заказ» (оптовая витрина) и «Я сотрудник Милано» (входы по ролям).
    Сотрудник, добавленный в «Люди», сразу попадает на свой экран; руководитель после «Я сотрудник» выбирает вход сам.
@@ -37,7 +37,7 @@
     const me = await api('getMe');
     if(me.ok && me.staff && ROLE_PAGE[me.staff.role]){ location.replace(ROLE_PAGE[me.staff.role]); return; }
     const name = Kit.user.firstName;
-    const strip = STRIP.concat(STRIP).map(([f, t])=>html`<figure><img src="img/cakes/${f}.jpg" alt="" loading="lazy"><figcaption>${t}</figcaption></figure>`);
+    const strip = STRIP.concat(STRIP).map(([f, t])=>html`<figure><img src="img/cakes/${f}.jpg" alt="" decoding="async"><figcaption>${t}</figcaption></figure>`);
 
     const first = ()=>{ $('#view').innerHTML = String(html`<div class="home">
       <section class="hero">
