@@ -1,50 +1,61 @@
-/* изменено 2026-10-22 01:15 */
+/* изменено 2026-10-22 17:00 */
 /* ============================================================
-   ТОРТОВОЗ — фирменный слой поверх kit/base.css.
-   Характер: кондитерский склад с холодовой цепью. Шоколад и сливки,
-   малиновый акцент, мятный «холод». Округлый Montserrat Alternates,
-   моноширинные коды городов как на транспортной бирке, термо-плашка
-   «+2…+6 °C», рейс — накладная с отрывной линией.
+   МИЛАНО — фирменный слой поверх kit/base.css (22.10.2026, редизайн под заказчика).
+   Стиль сайта milano.by «сладкий праздник»: глубокий синий #01233E, малиновый #E52057,
+   сливочный фон, Playfair Display в заголовках, Open Sans в тексте. Фото тортов — на белом,
+   как на тарелке. Логотип — img/milano-logo.svg (с сайта заказчика).
    ============================================================ */
-@import url('https://fonts.googleapis.com/css2?family=Montserrat+Alternates:wght@600;700&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700;6..12,800&family=Space+Mono:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600;1,700&family=Open+Sans:wght@400;600;700;800&family=Space+Mono:wght@400;700&display=swap');
 
 :root{
-  --font-display:'Montserrat Alternates', 'Nunito Sans', sans-serif;
-  --font-body:'Nunito Sans', system-ui, sans-serif;
+  --font-display:'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-body:'Open Sans', system-ui, -apple-system, sans-serif;
   --font-mono:'Space Mono', ui-monospace, monospace;
   --display-weight:700;
-  --r-xl:24px; --r-lg:18px; --r-md:14px; --r-sm:10px;
-  --btn-radius:16px; --chip-radius:999px;
+  --display-track:0;
+  --r-xl:26px; --r-lg:20px; --r-md:14px; --r-sm:10px;
+  --btn-radius:14px; --chip-radius:999px;
   --cold:#2BB3A3;
+  --navy:#01233E; --navy-2:#0A3456; --berry:#E52057; --cream:#FBF6EF;
 }
 :root[data-theme="light"]{
-  --bg:#F7F1EA; --surface:#FFFCF8; --surface-2:#F0E7DC; --surface-3:#E6D9CA;
-  --ink:#2B1D18; --ink-2:#6E5A50; --ink-3:#A3918A;
-  --line:#EADFD2; --line-2:#D9C8B6;
-  --accent:#B3264E; --accent-2:#951E40; --accent-ink:#FFFFFF; --accent-soft:rgba(179,38,78,.09);
+  --bg:#FBF6EF; --surface:#FFFFFF; --surface-2:#F4ECE1; --surface-3:#EADFD0;
+  --ink:#0B2236; --ink-2:#55667A; --ink-3:#8C99A7;
+  --line:#ECE2D5; --line-2:#DDCDBA;
+  --accent:#E52057; --accent-2:#C4124A; --accent-ink:#FFFFFF; --accent-soft:rgba(229,32,87,.09);
   --ok:#1E7D5A; --ok-soft:rgba(30,125,90,.11);
-  --warn:#B06A00; --warn-soft:rgba(214,138,20,.15);
+  --warn:#A86200; --warn-soft:rgba(214,138,20,.14);
   --danger:#C42B2B; --danger-soft:rgba(196,43,43,.10);
+  --info:#0A3456; --info-soft:rgba(10,52,86,.08);
   --cold-soft:rgba(43,179,163,.13); --cold-ink:#137A6F;
-  --shadow-1:0 1px 2px rgba(43,29,24,.06), 0 2px 10px rgba(43,29,24,.04);
-  --shadow-2:0 18px 44px rgba(43,29,24,.22);
+  --hero-bg:linear-gradient(155deg,#0A3456 0%,#01233E 62%,#011829 100%); --hero-ink:#FBF6EF; --hero-ink-2:rgba(251,246,239,.74);
+  --plate-ring:rgba(1,35,62,.08);
+  --shadow-1:0 1px 2px rgba(11,34,54,.05), 0 4px 14px rgba(11,34,54,.05);
+  --shadow-2:0 20px 46px rgba(11,34,54,.20);
 }
 :root[data-theme="dark"]{
-  --bg:#18110F; --surface:#221917; --surface-2:#2C211E; --surface-3:#382B27;
-  --ink:#F6ECE4; --ink-2:#BFA99E; --ink-3:#7F6C64;
-  --line:#33261F; --line-2:#463631;
-  --accent:#FF6F96; --accent-2:#F0517D; --accent-ink:#2B0B15; --accent-soft:rgba(255,111,150,.14);
+  --bg:#06131F; --surface:#0D1F2F; --surface-2:#13293C; --surface-3:#1B3349;
+  --ink:#F7EFE6; --ink-2:#A9B7C5; --ink-3:#6D8093;
+  --line:#16304A; --line-2:#22405C;
+  --accent:#FF4D7E; --accent-2:#F0336A; --accent-ink:#FFFFFF; --accent-soft:rgba(255,77,126,.15);
   --ok:#4FCB97; --ok-soft:rgba(79,203,151,.14);
   --warn:#F2B44B; --warn-soft:rgba(242,180,75,.15);
   --danger:#FF7A6E; --danger-soft:rgba(255,122,110,.14);
+  --info:#8EC2F0; --info-soft:rgba(142,194,240,.12);
   --cold-soft:rgba(43,179,163,.16); --cold-ink:#5FDCCB;
+  --hero-bg:linear-gradient(155deg,#123E63 0%,#0A2A45 55%,#071B2C 100%); --hero-ink:#FBF6EF; --hero-ink-2:rgba(251,246,239,.72);
+  --plate-ring:rgba(255,255,255,.10);
   --shadow-1:none;
-  --shadow-2:0 18px 44px rgba(0,0,0,.6);
+  --shadow-2:0 20px 46px rgba(0,0,0,.6);
 }
 
-.brand-mark{ background:var(--accent); color:var(--accent-ink); border-radius:14px 14px 14px 4px; }
-.brand-name{ letter-spacing:.03em; }
-.page-title{ letter-spacing:-.01em; }
+/* Логотип «Милано» вместо значка; в шапке экранов — роль заголовком */
+.brand-mark{ width:78px; height:30px; border-radius:4px; background:url(img/milano-logo.svg) center/contain no-repeat; }
+.brand-mark .ic, .brand-mark svg{ display:none; }
+.brand-name{ display:none; }
+.brand-role{ font-family:var(--font-display); font-weight:700; font-size:19px; color:var(--ink); line-height:1.15; }
+.page-title{ letter-spacing:0; }
+h1, h2, h3, .page-title, .section-title, .stat-value, .fact b, .door-title, .brand-role{ font-variant-numeric:lining-nums proportional-nums; font-feature-settings:'lnum' 1; }
 .stat-value{ font-family:var(--font-display); }
 
 /* Термо-плашка холодовой цепи */
@@ -157,3 +168,81 @@
 .thumb{ width:44px; height:44px; border-radius:10px; object-fit:cover; flex:none; background:var(--surface-2, #eee); }
 .thumb-none{ display:inline-block; }
 .photo-big{ display:block; width:100%; max-height:260px; object-fit:cover; border-radius:14px; margin:0 0 12px; background:var(--surface-2, #eee); }
+
+/* ============ Главная (22.10, витрина для руководства «Милано») ============ */
+.home{ padding-top:4px; }
+.hero{ position:relative; overflow:hidden; margin:4px 0 0; padding:26px 22px 30px; border-radius:var(--r-xl);
+  background:var(--hero-bg); color:var(--hero-ink); box-shadow:var(--shadow-2); isolation:isolate; }
+.hero::before{ content:''; position:absolute; right:-70px; top:-70px; width:250px; height:250px; border-radius:50%;
+  border:1.5px solid rgba(229,32,87,.55); z-index:-1; }
+.hero::after{ content:''; position:absolute; right:-40px; top:-40px; width:190px; height:190px; border-radius:50%;
+  background:radial-gradient(circle at 40% 40%, rgba(255,255,255,.10), transparent 70%); z-index:-1; }
+.hero-top{ display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+.hero-plate{ flex:none; width:128px; height:128px; margin:-8px -8px 0 0; border-radius:50%; background:#fff; overflow:hidden;
+  box-shadow:0 0 0 6px rgba(255,255,255,.08), 0 16px 34px rgba(0,0,0,.35); animation:plateIn .7s var(--ease) both; }
+.hero-plate img{ width:100%; height:100%; object-fit:cover; transform:scale(1.08); }
+.hero-eyebrow span{ display:block; margin-top:8px; font-size:13px; letter-spacing:.16em; color:var(--hero-ink-2); }
+.hero-eyebrow{ padding-top:6px; font-size:13px; line-height:1.5; font-weight:700; letter-spacing:.16em; text-transform:uppercase; color:var(--berry); }
+:root[data-theme="dark"] .hero-eyebrow{ color:#FF7A9E; }
+.hero-title{ margin-top:16px; font-family:var(--font-display); font-weight:700; font-size:31px; line-height:1.12; color:var(--hero-ink); text-wrap:balance; }
+.hero-title em{ font-style:italic; color:#FF7A9E; font-weight:600; }
+.hero-sub{ clear:both; margin-top:14px; font-size:16px; line-height:1.5; color:var(--hero-ink-2); }
+@keyframes plateIn{ from{ opacity:0; transform:scale(.86) rotate(-8deg); } to{ opacity:1; transform:none; } }
+
+/* лента тортов */
+.cake-strip{ margin:18px calc(-1 * var(--gutter-r)) 0 calc(-1 * var(--gutter-l)); overflow:hidden;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); mask-image:linear-gradient(90deg,transparent,#000 8%,#000 92%,transparent); }
+.cake-track{ display:flex; gap:12px; width:max-content; padding:6px 12px 10px; animation:cakeRun 46s linear infinite; }
+.cake-track figure{ margin:0; width:92px; flex:none; text-align:center; }
+.cake-track img{ width:92px; height:92px; border-radius:50%; object-fit:cover; background:#fff; box-shadow:0 0 0 1px var(--plate-ring), var(--shadow-1); }
+.cake-track figcaption{ margin-top:6px; font-size:13px; line-height:1.25; color:var(--ink-2); }
+@keyframes cakeRun{ to{ transform:translateX(-50%); } }
+@media (prefers-reduced-motion: reduce){ .cake-track{ animation:none; } .cake-strip{ overflow-x:auto; } .hero-plate{ animation:none; } }
+
+/* входы */
+.doors{ display:grid; gap:12px; margin-top:14px; }
+.door{ position:relative; overflow:hidden; display:flex; align-items:center; gap:14px; width:100%; min-height:96px; padding:18px 18px; text-align:left;
+  border-radius:var(--r-lg); background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-1);
+  transition:transform .15s var(--ease); }
+.door:active{ transform:scale(.985); }
+.door-text{ flex:1; min-width:0; display:flex; flex-direction:column; gap:4px; position:relative; z-index:1; }
+.door-title{ font-family:var(--font-display); font-weight:700; font-size:22px; line-height:1.15; color:var(--ink); }
+.door-sub{ font-size:15px; line-height:1.4; color:var(--ink-2); }
+.door-ic{ flex:none; width:52px; height:52px; border-radius:16px; display:grid; place-items:center; background:var(--info-soft); color:var(--info); }
+.door-ic .ic{ width:26px; height:26px; }
+.door-go{ flex:none; width:40px; height:40px; border-radius:50%; display:grid; place-items:center; background:var(--surface-2); color:var(--ink); position:relative; z-index:1; }
+.door-go .ic{ width:20px; height:20px; }
+.door.is-main{ min-height:128px; background:linear-gradient(135deg,#F0336A 0%,#E52057 45%,#B8104A 100%); border:0; box-shadow:0 14px 30px rgba(229,32,87,.32); padding-right:120px; }
+.door.is-main .door-title{ color:#fff; font-size:25px; }
+.door.is-main .door-sub{ color:rgba(255,255,255,.88); }
+.door.is-main .door-go{ position:absolute; left:18px; bottom:16px; display:none; }
+.door-cake{ position:absolute; right:-18px; top:50%; width:132px; height:132px; margin-top:-66px; border-radius:50%; background:#fff; overflow:hidden;
+  box-shadow:0 0 0 5px rgba(255,255,255,.22), 0 10px 24px rgba(0,0,0,.25); }
+.door-cake img{ width:100%; height:100%; object-fit:cover; transform:scale(1.08); }
+.door-badge{ white-space:nowrap; align-self:flex-start; margin-top:6px; padding:4px 10px; border-radius:999px; background:rgba(255,255,255,.18); color:#fff; font-size:13px; font-weight:700; letter-spacing:.02em; }
+
+/* цифры */
+.facts{ display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; margin-top:14px; }
+.fact{ padding:14px 8px 12px; border-radius:var(--r-md); background:var(--surface); border:1px solid var(--line); text-align:center; }
+.fact b{ display:block; font-family:var(--font-display); font-size:24px; line-height:1.1; color:var(--accent); }
+.fact span{ display:block; margin-top:4px; font-size:13.5px; line-height:1.3; color:var(--ink-2); }
+.home-note{ margin-top:16px; text-align:center; font-size:14px; color:var(--ink-3); }
+
+/* сотрудники: входы плиткой */
+.staff-grid{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.staff-tile{ display:flex; flex-direction:column; align-items:flex-start; gap:10px; min-height:150px; padding:16px; text-align:left;
+  border-radius:var(--r-lg); background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-1); transition:transform .15s var(--ease); }
+.staff-tile:active{ transform:scale(.98); }
+.staff-tile .door-ic{ width:46px; height:46px; border-radius:14px; background:var(--accent-soft); color:var(--accent); }
+.staff-tile b{ font-family:var(--font-display); font-size:19px; line-height:1.15; }
+.staff-tile span{ font-size:14px; line-height:1.35; color:var(--ink-2); }
+.back-row{ display:flex; align-items:center; justify-content:center; gap:6px; width:100%; min-height:48px; margin-top:16px; border-radius:var(--r-md); color:var(--ink-2); font-weight:600; }
+.back-row:active{ background:var(--surface-2); }
+
+/* бейдж студии */
+.made-by{ display:flex; justify-content:center; margin:22px 0 4px; }
+.made-by a, .made-by button{ display:inline-flex; align-items:center; gap:8px; min-height:44px; padding:0 18px; border-radius:999px;
+  background:var(--navy); color:#fff; font-size:15px; font-weight:700; }
+:root[data-theme="dark"] .made-by a, :root[data-theme="dark"] .made-by button{ background:var(--surface-3); }
+.made-by svg{ width:16px; height:16px; }
+.made-by-year{ opacity:.75; font-weight:600; }
