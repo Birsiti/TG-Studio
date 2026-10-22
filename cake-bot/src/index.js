@@ -1,4 +1,4 @@
-// изменено 2026-10-18 11:00
+// изменено 2026-10-22 17:30
 // Точка входа. Держит процесс живым:
 // 1. long polling Telegram — отвечает на /start и /id кнопками Mini App;
 // 2. каждые WATCH_SECONDS проверяет рейсы и шлёт уведомления;
@@ -87,7 +87,7 @@ async function main() {
   else if (!st.botId) store.save({ botId: me.id });
   console.log(`Запуск @${me.username}. API ${config.apiUrl}, сводка "${config.digestCron}" (${config.timezone}).`);
   await presentBot();
-  await tg.call('setMyCommands', { commands: [{ command: 'start', description: 'Открыть склад' }, { command: 'id', description: 'Мой Telegram id' }] }).catch(() => {});
+  await tg.call('setMyCommands', { commands: [{ command: 'start', description: 'Открыть приложение' }, { command: 'id', description: 'Мой Telegram id' }] }).catch(() => {});
 
   await watchSafely();
   setInterval(watchSafely, config.watchSeconds * 1000);
