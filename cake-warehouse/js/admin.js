@@ -1,4 +1,4 @@
-// изменено 2026-10-22 23:40
+// изменено 2026-10-23 00:30
 /* Экран руководителя склада: сводка, смены, справочники. */
 (function(){
   "use strict";
@@ -120,10 +120,10 @@
   function openBoxes(){
     const list = REFS.products.filter(x=>x.active);
     const todo = ()=> list.filter(x=>!(x.perBox > 1)).length;
-    const row = x=> html`<div class="row" data-b="${x.id}"><span class="row-main"><span class="row-title">${Kit.nobr(x.name)}${x.weightG ? html` <span class="hint nowrap">${W(x.weightG)}</span>` : ''}</span></span>
+    const row = x=> html`<div class="row ${x.perBox > 1 ? 'box-ok' : 'box-todo'}" data-b="${x.id}"><span class="row-main"><span class="row-title">${Kit.nobr(x.name)}${x.weightG ? html` <span class="hint nowrap">${W(x.weightG)}</span>` : ''}</span></span>
       <input class="input" style="width:84px;flex:none;text-align:center;font-weight:700" type="number" inputmode="numeric" min="1" max="1000" placeholder="шт" aria-label="Штук в ящике: ${x.name}" value="${x.perBox > 1 ? x.perBox : ''}"></div>`;
     const sh = Kit.sheet({title:'Штук в ящике', sub:`не задано: ${todo()} из ${list.length}`,
-      body: html`<p class="hint">Впиши число — оно сохранится сразу. Не знаешь — оставь пустым.</p>
+      body: html`<p class="hint"><b style="color:var(--ok)">Зелёные</b> — число уже есть, <b style="color:var(--warn)">жёлтые</b> — не задано. Впиши число, оно сохранится сразу.</p>
         ${REFS.cats.map(c=> list.some(x=>x.cat === c) ? html`<div class="section"><div class="eyebrow" style="margin-bottom:8px">${c}</div><div class="list">${list.filter(x=>x.cat === c).map(row)}</div></div>` : '')}`});
     sh.el.addEventListener('change', async e=>{
       const r0 = e.target.closest('[data-b]'); if(!r0) return;
@@ -132,7 +132,7 @@
       if(v === x.perBox) return;
       const r = await api('saveProduct', {id:x.id, name:x.name, cat:x.cat, sku:x.sku || '', weightG:x.weightG || '', shelfDays:x.shelfDays || '', minQty:x.minQty || '', perBox:v, active:x.active});
       if(!r.ok){ fail(r); e.target.value = x.perBox > 1 ? x.perBox : ''; return; }
-      x.perBox = r.product.perBox; haptic('success');
+      x.perBox = r.product.perBox; r0.classList.toggle('box-ok', x.perBox > 1); r0.classList.toggle('box-todo', !(x.perBox > 1)); haptic('success');
       sh.el.querySelector('.sheet-sub').textContent = `не задано: ${todo()} из ${list.length}`;
     });
   }

@@ -1,4 +1,4 @@
-/* изменено 2026-10-22 17:00 */
+/* изменено 2026-10-23 00:30 */
 /* ============================================================
    МИЛАНО — фирменный слой поверх kit/base.css (22.10.2026, редизайн под заказчика).
    Стиль сайта milano.by «сладкий праздник»: глубокий синий #01233E, малиновый #E52057,
@@ -246,3 +246,8 @@ h1, h2, h3, .page-title, .section-title, .stat-value, .fact b, .door-title, .bra
 :root[data-theme="dark"] .made-by a, :root[data-theme="dark"] .made-by button{ background:var(--surface-3); }
 .made-by svg{ width:16px; height:16px; }
 .made-by-year{ opacity:.75; font-weight:600; }
+
+/* Экран «шт в ящике»: заполнено / не задано */
+.row.box-ok{ background:var(--ok-soft); }
+.row.box-todo{ background:var(--warn-soft); }
+.row.box-todo input{ border-color:var(--warn); }
