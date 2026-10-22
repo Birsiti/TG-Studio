@@ -1,4 +1,4 @@
-// изменено 2026-10-22 05:00
+// изменено 2026-10-22 06:40
 /* Главная (кнопка «Открыть» в боте): сначала выбор «Сделать заказ» (оптовая витрина) или «Я сотрудник Милано».
    Сотрудник, добавленный в «Люди», сразу попадает на свой экран; руководитель после «Я сотрудник» выбирает вход сам (22.10, Денис). */
 (function(){
@@ -13,6 +13,12 @@
     ['sklad.html', 'box', 'Кладовщик', 'Приход из файла, сборка заявок, отгрузка рейсом'],
     ['driver.html', 'truck', 'Водитель', 'Маршрут с адресами и картой, спидометр, возвраты']
   ];
+  // кто открыл демо — имя из Telegram уходит Денису в Спички (через сервер витрины)
+  try {
+    const u = window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user;
+    if (u && u.id) fetch('https://tort.tg-studio.xyz/api/visit', {method:'POST', mode:'no-cors', headers:{'Content-Type':'text/plain'},
+      body: JSON.stringify({id:u.id, name:[u.first_name, u.last_name].filter(Boolean).join(' '), username:u.username || '', src:'бот'})}).catch(()=>{});
+  } catch(e) {}
   const SHOP = 'https://tort.tg-studio.xyz/app?from=home';   // оптовая витрина: заказ уходит Денису в Телеграм
   const go = url=> location.replace(url + '?home=1');  // без лишней истории: «Назад» на экране возвращает сюда
 
@@ -22,7 +28,7 @@
     const name = Kit.user.firstName;
     const first = ()=>{ $('#view').innerHTML = String(html`
       <div class="page-head"><h1 class="page-title">${name ? name + ', добро пожаловать' : 'Добро пожаловать'}</h1>
-        <p class="page-sub">Торты и пирожные «Милано»</p></div>
+        <p class="page-sub">Торты и пирожные «Милано» · демо</p></div>
       <div class="list">
         <button class="row home-door" type="button" data-shop="1"><span class="avatar">${icon('box')}</span><span class="row-main"><span class="row-title">Сделать заказ</span><span class="row-sub">Каталог с ценами: укажите количество и отправьте заказ</span></span>${icon('right', 'row-chev')}</button>
         <button class="row home-door" type="button" data-staff="1"><span class="avatar">${icon('chart')}</span><span class="row-main"><span class="row-title">Я сотрудник Милано</span><span class="row-sub">Склад, рейсы, сборка заказов</span></span>${icon('right', 'row-chev')}</button>
