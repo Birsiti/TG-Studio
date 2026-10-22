@@ -1,4 +1,4 @@
-// изменено 2026-10-22 01:15
+// изменено 2026-10-22 23:40
 /* Экран руководителя склада: сводка, смены, справочники. */
 (function(){
   "use strict";
@@ -101,6 +101,8 @@
   function renderRefs(){
     $('#refSeg').innerHTML = String(html`${Object.keys(KINDS).map(k=>html`<button type="button" data-k="${k}" class="${k === kind ? 'is-on' : ''}">${KINDS[k].label}</button>`)}`);
     $('#refAdd').innerHTML = String(html`${icon('plus')}${KINDS[kind].add}`);
+    $('#refBoxes').hidden = kind !== 'products';
+    $('#refBoxes').innerHTML = String(html`${icon('truck')}Заполнить «шт в ящике»`);
     $('#refVisits').hidden = kind !== 'staff';
     $('#refVisits').innerHTML = String(html`${icon('users')}Кто заходит в бота`);
     const list = REFS[kind];
@@ -111,6 +113,29 @@
   Kit.on($('#refSeg'), 'click', '[data-k]', (e, el)=>{ kind = el.dataset.k; haptic('select'); renderRefs(); });
   $('#refAdd').addEventListener('click', ()=> editRef({active:true}));
   $('#refVisits').addEventListener('click', openVisits);
+  $('#refBoxes').addEventListener('click', openBoxes);
+
+  /* Быстрое заполнение «шт в ящике» (perBox): список по категориям, число в строке сохраняется сразу.
+     perBox = 1 считаем «не задано» (так по умолчанию); не знаешь — оставь пустым. */
+  function openBoxes(){
+    const list = REFS.products.filter(x=>x.active);
+    const todo = ()=> list.filter(x=>!(x.perBox > 1)).length;
+    const row = x=> html`<div class="row" data-b="${x.id}"><span class="row-main"><span class="row-title">${Kit.nobr(x.name)}${x.weightG ? html` <span class="hint nowrap">${W(x.weightG)}</span>` : ''}</span></span>
+      <input class="input" style="width:84px;flex:none;text-align:center;font-weight:700" type="number" inputmode="numeric" min="1" max="1000" placeholder="шт" aria-label="Штук в ящике: ${x.name}" value="${x.perBox > 1 ? x.perBox : ''}"></div>`;
+    const sh = Kit.sheet({title:'Штук в ящике', sub:`не задано: ${todo()} из ${list.length}`,
+      body: html`<p class="hint">Впиши число — оно сохранится сразу. Не знаешь — оставь пустым.</p>
+        ${REFS.cats.map(c=> list.some(x=>x.cat === c) ? html`<div class="section"><div class="eyebrow" style="margin-bottom:8px">${c}</div><div class="list">${list.filter(x=>x.cat === c).map(row)}</div></div>` : '')}`});
+    sh.el.addEventListener('change', async e=>{
+      const r0 = e.target.closest('[data-b]'); if(!r0) return;
+      const x = list.find(y=>y.id === r0.dataset.b), v = parseInt(e.target.value, 10);
+      if(!(v >= 1 && v <= 1000)){ e.target.value = x.perBox > 1 ? x.perBox : ''; return; }
+      if(v === x.perBox) return;
+      const r = await api('saveProduct', {id:x.id, name:x.name, cat:x.cat, sku:x.sku || '', weightG:x.weightG || '', shelfDays:x.shelfDays || '', minQty:x.minQty || '', perBox:v, active:x.active});
+      if(!r.ok){ fail(r); e.target.value = x.perBox > 1 ? x.perBox : ''; return; }
+      x.perBox = r.product.perBox; haptic('success');
+      sh.el.querySelector('.sheet-sub').textContent = `не задано: ${todo()} из ${list.length}`;
+    });
+  }
 
   /* Кто заходит: все, кто писал боту или открывал приложение, и последние входы */
   const WHERE = {bot:'бот', sklad:'склад', admin:'сводка', driver:'водитель'};
