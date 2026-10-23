@@ -1,4 +1,4 @@
-// изменено 2026-10-18 13:30
+// изменено 2026-10-23 05:00
 /* Вкладка «Сборка»: заявки на дату и лист с галочками в порядке обхода склада
    (по часовой стрелке от двери). Сейчас — по заявке, со следующей недели — весь маршрут за круг. */
 (function(){
@@ -38,7 +38,7 @@
     const list = PK.orders.filter(o=>!PK.route || o.route === PK.route);
     if(PK.route && PK.mode === 'route'){
       const free = list.filter(o=>!o.tripId), ready = free.length && free.every(o=>o.status === 'picked');
-      $('#pkList').innerHTML = String(html`${routeSheet(free)}${free.length < list.length ? html`<p class="hint">Уже в рейсе: ${list.filter(o=>o.tripId).map(o=>'№' + o.num).join(', ')} — в лист не входят.</p>` : ''}${free.length ? html`<button class="btn ${ready ? 'btn-primary' : 'btn-ghost'} btn-block section" type="button" data-ship>${icon('truck')}${ready ? 'Отгрузить маршрут водителю' : `Собрано ${free.length - free.filter(o=>o.status !== 'picked').length} из ${free.length} — отгрузка после сборки`}</button>` : html`<p class="hint section">Все заявки маршрута уже в рейсе — смотрите вкладку «Рейсы».</p>`}`);
+      $('#pkList').innerHTML = String(html`${list.length ? html`<button class="btn btn-ghost btn-block" type="button" data-load style="margin-bottom:12px">${icon('layers')}Погрузка: кузов и маршрут</button>` : ''}${routeSheet(free)}${free.length < list.length ? html`<p class="hint">Уже в рейсе: ${list.filter(o=>o.tripId).map(o=>'№' + o.num).join(', ')} — в лист не входят.</p>` : ''}${free.length ? html`<button class="btn ${ready ? 'btn-primary' : 'btn-ghost'} btn-block section" type="button" data-ship>${icon('truck')}${ready ? 'Отгрузить маршрут водителю' : `Собрано ${free.length - free.filter(o=>o.status !== 'picked').length} из ${free.length} — отгрузка после сборки`}</button>` : html`<p class="hint section">Все заявки маршрута уже в рейсе — смотрите вкладку «Рейсы».</p>`}`);
       return;
     }
     const open = list.filter(o=>o.status === 'new' && !o.tripId).length;
@@ -154,6 +154,7 @@
     if(!r.ok){ fail(r); return; }
     haptic('success'); Kit.toast(`Отмечено собранными: ${r.done}`, 'ok'); PK.reload();
   });
+  Kit.on($('#pkList'), 'click', '[data-load]', ()=> location.href = `pogruzka.html?date=${PK.date}&route=${encodeURIComponent(PK.route)}`);
   Kit.on($('#pkList'), 'click', '[data-ship]', ()=> Cake.shipRoute(PK.orders.filter(o=>o.route === PK.route && !o.tripId)));
 
   Cake.tabs.pick = renderPick;
