@@ -1,0 +1,45 @@
+<!-- изменено 2026-10-23 05:00 -->
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Милано — погрузка</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="../kit/core.js?v=2610230450"></script>
+<link rel="stylesheet" href="../kit/base.css?v=2610230450">
+<link rel="stylesheet" href="brand.css?v=2610230450">
+<script src="mock-data.js?v=2610230450"></script>
+<script src="mock.js?v=2610230450"></script>
+<script src="mock-orders.js?v=2610230450"></script>
+<script src="mock-picking.js?v=2610230450"></script>
+<script src="mock-stops.js?v=2610230450"></script>
+<script src="mock-drivers.js?v=2610230450"></script>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark" id="mark"></div><div class="brand-text"><span class="brand-name">Милано</span><span class="brand-role">Погрузка</span></div></div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="cfgBtn" type="button" aria-label="Размеры кузова и ящика"></button>
+      <button class="icon-btn" type="button" data-theme-toggle aria-label="Оформление"></button>
+    </div>
+  </header>
+  <div id="modeNote"></div>
+  <div class="page-head"><h1 class="page-title">Маршрут и кузов</h1><p class="page-sub" id="ldSub">Порядок объезда, раскладка ящиков и лист для водителя</p></div>
+  <div class="chips scroll" id="ldDates"></div>
+  <div class="chips scroll" id="ldRoutes" style="margin-top:8px"></div>
+  <div class="seg seg-4 section" id="ldSeg">
+    <button type="button" data-v="route">Маршрут</button><button type="button" data-v="body">Кузов</button><button type="button" data-v="stops">Точки</button><button type="button" data-v="boxes">Ящики</button>
+  </div>
+  <div class="section" id="ldView"></div>
+</div>
+
+<script src="js/maps.js?v=2610230450"></script>
+<script src="js/cake-photos.js?v=2610230450"></script>
+<script src="js/common.js?v=2610230450"></script>
+<script src="js/geo-points.js?v=2610230450"></script>
+<script src="js/load-plan.js?v=2610230450"></script>
+<script src="js/pogruzka.js?v=2610230450"></script>
+</body>
+</html>
