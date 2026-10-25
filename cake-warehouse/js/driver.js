@@ -31,6 +31,7 @@
 
   function render(){
     if(!ME){ return renderPick(); }
+    if(!restricted){ Kit.back.pop(toPick); Kit.back.push(toPick); }
     const active = TRIPS.filter(t=>/draft|shipped|reported/.test(t.status));
     const done = TRIPS.filter(t=>t.status === 'closed');
     $('#view').innerHTML = String(html`
@@ -90,7 +91,9 @@
   }
 
   Kit.on($('#view'), 'click', '[data-pick]', (e, el)=>{ Kit.store(PICK_KEY, el.dataset.pick); haptic('select'); load(); });
-  Kit.on($('#view'), 'click', '#swap', ()=>{ ME = null; Kit.store(PICK_KEY, ''); renderPick(); });
+  Kit.on($('#view'), 'click', '#swap', ()=> toPick());
+  // Выбранный водитель (демо, руководитель) — «Назад» сначала возвращает к списку водителей, потом в меню
+  function toPick(){ Kit.back.pop(toPick); ME = null; Kit.store(PICK_KEY, ''); renderPick(); }
   Kit.on($('#view'), 'click', '[data-t]', (e, el)=> openTrip(TRIPS.find(x=>x.id === el.dataset.t)));
 
   function openTrip(t){
