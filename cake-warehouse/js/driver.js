@@ -1,4 +1,4 @@
-// изменено 2026-10-25 17:00
+// изменено 2026-10-25 17:20
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
@@ -21,7 +21,7 @@
     const refs = await api('getRefs'), me = await api('getMe');  // по очереди: первый ответ решает, сервер или демо
     if(api.mode() === 'demo') $('#modeNote').innerHTML = String(html`<p class="mode-note">Демо-версия: данные примерные и хранятся только в этом телефоне.</p>`);
     if(!refs.ok){ $('#view').innerHTML = String(html`<div class="empty">${icon('lock')}<div class="empty-title">Нет доступа</div>Попросите кладовщика добавить ваш Telegram в список водителей</div>`); return; }
-    REFS = refs; boss = me.ok && me.restricted && me.role === 'admin'; restricted = me.ok && me.restricted && !boss;  // руководитель выбирает водителя и смотрит его экран
+    REFS = refs; boss = me.ok && me.role === 'admin'; restricted = me.ok && me.restricted && !boss;  // руководитель выбирает водителя и смотрит его экран
     if(!load.hello){ load.hello = true; api('hello', {page:'driver'}); }  // журнал «кто заходит»
     const picked = Kit.store(PICK_KEY);
     const r = await api('getMyTrips', {driverId:(me.ok && me.staff) ? undefined : picked || undefined});
@@ -34,14 +34,43 @@
     const active = TRIPS.filter(t=>/draft|shipped|reported/.test(t.status));
     const done = TRIPS.filter(t=>t.status === 'closed');
     $('#view').innerHTML = String(html`
-      <div class="page-head"><h1 class="page-title">${ME.name.split(' ')[0]}, привет</h1>
-        <p class="page-sub">${ME.car || 'Машина не указана'} ${restricted ? '' : html`· <button class="link-btn" type="button" id="swap">сменить водителя</button>`}</p></div>
-      <p><span class="thermo">+2…+6 °C в кузове</span></p>
-      ${DEBT.length ? html`<div class="card section" style="display:flex;align-items:center;gap:12px">${icon('layers')}<span style="flex:1">Ящиков на руках — верните на склад</span><span class="qty is-low">${DEBT.reduce((a, d)=>a + d.qty, 0)}</span></div>` : ''}
+      <div class="page-head"><h1 class="page-title">${boss ? ME.name : ME.name.split(' ')[0] + ', привет'}</h1>
+        <p class="page-sub">${ME.car || 'Машина не указана'}${boss ? (ME.hired ? ' · наёмный' + (ME.carrier ? ' (' + ME.carrier + ')' : '') : ' · своя машина') : ''} ${restricted ? '' : html`· <button class="link-btn" type="button" id="swap">сменить водителя</button>`}</p></div>
+      ${boss ? html`<div class="section" id="drvStats"></div>` : html`<p><span class="thermo">+2…+6 °C в кузове</span></p>`}
+      ${DEBT.length && !boss ? html`<div class="card section" style="display:flex;align-items:center;gap:12px">${icon('layers')}<span style="flex:1">Ящиков на руках — верните на склад</span><span class="qty is-low">${DEBT.reduce((a, d)=>a + d.qty, 0)}</span></div>` : ''}
       <div class="section"><div class="section-head"><h2 class="section-title">Текущие рейсы</h2></div>
         ${active.length ? active.map(card) : html`<div class="empty">${icon('truck')}<div class="empty-title">Рейсов нет</div>Склад ещё не назначил вам рейс</div>`}</div>
       ${done.length ? html`<div class="section"><div class="section-head"><h2 class="section-title">Последние</h2></div>${done.slice(0, 8).map(card)}</div>` : ''}`);
+    if(boss) renderStats();
   }
+  /* Руководитель открыл водителя — сверху его статистика за период (getDriverStats, как во вкладке «Водители» сводки) */
+  let statDays = 30;
+  async function renderStats(){
+    const box = $('#drvStats'); if(!box || !ME) return;
+    const to = D.today(), r = await api('getDriverStats', {from:D.add(to, -(statDays - 1)), to});
+    if(!$('#drvStats')) return;
+    const s = (r.ok && r.drivers.find(x=>x.driverId === ME.id)) || {trips:0, points:0, km:0, kmGap:0, noOdo:0, shipped:0, back:0, spoiled:0, shortage:0, taraDebt:DEBT.reduce((a, x)=>a + x.qty, 0)};
+    const ret = s.back + s.spoiled, pct = s.shipped ? Math.round(100 * ret / s.shipped) : 0;
+    const perTrip = s.trips - s.noOdo ? Math.round(s.km / (s.trips - s.noOdo)) : 0;
+    const row = (k, v, warn)=> html`<div class="kv"><span class="k">${k}</span><span class="v mono${warn ? ' is-low' : ''}">${v}</span></div>`;
+    $('#drvStats').innerHTML = String(html`
+      <div class="section-head"><h2 class="section-title">Статистика</h2></div>
+      <div class="chips scroll" id="drvDays">${[[7, '7 дней'], [30, '30 дней'], [90, '3 месяца']].map(([n, t])=>html`<button class="chip${n === statDays ? ' is-on' : ''}" type="button" data-sd="${n}">${t}</button>`)}</div>
+      <div class="stats section">
+        <div class="stat"><div class="stat-label">Рейсов</div><div class="stat-value">${num(s.trips)}</div><div class="stat-delta">точек ${num(s.points)}</div></div>
+        <div class="stat"><div class="stat-label">Пробег</div><div class="stat-value">${num(s.km)}</div><div class="stat-delta">км${perTrip ? ' · ' + num(perTrip) + ' на рейс' : ''}</div></div>
+        <div class="stat"><div class="stat-label">Отгружено</div><div class="stat-value">${num(s.shipped)}</div><div class="stat-delta">шт тортов</div></div>
+        <div class="stat"><div class="stat-label">Возвраты</div><div class="stat-value">${num(ret)}</div><div class="stat-delta ${pct >= 10 ? 'down' : ''}">${pct}% · брак ${num(s.spoiled)}</div></div>
+      </div>
+      <div class="card section">
+        ${row('Недостача по отчётам', s.shortage ? num(s.shortage) + ' шт' : 'нет', s.shortage > 0)}
+        ${row('Ящики на руках', num(s.taraDebt), s.taraDebt > 0)}
+        ${s.kmGap ? row('Пробег между рейсами', num(s.kmGap) + ' км', s.kmGap > s.km * 0.1) : ''}
+        ${s.noOdo ? row('Рейсов без спидометра', String(s.noOdo), true) : ''}
+      </div>`);
+  }
+  Kit.on($('#view'), 'click', '[data-sd]', (e, el)=>{ statDays = +el.dataset.sd; haptic('select'); renderStats(); });
+
   function card(t){
     const c = C(t.cityId), st = ST[t.status], total = t.lines.reduce((s, l)=>s + l.qty, 0);
     return html`<div class="waybill"><button class="waybill-head" type="button" data-t="${t.id}">
