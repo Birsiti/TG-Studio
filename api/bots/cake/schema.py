@@ -70,7 +70,7 @@ CREATE INDEX IF NOT EXISTS co_date ON orders(date, route);
 
 MOVE_TYPES = {"in": "Приход", "ship": "Отгрузка", "return": "Возврат", "writeoff": "Списание", "adjust": "Инвентаризация"}
 TRIP_STATUSES = ("draft", "shipped", "reported", "closed", "cancelled")
-ROLES = ("storekeeper", "logist", "driver")  # логист — права склада, свой экран logist.html
+ROLES = ("manager", "storekeeper", "logist", "driver")  # руководитель — права как у TGS_CAKE_ADMINS; логист — права склада, свой экран logist.html
 ORDER_STATUSES = ("new", "picked")  # собирается → собрано
 MAX_LINES = 150
 MAX_QTY = 100000

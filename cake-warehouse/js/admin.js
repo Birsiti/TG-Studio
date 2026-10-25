@@ -1,4 +1,4 @@
-// изменено 2026-10-25 12:40
+// изменено 2026-10-25 17:40
 /* Экран руководителя склада: сводка, смены, справочники. */
 (function(){
   "use strict";
@@ -8,7 +8,7 @@
   $('#refreshBtn').innerHTML = icon('refresh');
   $$('[data-ic]').forEach(el=> el.outerHTML = String(icon(el.dataset.ic)));
 
-  const ROLE = {storekeeper:'Кладовщик', logist:'Логист', driver:'Водитель'};
+  const ROLE = {manager:'Руководитель', storekeeper:'Кладовщик', logist:'Логист', driver:'Водитель'};
   let REFS = {products:[], cities:[], staff:[], tara:[]};
   let SIGNUPS = [];   // заявки «Я сотрудник Милано», ждут решения
   const fail = r=> { Kit.toast(r.message || 'Не получилось', 'error'); haptic('error'); };
@@ -88,7 +88,7 @@
     staff:{label:'Люди', add:'Новый сотрудник', save:'saveStaff', key:'staff',
       sub:x=>`${ROLE[x.role]}${x.role === 'driver' ? (x.hired ? ' · наёмный' + (x.carrier ? ' (' + x.carrier + ')' : '') : ' · свой') : ''}${x.car ? ' · ' + x.car : ''}${x.tgId ? ' · TG ' + x.tgId : ''}`,
       fields:x=>html`<label class="field"><span class="field-label">Имя и фамилия</span><input class="input" name="name" maxlength="80" value="${x.name || ''}"></label>
-        <div class="seg section" id="fRole">${Object.keys(ROLE).map(k=>html`<button type="button" data-v="${k}" class="${(x.role || 'driver') === k ? 'is-on' : ''}">${ROLE[k]}</button>`)}</div>
+        <div class="seg seg-4 section" id="fRole">${Object.keys(ROLE).map(k=>html`<button type="button" data-v="${k}" class="${(x.role || 'driver') === k ? 'is-on' : ''}">${ROLE[k]}</button>`)}</div>
         <div class="field section"><span class="field-label">Телефон</span><div id="fPhone"></div></div>
         <div class="section" id="fCarBox"${(x.role || 'driver') === 'driver' ? '' : Kit.raw(' hidden')}><span class="field-label">Чья машина</span>
           <div class="seg" id="fHired"><button type="button" data-v="0" class="${x.hired ? '' : 'is-on'}">Своя (фирмы)</button><button type="button" data-v="1" class="${x.hired ? 'is-on' : ''}">Наёмный</button></div>
@@ -148,7 +148,7 @@
         <span class="row-main"><span class="row-title">${s.lastName} ${s.firstName}${s.username ? html` <span class="hint">@${s.username}</span>` : ''}</span>
           <span class="row-sub">${s.phone}${s.phoneOk ? ' · из Telegram' : html` · <b style="color:var(--warn)">введён вручную</b>`}</span>
           <span class="row-sub">id ${s.tgId} · ${at(s.createdAt)}</span></span></div>
-      <div class="seg section">${['storekeeper', 'logist', 'driver'].map(k=>html`<button type="button" data-role="${k}">${ROLE[k]}</button>`)}</div>
+      <div class="seg seg-4 section">${['manager', 'storekeeper', 'logist', 'driver'].map(k=>html`<button type="button" data-role="${k}">${ROLE[k]}</button>`)}</div>
       <button class="btn btn-ghost btn-block section" type="button" data-no="1">Отказать</button></div>`;
     const sh = Kit.sheet({title:'Заявки сотрудников', sub:'Выберите роль — человек получит допуск', body: html`<div id="sgList"></div>`});
     const draw = ()=>{ sh.$('#sgList').innerHTML = String(SIGNUPS.length ? html`${SIGNUPS.map(card)}` : html`<div class="empty">${icon('users')}<div class="empty-title">Заявок нет</div>Здесь появятся новые сотрудники</div>`); };

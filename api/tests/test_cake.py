@@ -321,3 +321,28 @@ def test_signup_and_access(api, monkeypatch):
     assert mine(4403, "signup", lastName="Сидоров", firstName="Сидор", phone="+375441234567")["error"] == "forbidden"
     assert "4401" not in {x["tgId"] for x in adm("getSignups")["signups"]}
     assert api("cake", "getSignups", user=None, serviceKey="s3cret-key-for-bot")["ok"]  # бот читает список со служебным ключом
+
+
+def test_manager_role_and_delete(api, monkeypatch):
+    """Руководитель из заявки — права как у TGS_CAKE_ADMINS; повторное решение отклоняется; удаление сотрудника."""
+    tok = "123456:TEST-token"
+    monkeypatch.setenv("TGS_CAKE_BOT_TOKEN", tok)
+    monkeypatch.setenv("TGS_CAKE_ADMINS", "111")
+    monkeypatch.setenv("TGS_CAKE_SERVICE_KEY", "s3cret-key-for-bot")
+    mine = lambda uid, act, **kw: api("cake", act, user=None, initData=_signed(tok, uid), **kw)
+    bot = lambda act, **kw: api("cake", act, user=None, serviceKey="s3cret-key-for-bot", **kw)
+    mine(5501, "signup", lastName="Главный", firstName="Пётр", phone="+375291000001")
+    mine(5502, "signup", lastName="Новый", firstName="Иван", phone="+375291000002")
+    m = bot("decideSignup", tgId="5501", role="manager")["staff"]  # кнопка в Telegram — бот со служебным ключом
+    assert m["role"] == "manager" and bot("decideSignup", tgId="5501", role="driver")["error"] == "conflict"
+    me = mine(5501, "getMe")
+    assert me["access"] and me["role"] == "admin" and me["staff"]["role"] == "manager"
+    assert mine(5501, "getSignups")["ok"] and mine(5501, "getVisits")["ok"]  # руководитель видит всё
+    d = mine(5501, "decideSignup", tgId="5502", role="driver")["staff"]
+    assert mine(5502, "getMyTrips")["ok"] and mine(5502, "getStock")["error"] == "forbidden"
+    assert mine(5502, "deleteStaff", id=m["id"])["error"] == "forbidden"
+    assert mine(5501, "deleteStaff", id=m["id"])["error"] == "bad_request"  # себя нельзя
+    assert mine(5501, "deleteStaff", id=d["id"])["ok"]
+    me = mine(5502, "getMe")
+    assert me["access"] is False and me["signup"] is None  # можно зарегистрироваться заново
+    assert mine(5502, "getMyTrips")["error"] == "forbidden"

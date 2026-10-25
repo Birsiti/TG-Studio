@@ -1,6 +1,6 @@
-# изменено 2026-10-25 12:00
+# изменено 2026-10-25 17:00
 """Заявки «Я сотрудник Милано»: человек оставляет фамилию, имя и телефон из Telegram,
-руководитель даёт роль (кладовщик, логист, водитель) или отказывает.
+руководитель даёт роль (руководитель, логист, кладовщик, водитель) — в приложении или кнопкой в Telegram или отказывает.
 Допуска нет, пока руководитель не решил: signup/getMe открыты всем, остальное — по роли (base._guard)."""
 from __future__ import annotations
 
@@ -83,6 +83,8 @@ def decide_signup(ctx: Ctx, p: dict) -> dict:
     su = one(ctx.conn, "SELECT * FROM signups WHERE tg_id=?", (tg,))
     if not su:
         raise ApiError("not_found", "Заявки нет")
+    if su["status"] != "pending":
+        raise ApiError("conflict", "По этой заявке уже решили")
     if v_bool(p, "reject", default=False):
         ctx.conn.execute("UPDATE signups SET status='rejected', decided_at=? WHERE tg_id=?", (iso_now(), tg))
         return {"staff": None}
@@ -97,3 +99,20 @@ def decide_signup(ctx: Ctx, p: dict) -> dict:
         ctx.conn.execute("INSERT INTO staff(id,name,role,phone,tg_id,active) VALUES(?,?,?,?,?,1)", (sid, name, role, su["phone"], tg))
     ctx.conn.execute("UPDATE signups SET status='approved', decided_at=? WHERE tg_id=?", (iso_now(), tg))
     return {"staff": _staff(one(ctx.conn, "SELECT * FROM staff WHERE id=?", (sid,)))}
+
+
+@action("deleteStaff", write=True)
+def delete_staff(ctx: Ctx, p: dict) -> dict:
+    """Руководитель: удалить сотрудника. Его заявка тоже стирается — он сможет зарегистрироваться заново.
+    Рейсы и ящики за ним остаются в журнале. Себя удалить нельзя — иначе можно остаться без руководителя."""
+    sid = v_id(p, "id")
+    s = one(ctx.conn, "SELECT * FROM staff WHERE id=?", (sid,))
+    if not s:
+        raise ApiError("not_found", "Нет такого сотрудника")
+    if s["tg_id"] and s["tg_id"] == ctx.user:
+        raise ApiError("bad_request", "Себя удалить нельзя")
+    ctx.conn.execute("DELETE FROM staff WHERE id=?", (sid,))
+    ctx.conn.execute("DELETE FROM shifts WHERE staff_id=?", (sid,))
+    if s["tg_id"]:
+        ctx.conn.execute("DELETE FROM signups WHERE tg_id=?", (s["tg_id"],))
+    return {"id": sid}

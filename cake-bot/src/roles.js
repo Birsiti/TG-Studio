@@ -1,13 +1,13 @@
-// изменено 2026-10-18 12:00
+// изменено 2026-10-25 17:00
 // Кто пишет боту и какие кнопки ему показать.
 
-const ROLE_RU = { admin: 'Руководитель', storekeeper: 'Кладовщик', logist: 'Логист', driver: 'Водитель' };
+const ROLE_RU = { admin: 'Руководитель', manager: 'Руководитель', storekeeper: 'Кладовщик', logist: 'Логист', driver: 'Водитель' };
 
 function roleOf(tgId, staff, adminIds) {
   const id = String(tgId);
   if (adminIds.includes(id)) return 'admin';
   const s = staff.find((x) => x.active && String(x.tgId) === id);
-  return s ? s.role : null;
+  return s ? (s.role === 'manager' ? 'admin' : s.role) : null;  // руководитель из «Людей» = руководитель из ADMIN_IDS
 }
 
 function staffName(tgId, staff) {
@@ -25,4 +25,9 @@ function idsOf(staff, role) {
   return staff.filter((s) => s.active && s.role === role && s.tgId).map((s) => String(s.tgId));
 }
 
-module.exports = { ROLE_RU, roleOf, staffName, menuButton, idsOf };
+// Кому слать «руководителю»: ADMIN_IDS из .env и сотрудники с ролью «руководитель»
+function bossIds(staff, adminIds) {
+  return [...new Set(adminIds.map(String).concat(idsOf(staff || [], 'manager')))];
+}
+
+module.exports = { ROLE_RU, roleOf, bossIds, staffName, menuButton, idsOf };

@@ -1,4 +1,4 @@
-// изменено 2026-10-22 17:30
+// изменено 2026-10-25 17:00
 // Точка входа. Держит процесс живым:
 // 1. long polling Telegram — отвечает на /start и /id кнопками Mini App;
 // 2. каждые WATCH_SECONDS проверяет рейсы и шлёт уведомления;
@@ -9,7 +9,7 @@ const cron = require('node-cron');
 const config = require('./config');
 const tg = require('./telegram');
 const store = require('./store');
-const { handleMessage } = require('./commands');
+const { handleMessage, handleCallback } = require('./commands');
 const { checkTrips } = require('./watch');
 const { runDigestJob } = require('./digest-job');
 const { menuButton } = require('./roles');
@@ -23,12 +23,13 @@ async function pollUpdates() {
   let backoff = 1000;
   while (!stopping) {
     try {
-      const updates = await tg.call('getUpdates', { offset, timeout: 50, allowed_updates: ['message'] }, 60000);
+      const updates = await tg.call('getUpdates', { offset, timeout: 50, allowed_updates: ['message', 'callback_query'] }, 60000);
       backoff = 1000;
       for (const u of updates) {
         offset = u.update_id + 1;
         try {
-          await handleMessage(u.message);
+          if (u.callback_query) await handleCallback(u.callback_query);
+          else await handleMessage(u.message);
         } catch (err) {
           console.error('[bot] ошибка ответа:', err.message);
         }

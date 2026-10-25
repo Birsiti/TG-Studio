@@ -1,11 +1,11 @@
-// изменено 2026-10-25 12:45
+// изменено 2026-10-25 17:00
 // Раз в WATCH_SECONDS смотрим рейсы и заявки и рассылаем уведомления о переходах.
 const config = require('./config');
 const tg = require('./telegram');
 const { api, refs } = require('./api');
 const store = require('./store');
 const { diffTrips, diffOrders } = require('./events');
-const { idsOf } = require('./roles');
+const { idsOf, bossIds } = require('./roles');
 const texts = require('./texts');
 
 // Оставить прошлый статус — тогда событие сработает снова
@@ -27,7 +27,7 @@ async function checkTrips() {
     if (kind === 'shipped') {
       ok = await tg.sendMany(tgOf(trip.driverId), texts.shippedForDriver(trip, L));
     } else if (kind === 'reported') {
-      const to = idsOf(r.staff, 'storekeeper').concat(idsOf(r.staff, 'logist'), config.adminIds);
+      const to = idsOf(r.staff, 'storekeeper').concat(idsOf(r.staff, 'logist'), bossIds(r.staff, config.adminIds));
       ok = await tg.sendMany(to, texts.reportedForStore(trip, L));
     } else if (kind === 'closed') {
       ok = await tg.sendMany(tgOf(trip.driverId), texts.closedForDriver(trip, L));
@@ -52,7 +52,7 @@ async function checkStops(trips, r, L) {
       if (prev && prev[s.orderId] !== s.report.at && !s.report.ok) fresh.push({ t, s });
     }
   }
-  const to = idsOf(r.staff, 'storekeeper').concat(idsOf(r.staff, 'logist'), config.adminIds);
+  const to = idsOf(r.staff, 'storekeeper').concat(idsOf(r.staff, 'logist'), bossIds(r.staff, config.adminIds));
   for (const { t, s } of fresh) {
     const ok = await tg.sendMany(to, texts.stopIssue(t, s, L));
     if (!ok) { if (prev && s.orderId in prev) next[s.orderId] = prev[s.orderId]; else delete next[s.orderId]; }
@@ -66,23 +66,23 @@ async function checkOrders() {
   const r = await api('getOrders');
   const { events, next } = diffOrders(store.get().orders, r.orders);
   for (const { order } of events) {
-    const ok = await tg.sendMany(config.adminIds.concat(idsOf(r.staff, 'logist')), texts.pickedForAdmin(order, r.points.find((p) => p.id === order.pointId)));
+    const ok = await tg.sendMany(bossIds(r.staff, config.adminIds).concat(idsOf(r.staff, 'logist')), texts.pickedForAdmin(order, r.points.find((p) => p.id === order.pointId)));
     if (!ok) retryLater(next, store.get().orders, order.id);
   }
   store.save({ orders: next });
   return events.length;
 }
 
-// Новая заявка «Я сотрудник Милано» → руководителям (повторная заявка с новым временем — снова)
+// Новая заявка «Я сотрудник Милано» → руководителям с кнопками ролей (повторная заявка с новым временем — снова)
 async function checkSignups() {
-  const { signups } = await api('getSignups');
+  const [{ signups }, r] = await Promise.all([api('getSignups'), refs()]);
   const prev = store.get().signups || {};
   const next = {};
   let sent = 0;
   for (const s of signups) {
     next[s.tgId] = s.createdAt;
     if (prev[s.tgId] === s.createdAt) continue;
-    if (await tg.sendMany(config.adminIds, texts.newSignup(s))) sent++;
+    if (await tg.sendMany(bossIds(r.staff, config.adminIds), texts.newSignup(s), texts.signupButtons(s))) sent++;
     else if (s.tgId in prev) next[s.tgId] = prev[s.tgId]; else delete next[s.tgId];
   }
   store.save({ signups: next });

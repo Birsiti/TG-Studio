@@ -1,4 +1,4 @@
-// изменено 2026-10-18 11:00
+// изменено 2026-10-25 17:00
 // Ответы на сообщения пользователей.
 const config = require('./config');
 const tg = require('./telegram');
@@ -7,6 +7,8 @@ const texts = require('./texts');
 const store = require('./store');
 const { dayKey } = require('./digest-job');
 const { ROLE_RU, roleOf, staffName } = require('./roles');
+
+const SIGNUP_ROLES = new Set(['manager', 'logist', 'storekeeper', 'driver']);
 
 async function handleMessage(msg) {
   if (!msg || !msg.chat || msg.chat.type !== 'private' || !msg.from) return; // Web App кнопки работают только в личке
@@ -70,4 +72,33 @@ function demoCommand(text, today) {
 }
 const demoOpen = (until, today) => !!until && until >= today;
 
-module.exports = { handleMessage, noteVisit, demoCommand, demoOpen };
+// Кнопка под заявкой «Новый сотрудник»: su|<tg id>|<роль или no>. Решать может только руководитель.
+async function handleCallback(cq) {
+  if (!cq || !cq.data || !cq.from) return;
+  const m = /^su\|(\d{1,15})\|(\w+)$/.exec(cq.data);
+  const answer = (text) => tg.call('answerCallbackQuery', { callback_query_id: cq.id, text, show_alert: false }).catch(() => {});
+  if (!m) return answer('');
+  const [, tgId, v] = m;
+  let r;
+  try { r = await refs(); } catch { return answer('Склад не отвечает, попробуйте позже'); }
+  if (roleOf(String(cq.from.id), r.staff, config.adminIds) !== 'admin') return answer('Решает только руководитель');
+  if (v !== 'no' && !SIGNUP_ROLES.has(v)) return answer('');
+  const msg = cq.message;
+  const by = [cq.from.first_name, cq.from.last_name].filter(Boolean).join(' ');
+  try {
+    await api('decideSignup', v === 'no' ? { tgId, reject: true } : { tgId, role: v });
+  } catch (err) {
+    if (/уже решили/i.test(err.message)) {
+      if (msg) await tg.call('editMessageReplyMarkup', { chat_id: msg.chat.id, message_id: msg.message_id, reply_markup: { inline_keyboard: [] } }).catch(() => {});
+      return answer('По этой заявке уже решили');
+    }
+    console.error('[bot] заявка:', err.message);
+    return answer('Не получилось, попробуйте ещё раз');
+  }
+  const role = v === 'no' ? null : v;
+  if (msg) await tg.call('editMessageText', { chat_id: msg.chat.id, message_id: msg.message_id, text: texts.signupDecided(msg.text || '', role, by) }).catch(() => {});
+  await tg.send(tgId, texts.signupForEmployee(role)).catch((err) => console.error('[bot] сотруднику:', err.message));
+  return answer(role ? 'Доступ выдан' : 'Отказано');
+}
+
+module.exports = { handleMessage, handleCallback, noteVisit, demoCommand, demoOpen };

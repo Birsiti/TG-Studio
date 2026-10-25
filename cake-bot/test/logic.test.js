@@ -160,6 +160,17 @@ test('состояние больше 2000: текущие не обрезают
 
 test('заявка сотрудника: имя, телефон, пометка про ручной ввод', () => {
   const s = { tgId: '4401', lastName: 'Литвинов', firstName: 'Антон', phone: '+375291112233', phoneOk: true, username: 'anton' };
-  assert.match(texts.newSignup(s), /Литвинов Антон \(@anton\)\nТелефон \+375291112233, id 4401\./);
+  assert.match(texts.newSignup(s), /Литвинов Антон \(@anton\)\nТелефон \+375291112233 \(из Telegram\), id 4401\./);
   assert.match(texts.newSignup({ ...s, phoneOk: false, username: '' }), /Литвинов Антон\nТелефон \+375291112233 \(введён вручную\)/);
+});
+
+test('руководитель из «Людей» = руководитель; кнопки должностей под заявкой', () => {
+  const st = staff.concat([{ id: 'mg', name: 'Пётр', role: 'manager', tgId: '400', active: true }]);
+  assert.equal(roleOf('400', st, []), 'admin');
+  const { bossIds } = require('../src/roles');
+  assert.deepEqual(bossIds(st, ['111']), ['111', '400']);
+  const b = texts.signupButtons({ tgId: '4401' }).flat().map((x) => x.callback_data);
+  assert.deepEqual(b, ['su|4401|manager', 'su|4401|logist', 'su|4401|storekeeper', 'su|4401|driver', 'su|4401|no']);
+  assert.match(texts.signupDecided('Заявка', 'storekeeper', 'Денис'), /✅ Должность: кладовщик — Денис$/);
+  assert.match(texts.signupForEmployee('driver'), /доступ: водитель/);
 });

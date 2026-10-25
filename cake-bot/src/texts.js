@@ -1,4 +1,4 @@
-// изменено 2026-10-25 12:45
+// изменено 2026-10-25 17:00
 // Тексты сообщений. Обычный текст без разметки — не нужно экранировать.
 
 function weight(g) {
@@ -114,7 +114,21 @@ function newVisitor(from, role, guest = false) {
 // Заявка «Я сотрудник Милано» из приложения → руководителю
 function newSignup(s) {
   const who = `${s.lastName} ${s.firstName}${s.username ? ' (@' + s.username + ')' : ''}`;
-  return `🙋 Заявка сотрудника: ${who}\nТелефон ${s.phone}${s.phoneOk ? '' : ' (введён вручную)'}, id ${s.tgId}.\nДать допуск — «Склад и сводка» → «Справочники» → «Люди» → «Заявки сотрудников».`;
+  return `🙋 Новый сотрудник: ${who}\nТелефон ${s.phone}${s.phoneOk ? ' (из Telegram)' : ' (введён вручную)'}, id ${s.tgId}.\n\nВыберите должность — человек сразу получит доступ к своим экранам.`;
+}
+// Кнопки под заявкой: должности и «Отказать»; data — su|<tg id>|<роль или no>
+function signupButtons(s) {
+  const b = (text, v) => ({ text, callback_data: `su|${s.tgId}|${v}` });
+  return [[b('👔 Руководитель', 'manager'), b('🗺 Логист', 'logist')], [b('📦 Кладовщик', 'storekeeper'), b('🚚 Водитель', 'driver')], [b('✖ Отказать', 'no')]];
+}
+// Итог под заявкой после решения и сообщение самому сотруднику
+function signupDecided(text, role, by) {
+  return `${text}\n\n${role ? '✅ Должность: ' + ROLE_LOWER[role] : '✖ Отказано'}${by ? ' — ' + by : ''}`;
+}
+function signupForEmployee(role) {
+  return role
+    ? `✅ Готово! Вам выдан доступ: ${ROLE_LOWER[role]}.\n\nНажмите «Открыть» внизу слева — сразу попадёте на свои экраны.`
+    : 'Руководитель не выдал допуск. Если это ошибка — свяжитесь с ним.';
 }
 // Гостевой вход (/demo): короткая презентация для тех, кто впервые видит приложение в Telegram
 function guestWelcome(firstName) {
@@ -153,6 +167,6 @@ const BOT_DESCRIPTION = [
 ].join('\n');
 const BOT_SHORT = 'Кондитерская «Милано»: заказ тортов и пирожных оптом и склад — в Telegram.';
 
-const ROLE_LOWER = { admin: 'руководитель', storekeeper: 'кладовщик', logist: 'логист', driver: 'водитель' };
+const ROLE_LOWER = { admin: 'руководитель', manager: 'руководитель', storekeeper: 'кладовщик', logist: 'логист', driver: 'водитель' };
 
-module.exports = { stopIssue, BOT_DESCRIPTION, BOT_SHORT, newVisitor, newSignup, guestWelcome, demoState, pickedForAdmin, weight, makeLookup, shippedForDriver, reportedForStore, closedForDriver, digest };
+module.exports = { stopIssue, BOT_DESCRIPTION, BOT_SHORT, newVisitor, newSignup, signupButtons, signupDecided, signupForEmployee, guestWelcome, demoState, pickedForAdmin, weight, makeLookup, shippedForDriver, reportedForStore, closedForDriver, digest };
