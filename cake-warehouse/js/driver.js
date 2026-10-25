@@ -1,4 +1,4 @@
-// изменено 2026-10-18 16:30
+// изменено 2026-10-25 17:00
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
@@ -9,7 +9,7 @@
 
   const ST = {draft:['Собирается на складе','pill-warn'], shipped:['В пути','pill-info'], reported:['Отчёт сдан','pill-accent'], closed:['Принят складом','pill-ok']};
   const PICK_KEY = 'tgs-cake-driver';
-  let REFS = null, ME = null, TRIPS = [], DEBT = [], restricted = false;
+  let REFS = null, ME = null, TRIPS = [], DEBT = [], restricted = false, boss = false;
   const P = id=> REFS.products.find(x=>x.id === id) || {name:'?'};
   const W = g=> !g ? '' : g < 1000 ? g + ' г' : String(g / 1000).replace('.', ',') + ' кг';
   const L = id=> { const p = P(id); return p.name + (p.weightG ? ', ' + W(p.weightG) : ''); };
@@ -21,7 +21,7 @@
     const refs = await api('getRefs'), me = await api('getMe');  // по очереди: первый ответ решает, сервер или демо
     if(api.mode() === 'demo') $('#modeNote').innerHTML = String(html`<p class="mode-note">Демо-версия: данные примерные и хранятся только в этом телефоне.</p>`);
     if(!refs.ok){ $('#view').innerHTML = String(html`<div class="empty">${icon('lock')}<div class="empty-title">Нет доступа</div>Попросите кладовщика добавить ваш Telegram в список водителей</div>`); return; }
-    REFS = refs; restricted = me.ok && me.restricted;
+    REFS = refs; boss = me.ok && me.restricted && me.role === 'admin'; restricted = me.ok && me.restricted && !boss;  // руководитель выбирает водителя и смотрит его экран
     if(!load.hello){ load.hello = true; api('hello', {page:'driver'}); }  // журнал «кто заходит»
     const picked = Kit.store(PICK_KEY);
     const r = await api('getMyTrips', {driverId:(me.ok && me.staff) ? undefined : picked || undefined});
@@ -55,7 +55,7 @@
   function renderPick(){
     const drivers = REFS.staff.filter(s=>s.role === 'driver' && s.active);
     $('#view').innerHTML = String(html`<div class="page-head"><h1 class="page-title">Кто за рулём?</h1>
-      <p class="page-sub">${restricted ? 'Ваш Telegram не привязан к водителю — попросите кладовщика указать ваш id' : 'Демо: выберите водителя. В рабочем режиме бот узнаёт водителя по Telegram.'}</p></div>
+      <p class="page-sub">${restricted ? 'Ваш Telegram не привязан к водителю — попросите кладовщика указать ваш id' : boss ? 'Выберите водителя — откроется его экран, как у него в телефоне' : 'Демо: выберите водителя. В рабочем режиме бот узнаёт водителя по Telegram.'}</p></div>
       ${restricted ? '' : html`<div class="list">${drivers.map(d=>html`<button class="row" type="button" data-pick="${d.id}"><span class="avatar">${Kit.initials(d.name)}</span>
         <span class="row-main"><span class="row-title">${d.name}</span><span class="row-sub">${d.car}</span></span>${icon('right', 'row-chev')}</button>`)}</div>`}`);
   }
