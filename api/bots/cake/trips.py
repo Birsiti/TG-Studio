@@ -1,4 +1,4 @@
-# изменено 2026-10-25 17:00
+# изменено 2026-10-25 18:30
 """Рейсы: сборка → отгрузка → отчёт водителя → приёмка; рейсы водителя."""
 from __future__ import annotations
 
@@ -17,6 +17,14 @@ def get_trips(ctx: Ctx, p: dict) -> dict:
     rs = rows(ctx.conn, "SELECT * FROM trips WHERE (date BETWEEN ? AND ?) OR status IN ('draft','shipped','reported') "
                         "ORDER BY date DESC, num DESC", (frm, to))
     return {"trips": with_stops(ctx.conn, [_trip(r) for r in rs])}
+
+
+def default_car(conn, driver_id: str | None) -> str:
+    """Машина по умолчанию — та, на которой водитель ездил в последнем рейсе, иначе его закреплённая."""
+    if not driver_id:
+        return ""
+    last = scalar(conn, "SELECT car FROM trips WHERE driver_id=? AND car<>'' AND status<>'cancelled' ORDER BY date DESC, num DESC LIMIT 1", (driver_id,))
+    return last or scalar(conn, "SELECT car FROM staff WHERE id=?", (driver_id,)) or ""
 
 
 def _trip_fields(ctx: Ctx, p: dict) -> tuple:
@@ -39,12 +47,16 @@ def save_trip(ctx: Ctx, p: dict) -> dict:
     if tid:
         if _get_trip(ctx.conn, tid)["status"] != "draft":
             raise ApiError("bad_state", "Отгруженный рейс не редактируется")
+        old = _get_trip(ctx.conn, tid)
         ctx.conn.execute("UPDATE trips SET date=?,city_id=?,driver_id=?,lines=?,tara_out=?,note=? WHERE id=?", (*f, tid))
+        if f[2] != old["driver_id"] or not old["car"]:
+            ctx.conn.execute("UPDATE trips SET car=? WHERE id=?", (v_str(p, "car", required=False, max_len=80) or default_car(ctx.conn, f[2]), tid))
     else:
         tid = new_id("R")
         num = (scalar(ctx.conn, "SELECT MAX(num) FROM trips") or 0) + 1
         ctx.conn.execute("INSERT INTO trips(date,city_id,driver_id,lines,tara_out,note,id,num,status,created_at) "
                          "VALUES(?,?,?,?,?,?,?,?,'draft',?)", (*f, tid, num, iso_now()))
+        ctx.conn.execute("UPDATE trips SET car=? WHERE id=?", (v_str(p, "car", required=False, max_len=80) or default_car(ctx.conn, f[2]), tid))
     sync_trip(ctx.conn, tid)  # с заявками торты и ящики — из заявок, не из формы
     return {"trip": trip_out(ctx.conn, tid)}
 
@@ -169,3 +181,50 @@ def get_my_trips(ctx: Ctx, p: dict) -> dict:
     drv = one(ctx.conn, "SELECT * FROM staff WHERE id=?", (did,))
     debt = [{"taraId": tid, "qty": q} for (d, tid), q in _tara_debt(ctx.conn).items() if d == did and q]
     return {"driver": _staff(drv) if drv else None, "trips": with_stops(ctx.conn, [_trip(r) for r in rs]), "taraDebt": debt}
+
+
+@action("getCrew")
+def get_crew(ctx: Ctx, p: dict) -> dict:
+    """Кого посадить в рейс: у каждого водителя — когда ездил последним, на какой машине, сколько раз на этом направлении,
+    на смене ли он и не занят ли другим рейсом в этот день. Плюс парк: все машины, что встречались у водителей и в рейсах."""
+    c = ctx.conn
+    day = v_date(p, "date", required=False) or ctx.today
+    city = v_id(p, "cityId", required=False)
+    skip = v_id(p, "tripId", required=False)  # текущий рейс не считаем «занятостью»
+    on_shift = {r["staff_id"] for r in rows(c, "SELECT staff_id FROM shifts WHERE date=?", (day,))}
+    busy: dict[str, list[int]] = {}
+    for r in rows(c, "SELECT id, num, driver_id FROM trips WHERE date=? AND driver_id IS NOT NULL AND status NOT IN ('cancelled','closed')", (day,)):
+        if r["id"] != skip:
+            busy.setdefault(r["driver_id"], []).append(r["num"])
+    out, cars = [], {}
+    for s in rows(c, "SELECT * FROM staff WHERE role='driver' AND active=1 ORDER BY name"):
+        last = one(c, "SELECT date, car, city_id FROM trips WHERE driver_id=? AND status<>'cancelled' ORDER BY date DESC, num DESC LIMIT 1", (s["id"],))
+        here = rows(c, "SELECT date FROM trips WHERE driver_id=? AND city_id=? AND status<>'cancelled' ORDER BY date DESC", (s["id"], city)) if city else []
+        out.append({**_staff(s), "carDefault": default_car(c, s["id"]), "lastDate": last["date"] if last else None,
+                    "lastCar": last["car"] if last else "", "lastCityId": last["city_id"] if last else None,
+                    "onRoute": len(here), "lastOnRoute": here[0]["date"] if here else None,
+                    "onShift": s["id"] in on_shift, "busy": busy.get(s["id"], [])})
+        if s["car"]:
+            cars.setdefault(s["car"], s["name"])
+    for r in rows(c, "SELECT car, driver_id FROM trips WHERE car<>'' ORDER BY date DESC, num DESC LIMIT 200"):
+        cars.setdefault(r["car"], scalar(c, "SELECT name FROM staff WHERE id=?", (r["driver_id"],)) or "")
+    return {"drivers": out, "cars": [{"car": k, "who": v} for k, v in cars.items()]}
+
+
+@action("setTripCrew", write=True)
+def set_trip_crew(ctx: Ctx, p: dict) -> dict:
+    """Водитель и машина рейса. Водителя можно менять до отгрузки (ящики и остаток привязаны к нему после), машину — пока рейс не закрыт."""
+    t = _get_trip(ctx.conn, v_id(p, "id"))
+    if t["status"] in ("closed", "cancelled"):
+        raise ApiError("bad_state", "Рейс уже закрыт")
+    driver = t["driver_id"]
+    if "driverId" in p:
+        new = v_id(p, "driverId", required=False) or None
+        if new != driver and t["status"] != "draft":
+            raise ApiError("bad_state", "Водителя меняют до отгрузки: ящики после неё записаны на него")
+        if new and not scalar(ctx.conn, "SELECT 1 FROM staff WHERE id=? AND role='driver' AND active=1", (new,)):
+            raise ApiError("not_found", "Нет такого водителя")
+        driver = new
+    car = v_str(p, "car", required=False, max_len=80) if "car" in p else (default_car(ctx.conn, driver) if driver != t["driver_id"] else t["car"])
+    ctx.conn.execute("UPDATE trips SET driver_id=?, car=? WHERE id=?", (driver, car, t["id"]))
+    return {"trip": trip_out(ctx.conn, t["id"])}

@@ -109,6 +109,7 @@
     },
     routeToTrip: function(p){
       var r = O.routeToTrip(p); if(bad(r)) return r;
+      if(p.car) r.trip.car = String(p.car).slice(0, 80);
       onTrip(U.state(), r.trip.id).sort(function(a, b){ return a.num.localeCompare(b.num); }).forEach(function(o, i){ o.stop = i + 1; });
       return {trip:withStops(r.trip), orders:r.orders};
     },

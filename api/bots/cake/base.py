@@ -1,4 +1,4 @@
-# изменено 2026-10-25 17:00
+# изменено 2026-10-25 18:30
 """Объект bot, проверка доступа, выдача строк в JSON и общие проверки строк."""
 from __future__ import annotations
 
@@ -21,6 +21,8 @@ def _migrate(conn, now):
     if "odo_out" not in {r["name"] for r in conn.execute("PRAGMA table_info(trips)").fetchall()}:
         conn.execute("ALTER TABLE trips ADD COLUMN odo_out INTEGER")  # спидометр — в базы, созданные раньше
         conn.execute("ALTER TABLE trips ADD COLUMN odo_back INTEGER")
+    if "car" not in {r["name"] for r in conn.execute("PRAGMA table_info(trips)").fetchall()}:
+        conn.execute("ALTER TABLE trips ADD COLUMN car TEXT NOT NULL DEFAULT ''")  # машина рейса: по умолчанию последняя водителя, можно заменить
     if "stop" not in {r["name"] for r in conn.execute("PRAGMA table_info(orders)").fetchall()}:
         conn.execute("ALTER TABLE orders ADD COLUMN stop INTEGER NOT NULL DEFAULT 0")  # порядок точки в рейсе
     if "hired" not in {r["name"] for r in conn.execute("PRAGMA table_info(staff)").fetchall()}:
@@ -124,7 +126,7 @@ def _trip(r):
             "status": r["status"], "lines": jload(r["lines"], []), "taraOut": jload(r["tara_out"], []),
             "taraBack": jload(r["tara_back"], []), "report": r["report"], "note": r["note"],
             "createdAt": r["created_at"], "shippedAt": r["shipped_at"], "reportedAt": r["reported_at"],
-            "closedAt": r["closed_at"], "odoOut": r["odo_out"], "odoBack": r["odo_back"]}
+            "closedAt": r["closed_at"], "odoOut": r["odo_out"], "odoBack": r["odo_back"], "car": r["car"]}
 
 
 def _move(r):

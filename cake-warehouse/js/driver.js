@@ -1,4 +1,4 @@
-// изменено 2026-10-25 17:40
+// изменено 2026-10-25 19:00
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
@@ -110,6 +110,7 @@
     if(!t) return;
     const c = C(t.cityId);
     const sh = Kit.sheet({title:`${c.name} · №${t.num}`, sub:`${D.label(t.date)} · ${ST[t.status][0]}`, body: html`
+      ${boss ? bossBlock(t) : ''}
       ${stopsBlock(t)}
       <div class="eyebrow${(t.stops || []).length ? ' section' : ''}" style="margin-bottom:8px">Везёте</div>
       ${t.lines.map(l=>html`<div class="kv"><span class="k">${L(l.productId)}</span><span class="v mono">${l.qty}${t.status === 'closed' ? ' → ' + l.delivered : ''}</span></div>`)}
@@ -122,6 +123,10 @@
         <button class="btn btn-primary" type="button" id="goOut">${icon('truck')}Выезжаю</button>`
         : /shipped|reported/.test(t.status) ? html`<button class="btn btn-primary btn-block" type="button" id="goRep">${icon('clipboard')}${t.status === 'reported' ? 'Исправить отчёт' : 'Сдать рейс'}</button>` : ''});
     Kit.on(sh.el, 'click', '[data-map]', (e, el)=>{ haptic('light'); CakeMap.one(el.dataset.map); });
+    Kit.on(sh.el, 'click', '[data-boss]', (e, el)=>{
+      if(el.dataset.boss === 'crew') CakeCrew.editTrip(t, ()=>{ sh.close(); load(); });
+      else location.href = `pogruzka.html?date=${t.date}&route=${encodeURIComponent(c.name)}`;
+    });
     Kit.on(sh.el, 'click', '[data-stop]', (e, el)=>{ if(e.target.closest('[data-map]')) return; haptic('light'); sh.close(); openStop(t, t.stops.find(s=>s.orderId === el.dataset.stop)); });
     const all = sh.$('#mapAll'); if(all) all.addEventListener('click', ()=>{ haptic('light'); CakeMap.route(t.stops.map(s=>s.address)); });
     const b = sh.$('#goRep'); if(b) b.addEventListener('click', async ()=>{
@@ -135,6 +140,18 @@
       if(!r.ok){ fail(r); return; }
       haptic('success'); sh.close(); Kit.toast('Хорошей дороги!', 'ok'); load();
     });
+  }
+
+  // Руководитель на экране водителя: кто едет, на чём, сколько везти — и правки водителя и машины, погрузка
+  function bossBlock(t){
+    const kg = Cake.kgOf(t.lines), bx = Cake.boxesOf(t), d = ME || {};
+    return html`<div class="trip-crew">
+        <div class="kv"><span class="k">Водитель</span><span class="v">${d.name || '—'}</span></div>
+        <div class="kv"><span class="k">Машина</span><span class="v">${t.car || d.car || html`<span class="hint">не указана</span>`}</span></div>
+        <div class="kv"><span class="k">Вес</span><span class="v mono">${Cake.fmtKg(kg)} · ≈ ${Cake.fmtKg(kg + bx * Cake.boxKg())} с ящиками</span></div>
+        ${/draft|shipped|reported/.test(t.status) ? html`<button class="btn btn-ghost btn-block" type="button" data-boss="crew">${icon('users')}Водитель и машина</button>` : ''}
+        ${(t.stops || []).length ? html`<button class="btn btn-ghost btn-block" type="button" data-boss="load">${icon('layers')}Погрузка: кузов и маршрут</button>` : ''}
+      </div>`;
   }
 
   // Маршрут: заявки по порядку объезда — №, заказчик, адрес, сколько везти, кнопка на карту

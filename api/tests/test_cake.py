@@ -1,4 +1,4 @@
-# изменено 2026-10-18 12:00
+# изменено 2026-10-25 18:30
 from core import now
 
 
@@ -346,3 +346,34 @@ def test_manager_role_and_delete(api, monkeypatch):
     me = mine(5502, "getMe")
     assert me["access"] is False and me["signup"] is None  # можно зарегистрироваться заново
     assert mine(5502, "getMyTrips")["error"] == "forbidden"
+
+
+def test_trip_crew_and_car(api, monkeypatch):
+    """Машина рейса: по умолчанию последняя водителя; подсказки логисту; замена водителя до отгрузки, машины — до закрытия."""
+    refs = api("cake", "getRefs")
+    city = refs["cities"][0]["id"]
+    drv = [s for s in refs["staff"] if s["role"] == "driver"]
+    a, b = drv[0], drv[1]
+    pid = refs["products"][0]["id"]
+    api("cake", "addIncome", lines=[{"productId": pid, "qty": 50}])
+    t1 = api("cake", "saveTrip", cityId=city, driverId=a["id"], lines=[{"productId": pid, "qty": 3}])["trip"]
+    assert t1["car"] == a["car"]  # своей машины рейса нет — берётся закреплённая за водителем
+    r = api("cake", "setTripCrew", id=t1["id"], car="Ford Transit · 0001 AA-7")
+    assert r["trip"]["car"] == "Ford Transit · 0001 AA-7" and r["trip"]["driverId"] == a["id"]
+    t2 = api("cake", "saveTrip", cityId=city, driverId=a["id"], lines=[{"productId": pid, "qty": 2}])["trip"]
+    assert t2["car"] == "Ford Transit · 0001 AA-7"  # последняя машина, на которой ездил
+    crew = api("cake", "getCrew", date=t2["date"], cityId=city, tripId=t2["id"])
+    ca = next(x for x in crew["drivers"] if x["id"] == a["id"])
+    assert ca["onRoute"] == 2 and ca["lastCar"] == "Ford Transit · 0001 AA-7" and ca["busy"] == [t1["num"]]
+    assert any(c["car"] == "Ford Transit · 0001 AA-7" for c in crew["cars"])
+    r = api("cake", "setTripCrew", id=t2["id"], driverId=b["id"])  # другой водитель — его последняя/закреплённая машина
+    assert r["trip"]["driverId"] == b["id"] and r["trip"]["car"] == b["car"]
+    assert api("cake", "setTripCrew", id=t2["id"], driverId="nope")["error"] == "not_found"
+    assert api("cake", "shipTrip", id=t2["id"])["ok"]
+    assert api("cake", "setTripCrew", id=t2["id"], driverId=a["id"])["error"] == "bad_state"  # после отгрузки водителя не меняют
+    assert api("cake", "setTripCrew", id=t2["id"], car="Газель · 7777 BB-7")["trip"]["car"] == "Газель · 7777 BB-7"  # машину — можно
+    tok = "123456:TEST-token"
+    monkeypatch.setenv("TGS_CAKE_BOT_TOKEN", tok)
+    monkeypatch.setenv("TGS_CAKE_ADMINS", "111")
+    api("cake", "saveStaff", user="111", initData=_signed(tok, 111), id=b["id"], name=b["name"], role="driver", tgId="777", car=b["car"])
+    assert api("cake", "setTripCrew", user=None, initData=_signed(tok, 777), id=t2["id"], car="Чужая")["error"] == "forbidden"

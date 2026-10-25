@@ -1,4 +1,4 @@
-# изменено 2026-10-18 13:00
+# изменено 2026-10-25 18:30
 """Сборка по кругу: заявки точек на дату, лист с галочками, места тортов на складе, точки разгрузки.
 
 Остаток сборка не трогает — торты списываются отгрузкой рейса (trips.py).
@@ -217,12 +217,14 @@ def route_to_trip(ctx: Ctx, p: dict) -> dict:
         boxes += r["boxes"] or 0
     box = scalar(ctx.conn, "SELECT id FROM tara_types WHERE active=1 ORDER BY sort LIMIT 1")
     tid, num = new_id("R"), (scalar(ctx.conn, "SELECT MAX(num) FROM trips") or 0) + 1
-    ctx.conn.execute("INSERT INTO trips(id,num,date,city_id,driver_id,status,lines,tara_out,note,created_at) "
-                     "VALUES(?,?,?,?,?,'draft',?,?,?,?)",
+    from bots.cake.trips import default_car  # поздний импорт: trips тянет stops, stops — picking
+    ctx.conn.execute("INSERT INTO trips(id,num,date,city_id,driver_id,status,lines,tara_out,note,created_at,car) "
+                     "VALUES(?,?,?,?,?,'draft',?,?,?,?,?)",
                      (tid, num, day, route_city(ctx.conn, route), driver,
                       jdump([{"productId": k, "qty": v} for k, v in lines.items()]),
                       jdump([{"taraId": box, "qty": boxes}] if box and boxes else []),
-                      "Заявки: №" + ", №".join(r["num"] for r in rs), iso_now()))
+                      "Заявки: №" + ", №".join(r["num"] for r in rs), iso_now(),
+                      v_str(p, "car", required=False, max_len=80) or default_car(ctx.conn, driver)))
     for i, r in enumerate(rs, 1):  # порядок точек — по номерам, логист может поменять
         ctx.conn.execute("UPDATE orders SET trip_id=?, stop=? WHERE id=?", (tid, i, r["id"]))
     return {"trip": trip_out(ctx.conn, tid), "orders": len(rs)}

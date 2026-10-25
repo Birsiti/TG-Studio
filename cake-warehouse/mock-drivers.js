@@ -1,4 +1,4 @@
-// изменено 2026-10-25 12:40
+// изменено 2026-10-25 19:00
 /* ============================================================
    mock-drivers.js — спидометр рейса, статистика водителей и «кто заходит» в демо-режиме
    (двойник api/bots/cake/drivers.py, те же проверки и тексты ошибок).
@@ -75,7 +75,39 @@
     var last = S.visitLog.filter(function(x){ return x.tgId === tg && x.page === page; }).pop();
     if(!last || (Date.parse(at) - Date.parse(last.at)) / 60000 >= QUIET_MIN){ S.visitLog.push({tgId:tg, at:at, page:page}); if(S.visitLog.length > LOG_KEEP) S.visitLog.splice(0, S.visitLog.length - LOG_KEEP); }
   }
+  // Подсказки логисту и смена водителя/машины рейса (двойник getCrew / setTripCrew)
+  function lastCar(S, id){
+    var t = S.trips.filter(function(x){ return x.driverId === id && x.car && x.status !== 'cancelled'; }).sort(function(a, b){ return a.date < b.date ? 1 : -1; })[0];
+    return (t && t.car) || (byId(S.staff, id) || {}).car || '';
+  }
   CakeMock.register({
+    getCrew: function(p){
+      var S = U.state(), day = p.date || D.today(), cars = {};
+      var shift = (S.shifts && S.shifts[day]) || [], busy = {};
+      S.trips.forEach(function(t){ if(t.date === day && t.driverId && !/cancelled|closed/.test(t.status) && t.id !== p.tripId) (busy[t.driverId] = busy[t.driverId] || []).push(t.num); });
+      var drivers = S.staff.filter(function(s){ return s.role === 'driver' && s.active; }).map(function(s){
+        var mine = S.trips.filter(function(t){ return t.driverId === s.id && t.status !== 'cancelled'; }).sort(function(a, b){ return a.date < b.date ? 1 : -1; });
+        var here = p.cityId ? mine.filter(function(t){ return t.cityId === p.cityId; }) : [];
+        if(s.car) cars[s.car] = s.name;
+        return Object.assign({}, s, {carDefault:lastCar(S, s.id), lastDate:mine[0] ? mine[0].date : null, lastCar:mine[0] ? (mine[0].car || '') : '', lastCityId:mine[0] ? mine[0].cityId : null,
+          onRoute:here.length, lastOnRoute:here[0] ? here[0].date : null, onShift:shift.indexOf(s.id) >= 0, busy:busy[s.id] || []});
+      });
+      S.trips.forEach(function(t){ if(t.car && !cars[t.car]) cars[t.car] = (byId(S.staff, t.driverId) || {}).name || ''; });
+      return {drivers:drivers, cars:Object.keys(cars).map(function(k){ return {car:k, who:cars[k]}; })};
+    },
+    setTripCrew: function(p){
+      var S = U.state(), t = byId(S.trips, p.id); if(!t) return err('not_found', 'Нет такого рейса');
+      if(/closed|cancelled/.test(t.status)) return err('bad_state', 'Рейс уже закрыт');
+      var driver = t.driverId;
+      if('driverId' in p){
+        var nd = p.driverId || null;
+        if(nd !== driver && t.status !== 'draft') return err('bad_state', 'Водителя меняют до отгрузки: ящики после неё записаны на него');
+        if(nd && (byId(S.staff, nd) || {}).role !== 'driver') return err('not_found', 'Нет такого водителя');
+        driver = nd;
+      }
+      var car = 'car' in p ? String(p.car || '').slice(0, 80) : (driver !== t.driverId ? lastCar(S, driver) : t.car || '');
+      t.driverId = driver; t.car = car; return {trip:t};
+    },
     hello: function(p){
       if(['sklad', 'admin', 'driver'].indexOf(p.page) < 0) return err('bad_request', 'page');
       var u = Kit.user; touch(U.state(), String(u.id), p.page, [u.firstName, u.lastName].filter(Boolean).join(' '), u.username); return {};

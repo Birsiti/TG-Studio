@@ -1,4 +1,4 @@
-// изменено 2026-10-18 13:30
+// изменено 2026-10-25 18:40
 /* Сборка: ввод и правка заявки,
    отгрузка собранного маршрута водителю (черновик рейса). */
 (function(){
@@ -70,24 +70,18 @@
   Cake.shipRoute = async function(list){
     const pk = PK(), left = list.filter(o=>o.status !== 'picked');
     if(left.length){ Kit.toast(`Не собраны: №${left.map(o=>o.num).join(', №')}`, 'error'); haptic('warning'); return; }
-    const s = await api('getShifts', {from:pk.date, to:pk.date});
-    const onShift = (s.ok && s.days[pk.date]) || [];
-    const drivers = Cake.refs.staff.filter(x=>x.role === 'driver' && x.active).sort((a, b)=> onShift.includes(b.id) - onShift.includes(a.id));
     const qty = list.reduce((t, o)=>t + o.lines.reduce((q, l)=>q + l.qty + l.bonus, 0), 0), boxes = list.reduce((t, o)=>t + (o.boxes || 0), 0);
-    let driverId = '';
-    const sh = Kit.sheet({title:`Отгрузка · ${pk.route}`, sub:`${list.length} заявок · ${qty} шт · ящиков ${boxes}`, body: html`
-      <p class="hint">Создастся рейс на сборке. Дальше на вкладке «Рейсы» — «Отгрузить»: торты спишутся со склада, ящики запишутся на водителя.</p>
-      <div class="eyebrow section" style="margin-bottom:8px">Водитель</div>
-      <div class="chips" id="srDrv">${drivers.map(d=>html`<button class="chip" type="button" data-d="${d.id}">${d.name}${onShift.includes(d.id) ? ' · на смене' : ''}</button>`)}</div>`,
-      actions: html`<button class="btn btn-primary btn-block" type="button" data-ok>${icon('truck')}Создать рейс</button>`});
-    Kit.on(sh.el, 'click', '[data-d]', (e, el)=>{ driverId = driverId === el.dataset.d ? '' : el.dataset.d; $$('[data-d]', sh.el).forEach(b=>b.classList.toggle('is-on', b.dataset.d === driverId)); haptic('select'); });
-    Kit.on(sh.el, 'click', '[data-ok]', async (e, el)=>{
-      Kit.busy(el, true);
-      const r = await api('routeToTrip', Object.assign({date:pk.date, route:pk.route}, driverId ? {driverId} : {}));
-      Kit.busy(el, false);
-      if(!r.ok){ fail(r); return; }
-      haptic('success'); Kit.toast(`Рейс №${r.trip.num} создан — отгрузите на вкладке «Рейсы»`, 'ok'); sh.close();
-      await Cake.loadRefs(); await pk.reload();  // маршрут мог впервые стать направлением рейса
-    });
+    const kg = Cake.kgOf(list.flatMap(o=>o.lines));
+    const city = (Cake.refs.cities.find(c=>c.name === pk.route) || {}).id;
+    // Водитель с подсказками (кто ездил на маршруте) и машина — по умолчанию его последняя; рейс создаётся сразу с ними
+    await CakeCrew.pick({date:pk.date, cityId:city, title:`Рейс · ${pk.route}`,
+      sub:`${list.length} заявок · ${qty} шт · ${Cake.fmtKg(kg)} · ящиков ${boxes}`, button:'Создать рейс'},
+      async v=>{
+        const r = await api('routeToTrip', Object.assign({date:pk.date, route:pk.route}, v.driverId ? {driverId:v.driverId} : {}, v.car ? {car:v.car} : {}));
+        if(!r.ok) return r;
+        Kit.toast(`Рейс №${r.trip.num} создан — отгрузите на вкладке «Рейсы»`, 'ok');
+        await Cake.loadRefs(); await pk.reload();  // маршрут мог впервые стать направлением рейса
+        return r;
+      });
   };
 })();
