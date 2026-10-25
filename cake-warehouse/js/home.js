@@ -1,4 +1,4 @@
-// изменено 2026-10-25 14:10
+// изменено 2026-10-25 14:40
 /* Главная (кнопка «Открыть» в боте @Milano_BY_Bot): витрина «Милано» — герой с тортом, лента тортов,
    «Сделать заказ» (оптовая витрина) и «Я сотрудник Милано» (входы по ролям).
    Сотрудник, добавленный в «Люди», сразу попадает на свой экран; руководитель после «Я сотрудник» выбирает вход сам.
@@ -101,6 +101,7 @@
         <label class="field section"><span class="field-label">Имя</span><input class="input" id="rgFirst" maxlength="40" autocomplete="given-name" value="${prev.firstName || Kit.user.firstName || ''}"></label>
         ${manualPhone ? html`<div class="field section"><span class="field-label">Телефон</span><div id="rgPhone"></div></div>` : ''}
         <button class="btn btn-primary btn-block section" type="button" id="rgSend">${icon('phone')}${manualPhone ? 'Отправить заявку' : 'Поделиться телефоном'}</button>
+        <p class="mode-note section" id="rgMsg" hidden></p>
         ${manualPhone ? '' : html`<p class="hint section">Номер берётся из вашего Telegram — вводить его не нужно.</p>`}
         ${preview ? html`<p class="mode-note section">Вы руководитель: заявка не отправляется, так выглядит окно для новых сотрудников.</p>
           <button class="btn btn-ghost btn-block section" type="button" data-skip="1">${icon('right')}Пропустить — я руководитель</button>` : ''}
@@ -121,18 +122,30 @@
       if(last.length < 2 || first.length < 2){ Kit.toast('Впишите фамилию и имя', 'error'); haptic('error'); return; }
       if(preview && $('#rgPh')){ Kit.toast('Предпросмотр: заявка не отправлена'); return; }
       if($('#rgPh')){ const ph = Kit.phone.value($('#rgPh')); if(!ph){ Kit.toast('Впишите телефон', 'error'); haptic('error'); return; } sendSignup({phone:ph}); return; }
-      let done = false;
-      const got = (shared, ev)=>{      // Telegram отвечает через колбэк и событием — берём первый ответ
-        if(done) return; done = true; tgApp.offEvent('contactRequested', onEv);
-        if(!shared){ Kit.toast('Без номера заявку отправить нельзя', 'error'); haptic('error'); return; }
-        const contact = ev && (ev.response || (ev.status === 'sent' && ev.response));
-        if(preview){ Kit.toast(contact ? 'Telegram передал номер. Предпросмотр: заявка не отправлена' : 'Telegram не передал номер'); return; }
+      // Telegram отвечает в два приёма: колбэк (shared: да/нет) и событие contactRequested (с подписанным номером в response).
+      // Ждём событие до 4 секунд после «да»; не пришло — предлагаем вписать номер вручную. Итог пишем в строке под кнопкой: тост прячется под клавиатурой.
+      if(document.activeElement && document.activeElement.blur) document.activeElement.blur();   // клавиатура закрывает окно Telegram
+      const msg = (t, bad)=>{ const m = $('#rgMsg'); if(m){ m.textContent = t; m.className = 'mode-note section' + (bad ? ' is-bad' : ''); m.hidden = !t; } };
+      let done = false, timer = null;
+      const finish = (contact)=>{
+        if(done) return; done = true; clearTimeout(timer); tgApp.offEvent('contactRequested', onEv);
+        if(preview){ msg(contact ? 'Telegram передал номер, всё работает. Предпросмотр: заявка не отправлена.' : 'Telegram не передал номер.', !contact); return; }
         if(contact) sendSignup({contact});
         else { Kit.toast('Telegram не передал номер — впишите его вручную'); regForm(true); }
       };
-      const onEv = ev=> got(ev && ev.status === 'sent', ev);
+      const onEv = ev=>{
+        if(done) return;
+        if(ev && ev.status === 'sent' && ev.response) finish(ev.response);
+        else if(ev && ev.status === 'cancelled'){ done = true; clearTimeout(timer); tgApp.offEvent('contactRequested', onEv); msg('Вы не разрешили передать номер. Без него заявку отправить нельзя.', true); }
+      };
       tgApp.onEvent('contactRequested', onEv);
-      tgApp.requestContact((shared, ev)=> got(shared, ev));
+      msg('Подтвердите в окне Telegram…');
+      tgApp.requestContact((shared, ev)=>{
+        if(done) return;
+        if(!shared){ done = true; clearTimeout(timer); tgApp.offEvent('contactRequested', onEv); msg('Вы не разрешили передать номер. Без него заявку отправить нельзя.', true); haptic('error'); return; }
+        if(ev && ev.response) return finish(ev.response);
+        timer = setTimeout(()=> finish(''), 4000);
+      });
     });
     Kit.on($('#view'), 'click', '[data-skip]', ()=>{ haptic('light'); preview = false; try{ localStorage.setItem('cake-skip-reg', '1'); }catch(e){} doors(); });
     Kit.on($('#view'), 'click', '[data-preview]', ()=>{ haptic('light'); preview = true; regForm(!canContact); });
