@@ -1,4 +1,4 @@
-// изменено 2026-10-25 12:30
+// изменено 2026-10-25 13:30
 /* Главная (кнопка «Открыть» в боте @Milano_BY_Bot): витрина «Милано» — герой с тортом, лента тортов,
    «Сделать заказ» (оптовая витрина) и «Я сотрудник Милано» (входы по ролям).
    Сотрудник, добавленный в «Люди», сразу попадает на свой экран; руководитель после «Я сотрудник» выбирает вход сам.
@@ -79,6 +79,7 @@
         <div class="staff-grid">${DOORS.filter(d=>allowed.includes(d[0])).map(([url, ic, title, sub])=>html`<button class="staff-tile" type="button" data-go="${url}">
           <span class="door-ic">${icon(ic)}</span><b>${title}</b><span>${sub}</span></button>`)}</div>
         ${api.mode() === 'demo' ? html`<p class="mode-note section">Демо-версия: данные примерные и хранятся только в этом телефоне — смело пробуйте всё, сломать ничего нельзя.</p>` : ''}
+        ${me.role === 'admin' ? html`<button class="btn btn-ghost btn-block section" type="button" data-preview="1">${icon('user')}Как новичок: посмотреть регистрацию</button>` : ''}
         ${back}`);
       window.scrollTo(0, 0);
     };
@@ -90,6 +91,7 @@
     };
     const tgApp = window.Telegram && Telegram.WebApp;
     const canContact = !!(tgApp && tgApp.initData && tgApp.requestContact && tgApp.isVersionAtLeast && tgApp.isVersionAtLeast('6.9'));
+    let preview = false;   // руководитель смотрит окно регистрации: заявка не отправляется
     const regForm = (manualPhone)=>{
       const prev = me.signup || {};
       $('#view').innerHTML = String(html`
@@ -100,6 +102,7 @@
         ${manualPhone ? html`<div class="field section"><span class="field-label">Телефон</span><div id="rgPhone"></div></div>` : ''}
         <button class="btn btn-primary btn-block section" type="button" id="rgSend">${icon('phone')}${manualPhone ? 'Отправить заявку' : 'Поделиться телефоном'}</button>
         ${manualPhone ? '' : html`<p class="hint section">Номер берётся из вашего Telegram — вводить его не нужно.</p>`}
+        ${preview ? html`<p class="mode-note section">Предпросмотр для руководителя: заявка не отправляется.</p>` : ''}
         ${back}`);
       if(manualPhone){ $('#rgPhone').innerHTML = String(Kit.phone.field('rgPh', '')); Kit.phone.bind($('#rgPh')); }
       window.scrollTo(0, 0);
@@ -115,12 +118,14 @@
     Kit.on($('#view'), 'click', '#rgSend', ()=>{
       const last = $('#rgLast').value.trim(), first = $('#rgFirst').value.trim();
       if(last.length < 2 || first.length < 2){ Kit.toast('Впишите фамилию и имя', 'error'); haptic('error'); return; }
+      if(preview && $('#rgPh')){ Kit.toast('Предпросмотр: заявка не отправлена'); return; }
       if($('#rgPh')){ const ph = Kit.phone.value($('#rgPh')); if(!ph){ Kit.toast('Впишите телефон', 'error'); haptic('error'); return; } sendSignup({phone:ph}); return; }
       let done = false;
       const got = (shared, ev)=>{      // Telegram отвечает через колбэк и событием — берём первый ответ
         if(done) return; done = true; tgApp.offEvent('contactRequested', onEv);
         if(!shared){ Kit.toast('Без номера заявку отправить нельзя', 'error'); haptic('error'); return; }
         const contact = ev && (ev.response || (ev.status === 'sent' && ev.response));
+        if(preview){ Kit.toast(contact ? 'Telegram передал номер. Предпросмотр: заявка не отправлена' : 'Telegram не передал номер'); return; }
         if(contact) sendSignup({contact});
         else { Kit.toast('Telegram не передал номер — впишите его вручную'); regForm(true); }
       };
@@ -128,6 +133,7 @@
       tgApp.onEvent('contactRequested', onEv);
       tgApp.requestContact((shared, ev)=> got(shared, ev));
     });
+    Kit.on($('#view'), 'click', '[data-preview]', ()=>{ haptic('light'); preview = true; regForm(!canContact); });
     Kit.on($('#view'), 'click', '[data-recheck]', async ()=>{
       const m = await api('getMe'); haptic('light');
       if(m.ok && m.access){ if(m.staff && ROLE_PAGE[m.staff.role]) location.replace(ROLE_PAGE[m.staff.role]); else { Object.assign(me, m); doors(); } }
