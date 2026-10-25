@@ -1,4 +1,4 @@
-// изменено 2026-10-25 18:10
+// изменено 2026-10-25 17:30
 /* Главная (кнопка «Открыть» в боте @Milano_BY_Bot): витрина «Милано» — герой с тортом, лента тортов,
    «Сделать заказ» (оптовая витрина) и «Я сотрудник Милано» (входы по ролям).
    Сотрудник, добавленный в «Люди», сразу попадает на свой экран; руководитель после «Я сотрудник» выбирает вход сам.
@@ -42,7 +42,7 @@
     const name = Kit.user.firstName;
     const strip = STRIP.concat(STRIP).map(([f, t])=>html`<figure><img src="img/cakes/${f}.jpg" alt="" decoding="async"><figcaption>${t}</figcaption></figure>`);
 
-    const first = ()=>{ $('#view').innerHTML = String(html`<div class="home">
+    const first = ()=>{ setBack(null); $('#view').innerHTML = String(html`<div class="home">
       <section class="hero">
         <div class="hero-top"><p class="hero-eyebrow">Кондитерская<br>«Милано»<span>с 2003 года</span></p>
           <div class="hero-plate"><img src="img/cakes/klubnika-banan.jpg" alt="Торт «Клубника-банан»"></div></div>
@@ -77,9 +77,13 @@
     let preview = false;   // руководитель смотрит регистрацию глазами новичка: заявка не уходит
     let sent = null;       // что ушло в заявке — для окна «Всё в порядке»
     const show = h=>{ $('#view').innerHTML = String(h); window.scrollTo(0, 0); };
+    // Кнопка Telegram «Назад» на главной: меню сотрудника, регистрация → первый экран; «Сотрудники» → меню
+    let backFn = null;
+    const setBack = fn=>{ if(backFn) Kit.back.pop(backFn); backFn = fn; if(fn) Kit.back.push(fn); };
     const phoneOf = contact=>{ try{ return '+' + String(JSON.parse(new URLSearchParams(contact).get('contact')).phone_number).replace(/^\+/, ''); }catch(e){ return ''; } };
 
     const doors = ()=>{
+      setBack(()=>{ haptic('light'); first(); });
       const allowed = ROLE_DOORS[me.role] || ROLE_DOORS.admin;
       show(html`
         <div class="page-head"><h1 class="page-title">Сотрудникам</h1>
@@ -98,6 +102,7 @@
     const steps = n=> html`<div class="reg-steps">${['ФИО', 'Телефон', 'Должность'].map((t, i)=>html`<span class="reg-step ${i < n ? 'is-done' : i === n ? 'is-on' : ''}"><i>${i < n ? '✓' : i + 1}</i>${t}</span>`)}</div>`;
 
     const regForm = (manualPhone)=>{
+      setBack(preview ? ()=>{ haptic('light'); preview = false; doors(); } : ()=>{ haptic('light'); first(); });
       const prev = me.signup || {};
       show(html`
         ${preview ? html`<div class="reg-preview"><span>Предпросмотр: заявка не уйдёт</span><button type="button" data-skip="1">В меню</button></div>` : ''}
@@ -121,6 +126,7 @@
 
     // Окно после заявки: «Всё в порядке» (ушла / предпросмотр) или «ждём руководителя» при следующем входе
     const done = (kind)=>{
+      setBack(()=>{ haptic('light'); kind === 'preview' ? (preview = false, doors()) : first(); });
       const s = sent || {};
       const name = s.name || [me.signup && me.signup.lastName, me.signup && me.signup.firstName].filter(Boolean).join(' ');
       if(kind === 'rejected'){
@@ -201,7 +207,7 @@
     Kit.on($('#view'), 'click', '[data-next]', ()=>{ haptic('light'); preview = false; doors(); });
     Kit.on($('#view'), 'click', '[data-skip]', ()=>{ haptic('light'); preview = false; try{ localStorage.setItem('cake-skip-reg', '1'); }catch(e){} doors(); });
     Kit.on($('#view'), 'click', '[data-preview]', ()=>{ haptic('light'); preview = true; regForm(!canContact); });
-    Kit.on($('#view'), 'click', '[data-team]', ()=>{ haptic('light'); window.CakeTeam.open(api, me, doors); });
+    Kit.on($('#view'), 'click', '[data-team]', ()=>{ haptic('light'); setBack(()=>{ haptic('light'); doors(); }); window.CakeTeam.open(api, me, doors); });
     Kit.on($('#view'), 'click', '[data-recheck]', async ()=>{
       const m = await api('getMe'); haptic('light');
       if(m.ok && m.access){ Object.assign(me, m); if(m.staff && ROLE_PAGE[m.staff.role]) location.replace(ROLE_PAGE[m.staff.role]); else doors(); }
@@ -229,7 +235,7 @@
       const tg = window.Telegram && Telegram.WebApp;
       if(tg && tg.initData && tg.openTelegramLink) tg.openTelegramLink(url); else window.open(url, '_blank');
     });
-    first();
+    if(/[?&]staff=1\b/.test(location.search)) staff(); else first();  // «Назад» с экрана роли — в меню сотрудника
   }
   Kit.on($('#view'), 'click', '[data-go]', (e, el)=>{ haptic('light'); go(el.dataset.go); });
   load();
