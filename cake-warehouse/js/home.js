@@ -1,4 +1,4 @@
-// изменено 2026-10-25 14:40
+// изменено 2026-10-25 15:10
 /* Главная (кнопка «Открыть» в боте @Milano_BY_Bot): витрина «Милано» — герой с тортом, лента тортов,
    «Сделать заказ» (оптовая витрина) и «Я сотрудник Милано» (входы по ролям).
    Сотрудник, добавленный в «Люди», сразу попадает на свой экран; руководитель после «Я сотрудник» выбирает вход сам.
@@ -85,7 +85,7 @@
     };
     const waiting = (rejected)=>{
       $('#view').innerHTML = String(rejected ? html`<div class="empty">${icon('lock')}<div class="empty-title">Допуск не выдан</div>Если это ошибка — свяжитесь с руководителем.</div>${back}`
-        : html`<div class="empty">${icon('clock')}<div class="empty-title">Заявка отправлена</div>Руководитель выдаст допуск и выберет вашу роль. Откройте приложение позже — вы сразу попадёте на свой экран.</div>
+        : html`<div class="empty">${icon('check')}<div class="empty-title">Всё в порядке — заявка отправлена</div>Руководитель выдаст допуск и выберет вашу роль. Откройте приложение позже — вы сразу попадёте на свой экран.</div>
           <button class="btn btn-ghost btn-block section" type="button" data-recheck="1">${icon('refresh')}Проверить допуск</button>${back}`);
       window.scrollTo(0, 0);
     };
@@ -129,7 +129,14 @@
       let done = false, timer = null;
       const finish = (contact)=>{
         if(done) return; done = true; clearTimeout(timer); tgApp.offEvent('contactRequested', onEv);
-        if(preview){ msg(contact ? 'Telegram передал номер, всё работает. Предпросмотр: заявка не отправлена.' : 'Telegram не передал номер.', !contact); return; }
+        if(preview){
+          if(!contact){ msg('Telegram не передал номер.', true); return; }
+          let ph = ''; try{ ph = JSON.parse(new URLSearchParams(contact).get('contact')).phone_number; }catch(e){}
+          haptic('success');
+          $('#view').innerHTML = String(html`<div class="empty">${icon('check')}<div class="empty-title">Всё в порядке</div>Telegram передал ваш номер${ph ? html` <b>+${String(ph).replace(/^\+/, '')}</b>` : ''}. Новому сотруднику здесь уходит заявка, а вам — только предпросмотр: ничего не отправлено.</div>
+            <button class="btn btn-primary btn-block section" type="button" data-next="1">${icon('right')}Дальше — в меню</button>${back}`);
+          window.scrollTo(0, 0); return;
+        }
         if(contact) sendSignup({contact});
         else { Kit.toast('Telegram не передал номер — впишите его вручную'); regForm(true); }
       };
@@ -147,6 +154,7 @@
         timer = setTimeout(()=> finish(''), 4000);
       });
     });
+    Kit.on($('#view'), 'click', '[data-next]', ()=>{ haptic('light'); preview = false; doors(); });
     Kit.on($('#view'), 'click', '[data-skip]', ()=>{ haptic('light'); preview = false; try{ localStorage.setItem('cake-skip-reg', '1'); }catch(e){} doors(); });
     Kit.on($('#view'), 'click', '[data-preview]', ()=>{ haptic('light'); preview = true; regForm(!canContact); });
     Kit.on($('#view'), 'click', '[data-recheck]', async ()=>{
