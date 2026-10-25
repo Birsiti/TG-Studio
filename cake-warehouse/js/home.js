@@ -1,13 +1,15 @@
-// изменено 2026-10-22 17:05
+// изменено 2026-10-25 12:30
 /* Главная (кнопка «Открыть» в боте @Milano_BY_Bot): витрина «Милано» — герой с тортом, лента тортов,
    «Сделать заказ» (оптовая витрина) и «Я сотрудник Милано» (входы по ролям).
    Сотрудник, добавленный в «Люди», сразу попадает на свой экран; руководитель после «Я сотрудник» выбирает вход сам.
+   25.10 — регистрация: нет допуска → фамилия, имя, телефон из Telegram → заявка руководителю; карточки по роли.
    22.10 — редизайн под заказчика (Денис): стиль milano.by, Playfair Display + Open Sans, стили — brand.css «Главная». */
 (function(){
   "use strict";
   const {html, icon, $, haptic} = Kit;
   const api = Kit.createApi({bot:'cake', mock: window.CakeMock});
   const ROLE_PAGE = {driver:'driver.html', storekeeper:'sklad.html', logist:'logist.html'};
+  const ROLE_DOORS = {admin:['admin.html', 'logist.html', 'sklad.html', 'driver.html'], logist:['logist.html'], storekeeper:['sklad.html'], driver:['driver.html']};  // допуск по роли
   const DOORS = [
     ['admin.html', 'chart', 'Сводка', 'Руководителю: остатки, рейсы, водители, люди'],
     ['logist.html', 'route', 'Логист', 'Заявки из файла, рейсы по адресам'],
@@ -67,20 +69,81 @@
       ${madeBy()}
     </div>`); window.scrollTo(0, 0); };
 
-    const staff = ()=>{
-      if(!me.ok){
-        $('#view').innerHTML = String(html`<div class="empty">${icon('lock')}<div class="empty-title">Нет доступа к складу</div>Ваш Telegram id: ${Kit.user.id}<br>Передайте его руководителю — он добавит вас в «Люди».</div>
-          <button class="back-row" type="button" data-first="1">${icon('left')}На главную</button>`);
-        return;
-      }
+    // «Я сотрудник Милано»: допуск есть → карточки по роли; нет → заявка (фамилия, имя, телефон из Telegram) → ждём руководителя
+    const back = html`<button class="back-row" type="button" data-first="1">${icon('left')}На главную</button>`;
+    const doors = ()=>{
+      const allowed = ROLE_DOORS[me.role] || ROLE_DOORS.admin;
       $('#view').innerHTML = String(html`
         <div class="page-head"><h1 class="page-title">Сотрудникам</h1>
           <p class="page-sub">Выберите, кем войти</p></div>
-        <div class="staff-grid">${DOORS.map(([url, ic, title, sub])=>html`<button class="staff-tile" type="button" data-go="${url}">
+        <div class="staff-grid">${DOORS.filter(d=>allowed.includes(d[0])).map(([url, ic, title, sub])=>html`<button class="staff-tile" type="button" data-go="${url}">
           <span class="door-ic">${icon(ic)}</span><b>${title}</b><span>${sub}</span></button>`)}</div>
         ${api.mode() === 'demo' ? html`<p class="mode-note section">Демо-версия: данные примерные и хранятся только в этом телефоне — смело пробуйте всё, сломать ничего нельзя.</p>` : ''}
-        <button class="back-row" type="button" data-first="1">${icon('left')}На главную</button>`);
+        ${back}`);
       window.scrollTo(0, 0);
+    };
+    const waiting = (rejected)=>{
+      $('#view').innerHTML = String(rejected ? html`<div class="empty">${icon('lock')}<div class="empty-title">Допуск не выдан</div>Если это ошибка — свяжитесь с руководителем.</div>${back}`
+        : html`<div class="empty">${icon('clock')}<div class="empty-title">Заявка отправлена</div>Руководитель выдаст допуск и выберет вашу роль. Откройте приложение позже — вы сразу попадёте на свой экран.</div>
+          <button class="btn btn-ghost btn-block section" type="button" data-recheck="1">${icon('refresh')}Проверить допуск</button>${back}`);
+      window.scrollTo(0, 0);
+    };
+    const tgApp = window.Telegram && Telegram.WebApp;
+    const canContact = !!(tgApp && tgApp.initData && tgApp.requestContact && tgApp.isVersionAtLeast && tgApp.isVersionAtLeast('6.9'));
+    const regForm = (manualPhone)=>{
+      const prev = me.signup || {};
+      $('#view').innerHTML = String(html`
+        <div class="page-head"><h1 class="page-title">Регистрация</h1>
+          <p class="page-sub">Сотрудник Милано: оставьте данные, руководитель выдаст допуск</p></div>
+        <label class="field"><span class="field-label">Фамилия</span><input class="input" id="rgLast" maxlength="40" autocomplete="family-name" value="${prev.lastName || Kit.user.lastName || ''}"></label>
+        <label class="field section"><span class="field-label">Имя</span><input class="input" id="rgFirst" maxlength="40" autocomplete="given-name" value="${prev.firstName || Kit.user.firstName || ''}"></label>
+        ${manualPhone ? html`<div class="field section"><span class="field-label">Телефон</span><div id="rgPhone"></div></div>` : ''}
+        <button class="btn btn-primary btn-block section" type="button" id="rgSend">${icon('phone')}${manualPhone ? 'Отправить заявку' : 'Поделиться телефоном'}</button>
+        ${manualPhone ? '' : html`<p class="hint section">Номер берётся из вашего Telegram — вводить его не нужно.</p>`}
+        ${back}`);
+      if(manualPhone){ $('#rgPhone').innerHTML = String(Kit.phone.field('rgPh', '')); Kit.phone.bind($('#rgPh')); }
+      window.scrollTo(0, 0);
+    };
+    const sendSignup = async (extra)=>{
+      const btn = $('#rgSend');
+      Kit.busy(btn, true);
+      const r = await api('signup', Object.assign({lastName:$('#rgLast').value.trim(), firstName:$('#rgFirst').value.trim(), username:Kit.user.username || ''}, extra));
+      Kit.busy(btn, false);
+      if(!r.ok){ Kit.toast(r.message || (r.error === 'forbidden' ? 'Допуск не выдан' : 'Не получилось отправить'), 'error'); haptic('error'); if(r.error === 'forbidden') waiting(true); return; }
+      haptic('success'); me.signup = {status:'pending'}; waiting(false);
+    };
+    Kit.on($('#view'), 'click', '#rgSend', ()=>{
+      const last = $('#rgLast').value.trim(), first = $('#rgFirst').value.trim();
+      if(last.length < 2 || first.length < 2){ Kit.toast('Впишите фамилию и имя', 'error'); haptic('error'); return; }
+      if($('#rgPh')){ const ph = Kit.phone.value($('#rgPh')); if(!ph){ Kit.toast('Впишите телефон', 'error'); haptic('error'); return; } sendSignup({phone:ph}); return; }
+      let done = false;
+      const got = (shared, ev)=>{      // Telegram отвечает через колбэк и событием — берём первый ответ
+        if(done) return; done = true; tgApp.offEvent('contactRequested', onEv);
+        if(!shared){ Kit.toast('Без номера заявку отправить нельзя', 'error'); haptic('error'); return; }
+        const contact = ev && (ev.response || (ev.status === 'sent' && ev.response));
+        if(contact) sendSignup({contact});
+        else { Kit.toast('Telegram не передал номер — впишите его вручную'); regForm(true); }
+      };
+      const onEv = ev=> got(ev && ev.status === 'sent', ev);
+      tgApp.onEvent('contactRequested', onEv);
+      tgApp.requestContact((shared, ev)=> got(shared, ev));
+    });
+    Kit.on($('#view'), 'click', '[data-recheck]', async ()=>{
+      const m = await api('getMe'); haptic('light');
+      if(m.ok && m.access){ if(m.staff && ROLE_PAGE[m.staff.role]) location.replace(ROLE_PAGE[m.staff.role]); else { Object.assign(me, m); doors(); } }
+      else if(m.ok && m.signup && m.signup.status === 'rejected') waiting(true);
+      else Kit.toast('Пока без решения');
+    });
+    const staff = ()=>{
+      if(!me.ok){
+        $('#view').innerHTML = String(html`<div class="empty">${icon('lock')}<div class="empty-title">Нет связи со складом</div>Откройте приложение из бота ещё раз.</div>${back}`);
+        return;
+      }
+      if(me.access) return doors();
+      const st = me.signup && me.signup.status;
+      if(st === 'pending') return waiting(false);
+      if(st === 'rejected') return waiting(true);
+      regForm(!canContact);
     };
     Kit.on($('#view'), 'click', '[data-shop]', ()=>{ haptic('light'); location.href = SHOP; });
     Kit.on($('#view'), 'click', '[data-staff]', ()=>{ haptic('light'); staff(); });
