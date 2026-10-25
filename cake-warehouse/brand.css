@@ -1,4 +1,4 @@
-/* изменено 2026-10-25 18:40 */
+/* изменено 2026-10-25 19:30 */
 /* ============================================================
    МИЛАНО — фирменный слой поверх kit/base.css (22.10.2026, редизайн под заказчика).
    Стиль сайта milano.by «сладкий праздник»: глубокий синий #01233E, малиновый #E52057,
@@ -381,3 +381,10 @@ h1, h2, h3, .page-title, .section-title, .stat-value, .fact b, .door-title, .bra
 .route-bar{ height:8px; border-radius:99px; background:var(--surface-3); overflow:hidden; }
 .route-bar i{ display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,var(--gold-1),var(--gold-2)); }
 .route-cards{ display:flex; flex-direction:column; gap:10px; margin-bottom:14px; }
+
+/* ============ Единый стиль «синий с золотом» (25.10) ============
+   Все рабочие экраны — золотой акцент вместо малинового. Главная (первый экран) и оптовая витрина остаются малиновыми. */
+:root[data-theme="light"]{ --accent:#A8781A; --accent-2:#8A6416; --accent-ink:#FFFFFF; --accent-soft:rgba(201,154,46,.15); }
+:root[data-theme="dark"]{ --accent:#E6BE5C; --accent-2:#EBCB74; --accent-ink:#01233E; --accent-soft:rgba(230,190,92,.14); }
+:root[data-theme="light"] .home{ --accent:#E52057; --accent-2:#C4124A; --accent-ink:#FFFFFF; --accent-soft:rgba(229,32,87,.09); }
+:root[data-theme="dark"] .home{ --accent:#FF4D7E; --accent-2:#F0336A; --accent-ink:#FFFFFF; --accent-soft:rgba(255,77,126,.15); }
