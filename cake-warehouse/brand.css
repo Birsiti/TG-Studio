@@ -1,4 +1,4 @@
-/* изменено 2026-10-25 17:30 */
+/* изменено 2026-10-25 18:10 */
 /* ============================================================
    МИЛАНО — фирменный слой поверх kit/base.css (22.10.2026, редизайн под заказчика).
    Стиль сайта milano.by «сладкий праздник»: глубокий синий #01233E, малиновый #E52057,
@@ -17,6 +17,8 @@
   --btn-radius:14px; --chip-radius:999px;
   --cold:#2BB3A3;
   --navy:#01233E; --navy-2:#0A3456; --berry:#E52057; --cream:#FBF6EF;
+  --gold-1:#EBCB74; --gold-2:#C99A2E; --gold-3:#A57A1C;   /* синий с золотом — регистрация и «Сотрудники» */
+  --gold-ink:#8A6416; --gold-soft:rgba(201,154,46,.14);
 }
 :root[data-theme="light"]{
   --bg:#FBF6EF; --surface:#FFFFFF; --surface-2:#F4ECE1; --surface-3:#EADFD0;
@@ -34,6 +36,7 @@
   --shadow-2:0 20px 46px rgba(11,34,54,.20);
 }
 :root[data-theme="dark"]{
+  --gold-ink:#E6BE5C; --gold-soft:rgba(230,190,92,.14);
   --bg:#06131F; --surface:#0D1F2F; --surface-2:#13293C; --surface-3:#1B3349;
   --ink:#F7EFE6; --ink-2:#A9B7C5; --ink-3:#6D8093;
   --line:#16304A; --line-2:#22405C;
@@ -276,8 +279,8 @@ h1, h2, h3, .page-title, .section-title, .stat-value, .fact b, .door-title, .bra
 
 /* ============ Регистрация сотрудника и «Сотрудники» (25.10) ============ */
 .reg-hero{ position:relative; overflow:hidden; padding:22px 20px 20px; border-radius:var(--r-xl); background:var(--hero-bg); color:var(--hero-ink); box-shadow:var(--shadow-2); }
-.reg-hero::after{ content:""; position:absolute; right:-40px; top:-40px; width:170px; height:170px; border-radius:50%; background:radial-gradient(circle, rgba(229,32,87,.45), rgba(229,32,87,0) 70%); }
-.reg-badge{ position:relative; z-index:1; width:56px; height:56px; border-radius:18px; display:grid; place-items:center; background:linear-gradient(135deg,#F0336A,#B8104A); color:#fff; box-shadow:0 10px 24px rgba(229,32,87,.4); }
+.reg-hero::after{ content:""; position:absolute; right:-40px; top:-40px; width:170px; height:170px; border-radius:50%; background:radial-gradient(circle, rgba(235,203,116,.38), rgba(235,203,116,0) 70%); }
+.reg-badge{ position:relative; z-index:1; width:56px; height:56px; border-radius:18px; display:grid; place-items:center; background:linear-gradient(135deg,var(--gold-1),var(--gold-2)); color:#01233E; box-shadow:0 10px 24px rgba(201,154,46,.35); }
 .reg-badge .ic{ width:28px; height:28px; }
 .reg-hero h1{ position:relative; z-index:1; margin:16px 0 6px; font-family:var(--font-display); font-size:30px; line-height:1.1; color:var(--hero-ink); text-wrap:balance; }
 .reg-hero p{ position:relative; z-index:1; margin:0; font-size:16px; line-height:1.45; color:var(--hero-ink-2); }
@@ -285,37 +288,37 @@ h1, h2, h3, .page-title, .section-title, .stat-value, .fact b, .door-title, .bra
 .reg-step{ display:inline-flex; align-items:center; gap:7px; min-height:34px; padding:0 12px 0 6px; border-radius:999px; background:rgba(255,255,255,.10); color:var(--hero-ink-2); font-size:15.5px; font-weight:600; }
 .reg-step i{ width:24px; height:24px; border-radius:50%; display:grid; place-items:center; font-style:normal; font-size:13px; font-weight:800; background:rgba(255,255,255,.16); color:#fff; }
 .reg-step.is-on{ background:rgba(255,255,255,.95); color:#01233E; }
-.reg-step.is-on i{ background:#E52057; }
-.reg-step.is-done i{ background:#2FBF84; }
+.reg-step.is-on i{ background:var(--gold-2); }
+.reg-step.is-done i{ background:var(--gold-2); color:#01233E; }
 .reg-card{ margin-top:14px; padding:18px 16px; border-radius:var(--r-lg); background:var(--surface); border:1px solid var(--line); box-shadow:var(--shadow-1); display:flex; flex-direction:column; gap:14px; }
 .reg-card .field{ margin:0; }
-.btn-berry{ min-height:58px; border:0; border-radius:16px; font-size:17px; font-weight:800; color:#fff; background:linear-gradient(135deg,#F0336A 0%,#E52057 50%,#B8104A 100%); box-shadow:0 12px 26px rgba(229,32,87,.32); }
+.btn-berry{ min-height:58px; border:0; border-radius:16px; font-size:17px; font-weight:800; color:#01233E; background:linear-gradient(135deg,var(--gold-1) 0%,var(--gold-2) 60%,var(--gold-3) 100%); box-shadow:0 12px 26px rgba(201,154,46,.30); }
 .btn-berry:active{ transform:scale(.98); }
 .btn-berry .ic{ width:22px; height:22px; }
 .reg-trust{ display:flex; gap:10px; align-items:flex-start; font-size:15.5px; line-height:1.45; color:var(--ink-2); }
-.reg-trust .ic{ flex:none; width:20px; height:20px; margin-top:2px; color:var(--ok); }
+.reg-trust .ic{ flex:none; width:20px; height:20px; margin-top:2px; color:var(--gold-ink); }
 .reg-msg{ padding:12px 14px; border-radius:var(--r-md); font-size:15.5px; line-height:1.4; background:var(--info-soft); color:var(--info); }
 .reg-msg.is-bad{ background:var(--danger-soft); color:var(--danger); }
 .reg-preview{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; padding:10px 12px 10px 14px; border-radius:var(--r-md); background:var(--warn-soft); color:var(--warn); font-size:15.5px; font-weight:600; }
 .reg-preview button{ flex:none; min-height:40px; padding:0 14px; border-radius:12px; border:1px solid currentColor; background:transparent; color:inherit; font-weight:700; font-size:15.5px; }
 
-.reg-done{ text-align:center; padding:26px 20px 22px; border-radius:var(--r-xl); background:linear-gradient(160deg, var(--ok-soft), var(--accent-soft)); border:1px solid var(--line); }
+.reg-done{ text-align:center; padding:26px 20px 22px; border-radius:var(--r-xl); background:var(--hero-bg); box-shadow:var(--shadow-2); }
 .reg-check{ width:92px; height:92px; margin:0 auto 16px; border-radius:50%; display:grid; place-items:center; color:#fff;
-  background:linear-gradient(140deg,#3FDC97 0%,#1E9E6B 60%,#147A52 100%); box-shadow:0 0 0 10px rgba(47,191,132,.15), 0 16px 34px rgba(30,125,90,.35); animation:reg-pop .32s cubic-bezier(.2,1.4,.4,1) both; }
+  color:#01233E; background:linear-gradient(140deg,var(--gold-1) 0%,var(--gold-2) 65%,var(--gold-3) 100%); box-shadow:0 0 0 10px rgba(235,203,116,.16), 0 16px 34px rgba(0,0,0,.30); animation:reg-pop .32s cubic-bezier(.2,1.4,.4,1) both; }
 .reg-check .ic{ width:46px; height:46px; stroke-width:3; }
-.reg-check.is-wait{ background:linear-gradient(140deg,#F0336A,#B8104A); box-shadow:0 0 0 10px rgba(229,32,87,.13), 0 16px 34px rgba(229,32,87,.32); }
+.reg-check.is-wait{ color:var(--gold-1); background:rgba(255,255,255,.08); box-shadow:0 0 0 2px rgba(235,203,116,.55) inset; }
 @keyframes reg-pop{ from{ transform:scale(.55); opacity:0; } to{ transform:scale(1); opacity:1; } }
 @media (prefers-reduced-motion: reduce){ .reg-check{ animation:none; } }
-.reg-done h1{ margin:0 0 8px; font-family:var(--font-display); font-size:30px; line-height:1.12; color:var(--ink); text-wrap:balance; }
-.reg-done p{ margin:0 auto; max-width:34ch; font-size:16px; line-height:1.5; color:var(--ink-2); }
+.reg-done h1{ margin:0 0 8px; font-family:var(--font-display); font-size:30px; line-height:1.12; color:var(--hero-ink); text-wrap:balance; }
+.reg-done p{ margin:0 auto; max-width:34ch; font-size:16px; line-height:1.5; color:var(--hero-ink-2); }
 .reg-sum{ margin-top:14px; border-radius:var(--r-lg); background:var(--surface); border:1px solid var(--line); overflow:hidden; text-align:left; }
 .reg-sum > div{ display:flex; align-items:center; gap:12px; min-height:56px; padding:10px 16px; border-top:1px solid var(--line); font-size:16px; }
 .reg-sum > div:first-child{ border-top:0; }
 .reg-sum span{ flex:1; min-width:0; color:var(--ink-2); font-size:15.5px; }
 .reg-sum b{ color:var(--ink); font-weight:700; text-align:right; }
 .reg-sum .ic{ flex:none; width:22px; height:22px; }
-.reg-sum .is-ok{ color:var(--ok); }
-.reg-sum .is-wait{ color:var(--accent); }
+.reg-sum .is-ok{ color:var(--info); }
+.reg-sum .is-wait{ color:var(--gold-ink); }
 
 /* «Сотрудники» — список руководителя */
 .team-open{ margin-top:12px; }
@@ -329,20 +332,27 @@ h1, h2, h3, .page-title, .section-title, .stat-value, .fact b, .door-title, .bra
 .team-line{ font-size:15.5px; color:var(--ink-2); line-height:1.35; }
 .team-line.is-none{ color:var(--ink-3); }
 .role-chip{ align-self:flex-start; display:inline-flex; align-items:center; min-height:26px; padding:0 10px; border-radius:999px; font-size:14px; font-weight:700; }
-.r-manager{ background:var(--accent-soft); color:var(--accent); }
+.r-manager{ background:var(--gold-soft); color:var(--gold-ink); }
 .r-logist{ background:var(--info-soft); color:var(--info); }
 .r-storekeeper{ background:var(--cold-soft); color:var(--cold-ink); }
 .r-driver{ background:var(--warn-soft); color:var(--warn); }
-.team-wait{ padding:16px; border-radius:var(--r-lg); background:var(--accent-soft); border:1px solid var(--line); display:flex; flex-direction:column; gap:12px; }
+.team-wait{ padding:16px; border-radius:var(--r-lg); background:var(--gold-soft); border:1px solid var(--line); display:flex; flex-direction:column; gap:12px; }
 .team-roles{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:8px; }
 .team-roles button{ min-height:48px; border-radius:12px; border:1px solid var(--line-2); background:var(--surface); color:var(--ink); font-weight:700; font-size:15.5px; }
-.team-roles button.is-on{ background:var(--accent); border-color:var(--accent); color:var(--accent-ink); }
+.team-roles button.is-on{ background:var(--navy-2); border-color:var(--navy-2); color:#fff; }
 .btn-danger-soft{ display:flex; align-items:center; justify-content:center; gap:8px; width:100%; min-height:52px; border-radius:14px; border:1px solid var(--danger); background:transparent; color:var(--danger); font-weight:700; font-size:16px; }
 .btn-danger-soft.is-armed{ background:var(--danger); color:#fff; }
 .reg-done .reg-steps{ justify-content:center; }
-.reg-done .reg-step{ background:var(--surface); color:var(--ink-2); border:1px solid var(--line); }
-.reg-done .reg-step i{ background:var(--surface-3); color:var(--ink); }
-.reg-done .reg-step.is-done i{ background:#2FBF84; color:#fff; }
-.reg-done .reg-step.is-on{ background:var(--accent); border-color:var(--accent); color:#fff; }
-.reg-done .reg-step.is-on i{ background:rgba(255,255,255,.25); color:#fff; }
+.reg-done .reg-step{ background:rgba(255,255,255,.10); color:var(--hero-ink-2); border:0; }
+.reg-done .reg-step i{ background:rgba(255,255,255,.16); color:#fff; }
+.reg-done .reg-step.is-done i{ background:var(--gold-2); color:#01233E; }
+.reg-done .reg-step.is-on{ background:rgba(255,255,255,.95); color:#01233E; }
+.reg-done .reg-step.is-on i{ background:var(--gold-2); color:#01233E; }
 .btn-danger-soft .ic{ width:20px; height:20px; }
+
+/* синий с золотом и в меню сотрудника */
+.staff-tile .door-ic{ background:var(--gold-soft); color:var(--gold-ink); }
+.team-open .door-ic{ background:var(--navy-2); color:var(--gold-1); }
+.team-open .door-go{ background:var(--gold-soft); color:var(--gold-ink); }
+.staff-link{ display:block; margin:14px auto 0; color:var(--gold-ink); }
+#tmChips .chip.is-on{ background:var(--navy-2); border-color:var(--navy-2); color:#fff; }
