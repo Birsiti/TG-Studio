@@ -31,9 +31,10 @@
   async function loadTrips(pick){
     if(pick && !ME) $('#view').innerHTML = String(html`<div class="empty">${icon('truck')}<div class="empty-title">Открываю водителя…</div></div>`);
     const me = MEINFO || {};
-    const r = await api('getMyTrips', {driverId:(me.ok && me.staff) ? undefined : pick});
+    const self = me.ok && me.staff && me.staff.role === 'driver';  // сам водитель — сервер узнаёт его по Telegram; руководитель из «Людей» — по выбору
+    const r = await api('getMyTrips', {driverId:self ? undefined : pick});
     if(!r.ok){ fail(r); }
-    else if(pick && !r.driver && !(me.ok && me.staff)){ Kit.toast('Водитель не найден — выберите снова', 'error'); Kit.store(PICK_KEY, ''); }
+    else if(pick && !r.driver && !self){ Kit.toast('Водитель не найден — выберите снова', 'error'); Kit.store(PICK_KEY, ''); }
     ME = r.ok ? r.driver : null; TRIPS = r.ok ? r.trips : []; DEBT = (r.ok && r.taraDebt) || [];
     render();
   }
