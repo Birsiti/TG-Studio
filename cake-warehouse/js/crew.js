@@ -1,4 +1,4 @@
-// изменено 2026-10-25 18:40
+// изменено 2026-10-25 21:40
 /* Кого посадить в рейс: водитель с подсказками («ездил на этом маршруте», «на смене», «занят») и машина
    (по умолчанию последняя водителя, можно заменить из парка или вписать). Общий для логиста, кладовщика и руководителя. */
 window.CakeCrew = (function(){
@@ -24,7 +24,7 @@ window.CakeCrew = (function(){
     const rowD = d=> html`<button class="row crew-row${st.driverId === d.id ? ' is-on' : ''}" type="button" data-d="${d.id}"${opts.lockDriver && st.driverId !== d.id ? Kit.raw(' disabled') : ''}>
       <span class="avatar">${Kit.initials(d.name)}</span>
       <span class="row-main"><span class="row-title">${d.name}${d.hired ? html` <span class="hint">наёмный</span>` : ''}</span>
-        <span class="crew-tags">${top && top.id === d.id ? html`<span class="role-chip r-manager">чаще всех на маршруте</span>` : ''}${d.onShift ? html`<span class="role-chip r-storekeeper">на смене</span>` : ''}${d.busy.length ? html`<span class="role-chip r-driver">рейс №${d.busy.join(', №')} в этот день</span>` : ''}</span>
+        <span class="crew-tags">${top && top.id === d.id ? html`<span class="role-chip r-manager">чаще всех на маршруте</span>` : ''}${d.onShift ? html`<span class="role-chip r-storekeeper">на смене</span>` : ''}${d.inTransit ? html`<span class="role-chip r-danger">в пути · рейс №${d.inTransit}</span>` : ''}${d.busy.length ? html`<span class="role-chip r-driver">рейс №${d.busy.join(', №')} в этот день</span>` : ''}</span>
         <span class="row-sub">${hint(d)}</span>
         <span class="row-sub">${d.carDefault ? 'машина: ' + d.carDefault : 'машина не закреплена'}</span></span>
       <span class="crew-tick">${icon('check')}</span></button>`;
@@ -36,6 +36,7 @@ window.CakeCrew = (function(){
     const sh = Kit.sheet({title:opts.title || 'Водитель и машина', sub:opts.sub || '', body: html`
       <div class="eyebrow" style="margin-bottom:8px">Водитель${opts.lockDriver ? ' · после отгрузки не меняется' : ''}</div>
       <div class="list" id="cwDrv"></div>
+      <p class="hint" style="margin:8px 0 0">Один водитель не едет в двух рейсах сразу: пока он в пути, второй рейс не отгрузить. Рейсы на разных машинах собирать можно.</p>
       <div class="eyebrow section" style="margin-bottom:8px">Машина</div>
       <p class="hint" id="cwAuto" style="margin:0 0 8px"></p>
       <div class="chips" id="cwCars"></div>
