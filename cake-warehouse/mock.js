@@ -1,4 +1,4 @@
-// изменено 2026-10-25 12:40
+// изменено 2026-10-25 17:40
 /* ============================================================
    mock.js — офлайн-двойник API склада (api/bots/cake/). Данные — mock-data.js.
    Действия других тем добавляются через CakeMock.register (mock-picking.js).
@@ -78,9 +78,11 @@ window.CakeMock = (function(){
       var i = S.signups.findIndex(function(x){ return x.tgId === s.tgId; }); if(i >= 0) S.signups[i] = s; else S.signups.push(s);
       return {signup:s};
     },
+    deleteStaff: function(p){ var i = S.staff.findIndex(function(x){ return x.id === p.id; }); if(i < 0) return err('not_found', 'Нет такого сотрудника'); var tg = S.staff[i].tgId; S.staff.splice(i, 1); if(tg && S.signups) S.signups = S.signups.filter(function(x){ return x.tgId !== tg; }); return {id:p.id}; },
     decideSignup: function(p){
       var s = (S.signups || []).find(function(x){ return x.tgId === p.tgId; });
       if(!s) return err('not_found', 'Заявки нет');
+      if(s.status !== 'pending') return err('conflict', 'По этой заявке уже решили');
       if(p.reject){ s.status = 'rejected'; return {staff:null}; }
       s.status = 'approved';
       var st = {id:Kit.uid('s'), name:s.lastName + ' ' + s.firstName, role:p.role, phone:s.phone, car:'', hired:false, carrier:'', tgId:s.tgId, active:true};
