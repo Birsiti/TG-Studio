@@ -1,4 +1,4 @@
-// изменено 2026-10-22 01:15
+// изменено 2026-10-25 18:40
 /* Общее для страниц склада: API, справочники, остатки и помощники
    (название с весом, группы по категориям, поиск без перерисовки). */
 window.Cake = (function(){
@@ -32,6 +32,11 @@ window.Cake = (function(){
   };
   C.nameKey = p=> (p.name + ' ' + p.cat + ' ' + p.sku).toLowerCase();
   C.pcs = n=> num(n) + ' шт';
+  // Вес рейса и заявок: торты по справочнику (шт × граммы); ящик — своя масса из настроек (≈, пока не взвесили)
+  C.kgOf = lines=> (lines || []).reduce((s, l)=> s + (l.qty + (l.bonus || 0)) * (C.P(l.productId).weightG || 0), 0) / 1000;
+  C.boxKg = v=>{ if(v === undefined){ const n = parseFloat(Kit.store('cake-box-kg')); return n > 0 ? n : 1.5; } Kit.store('cake-box-kg', String(v)); return v; };
+  C.fmtKg = n=> num(Math.round(n)) + ' кг';
+  C.boxesOf = t=> (t.taraOut || []).reduce((s, l)=>s + l.qty, 0);
   C.fail = r=> { Kit.toast(r.message || ({network:'Нет связи', forbidden:'Нет доступа'})[r.error] || 'Не получилось', 'error'); haptic('error'); };
   C.stockOf = id=> (C.stock.find(x=>x.id === id) || {qty:0}).qty;
 

@@ -1,4 +1,4 @@
-// изменено 2026-10-18 16:30
+// изменено 2026-10-25 18:40
 /* Вкладка «Рейсы»: сборка → отгрузка → приёмка с возвратом тортов и ящиков. */
 (function(){
   "use strict";
@@ -28,10 +28,11 @@
     return html`<div class="waybill"><button class="waybill-head" type="button" data-t="${t.id}">
         <span class="code is-accent">${c.code || c.name.slice(0, 3).toUpperCase()}</span>
         <span class="waybill-main"><span class="waybill-title">${c.name}\u00a0·\u00a0№${t.num}</span>
-          <span class="waybill-sub" style="display:block">${D.label(t.date)} · ${d ? d.name : 'водитель не выбран'}</span></span>
+          <span class="waybill-sub" style="display:block">${D.label(t.date)} · ${d ? d.name : 'водитель не выбран'}</span>
+          ${(t.car || (d && d.car)) ? html`<span class="waybill-sub" style="display:block">${t.car || d.car}</span>` : ''}</span>
         <span class="pill ${st[1]}">${st[0]}</span></button>
       <div class="waybill-tear"></div>
-      <div class="waybill-body">${(t.stops || []).length ? html`<span>Точек <b>${t.stops.length}</b></span>` : ''}<span>Тортов <b>${total}</b></span><span>Позиций <b>${t.lines.length}</b></span>${tara ? html`<span>Тара <b>${tara}</b></span>` : ''}</div></div>`;
+      <div class="waybill-body">${(t.stops || []).length ? html`<span>Точек <b>${t.stops.length}</b></span>` : ''}<span>Тортов <b>${total}</b></span><span>Вес <b>${Cake.fmtKg(Cake.kgOf(t.lines))}</b></span>${tara ? html`<span>Тара <b>${tara}</b></span>` : ''}</div></div>`;
   }
   Kit.on($('#tripList'), 'click', '[data-t]', (e, el)=> openTrip(TRIPS.find(x=>x.id === el.dataset.t)));
   $('#tripAdd').addEventListener('click', ()=> editTrip(null));
@@ -41,14 +42,21 @@
     const c = C(t.cityId), d = S(t.driverId);
     const rep = t.report ? JSON.parse(t.report) : null;
     const closed = t.status === 'closed';
+    const car = t.car || (d && d.car) || '', kg = Cake.kgOf(t.lines), boxes = Cake.boxesOf(t);
     const sh = Kit.sheet({title:`${c.name} · №${t.num}`, sub:`${D.label(t.date)} · ${TRIP_ST[t.status][0]}`, body: html`
-      <div class="kv"><span class="k">Водитель</span><span class="v">${d ? d.name : '—'}</span></div>
-      ${d && (d.car || d.hired) ? html`<div class="kv"><span class="k">Машина</span><span class="v">${d.hired ? `наёмная${d.carrier ? ' · ' + d.carrier : ''}${d.car ? ' · ' : ''}` : ''}${d.car || ''}</span></div>` : ''}
-      ${t.odoOut != null ? html`<div class="kv"><span class="k">Спидометр</span><span class="v mono">${num(t.odoOut)}${t.odoBack != null ? ` → ${num(t.odoBack)} · ${num(t.odoBack - t.odoOut)} км` : ' → в пути'}</span></div>` : ''}
+      <div class="trip-crew">
+        <div class="kv"><span class="k">Водитель</span><span class="v">${d ? d.name : html`<b style="color:var(--danger)">не выбран</b>`}</span></div>
+        <div class="kv"><span class="k">Машина</span><span class="v">${car || html`<span class="hint">не указана</span>`}${d && d.hired ? ` · наёмная${d.carrier ? ' · ' + d.carrier : ''}` : ''}</span></div>
+        ${/draft|shipped|reported/.test(t.status) ? html`<button class="btn btn-ghost btn-block" type="button" data-a="crew">${icon('users')}${t.status === 'draft' ? 'Водитель и машина' : 'Заменить машину'}</button>` : ''}
+      </div>
+      <div class="trip-weight"><div><b>${Cake.fmtKg(kg)}</b><span>торты</span></div><div><b>≈ ${Cake.fmtKg(kg + boxes * Cake.boxKg())}</b><span>с ящиками</span></div><div><b>${boxes}</b><span>ящиков</span></div></div>
+      <p class="hint" style="margin:6px 0 0">Ящик считаем по ${String(Cake.boxKg()).replace('.', ',')} кг — <button class="link-btn" type="button" data-a="boxkg" style="min-height:0;display:inline">изменить</button></p>
+      ${(t.stops || []).length ? html`<button class="btn btn-ghost btn-block section" type="button" data-a="load">${icon('layers')}Погрузка: кузов и маршрут</button>` : ''}
+      ${t.odoOut != null ? html`<div class="kv section"><span class="k">Спидометр</span><span class="v mono">${num(t.odoOut)}${t.odoBack != null ? ` → ${num(t.odoBack)} · ${num(t.odoBack - t.odoOut)} км` : ' → в пути'}</span></div>` : ''}
       ${t.note ? html`<div class="kv"><span class="k">Комментарий</span><span class="v">${t.note}</span></div>` : ''}
-      ${stopsView(t)}
-      <div class="section"><div class="eyebrow" style="margin-bottom:8px">Состав</div>
-        ${t.lines.map(l=>html`<div class="kv"><span class="k">${L(l.productId)}</span><span class="v mono">${l.qty}${closed ? html` <span class="hint">→ ${l.delivered}${l.back ? ' · возв ' + l.back : ''}${l.spoiled ? ' · брак ' + l.spoiled : ''}</span>` : ''}</span></div>`)}</div>
+      <div class="section"><div class="eyebrow" style="margin-bottom:8px">На весь рейс · ${t.lines.length} поз. · ${t.lines.reduce((a, l)=>a + l.qty, 0)} шт</div>
+        ${tripCats(t, closed)}</div>
+      ${(t.stops || []).length ? html`<button class="btn btn-ghost btn-block section" type="button" data-a="stops">${icon('pin')}Точки рейса · ${t.stops.length}</button><div id="stopsBox" hidden>${stopsView(t)}</div>` : ''}
       ${t.taraOut.length ? html`<div class="section"><div class="eyebrow" style="margin-bottom:8px">Тара</div>${t.taraOut.map(l=>{ const b = (t.taraBack.find(x=>x.taraId === l.taraId) || {}).qty; return html`<div class="kv"><span class="k">${T(l.taraId).name}</span><span class="v mono">${l.qty}${closed ? ' → вернули ' + (b || 0) : ''}</span></div>`; })}</div>` : ''}
       ${rep ? html`<div class="section"><div class="eyebrow" style="margin-bottom:8px">Отчёт водителя</div><p class="hint">Возврат: ${rep.returns.length ? rep.returns.map(r=>`${L(r.productId)} — ${r.back}${r.spoiled ? ' (брак ' + r.spoiled + ')' : ''}`).join(', ') : 'нет'}. Тара: ${rep.taraBack.map(l=>T(l.taraId).name + ' ' + l.qty).join(', ') || 'нет'}.${rep.comment ? ' «' + rep.comment + '»' : ''}</p></div>` : ''}`,
       actions: t.status === 'draft' ? html`<button class="btn btn-ghost" type="button" data-a="edit">${icon('edit')}Изменить</button><button class="btn btn-primary" type="button" data-a="ship">${icon('truck')}Отгрузить</button>`
@@ -58,6 +66,10 @@
     Kit.on(sh.el, 'click', '[data-a]', async (e, el)=>{
       const a = el.dataset.a;
       if(a === 'edit'){ sh.close(); editTrip(t); return; }
+      if(a === 'crew'){ CakeCrew.editTrip(t, nt=>{ sh.close(); renderTrips(); openTrip(Object.assign(t, nt)); }); return; }
+      if(a === 'load'){ location.href = `pogruzka.html?date=${t.date}&route=${encodeURIComponent(c.name)}`; return; }
+      if(a === 'stops'){ const b = sh.$('#stopsBox'); b.hidden = !b.hidden; haptic('select'); return; }
+      if(a === 'boxkg'){ boxKgSheet(()=>{ sh.close(); openTrip(t); }); return; }
       if(a === 'close'){ sh.close(); acceptTrip(t); return; }
       Kit.busy(el, true); const tara = await api('getTara'); Kit.busy(el, false);
       const d = tara.ok && (tara.drivers.find(x=>x.id === t.driverId) || null);
@@ -91,6 +103,28 @@
         ship(s2.$('#sGo'), {id:t.id, taraBack}, ()=>{ s2.close(); closeTrip(); });
       });
     }
+  }
+
+  // Состав на рейс по категориям: наименование, штук, кг (после закрытия — что довезли и вернули)
+  function tripCats(t, closed){
+    const cats = Cake.CATS().filter(cat=> t.lines.some(l=>P(l.productId).cat === cat));
+    return html`${cats.map(cat=>{
+      const ls = t.lines.filter(l=>P(l.productId).cat === cat);
+      return html`<div class="cat-head eyebrow" style="margin:10px 0 4px">${cat} · ${ls.reduce((a, l)=>a + l.qty, 0)} шт · ${Cake.fmtKg(Cake.kgOf(ls))}</div>
+        ${ls.map(l=>html`<div class="kv"><span class="k">${L(l.productId)}</span><span class="v mono">${l.qty}${closed ? html` <span class="hint">→ ${l.delivered}${l.back ? ' · возв ' + l.back : ''}${l.spoiled ? ' · брак ' + l.spoiled : ''}</span>` : html` <span class="hint">${Cake.fmtKg(Cake.kgOf([l]))}</span>`}</span></div>`)}`;
+    })}`;
+  }
+  // Вес пустого ящика — для «с ящиками»; хранится на этом телефоне, пока не взвесили и не внесли в справочник
+  function boxKgSheet(done){
+    const sh = Kit.sheet({title:'Вес пустого ящика', sub:'Нужен, чтобы не перегрузить кузов', body: html`
+      <label class="field"><span class="field-label">Килограммов</span><input class="input" id="bkKg" inputmode="decimal" value="${String(Cake.boxKg()).replace('.', ',')}"></label>
+      <p class="hint">Пластиковый ящик обычно 1–2 кг. Взвесьте один и впишите точнее.</p>`,
+      actions: html`<button class="btn btn-primary btn-block" type="button" id="bkGo">Сохранить</button>`});
+    sh.$('#bkGo').addEventListener('click', ()=>{
+      const v = parseFloat(sh.$('#bkKg').value.replace(',', '.'));
+      if(!(v > 0 && v < 30)){ Kit.toast('Вес от 0,1 до 30 кг', 'error'); return; }
+      Cake.boxKg(v); haptic('success'); sh.close(); done();
+    });
   }
 
   // Точки рейса: № заявки, заказчик, адрес, штук; кнопка на карту

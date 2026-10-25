@@ -1,4 +1,4 @@
-// изменено 2026-10-23 05:00
+// изменено 2026-10-25 18:40
 /* Вкладка «Сборка»: заявки на дату и лист с галочками в порядке обхода склада
    (по часовой стрелке от двери). Сейчас — по заявке, со следующей недели — весь маршрут за круг. */
 (function(){
@@ -42,8 +42,26 @@
       return;
     }
     const open = list.filter(o=>o.status === 'new' && !o.tripId).length;
-    $('#pkList').innerHTML = list.length ? String(html`${list.map(card)}${open ? html`<button class="btn btn-ghost btn-block section" type="button" data-all>${icon('check')}Отметить все собранными (${open})</button>` : ''}`)
+    $('#pkList').innerHTML = list.length ? String(html`${PK.route ? '' : routeCards()}${list.map(card)}${open ? html`<button class="btn btn-ghost btn-block section" type="button" data-all>${icon('check')}Отметить все собранными (${open})</button>` : ''}`)
       : String(html`<div class="empty">${icon('route')}<div class="empty-title">Заявок нет</div>На ${D.label(PK.date)} заявок не внесено</div>`);
+  }
+
+  // Заявки сгруппированы под рейсы: по маршруту — точек, штук, кг, сколько собрано, в каком рейсе
+  function routeCards(){
+    const routes = PK.routes.filter(r=> PK.orders.some(o=>o.route === r));
+    if(routes.length < 1) return '';
+    return html`<div class="section-head" style="margin-bottom:8px"><h2 class="section-title">Маршруты · ${D.label(PK.date)}</h2><span class="hint">${routes.length}</span></div>
+      <div class="route-cards">${routes.map(r=>{
+        const os = PK.orders.filter(o=>o.route === r), lines = os.flatMap(o=>o.lines);
+        const picked = os.filter(o=>o.status === 'picked').length, pts = new Set(os.map(o=>o.pointId)).size;
+        const trips = [...new Set(os.map(o=>o.tripId).filter(Boolean))];
+        const qty = lines.reduce((a, l)=>a + l.qty + l.bonus, 0), kg = Cake.kgOf(lines), bx = os.reduce((a, o)=>a + (o.boxes || 0), 0);
+        const free = os.filter(o=>!o.tripId).length;
+        return html`<button class="route-card" type="button" data-rt="${r}">
+          <span class="route-card-head"><span class="route-card-title">${r}</span>
+            <span class="pill ${trips.length ? 'pill-info' : picked === os.length ? 'pill-ok' : 'pill-warn'}">${trips.length ? 'в рейсе' + (free ? ' · без рейса ' + free : '') : picked === os.length ? 'готов к рейсу' : `собрано ${picked} из ${os.length}`}</span></span>
+          <span class="route-card-nums"><span><b>${pts}</b> точ.</span><span><b>${qty}</b> шт</span><span><b>${Cake.fmtKg(kg)}</b></span>${bx ? html`<span><b>${bx}</b> ящ.</span>` : ''}</span>
+          <span class="route-bar"><i style="width:${Math.round(100 * picked / os.length)}%"></i></span></button>`; })}</div>`;
   }
 
   function card(o){
@@ -146,6 +164,7 @@
   Kit.on($('#pkDates'), 'click', '[data-d]', async (e, el)=>{ haptic('select'); PK.date = el.dataset.d; await renderPick(); });
   Kit.on($('#pkRoutes'), 'click', '[data-r]', (e, el)=>{ haptic('select'); PK.route = el.dataset.r; if(!PK.route) PK.mode = 'order'; draw(); });
   Kit.on($('#pkMode'), 'click', '[data-m]', (e, el)=>{ haptic('select'); PK.mode = el.dataset.m; draw(); });
+  Kit.on($('#pkList'), 'click', '[data-rt]', (e, el)=>{ haptic('select'); PK.route = el.dataset.rt; PK.mode = 'route'; draw(); window.scrollTo(0, 0); });
   Kit.on($('#pkList'), 'click', '[data-o]', (e, el)=> openOrder(PK.orders.find(x=>x.id === el.dataset.o)));
   Kit.on($('#pkList'), 'click', '[data-all]', async ()=>{
     const list = PK.orders.filter(o=>(!PK.route || o.route === PK.route) && o.status === 'new' && !o.tripId);
