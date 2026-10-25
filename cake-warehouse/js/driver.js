@@ -1,4 +1,4 @@
-// изменено 2026-10-25 17:20
+// изменено 2026-10-25 17:40
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
@@ -23,8 +23,17 @@
     if(!refs.ok){ $('#view').innerHTML = String(html`<div class="empty">${icon('lock')}<div class="empty-title">Нет доступа</div>Попросите кладовщика добавить ваш Telegram в список водителей</div>`); return; }
     REFS = refs; boss = me.ok && me.role === 'admin'; restricted = me.ok && me.restricted && !boss;  // руководитель выбирает водителя и смотрит его экран
     if(!load.hello){ load.hello = true; api('hello', {page:'driver'}); }  // журнал «кто заходит»
-    const picked = Kit.store(PICK_KEY);
-    const r = await api('getMyTrips', {driverId:(me.ok && me.staff) ? undefined : picked || undefined});
+    MEINFO = me;
+    await loadTrips(Kit.store(PICK_KEY) || undefined);
+  }
+  // Рейсы водителя; руководитель (и демо) — выбранного в списке. Пока грузится — видно, что нажатие сработало.
+  let MEINFO = null;
+  async function loadTrips(pick){
+    if(pick && !ME) $('#view').innerHTML = String(html`<div class="empty">${icon('truck')}<div class="empty-title">Открываю водителя…</div></div>`);
+    const me = MEINFO || {};
+    const r = await api('getMyTrips', {driverId:(me.ok && me.staff) ? undefined : pick});
+    if(!r.ok){ fail(r); }
+    else if(pick && !r.driver && !(me.ok && me.staff)){ Kit.toast('Водитель не найден — выберите снова', 'error'); Kit.store(PICK_KEY, ''); }
     ME = r.ok ? r.driver : null; TRIPS = r.ok ? r.trips : []; DEBT = (r.ok && r.taraDebt) || [];
     render();
   }
@@ -90,7 +99,7 @@
         <span class="row-main"><span class="row-title">${d.name}</span><span class="row-sub">${d.car}</span></span>${icon('right', 'row-chev')}</button>`)}</div>`}`);
   }
 
-  Kit.on($('#view'), 'click', '[data-pick]', (e, el)=>{ Kit.store(PICK_KEY, el.dataset.pick); haptic('select'); load(); });
+  Kit.on($('#view'), 'click', '[data-pick]', (e, el)=>{ Kit.store(PICK_KEY, el.dataset.pick); haptic('select'); loadTrips(el.dataset.pick); });
   Kit.on($('#view'), 'click', '#swap', ()=> toPick());
   // Выбранный водитель (демо, руководитель) — «Назад» сначала возвращает к списку водителей, потом в меню
   function toPick(){ Kit.back.pop(toPick); ME = null; Kit.store(PICK_KEY, ''); renderPick(); }
