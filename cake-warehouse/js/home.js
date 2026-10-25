@@ -218,7 +218,7 @@
       if(!me.ok){ show(html`<div class="empty">${icon('lock')}<div class="empty-title">Нет связи со складом</div>Откройте приложение из бота ещё раз.</div>${back}`); return; }
       if(me.access){
         // руководитель без записи в «Людях» тоже проходит окно регистрации (предпросмотр) — пока не нажмёт «В меню»
-        let skip = false; try{ skip = localStorage.getItem('cake-skip-reg') === '1'; }catch(e){}
+        let skip = /[?&]staff=1\b/.test(location.search); try{ skip = skip || localStorage.getItem('cake-skip-reg') === '1'; }catch(e){}  // вернулся «Назад» с экрана роли — сразу меню
         if(me.role === 'admin' && !me.staff && !skip){ preview = true; return regForm(!canContact); }
         return doors();
       }
