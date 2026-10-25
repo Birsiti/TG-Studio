@@ -1,4 +1,4 @@
-// изменено 2026-10-18 16:00
+// изменено 2026-10-25 12:45
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { roleOf, menuButton, idsOf } = require('../src/roles');
@@ -156,4 +156,10 @@ test('состояние больше 2000: текущие не обрезают
     assert.equal(r.events.length, 0);
   }
   assert.ok(Object.keys(r.next).length <= 2000 && 'O-NEW0' in r.next && !('O-OLD0' in r.next));
+});
+
+test('заявка сотрудника: имя, телефон, пометка про ручной ввод', () => {
+  const s = { tgId: '4401', lastName: 'Литвинов', firstName: 'Антон', phone: '+375291112233', phoneOk: true, username: 'anton' };
+  assert.match(texts.newSignup(s), /Литвинов Антон \(@anton\)\nТелефон \+375291112233, id 4401\./);
+  assert.match(texts.newSignup({ ...s, phoneOk: false, username: '' }), /Литвинов Антон\nТелефон \+375291112233 \(введён вручную\)/);
 });

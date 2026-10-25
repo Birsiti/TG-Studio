@@ -1,4 +1,4 @@
-// изменено 2026-10-22 17:30
+// изменено 2026-10-25 12:45
 // Тексты сообщений. Обычный текст без разметки — не нужно экранировать.
 
 function weight(g) {
@@ -111,6 +111,11 @@ function newVisitor(from, role, guest = false) {
     ? `🎂 Впервые зашёл в бота: ${who} — ${ROLE_LOWER[role] || role}.`
     : `🎂 Новый пользователь в боте: ${who}.\nДоступа нет. Чтобы пустить — «Склад и сводка» → «Справочники» → «Люди», впишите этот id.`;
 }
+// Заявка «Я сотрудник Милано» из приложения → руководителю
+function newSignup(s) {
+  const who = `${s.lastName} ${s.firstName}${s.username ? ' (@' + s.username + ')' : ''}`;
+  return `🙋 Заявка сотрудника: ${who}\nТелефон ${s.phone}${s.phoneOk ? '' : ' (введён вручную)'}, id ${s.tgId}.\nДать допуск — «Склад и сводка» → «Справочники» → «Люди» → «Заявки сотрудников».`;
+}
 // Гостевой вход (/demo): короткая презентация для тех, кто впервые видит приложение в Telegram
 function guestWelcome(firstName) {
   return [
@@ -150,4 +155,4 @@ const BOT_SHORT = 'Кондитерская «Милано»: заказ тор�
 
 const ROLE_LOWER = { admin: 'руководитель', storekeeper: 'кладовщик', logist: 'логист', driver: 'водитель' };
 
-module.exports = { stopIssue, BOT_DESCRIPTION, BOT_SHORT, newVisitor, guestWelcome, demoState, pickedForAdmin, weight, makeLookup, shippedForDriver, reportedForStore, closedForDriver, digest };
+module.exports = { stopIssue, BOT_DESCRIPTION, BOT_SHORT, newVisitor, newSignup, guestWelcome, demoState, pickedForAdmin, weight, makeLookup, shippedForDriver, reportedForStore, closedForDriver, digest };

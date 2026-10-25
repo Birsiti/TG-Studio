@@ -275,3 +275,49 @@ def test_logist_role(api, monkeypatch):
     assert api("cake", "savePoint", user="999", customer="Кафе", address="ул. Тест, 1", route="Маршрут 9")["ok"]
     assert api("cake", "getVisits", user="999")["error"] == "forbidden"
     assert api("cake", "saveStaff", user="999", name="Хакер", role="driver")["error"] == "forbidden"
+
+
+def _contact(token, uid, phone="375291112233", age=0):
+    """Ответ Telegram.WebApp.requestContact: contact=…&auth_date=…&hash=… (подпись токеном бота)."""
+    import hashlib, hmac, json, time
+    from urllib.parse import urlencode
+    data = {"contact": json.dumps({"phone_number": phone, "first_name": "Т", "user_id": uid}), "auth_date": str(int(time.time()) - age)}
+    check = "\n".join(f"{k}={v}" for k, v in sorted(data.items()))
+    secret = hmac.new(b"WebAppData", token.encode(), hashlib.sha256).digest()
+    data["hash"] = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
+    return urlencode(data)
+
+
+def test_signup_and_access(api, monkeypatch):
+    """«Я сотрудник Милано»: заявка → руководитель даёт роль → человек в «Людях» и работает по роли."""
+    tok = "123456:TEST-token"
+    monkeypatch.setenv("TGS_CAKE_BOT_TOKEN", tok)
+    monkeypatch.setenv("TGS_CAKE_ADMINS", "111")
+    monkeypatch.setenv("TGS_CAKE_SERVICE_KEY", "s3cret-key-for-bot")
+    mine = lambda uid, act, **kw: api("cake", act, user=None, initData=_signed(tok, uid), **kw)
+    me = mine(4401, "getMe")
+    assert me["ok"] and me["access"] is False and me["signup"] is None and me["staff"] is None
+    assert mine(4401, "getStock")["error"] == "forbidden"  # допуска нет
+    assert mine(4401, "getSignups")["error"] == "forbidden"
+    assert mine(4401, "signup", lastName="Л", firstName="Анна", phone="+375291112233")["error"] == "bad_request"
+    r = mine(4401, "signup", lastName="Литвинов", firstName="Антон", contact=_contact(tok, 4401))
+    assert r["signup"]["phone"] == "+375291112233" and r["signup"]["phoneOk"] and r["signup"]["status"] == "pending"
+    r = mine(4402, "signup", lastName="Петров", firstName="Пётр", contact=_contact(tok, 4401))  # чужой телефон не берём
+    assert r["signup"]["phoneOk"] is False if r.get("ok") else r["error"] == "bad_request"
+    r = mine(4403, "signup", lastName="Сидоров", firstName="Сидор", contact=_contact(tok, 4403, age=7200), phone="+375441234567")
+    assert r["signup"]["phoneOk"] is False and r["signup"]["phone"] == "+375441234567"  # подпись устарела → вручную
+    assert mine(4401, "getMe")["signup"]["status"] == "pending"
+    pend = api("cake", "getSignups", user="111", initData=_signed(tok, 111))
+    assert {x["tgId"] for x in pend["signups"]} >= {"4401", "4403"}
+    assert mine(4401, "decideSignup", tgId="4401", role="driver")["error"] == "forbidden"  # сам себе роль не даст
+    adm = lambda act, **kw: api("cake", act, user=None, initData=_signed(tok, 111), **kw)
+    ok = adm("decideSignup", tgId="4401", role="storekeeper")
+    assert ok["staff"]["name"] == "Литвинов Антон" and ok["staff"]["role"] == "storekeeper" and ok["staff"]["tgId"] == "4401"
+    me = mine(4401, "getMe")
+    assert me["access"] and me["role"] == "storekeeper" and me["staff"]["phone"] == "+375291112233"
+    assert mine(4401, "getStock")["ok"] and mine(4401, "saveStaff", name="Хакер", role="driver")["error"] == "forbidden"
+    assert adm("decideSignup", tgId="4403", reject=True)["staff"] is None
+    assert mine(4403, "getMe")["signup"]["status"] == "rejected" and mine(4403, "getStock")["error"] == "forbidden"
+    assert mine(4403, "signup", lastName="Сидоров", firstName="Сидор", phone="+375441234567")["error"] == "forbidden"
+    assert "4401" not in {x["tgId"] for x in adm("getSignups")["signups"]}
+    assert api("cake", "getSignups", user=None, serviceKey="s3cret-key-for-bot")["ok"]  # бот читает список со служебным ключом

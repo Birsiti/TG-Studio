@@ -86,5 +86,8 @@ def save_tara(ctx: Ctx, p: dict) -> dict:
 
 @action("getMe")
 def get_me(ctx: Ctx, p: dict) -> dict:
+    """Кто я: сотрудник (staff), есть ли допуск (access), роль и заявка «Я сотрудник» (signup: pending / rejected)."""
     me = ctx.user and one(ctx.conn, "SELECT * FROM staff WHERE tg_id=? AND tg_id<>''", (ctx.user,))
-    return {"staff": _staff(me) if me else None, "restricted": _restricted()}
+    su = ctx.user and one(ctx.conn, "SELECT * FROM signups WHERE tg_id=?", (ctx.user,))
+    return {"staff": _staff(me) if me else None, "restricted": _restricted(), "access": ctx.role is not None, "role": ctx.role,
+            "signup": {"status": su["status"], "lastName": su["last_name"], "firstName": su["first_name"]} if su else None}

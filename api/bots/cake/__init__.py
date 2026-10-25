@@ -35,12 +35,13 @@ TGS_CAKE_SERVICE_KEY — служебный ключ бота склада (cake
   refs.py     справочники          stock.py   остатки и журнал
   trips.py    рейсы                tara.py    ящики за водителями
   shifts.py   смены                overview.py сводка руководителя
+  signups.py  заявки «Я сотрудник Милано» и допуск по ролям
   picking.py  заявки и сборка по кругу, места, точки
   seed.py     демо-данные при первом запуске
   orders_data.py, orders_seed.py — заявки с фото накладных (и в старые базы — миграцией)
 """
 from bots.cake.base import bot
-from bots.cake import refs, stock, trips, tara, shifts, overview, picking, drivers, order_files, visits, stops  # noqa: F401 — регистрируют action
+from bots.cake import refs, stock, trips, tara, shifts, overview, picking, drivers, order_files, visits, stops, signups  # noqa: F401 — регистрируют action
 from bots.cake.catalog import CATALOG, CATS, SEED_PRODUCTS  # noqa: F401 — для db/build_seed.py и import_places.py
 
 __all__ = ["bot", "CATALOG", "CATS", "SEED_PRODUCTS"]

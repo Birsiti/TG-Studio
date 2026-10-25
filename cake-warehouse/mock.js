@@ -1,4 +1,4 @@
-// изменено 2026-10-18 13:00
+// изменено 2026-10-25 12:40
 /* ============================================================
    mock.js — офлайн-двойник API склада (api/bots/cake/). Данные — mock-data.js.
    Действия других тем добавляются через CakeMock.register (mock-picking.js).
@@ -60,7 +60,32 @@ window.CakeMock = (function(){
 
   var A = {
     getRefs: function(){ return {products:S.products, cities:S.cities, staff:S.staff, tara:S.tara, moveTypes:MOVE_TYPES, cats:CATS}; },
-    getMe: function(){ return {staff:null, restricted:false}; },
+    getMe: function(){    // ?reg=1 в демо — взгляд новичка без допуска (регистрация «Я сотрудник Милано»)
+      var reg = /[?&]reg=1/.test(location.search), su = reg && (S.signups || []).filter(function(x){ return x.tgId === String(Kit.user.id); })[0];
+      var ok = !reg || !!su && su.status === 'approved';
+      return {staff:null, restricted:reg, access:ok, role:ok ? (su && S.staff.filter(function(x){ return x.tgId === su.tgId; }).map(function(x){ return x.role; })[0] || 'admin') : null, signup:su ? {status:su.status, lastName:su.lastName, firstName:su.firstName} : null};
+    },
+    // заявки «Я сотрудник Милано»: в демо одна примерная, чтобы руководитель увидел список
+    getSignups: function(){
+      
+      if(!S.signups) S.signups = [{id:'4401', tgId:'4401', lastName:'Литвинов', firstName:'Антон', phone:'+375291112233', phoneOk:true, username:'', status:'pending', createdAt:now()}];
+      return {signups:S.signups.filter(function(x){ return x.status === 'pending'; })};
+    },
+    signup: function(p){
+      if(!p.lastName || p.lastName.length < 2 || !p.firstName || p.firstName.length < 2) return err('bad_request', 'Фамилия и имя');
+      S.signups = S.signups || [];
+      var s = {id:String(Kit.user.id), tgId:String(Kit.user.id), lastName:p.lastName, firstName:p.firstName, phone:p.phone || '', phoneOk:!!p.contact, username:p.username || '', status:'pending', createdAt:now()};
+      var i = S.signups.findIndex(function(x){ return x.tgId === s.tgId; }); if(i >= 0) S.signups[i] = s; else S.signups.push(s);
+      return {signup:s};
+    },
+    decideSignup: function(p){
+      var s = (S.signups || []).find(function(x){ return x.tgId === p.tgId; });
+      if(!s) return err('not_found', 'Заявки нет');
+      if(p.reject){ s.status = 'rejected'; return {staff:null}; }
+      s.status = 'approved';
+      var st = {id:Kit.uid('s'), name:s.lastName + ' ' + s.firstName, role:p.role, phone:s.phone, car:'', hired:false, carrier:'', tgId:s.tgId, active:true};
+      S.staff.push(st); return {staff:st};
+    },
     saveProduct: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); var old = p.id && byId(S.products, p.id) || {}; if(String(p.weightG) === '0' || String(p.perBox) === '0') return err('bad_request', 'вне диапазона'); var w = +p.weightG || old.weightG || 0; if(!w) return err('bad_request', 'Укажите вес, г — как на упаковке'); return {product:upsert(S.products, {id:p.id || Kit.uid('p'), cat:p.cat || CATS[0], name:p.name, sku:p.sku || '', weightG:w, shelfDays:+p.shelfDays || 0, minQty:+p.minQty || 0, perBox:Math.max(1, +p.perBox || old.perBox || 1), sort:old.sort != null ? old.sort : S.products.length, active:p.active !== false})}; },
     saveCity: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Название'); return {city:upsert(S.cities, {id:p.id || Kit.uid('c'), name:p.name, code:String(p.code || '').toUpperCase().slice(0, 4), sort:S.cities.length, active:p.active !== false})}; },
     saveStaff: function(p){ if(!p.name || p.name.length < 2) return err('bad_request', 'Имя'); if(p.tgId && !/^\d+$/.test(p.tgId)) return err('bad_request', 'tgId: только цифры'); return {staff:upsert(S.staff, {id:p.id || Kit.uid('s'), name:p.name, role:p.role, phone:p.phone || '', car:p.car || '', hired:p.role === 'driver' && !!p.hired, carrier:p.role === 'driver' && p.hired ? (p.carrier || '') : '', tgId:p.tgId || '', active:p.active !== false})}; },

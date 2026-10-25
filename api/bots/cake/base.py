@@ -51,7 +51,8 @@ def _service(p: dict) -> bool:
 
 # Водитель видит только своё: рейсы и отчёт о возврате. Остальное — склад (кладовщик и руководитель).
 DRIVER_ACTIONS = {"getMe", "getRefs", "getMyTrips", "reportTrip", "setOdometer", "hello", "reportStop", "addStopPhoto"}  # точки рейса приходят в getMyTrips
-ADMIN_ACTIONS = {"saveStaff", "getVisits", "logVisit"}  # кого пускать в приложение — решает только руководитель
+OPEN_ACTIONS = {"getMe", "signup"}  # доступны любому, кто открыл приложение из бота: узнать свой допуск и оставить заявку
+ADMIN_ACTIONS = {"saveStaff", "getVisits", "logVisit", "getSignups", "decideSignup"}  # кого пускать в приложение — решает только руководитель
 _warned = False
 
 
@@ -78,6 +79,9 @@ def _guard(ctx: Ctx, p: dict, name: str = "") -> None:
     u = ctx.user
     role = "admin" if u and u in admins else (u and scalar(ctx.conn, "SELECT role FROM staff WHERE tg_id=? AND tg_id<>'' AND active=1", (u,)))
     if not role:
+        if name in OPEN_ACTIONS and u:
+            ctx.role = None  # допуска нет: видны только getMe и signup
+            return
         raise ApiError("forbidden", "Нет доступа к складу")
     if (role == "driver" and name not in DRIVER_ACTIONS) or (role != "admin" and name in ADMIN_ACTIONS):
         raise ApiError("forbidden", "Нет доступа")

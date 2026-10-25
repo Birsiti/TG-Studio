@@ -1,4 +1,4 @@
-// изменено 2026-10-23 00:30
+// изменено 2026-10-25 12:40
 /* Экран руководителя склада: сводка, смены, справочники. */
 (function(){
   "use strict";
@@ -10,6 +10,7 @@
 
   const ROLE = {storekeeper:'Кладовщик', logist:'Логист', driver:'Водитель'};
   let REFS = {products:[], cities:[], staff:[], tara:[]};
+  let SIGNUPS = [];   // заявки «Я сотрудник Милано», ждут решения
   const fail = r=> { Kit.toast(r.message || 'Не получилось', 'error'); haptic('error'); };
   const P = id=> REFS.products.find(x=>x.id === id) || {name:'?'};
   const W = g=> !g ? '' : g < 1000 ? g + ' г' : String(g / 1000).replace('.', ',') + ' кг';
@@ -17,6 +18,7 @@
   const C = id=> REFS.cities.find(x=>x.id === id) || {name:'?'};
   async function loadRefs(){
     const r = await api('getRefs'); if(r.ok) REFS = r; else fail(r);
+    const sg = await api('getSignups'); SIGNUPS = sg.ok ? sg.signups : [];
     if(r.ok && !loadRefs.hello){ loadRefs.hello = true; api('hello', {page:'admin'}); }  // журнал «кто заходит»
     if(api.mode() === 'demo') $('#modeNote').innerHTML = String(html`<p class="mode-note">Демо-версия: данные примерные и хранятся только в этом телефоне.</p>`);
   }
@@ -103,6 +105,8 @@
     $('#refAdd').innerHTML = String(html`${icon('plus')}${KINDS[kind].add}`);
     $('#refBoxes').hidden = kind !== 'products';
     $('#refBoxes').innerHTML = String(html`${icon('truck')}Заполнить «шт в ящике»`);
+    $('#refSignups').hidden = kind !== 'staff' || !SIGNUPS.length;
+    $('#refSignups').innerHTML = String(html`${icon('users')}Заявки сотрудников · ${SIGNUPS.length}`);
     $('#refVisits').hidden = kind !== 'staff';
     $('#refVisits').innerHTML = String(html`${icon('users')}Кто заходит в бота`);
     const list = REFS[kind];
@@ -113,6 +117,7 @@
   Kit.on($('#refSeg'), 'click', '[data-k]', (e, el)=>{ kind = el.dataset.k; haptic('select'); renderRefs(); });
   $('#refAdd').addEventListener('click', ()=> editRef({active:true}));
   $('#refVisits').addEventListener('click', openVisits);
+  $('#refSignups').addEventListener('click', openSignups);
   $('#refBoxes').addEventListener('click', openBoxes);
 
   /* Быстрое заполнение «шт в ящике» (perBox): список по категориям, число в строке сохраняется сразу.
@@ -135,6 +140,30 @@
       x.perBox = r.product.perBox; r0.classList.toggle('box-ok', x.perBox > 1); r0.classList.toggle('box-todo', !(x.perBox > 1)); haptic('success');
       sh.el.querySelector('.sheet-sub').textContent = `не задано: ${todo()} из ${list.length}`;
     });
+  }
+
+  /* Заявки «Я сотрудник Милано»: фамилия, имя, телефон из Telegram — руководитель даёт роль или отказывает */
+  function openSignups(){
+    const card = s=> html`<div class="section" data-s="${s.tgId}"><div class="row"><span class="avatar">${Kit.initials(s.lastName + ' ' + s.firstName)}</span>
+        <span class="row-main"><span class="row-title">${s.lastName} ${s.firstName}${s.username ? html` <span class="hint">@${s.username}</span>` : ''}</span>
+          <span class="row-sub">${s.phone}${s.phoneOk ? ' · из Telegram' : html` · <b style="color:var(--warn)">введён вручную</b>`}</span>
+          <span class="row-sub">id ${s.tgId} · ${at(s.createdAt)}</span></span></div>
+      <div class="seg section">${['storekeeper', 'logist', 'driver'].map(k=>html`<button type="button" data-role="${k}">${ROLE[k]}</button>`)}</div>
+      <button class="btn btn-ghost btn-block section" type="button" data-no="1">Отказать</button></div>`;
+    const sh = Kit.sheet({title:'Заявки сотрудников', sub:'Выберите роль — человек получит допуск', body: html`<div id="sgList"></div>`});
+    const draw = ()=>{ sh.$('#sgList').innerHTML = String(SIGNUPS.length ? html`${SIGNUPS.map(card)}` : html`<div class="empty">${icon('users')}<div class="empty-title">Заявок нет</div>Здесь появятся новые сотрудники</div>`); };
+    draw();
+    const decide = async (el, p)=>{
+      const id = el.closest('[data-s]').dataset.s;
+      const r = await api('decideSignup', Object.assign({tgId:id}, p));
+      if(!r.ok){ fail(r); return; }
+      haptic('success'); Kit.toast(p.reject ? 'Отказано' : 'Допуск выдан', 'ok');
+      SIGNUPS = SIGNUPS.filter(s=>s.tgId !== id); draw();
+      if(!p.reject){ await loadRefs(); } renderRefs();
+      if(!SIGNUPS.length) sh.close();
+    };
+    Kit.on(sh.el, 'click', '[data-role]', (e, el)=> decide(el, {role:el.dataset.role}));
+    Kit.on(sh.el, 'click', '[data-no]', (e, el)=> decide(el, {reject:true}));
   }
 
   /* Кто заходит: все, кто писал боту или открывал приложение, и последние входы */

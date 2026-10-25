@@ -47,6 +47,11 @@ CREATE TABLE IF NOT EXISTS visitors(
   last_at TEXT NOT NULL, last_page TEXT NOT NULL DEFAULT '', starts INTEGER NOT NULL DEFAULT 0, opens INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS visit_log(
   id INTEGER PRIMARY KEY AUTOINCREMENT, tg_id TEXT NOT NULL, at TEXT NOT NULL, page TEXT NOT NULL DEFAULT '');
+-- Заявки «Я сотрудник Милано»: человек оставил фамилию, имя и телефон, руководитель даёт роль (или отказывает)
+CREATE TABLE IF NOT EXISTS signups(
+  tg_id TEXT PRIMARY KEY, last_name TEXT NOT NULL DEFAULT '', first_name TEXT NOT NULL DEFAULT '', phone TEXT NOT NULL DEFAULT '',
+  phone_ok INTEGER NOT NULL DEFAULT 0, username TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'pending',
+  created_at TEXT NOT NULL, decided_at TEXT);
 CREATE TABLE IF NOT EXISTS order_files(
   id TEXT PRIMARY KEY, order_id TEXT NOT NULL, name TEXT NOT NULL, mime TEXT NOT NULL, size INTEGER NOT NULL,
   created_at TEXT NOT NULL);

@@ -1,4 +1,4 @@
-// изменено 2026-10-18 16:00
+// изменено 2026-10-25 12:45
 // Раз в WATCH_SECONDS смотрим рейсы и заявки и рассылаем уведомления о переходах.
 const config = require('./config');
 const tg = require('./telegram');
@@ -36,7 +36,7 @@ async function checkTrips() {
   }
   // Пишем состояние после рассылки; не дошедшее из-за сбоя сети повторится на следующей проверке
   store.save({ trips: next });
-  return events.length + await checkStops(trips, r, L) + await checkOrders();
+  return events.length + await checkStops(trips, r, L) + await checkOrders() + await checkSignups();
 }
 
 // Водитель сдал точку с замечаниями (недостача, брак, пересорт) → складу, логистам, руководителю.
@@ -71,6 +71,22 @@ async function checkOrders() {
   }
   store.save({ orders: next });
   return events.length;
+}
+
+// Новая заявка «Я сотрудник Милано» → руководителям (повторная заявка с новым временем — снова)
+async function checkSignups() {
+  const { signups } = await api('getSignups');
+  const prev = store.get().signups || {};
+  const next = {};
+  let sent = 0;
+  for (const s of signups) {
+    next[s.tgId] = s.createdAt;
+    if (prev[s.tgId] === s.createdAt) continue;
+    if (await tg.sendMany(config.adminIds, texts.newSignup(s))) sent++;
+    else if (s.tgId in prev) next[s.tgId] = prev[s.tgId]; else delete next[s.tgId];
+  }
+  store.save({ signups: next });
+  return sent;
 }
 
 module.exports = { checkTrips };
