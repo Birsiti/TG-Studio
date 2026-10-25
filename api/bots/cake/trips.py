@@ -1,4 +1,4 @@
-# изменено 2026-10-25 18:30
+# изменено 2026-10-25 21:00
 """Рейсы: сборка → отгрузка → отчёт водителя → приёмка; рейсы водителя."""
 from __future__ import annotations
 
@@ -7,7 +7,18 @@ from bots.cake.base import (_add_move, _add_tara, _check_stock, _get_trip, _line
                             _tara_lines, _trip, action)
 from bots.cake.schema import MAX_LINES, MAX_QTY
 from bots.cake.orders_seed import route_city
+from bots.cake.cars import in_transit
 from bots.cake.stops import check_ship, sync_trip, trip_out, with_stops
+
+
+def _check_free(conn, tid: str, driver: str | None, car: str | None) -> None:
+    """Один водитель и одна машина не могут быть сразу в двух рейсах в пути. Разные рейсы на разных машинах — можно."""
+    busy = in_transit(conn, driver=driver, car=car, skip=tid)
+    if busy and busy["by"] == "driver_id":
+        name = scalar(conn, "SELECT name FROM staff WHERE id=?", (driver,)) or "Водитель"
+        raise ApiError("bad_state", f"{name} ещё в рейсе №{busy['num']}: пока он не вернулся, второй рейс отгрузить нельзя")
+    if busy:
+        raise ApiError("bad_state", f"Машина {car} ещё в рейсе №{busy['num']}: пока она не вернулась, выберите другую")
 
 
 @action("getTrips")
@@ -74,6 +85,7 @@ def ship_trip(ctx: Ctx, p: dict) -> dict:
     if not t["driver_id"]:
         raise ApiError("bad_request", "Не выбран водитель")
     _check_stock(ctx.conn, lines)
+    _check_free(ctx.conn, t["id"], t["driver_id"], t["car"])
     # водитель на погрузке — сдаёт ящики с прошлых рейсов (отдельно на склад он не поедет)
     back = _tara_lines(ctx.conn, p, "taraBack")
     debt = _tara_debt(ctx.conn)
@@ -196,6 +208,7 @@ def get_crew(ctx: Ctx, p: dict) -> dict:
     for r in rows(c, "SELECT id, num, driver_id FROM trips WHERE date=? AND driver_id IS NOT NULL AND status NOT IN ('cancelled','closed')", (day,)):
         if r["id"] != skip:
             busy.setdefault(r["driver_id"], []).append(r["num"])
+    road = {r["driver_id"]: r["num"] for r in rows(c, "SELECT driver_id, num FROM trips WHERE status='shipped' AND seed=0 AND driver_id IS NOT NULL AND id<>?", (skip or "",))}
     out, cars = [], {}
     for s in rows(c, "SELECT * FROM staff WHERE role='driver' AND active=1 ORDER BY name"):
         last = one(c, "SELECT date, car, city_id FROM trips WHERE driver_id=? AND status<>'cancelled' ORDER BY date DESC, num DESC LIMIT 1", (s["id"],))
@@ -203,7 +216,7 @@ def get_crew(ctx: Ctx, p: dict) -> dict:
         out.append({**_staff(s), "carDefault": default_car(c, s["id"]), "lastDate": last["date"] if last else None,
                     "lastCar": last["car"] if last else "", "lastCityId": last["city_id"] if last else None,
                     "onRoute": len(here), "lastOnRoute": here[0]["date"] if here else None,
-                    "onShift": s["id"] in on_shift, "busy": busy.get(s["id"], [])})
+                    "onShift": s["id"] in on_shift, "busy": busy.get(s["id"], []), "inTransit": road.get(s["id"])})
         if s["car"]:
             cars.setdefault(s["car"], s["name"])
     for r in rows(c, "SELECT car, driver_id FROM trips WHERE car<>'' ORDER BY date DESC, num DESC LIMIT 200"):
@@ -226,5 +239,9 @@ def set_trip_crew(ctx: Ctx, p: dict) -> dict:
             raise ApiError("not_found", "Нет такого водителя")
         driver = new
     car = v_str(p, "car", required=False, max_len=80) if "car" in p else (default_car(ctx.conn, driver) if driver != t["driver_id"] else t["car"])
+    if t["status"] == "shipped" and car and car != t["car"]:  # машину сменили уже в пути — не на ту, что занята другим рейсом
+        busy = in_transit(ctx.conn, car=car, skip=t["id"])
+        if busy:
+            raise ApiError("bad_state", f"Машина {car} ещё в рейсе №{busy['num']}")
     ctx.conn.execute("UPDATE trips SET driver_id=?, car=? WHERE id=?", (driver, car, t["id"]))
     return {"trip": trip_out(ctx.conn, t["id"])}

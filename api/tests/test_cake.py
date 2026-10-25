@@ -377,3 +377,34 @@ def test_trip_crew_and_car(api, monkeypatch):
     monkeypatch.setenv("TGS_CAKE_ADMINS", "111")
     api("cake", "saveStaff", user="111", initData=_signed(tok, 111), id=b["id"], name=b["name"], role="driver", tgId="777", car=b["car"])
     assert api("cake", "setTripCrew", user=None, initData=_signed(tok, 777), id=t2["id"], car="Чужая")["error"] == "forbidden"
+
+
+def test_cars_and_one_road_at_a_time(api):
+    """Парк: водителя машины меняет руководитель; водитель и машина не едут сразу в двух рейсах, в разных на разных машинах — можно."""
+    refs = api("cake", "getRefs")
+    city = refs["cities"][0]["id"]
+    a, b = [s for s in refs["staff"] if s["role"] == "driver"][:2]
+    pid = refs["products"][0]["id"]
+    api("cake", "addIncome", lines=[{"productId": pid, "qty": 50}])
+    ford = "Ford Transit · 0001 AA-7"
+    r = api("cake", "saveCar", car=ford, driverId=a["id"])
+    row = next(x for x in r["cars"] if x["car"] == ford)
+    assert row["driverId"] == a["id"] and row["busy"] is None
+    r = api("cake", "saveCar", car=ford, driverId=b["id"])  # смена водителя
+    assert next(x for x in r["cars"] if x["car"] == ford)["driverId"] == b["id"]
+    assert api("cake", "saveCar", car=ford, driverId="nope")["error"] == "not_found"
+    # два рейса одного водителя на разных машинах собрать можно, но отгрузить второй, пока первый в пути, нельзя
+    t1 = api("cake", "saveTrip", cityId=city, driverId=a["id"], car="Газель · 1111 AA-7", lines=[{"productId": pid, "qty": 2}])["trip"]
+    t2 = api("cake", "saveTrip", cityId=city, driverId=a["id"], car=ford, lines=[{"productId": pid, "qty": 2}])["trip"]
+    assert api("cake", "shipTrip", id=t1["id"])["ok"]
+    r = api("cake", "shipTrip", id=t2["id"])
+    assert r["error"] == "bad_state" and f"№{t1['num']}" in r["message"]
+    crew = api("cake", "getCrew", date=t2["date"], cityId=city, tripId=t2["id"])
+    assert next(x for x in crew["drivers"] if x["id"] == a["id"])["inTransit"] == t1["num"]
+    assert next(x for x in api("cake", "getCars")["cars"] if x["car"] == "Газель · 1111 AA-7")["busy"] == t1["num"]
+    # та же машина у другого водителя — тоже нельзя, пока не вернулась
+    t3 = api("cake", "saveTrip", cityId=city, driverId=b["id"], car="Газель · 1111 AA-7", lines=[{"productId": pid, "qty": 1}])["trip"]
+    assert "Машина" in api("cake", "shipTrip", id=t3["id"])["message"]
+    # водитель сдал отчёт — вернулся, второй рейс уходит
+    assert api("cake", "reportTrip", id=t1["id"])["ok"]
+    assert api("cake", "shipTrip", id=t2["id"])["ok"]

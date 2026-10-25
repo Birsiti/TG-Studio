@@ -1,4 +1,4 @@
-# изменено 2026-10-25 18:30
+# изменено 2026-10-25 21:00
 """Объект bot, проверка доступа, выдача строк в JSON и общие проверки строк."""
 from __future__ import annotations
 
@@ -54,7 +54,7 @@ def _service(p: dict) -> bool:
 # Водитель видит только своё: рейсы и отчёт о возврате. Остальное — склад (кладовщик и руководитель).
 DRIVER_ACTIONS = {"getMe", "getRefs", "getMyTrips", "reportTrip", "setOdometer", "hello", "reportStop", "addStopPhoto"}  # точки рейса приходят в getMyTrips
 OPEN_ACTIONS = {"getMe", "signup"}  # доступны любому, кто открыл приложение из бота: узнать свой допуск и оставить заявку
-ADMIN_ACTIONS = {"saveStaff", "deleteStaff", "getVisits", "logVisit", "getSignups", "decideSignup"}  # кого пускать в приложение — решает только руководитель
+ADMIN_ACTIONS = {"saveStaff", "deleteStaff", "getVisits", "logVisit", "getSignups", "decideSignup", "getCars", "saveCar"}  # кого пускать в приложение — решает только руководитель
 _warned = False
 
 

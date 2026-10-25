@@ -1,4 +1,4 @@
-# изменено 2026-10-08 02:30
+# изменено 2026-10-25 21:10
 import os
 import sys
 import tempfile
@@ -41,3 +41,18 @@ def api(client):
     def _f(bot, action, /, user="web-testuser01", **payload):
         return call(client, bot, action, user=user, **payload)
     return _f
+
+
+@pytest.fixture(autouse=True)
+def _drivers_back(request):
+    """Рейсы «в пути» с прошлых тестов не держат водителей и машины: правило «не в двух рейсах сразу» проверяют сами тесты."""
+    yield
+    if "client" in request.fixturenames:
+        from bots.cake import bot as cake_bot
+        conn = cake_bot.connect()
+        try:
+            if conn.execute("SELECT 1 FROM sqlite_master WHERE name='trips'").fetchone():  # склад заводится только тестами склада
+                conn.execute("UPDATE trips SET status='reported' WHERE status='shipped' AND seed=0")
+                conn.commit()
+        finally:
+            conn.close()

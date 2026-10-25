@@ -1,4 +1,4 @@
-// изменено 2026-10-25 17:30
+// изменено 2026-10-25 21:30
 /* Главная (кнопка «Открыть» в боте @Milano_BY_Bot): витрина «Милано» — герой с тортом, лента тортов,
    «Сделать заказ» (оптовая витрина) и «Я сотрудник Милано» (входы по ролям).
    Сотрудник, добавленный в «Люди», сразу попадает на свой экран; руководитель после «Я сотрудник» выбирает вход сам.
@@ -93,6 +93,10 @@
         ${me.role === 'admin' ? html`<button class="door team-open" type="button" data-team="1">
           <span class="door-ic">${icon('users')}</span>
           <span class="door-text"><span class="door-title">Сотрудники</span><span class="door-sub">Должности, телефоны, машины · новые заявки</span></span>
+          <span class="door-go">${icon('right')}</span></button>
+          <button class="door team-open" type="button" data-cars="1">
+          <span class="door-ic">${icon('truck')}</span>
+          <span class="door-text"><span class="door-title">Машины</span><span class="door-sub">Кто за рулём, смена водителя, статистика</span></span>
           <span class="door-go">${icon('right')}</span></button>
           <button class="link-btn staff-link" type="button" data-preview="1">Посмотреть регистрацию глазами новичка</button>` : ''}
         ${api.mode() === 'demo' ? html`<p class="mode-note section">Демо-версия: данные примерные и хранятся только в этом телефоне — смело пробуйте всё, сломать ничего нельзя.</p>` : ''}
@@ -208,6 +212,7 @@
     Kit.on($('#view'), 'click', '[data-skip]', ()=>{ haptic('light'); preview = false; try{ localStorage.setItem('cake-skip-reg', '1'); }catch(e){} doors(); });
     Kit.on($('#view'), 'click', '[data-preview]', ()=>{ haptic('light'); preview = true; regForm(!canContact); });
     Kit.on($('#view'), 'click', '[data-team]', ()=>{ haptic('light'); setBack(()=>{ haptic('light'); doors(); }); window.CakeTeam.open(api, me, doors); });
+    Kit.on($('#view'), 'click', '[data-cars]', ()=>{ haptic('light'); setBack(()=>{ haptic('light'); doors(); }); window.CakeCars.open(api, doors); });
     Kit.on($('#view'), 'click', '[data-recheck]', async ()=>{
       const m = await api('getMe'); haptic('light');
       if(m.ok && m.access){ Object.assign(me, m); if(m.staff && ROLE_PAGE[m.staff.role]) location.replace(ROLE_PAGE[m.staff.role]); else doors(); }
