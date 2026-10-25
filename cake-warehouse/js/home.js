@@ -1,4 +1,4 @@
-// изменено 2026-10-25 13:30
+// изменено 2026-10-25 14:10
 /* Главная (кнопка «Открыть» в боте @Milano_BY_Bot): витрина «Милано» — герой с тортом, лента тортов,
    «Сделать заказ» (оптовая витрина) и «Я сотрудник Милано» (входы по ролям).
    Сотрудник, добавленный в «Люди», сразу попадает на свой экран; руководитель после «Я сотрудник» выбирает вход сам.
@@ -102,7 +102,8 @@
         ${manualPhone ? html`<div class="field section"><span class="field-label">Телефон</span><div id="rgPhone"></div></div>` : ''}
         <button class="btn btn-primary btn-block section" type="button" id="rgSend">${icon('phone')}${manualPhone ? 'Отправить заявку' : 'Поделиться телефоном'}</button>
         ${manualPhone ? '' : html`<p class="hint section">Номер берётся из вашего Telegram — вводить его не нужно.</p>`}
-        ${preview ? html`<p class="mode-note section">Предпросмотр для руководителя: заявка не отправляется.</p>` : ''}
+        ${preview ? html`<p class="mode-note section">Вы руководитель: заявка не отправляется, так выглядит окно для новых сотрудников.</p>
+          <button class="btn btn-ghost btn-block section" type="button" data-skip="1">${icon('right')}Пропустить — я руководитель</button>` : ''}
         ${back}`);
       if(manualPhone){ $('#rgPhone').innerHTML = String(Kit.phone.field('rgPh', '')); Kit.phone.bind($('#rgPh')); }
       window.scrollTo(0, 0);
@@ -133,6 +134,7 @@
       tgApp.onEvent('contactRequested', onEv);
       tgApp.requestContact((shared, ev)=> got(shared, ev));
     });
+    Kit.on($('#view'), 'click', '[data-skip]', ()=>{ haptic('light'); preview = false; try{ localStorage.setItem('cake-skip-reg', '1'); }catch(e){} doors(); });
     Kit.on($('#view'), 'click', '[data-preview]', ()=>{ haptic('light'); preview = true; regForm(!canContact); });
     Kit.on($('#view'), 'click', '[data-recheck]', async ()=>{
       const m = await api('getMe'); haptic('light');
@@ -145,7 +147,12 @@
         $('#view').innerHTML = String(html`<div class="empty">${icon('lock')}<div class="empty-title">Нет связи со складом</div>Откройте приложение из бота ещё раз.</div>${back}`);
         return;
       }
-      if(me.access) return doors();
+      if(me.access){
+        // руководитель без записи в «Людях» тоже проходит окно регистрации (в предпросмотре) — один раз можно пропустить
+        let skip = false; try{ skip = localStorage.getItem('cake-skip-reg') === '1'; }catch(e){}
+        if(me.role === 'admin' && !me.staff && !skip){ preview = true; return regForm(!canContact); }
+        return doors();
+      }
       const st = me.signup && me.signup.status;
       if(st === 'pending') return waiting(false);
       if(st === 'rejected') return waiting(true);
