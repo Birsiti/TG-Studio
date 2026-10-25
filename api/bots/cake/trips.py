@@ -1,4 +1,4 @@
-# изменено 2026-10-18 16:30
+# изменено 2026-10-25 17:00
 """Рейсы: сборка → отгрузка → отчёт водителя → приёмка; рейсы водителя."""
 from __future__ import annotations
 
@@ -158,9 +158,9 @@ def close_trip(ctx: Ctx, p: dict) -> dict:
 
 @action("getMyTrips")
 def get_my_trips(ctx: Ctx, p: dict) -> dict:
-    """Рейсы водителя: по tg_id, а в открытом демо — по driverId из запроса."""
+    """Рейсы водителя: по tg_id; руководитель и открытое демо — по driverId из запроса (посмотреть экран любого водителя)."""
     me = ctx.user and one(ctx.conn, "SELECT * FROM staff WHERE tg_id=? AND tg_id<>'' AND role='driver'", (ctx.user,))
-    did = me["id"] if me else (None if _restricted() else v_id(p, "driverId", required=False))
+    did = me["id"] if me else (v_id(p, "driverId", required=False) if ctx.role == "admin" or not _restricted() else None)
     if not did:
         return {"driver": None, "trips": []}
     rs = rows(ctx.conn, "SELECT * FROM trips WHERE driver_id=? AND status<>'cancelled' AND "
