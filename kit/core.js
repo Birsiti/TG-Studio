@@ -1,4 +1,4 @@
-// изменено 2026-10-18 15:45
+// изменено 2026-10-25 20:00
 /* ============================================================
    kit/core.js — общий рантайм всех Mini App студии TG-Studio.
 
@@ -47,7 +47,8 @@
 
   function themeChoice(){
     var v = store(THEME_KEY);
-    return (v === 'light' || v === 'dark') ? v : 'auto';
+    // window.KIT_THEME_DEFAULT = 'dark' (до core.js): приложение стартует в этой теме, другая — только переключателем
+    return (v === 'light' || v === 'dark') ? v : (window.KIT_THEME_DEFAULT === 'dark' || window.KIT_THEME_DEFAULT === 'light' ? window.KIT_THEME_DEFAULT : 'auto');
   }
   function resolvedTheme(){
     var c = themeChoice();
@@ -506,6 +507,7 @@
     if(themePanel){ closeThemePanel(); return; }
     var cur = themeChoice();
     var opts = [['auto','Авто','auto'],['dark','Тёмная','moon'],['light','Светлая','sun']];
+    if(window.KIT_THEME_DEFAULT) opts.shift();  // тема по умолчанию задана — «Авто» не нужно
     var p = document.createElement('div');
     p.className = 'theme-panel';
     p.setAttribute('role', 'menu');
@@ -535,7 +537,7 @@
   });
   window.addEventListener('resize', closeThemePanel);
   function setTheme(v){
-    store(THEME_KEY, v === 'auto' ? null : v);
+    store(THEME_KEY, v === 'auto' || v === window.KIT_THEME_DEFAULT ? null : v);
     root.classList.add('theme-anim');
     applyTheme();
     setTimeout(function(){ root.classList.remove('theme-anim'); }, 400);
