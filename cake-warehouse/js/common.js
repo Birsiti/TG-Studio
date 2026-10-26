@@ -1,4 +1,4 @@
-// изменено 2026-10-25 18:40
+// изменено 2026-10-26 23:55
 /* Общее для страниц склада: API, справочники, остатки и помощники
    (название с весом, группы по категориям, поиск без перерисовки). */
 window.Cake = (function(){
@@ -36,6 +36,8 @@ window.Cake = (function(){
   C.kgOf = lines=> (lines || []).reduce((s, l)=> s + (l.qty + (l.bonus || 0)) * (C.P(l.productId).weightG || 0), 0) / 1000;
   C.boxKg = v=>{ if(v === undefined){ const n = parseFloat(Kit.store('cake-box-kg')); return n > 0 ? n : 1.5; } Kit.store('cake-box-kg', String(v)); return v; };
   C.fmtKg = n=> num(Math.round(n)) + ' кг';
+  // Ящики на позицию: шт / шт в ящике (справочник); не задано — оценка (торт 2, остальное 10), est = true
+  C.boxCount = (pid, qty)=>{ const p = C.P(pid) || {}, set = p.perBox > 1, pb = set ? p.perBox : (/торт/i.test(p.cat || '') ? 2 : 10); return {n:Math.ceil(qty / pb), pb, est:!set}; };
   C.boxesOf = t=> (t.taraOut || []).reduce((s, l)=>s + l.qty, 0);
   C.fail = r=> { Kit.toast(r.message || ({network:'Нет связи', forbidden:'Нет доступа'})[r.error] || 'Не получилось', 'error'); haptic('error'); };
   C.stockOf = id=> (C.stock.find(x=>x.id === id) || {qty:0}).qty;
