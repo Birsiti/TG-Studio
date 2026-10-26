@@ -1,4 +1,4 @@
-// изменено 2026-10-26 12:10
+// изменено 2026-10-26 22:50
 /* Экран «Погрузка»: маршрут на дату → порядок объезда, кузов сверху (столбы ящиков у прохода),
    лист каждой точки для водителя, ящики и бирки. Расчёт — в js/load-plan.js (CakeLoad).
    Открывается из «Заявки → Весь маршрут» (?date=…&route=…). Порядок точек и размеры — в этом телефоне. */
@@ -90,7 +90,7 @@
     return html`<div class="stats">
         <div class="stat"><div class="stat-label">Пробег</div><div class="stat-value">≈ ${Math.round(lg.km)} км</div><div class="stat-delta">склад → точки → склад</div></div>
         <div class="stat"><div class="stat-label">Время</div><div class="stat-value">≈ ${hm(lg.min)}</div><div class="stat-delta">с остановками по ${cfg.serviceMin} мин</div></div></div>
-      <button class="btn btn-primary btn-block section" type="button" data-ymap>${icon('route')}Открыть маршрут в Яндекс Картах</button>
+      <button class="btn btn-primary btn-block section" type="button" data-ymap>${icon('route')}Открыть маршрут в Google Картах</button>
       <p class="hint section">${ST.manual ? 'Порядок изменён вручную. ' : 'Порядок подобран по кратчайшему кругу. '}Пробег и время — по прямой с поправкой на дороги, точные — в Яндекс Картах.${noGeo ? ` У ${noGeo} точек нет координат — они в конце, переставьте вручную.` : ''}</p>
       <div class="list section">
         <div class="row"><span class="row-icon">${icon('home')}</span><span class="row-main"><span class="row-title">Склад</span><span class="row-sub">${G.sklad.name}</span></span></div>
@@ -201,7 +201,10 @@
   Kit.on(V, 'click', '[data-up]', (e, el)=>{ const i = +el.dataset.up; if(i < 1) return; [ST.stops[i - 1], ST.stops[i]] = [ST.stops[i], ST.stops[i - 1]]; saveOrder(); haptic('select'); recalc(); draw(); });
   Kit.on(V, 'click', '[data-down]', (e, el)=>{ const i = +el.dataset.down; if(i >= ST.stops.length - 1) return; [ST.stops[i + 1], ST.stops[i]] = [ST.stops[i], ST.stops[i + 1]]; saveOrder(); haptic('select'); recalc(); draw(); });
   Kit.on(V, 'click', '[data-best]', ()=>{ resetOrder(); haptic('success'); recalc(); draw(); });
-  Kit.on(V, 'click', '[data-ymap]', ()=> Kit.openLink(LP.yandexUrl(G.sklad, ST.stops)));
+  Kit.on(V, 'click', '[data-ymap]', ()=>{   // склад → точки → склад: склад и точки с координатами — «широта,долгота», остальные — адрес
+    const sk = `${G.sklad.lat.toFixed(5)},${G.sklad.lon.toFixed(5)}`;
+    CakeMap.route([sk].concat(ST.stops.map(x=> x.geo ? `${x.geo.lat.toFixed(5)},${x.geo.lon.toFixed(5)}` : x.address), [sk]));
+  });
   Kit.on(V, 'click', '[data-map]', (e, el)=> CakeMap.one(ST.stops[+el.dataset.map].address));
   Kit.on(V, 'click', '[data-st]', (e, el)=> openStack(+el.dataset.st));
   Kit.on(V, 'keydown', '[data-st]', (e, el)=>{ if(e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openStack(+el.dataset.st); } });

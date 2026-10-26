@@ -158,7 +158,7 @@
 
   // Руководитель на экране водителя: кто едет, на чём, сколько везти — и правки водителя и машины, погрузка
   function bossBlock(t){
-    const kg = Cake.kgOf(t.lines), bx = Cake.boxesOf(t), d = ME || {};
+    const kg = t.lines.reduce((a, l)=> a + (l.qty + (l.bonus || 0)) * (P(l.productId).weightG || 0), 0) / 1000, bx = Cake.boxesOf(t), d = ME || {};
     return html`<div class="trip-crew">
         <div class="kv"><span class="k">Водитель</span><span class="v">${d.name || '—'}</span></div>
         <div class="kv"><span class="k">Машина</span><span class="v">${t.car || d.car || html`<span class="hint">не указана</span>`}</span></div>
