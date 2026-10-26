@@ -327,3 +327,15 @@ def test_orders_2710_grodno(api):
         assert route_city(conn, "Гродно 2") != route_city(conn, "Маршрут 2") == "route-2"
     finally:
         conn.close()
+
+
+def test_trip_boxes_from_per_box(api):
+    """Ящики рейса без внесённых в заявки — по «шт в ящике»; не задано — оценка (торт 2, остальное 10)."""
+    from bots.cake.stops import calc_boxes
+    conn = cake_bot.connect()
+    try:
+        conn.execute("UPDATE products SET per_box=1 WHERE id='p053'")
+        # торт p007: 3 шт по 2 → 2; картошка p049: 15 шт по 14 → 2; муравейка p053 (не задано): 11 шт по 10 → 2
+        assert calc_boxes(conn, {"p007": 3, "p049": 15, "p053": 11}) == 6
+    finally:
+        conn.close()

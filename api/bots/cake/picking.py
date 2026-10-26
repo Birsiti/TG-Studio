@@ -1,4 +1,4 @@
-# изменено 2026-10-25 18:30
+# изменено 2026-10-26 23:50
 """Сборка по кругу: заявки точек на дату, лист с галочками, места тортов на складе, точки разгрузки.
 
 Остаток сборка не трогает — торты списываются отгрузкой рейса (trips.py).
@@ -215,6 +215,8 @@ def route_to_trip(ctx: Ctx, p: dict) -> dict:
         for ln in jload(r["lines"], []):
             lines[ln["productId"]] = lines.get(ln["productId"], 0) + ln["qty"] + ln.get("bonus", 0)
         boxes += r["boxes"] or 0
+    from bots.cake.stops import calc_boxes  # поздний импорт: stops тянет picking
+    boxes = boxes or calc_boxes(ctx.conn, lines)  # ящики заявок не вносили — считаем по «шт в ящике»
     box = scalar(ctx.conn, "SELECT id FROM tara_types WHERE active=1 ORDER BY sort LIMIT 1")
     tid, num = new_id("R"), (scalar(ctx.conn, "SELECT MAX(num) FROM trips") or 0) + 1
     from bots.cake.trips import default_car  # поздний импорт: trips тянет stops, stops — picking

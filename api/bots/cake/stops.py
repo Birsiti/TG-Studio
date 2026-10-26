@@ -1,4 +1,4 @@
-# изменено 2026-10-18 16:00
+# изменено 2026-10-26 23:50
 """Точки рейса: логист добавляет водителю заявки (№, заказчик, адрес) — это его маршрут.
 Торты и ящики рейса считаются из заявок (sync_trip): при каждом изменении заявки и перед отгрузкой."""
 from __future__ import annotations
@@ -43,6 +43,17 @@ def trip_out(conn, tid: str) -> dict:
     return with_stops(conn, [_trip(_get_trip(conn, tid))])[0]
 
 
+def calc_boxes(conn, lines: dict) -> int:
+    """Ящики рейса по справочнику: на каждый товар ceil(шт / шт в ящике); не задано — оценка (торт 2, остальное 10),
+    как в расчёте погрузки (cake-warehouse/js/load-plan.js)."""
+    n = 0
+    for pid, q in lines.items():
+        p = conn.execute("SELECT cat, per_box FROM products WHERE id=?", (pid,)).fetchone()
+        pb = (p and p["per_box"] > 1 and p["per_box"]) or (2 if p and "торт" in p["cat"].lower() else 10)
+        n += -(-q // pb)
+    return n
+
+
 def sync_trip(conn, tid: str | None) -> None:
     """Рейс на сборке с заявками: торты = сумма строк заявок (с бонусом), ящики = сумма ящиков собранных заявок."""
     if not tid:
@@ -57,6 +68,7 @@ def sync_trip(conn, tid: str | None) -> None:
         for ln in jload(r["lines"], []):
             lines[ln["productId"]] = lines.get(ln["productId"], 0) + ln["qty"] + ln.get("bonus", 0)
         boxes += r["boxes"] or 0
+    boxes = boxes or calc_boxes(conn, lines)  # ящики заявок не вносили — считаем по «шт в ящике»
     box = scalar(conn, "SELECT id FROM tara_types WHERE active=1 ORDER BY sort LIMIT 1")
     conn.execute("UPDATE trips SET lines=?, tara_out=? WHERE id=?",
                  (jdump([{"productId": k, "qty": v} for k, v in lines.items() if v]),
