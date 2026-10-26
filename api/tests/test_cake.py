@@ -369,6 +369,9 @@ def test_trip_crew_and_car(api, monkeypatch):
     r = api("cake", "setTripCrew", id=t2["id"], driverId=b["id"])  # другой водитель — его последняя/закреплённая машина
     assert r["trip"]["driverId"] == b["id"] and r["trip"]["car"] == b["car"]
     assert api("cake", "setTripCrew", id=t2["id"], driverId="nope")["error"] == "not_found"
+    api("cake", "setTripCrew", id=t2["id"], car="")
+    assert api("cake", "shipTrip", id=t2["id"])["error"] == "bad_request"  # без машины не отгрузить
+    api("cake", "setTripCrew", id=t2["id"], car=b["car"] or "Газель · 7777 BB-7")
     assert api("cake", "shipTrip", id=t2["id"])["ok"]
     assert api("cake", "setTripCrew", id=t2["id"], driverId=a["id"])["error"] == "bad_state"  # после отгрузки водителя не меняют
     assert api("cake", "setTripCrew", id=t2["id"], car="Газель · 7777 BB-7")["trip"]["car"] == "Газель · 7777 BB-7"  # машину — можно

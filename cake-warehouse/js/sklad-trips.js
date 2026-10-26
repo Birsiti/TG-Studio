@@ -1,4 +1,4 @@
-// изменено 2026-10-25 18:40
+// изменено 2026-10-26 12:10
 /* Вкладка «Рейсы»: сборка → отгрузка → приёмка с возвратом тортов и ящиков. */
 (function(){
   "use strict";
@@ -67,7 +67,7 @@
       const a = el.dataset.a;
       if(a === 'edit'){ sh.close(); editTrip(t); return; }
       if(a === 'crew'){ CakeCrew.editTrip(t, nt=>{ sh.close(); renderTrips(); openTrip(Object.assign(t, nt)); }); return; }
-      if(a === 'load'){ location.href = `pogruzka.html?date=${t.date}&route=${encodeURIComponent(c.name)}`; return; }
+      if(a === 'load'){ location.href = `pogruzka.html?date=${t.date}&route=${encodeURIComponent(c.name)}${t.car ? '&car=' + encodeURIComponent(t.car) : ''}`; return; }
       if(a === 'stops'){ const b = sh.$('#stopsBox'); b.hidden = !b.hidden; haptic('select'); return; }
       if(a === 'boxkg'){ boxKgSheet(()=>{ sh.close(); openTrip(t); }); return; }
       if(a === 'close'){ sh.close(); acceptTrip(t); return; }

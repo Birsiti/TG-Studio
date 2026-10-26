@@ -1,4 +1,4 @@
-# изменено 2026-10-25 21:00
+# изменено 2026-10-26 12:10
 """Рейсы: сборка → отгрузка → отчёт водителя → приёмка; рейсы водителя."""
 from __future__ import annotations
 
@@ -84,6 +84,8 @@ def ship_trip(ctx: Ctx, p: dict) -> dict:
         raise ApiError("bad_request", "В рейсе нет тортов")
     if not t["driver_id"]:
         raise ApiError("bad_request", "Не выбран водитель")
+    if not t["car"]:
+        raise ApiError("bad_request", "Не выбрана машина")
     _check_stock(ctx.conn, lines)
     _check_free(ctx.conn, t["id"], t["driver_id"], t["car"])
     # водитель на погрузке — сдаёт ящики с прошлых рейсов (отдельно на склад он не поедет)

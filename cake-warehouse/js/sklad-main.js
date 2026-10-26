@@ -1,4 +1,4 @@
-// изменено 2026-10-18 13:30
+// изменено 2026-10-26 12:00
 /* Запуск экрана кладовщика: иконки, вкладки, кнопка «Обновить». */
 (function(){
   "use strict";
@@ -7,21 +7,21 @@
   $('#mark').innerHTML = icon(logist ? 'route' : 'box');
   if(window.CakeDriverStats) Cake.tabs.drivers = ()=> CakeDriverStats(Cake.api, Cake.refs.staff);
   $('#refreshBtn').innerHTML = icon('refresh');
-  $('#searchIc').outerHTML = String(icon('search'));
+  if($('#searchIc')) $('#searchIc').outerHTML = String(icon('search'));
   $('#tripAdd').innerHTML = html`${icon('plus')}Новый рейс`;
   $('#pkAdd').innerHTML = html`${icon('plus')}Новая заявка`;
   $('#pkAdd').addEventListener('click', ()=> Cake.editOrder(null));
-  $('#inFile').innerHTML = html`${icon('upload')}Загрузить приход из файла (Excel, CSV)`;
+  if($('#inFile')) $('#inFile').innerHTML = html`${icon('upload')}Загрузить приход из файла (Excel, CSV)`;
   $('#pkFile').innerHTML = html`${icon('upload')}Загрузить заявки из файла (Excel, CSV)`;
-  $('#inFile').addEventListener('click', ()=> Cake.importFile.income());
+  if($('#inFile')) $('#inFile').addEventListener('click', ()=> Cake.importFile.income());
   $('#pkFile').addEventListener('click', ()=> Cake.importFile.orders());
-  $('#logCsv').innerHTML = html`${icon('download')}Выгрузить CSV`;
+  if($('#logCsv')) $('#logCsv').innerHTML = html`${icon('download')}Выгрузить CSV`;
   $$('[data-ic]').forEach(el=> el.outerHTML = String(icon(el.dataset.ic)));
 
-  let current = 'stock';
+  let current = logist ? 'pick' : 'stock';
   $('#refreshBtn').addEventListener('click', async ()=>{ haptic('light'); await Cake.loadRefs(); await Cake.loadStock(); Cake.tabs[current](); });
   Kit.ready(async ()=>{
     await Cake.loadRefs(); await Cake.loadStock();
-    Kit.tabs({onChange(tab){ current = tab; $('#inBar').classList.toggle('is-hidden', tab !== 'income' || !Cake.incomeLines().length); Cake.tabs[tab](); }});
+    Kit.tabs({onChange(tab){ current = tab; if($('#inBar')) $('#inBar').classList.toggle('is-hidden', tab !== 'income' || !Cake.incomeLines().length); Cake.tabs[tab](); }});
   });
 })();

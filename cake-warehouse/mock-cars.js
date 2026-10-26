@@ -1,4 +1,4 @@
-// изменено 2026-10-26 10:20
+// изменено 2026-10-26 12:20
 /* ============================================================
    mock-cars.js — парк и правило «не в двух рейсах сразу» в демо-режиме
    (двойник api/bots/cake/cars.py: getCars, saveCar, проверка при отгрузке, inTransit в getCrew).
@@ -54,6 +54,8 @@
     shipTrip: function(p){
       var S = U.state(), t = byId(S.trips, p.id);
       if(t && t.status === 'draft' && t.driverId){
+        if(!t.car){ var dv = byId(S.staff, t.driverId); if(dv && dv.car) t.car = dv.car; }
+        if(!t.car) return err('bad_request', 'Не выбрана машина');
         var b = road(S, t.driverId, t.car, t.id);
         if(b){
           var byDriver = b.driverId === t.driverId;
