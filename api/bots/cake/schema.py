@@ -1,4 +1,4 @@
-# изменено 2026-10-25 21:00
+# изменено 2026-10-26 10:00
 """Схема базы склада (SQLite) и общие константы."""
 
 SCHEMA = """
@@ -49,7 +49,8 @@ CREATE TABLE IF NOT EXISTS visitors(
 CREATE TABLE IF NOT EXISTS visit_log(
   id INTEGER PRIMARY KEY AUTOINCREMENT, tg_id TEXT NOT NULL, at TEXT NOT NULL, page TEXT NOT NULL DEFAULT '');
 -- Парк: машины, которые руководитель завёл сам (марка · госномер); остальные берутся у водителей и из рейсов
-CREATE TABLE IF NOT EXISTS cars(car TEXT PRIMARY KEY, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS cars(car TEXT PRIMARY KEY, created_at TEXT NOT NULL,
+  body_l INTEGER NOT NULL DEFAULT 0, body_w INTEGER NOT NULL DEFAULT 0);  -- кузов внутри, мм; 0 — не задан
 -- Заявки «Я сотрудник Милано»: человек оставил фамилию, имя и телефон, руководитель даёт роль (или отказывает)
 CREATE TABLE IF NOT EXISTS signups(
   tg_id TEXT PRIMARY KEY, last_name TEXT NOT NULL DEFAULT '', first_name TEXT NOT NULL DEFAULT '', phone TEXT NOT NULL DEFAULT '',

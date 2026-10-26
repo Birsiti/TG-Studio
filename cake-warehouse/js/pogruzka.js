@@ -1,4 +1,4 @@
-// изменено 2026-10-23 05:00
+// изменено 2026-10-26 10:30
 /* Экран «Погрузка»: маршрут на дату → порядок объезда, кузов сверху (столбы ящиков у прохода),
    лист каждой точки для водителя, ящики и бирки. Расчёт — в js/load-plan.js (CakeLoad).
    Открывается из «Заявки → Весь маршрут» (?date=…&route=…). Порядок точек и размеры — в этом телефоне. */
@@ -13,7 +13,12 @@
   const CFG_KEY = 'cake-load-cfg', ORDER_KEY = 'cake-load-order';
   const read = (k, d)=> { try{ return JSON.parse(localStorage.getItem(k)) || d; }catch(e){ return d; } };
   const write = (k, v)=> { try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
-  let cfg = Object.assign({}, LP.DEFAULTS, read(CFG_KEY, {}));
+  const CAR_KEY = 'cake-load-car';
+  let cars = [], carName = read(CAR_KEY, '');
+  // Кузов берётся у машины (по марке и госномеру); остальное — из настроек телефона
+  const carNow = ()=> cars.find(c=> c.car === carName && c.bodyL && c.bodyW) || cars.find(c=> c.bodyL && c.bodyW) || null;
+  const makeCfg = (saved)=>{ const c = carNow(); return Object.assign({}, LP.DEFAULTS, saved, c ? {bodyL:c.bodyL, bodyW:c.bodyW} : {}); };
+  let cfg = makeCfg(read(CFG_KEY, {}));
   const q = new URLSearchParams(location.search);
   const ST = {date:q.get('date') || '', route:q.get('route') || '', view:['route','body','stops','boxes'].includes(q.get('view')) ? q.get('view') : 'route', orders:[], points:[], routes:[], dates:[], stops:[], plan:null, find:''};
 
@@ -64,6 +69,8 @@
     $('#ldDates').innerHTML = String(html`${dates.slice(-10).map(d=>html`<button class="chip${d === ST.date ? ' is-on' : ''}" type="button" data-d="${d}">${D.label(d)}</button>`)}`);
     const withOrders = ST.routes.filter(r=> ST.orders.some(o=> o.route === r));
     $('#ldRoutes').innerHTML = String(html`${withOrders.map(r=>html`<button class="chip${r === ST.route ? ' is-on' : ''}" type="button" data-r="${r}">${r}</button>`)}`);
+    const withBody = cars.filter(c=> c.bodyL && c.bodyW), cn = carNow();
+    $('#ldCars').innerHTML = withBody.length > 1 ? String(html`${withBody.map(c=>html`<button class="chip${cn && c.car === cn.car ? ' is-on' : ''}" type="button" data-car="${c.car}">${icon('truck')}${c.car}</button>`)}`) : '';
     $$('#ldSeg button').forEach(b=> b.classList.toggle('is-on', b.dataset.v === ST.view));
     const P = ST.plan;
     if(!P){ $('#ldView').innerHTML = String(html`<div class="empty">${icon('route')}<div class="empty-title">Нет заявок</div>На ${D.label(ST.date)} по маршрутам заявок не внесено</div>`); $('#ldSub').textContent = ''; return; }
@@ -128,7 +135,7 @@
       <p class="hint section">Цифра — номер столба, «т.N» — для какой точки верхний ящик. Розовые — торты (до ${cfg.layersCake} слоёв), серые — остальное (до ${cfg.layersOther}). Нажмите на столб — что в нём по слоям. Пунктир — свободно, сюда пустые ящики.</p>
       <div class="stats section"><div class="stat"><div class="stat-label">Столбов</div><div class="stat-value">${P.stacks.length} из ${P.slots.length}</div><div class="stat-delta">${geo.mode === 'aisle' ? `по ${geo.deep} от прохода с каждой стороны` : 'рядами от двери'}</div></div>
         <div class="stat"><div class="stat-label">Груз</div><div class="stat-value">≈ ${Math.round(P.kg)} кг</div><div class="stat-delta">${P.boxes.length} ящиков${P.inAisle ? ` · в проходе ${P.inAisle}` : ''}${P.over.length ? ` · не влезло ${P.over.length}` : ''}</div></div></div>
-      <button class="btn btn-ghost btn-block section" type="button" data-cfg>${icon('settings')}Кузов ${cfg.bodyL / 1000}×${cfg.bodyW / 1000} м · ящик ${cfg.boxL / 10}×${cfg.boxW / 10} см — изменить</button>`;
+      <button class="btn btn-ghost btn-block section" type="button" data-cfg>${icon('settings')}${carNow() ? carNow().car + ' · ' : ''}кузов ${cfg.bodyL / 1000}×${cfg.bodyW / 1000} м · ящик ${cfg.boxL / 10}×${cfg.boxW / 10} см — изменить</button>`;
   }
   function openStack(id){
     const st = ST.plan.stacks.find(s=> s.id === id); if(!st) return;
@@ -169,22 +176,25 @@
   const FIELDS = [['bodyL', 'Кузов: длина, мм'], ['bodyW', 'Кузов: ширина, мм'], ['aisle', 'Проход, мм (0 — без прохода)'], ['boxL', 'Ящик: длина, мм'], ['boxW', 'Ящик: ширина, мм'],
     ['layersCake', 'Слоёв тортов в столбе'], ['layersOther', 'Слоёв остального'], ['estCake', 'Не задано «шт в ящике»: торты'], ['estOther', 'Не задано: остальное'], ['serviceMin', 'Минут на точке']];
   function openCfg(){
-    const sh = Kit.sheet({title:'Кузов и ящики', sub:'Сохраняется в этом телефоне',
-      body: html`<div class="ld-cfg">${FIELDS.map(([k, t])=>html`<label class="field"><span class="field-label">${t}</span><input class="input" name="${k}" type="number" inputmode="numeric" min="0" value="${cfg[k]}"></label>`)}</div>
-        <p class="hint section">Пока размеров нет, стоят примерные: кузов 4×2 м, ящик 60×40 см.</p>`,
+    const own = !carNow();  // кузов задан у машины — здесь его не правят
+    const fields = FIELDS.filter(([k])=> own || (k !== 'bodyL' && k !== 'bodyW'));
+    const sh = Kit.sheet({title:'Кузов и ящики', sub: own ? 'Сохраняется в этом телефоне' : 'Кузов — из карточки машины, остальное сохраняется в этом телефоне',
+      body: html`<div class="ld-cfg">${fields.map(([k, t])=>html`<label class="field"><span class="field-label">${t}</span><input class="input" name="${k}" type="number" inputmode="numeric" min="0" value="${cfg[k]}"></label>`)}</div>
+        <p class="hint section">Ящики пластиковые 60×40 см. Слоёв в столбе — не больше 13.</p>`,
       actions: html`<button class="btn btn-ghost" type="button" id="cfgReset">Как было</button><button class="btn btn-primary" type="button" id="cfgSave">Пересчитать</button>`});
     sh.$('#cfgSave').addEventListener('click', ()=>{
       const n = {}; $$('[name]', sh.el).forEach(el=>{ const v = parseInt(el.value, 10); n[el.name] = v >= 0 ? v : LP.DEFAULTS[el.name]; });
-      ['bodyL', 'bodyW', 'boxL', 'boxW', 'layersCake', 'layersOther', 'estCake', 'estOther'].forEach(k=>{ if(!(n[k] > 0)) n[k] = LP.DEFAULTS[k]; });
-      if(n.aisle >= n.bodyW){ Kit.toast('Проход шире кузова', 'error'); return; }
-      cfg = Object.assign({}, LP.DEFAULTS, n); write(CFG_KEY, n); haptic('success'); sh.close(); recalc(); draw();
+      ['bodyL', 'bodyW', 'boxL', 'boxW', 'layersCake', 'layersOther', 'estCake', 'estOther'].forEach(k=>{ if(k in n && !(n[k] > 0)) n[k] = LP.DEFAULTS[k]; });
+      if(n.aisle >= (n.bodyW || cfg.bodyW)){ Kit.toast('Проход шире кузова', 'error'); return; }
+      cfg = makeCfg(n); write(CFG_KEY, n); haptic('success'); sh.close(); recalc(); draw();
     });
-    sh.$('#cfgReset').addEventListener('click', ()=>{ cfg = Object.assign({}, LP.DEFAULTS); write(CFG_KEY, {}); sh.close(); recalc(); draw(); });
+    sh.$('#cfgReset').addEventListener('click', ()=>{ cfg = makeCfg({}); write(CFG_KEY, {}); sh.close(); recalc(); draw(); });
   }
 
   /* ============ СОБЫТИЯ ============ */
   Kit.on($('#ldDates'), 'click', '[data-d]', async (e, el)=>{ haptic('select'); if(await load(el.dataset.d)){ buildStops(); recalc(); draw(); } });
   Kit.on($('#ldRoutes'), 'click', '[data-r]', (e, el)=>{ haptic('select'); ST.route = el.dataset.r; ST.find = ''; buildStops(); recalc(); draw(); });
+  Kit.on($('#ldCars'), 'click', '[data-car]', (e, el)=>{ haptic('select'); carName = el.dataset.car; write(CAR_KEY, carName); cfg = makeCfg(read(CFG_KEY, {})); recalc(); draw(); });
   Kit.on($('#ldSeg'), 'click', '[data-v]', (e, el)=>{ haptic('select'); ST.view = el.dataset.v; draw(); });
   $('#cfgBtn').addEventListener('click', openCfg);
   const V = $('#ldView');
@@ -208,6 +218,7 @@
   Kit.ready(async ()=>{
     await Cake.loadRefs();
     if(!(Cake.refs.products || []).length){ V.innerHTML = String(html`<div class="empty">${icon('lock')}<div class="empty-title">Нет доступа</div>Откройте склад из бота</div>`); return; }
+    const cr = await api('getCars'); if(cr.ok){ cars = cr.cars; cfg = makeCfg(read(CFG_KEY, {})); }
     if(await load(ST.date)){ buildStops(); recalc(); draw(); }
   });
 })();

@@ -408,3 +408,14 @@ def test_cars_and_one_road_at_a_time(api):
     # водитель сдал отчёт — вернулся, второй рейс уходит
     assert api("cake", "reportTrip", id=t1["id"])["ok"]
     assert api("cake", "shipTrip", id=t2["id"])["ok"]
+
+
+def test_car_body_size_by_plate(api):
+    """Размеры кузова привязаны к машине (марка · госномер) и приходят в getCars."""
+    car = "Газель · AK 7453-6"
+    r = api("cake", "saveCar", car=car, bodyL=5000, bodyW=2100)
+    row = next(x for x in r["cars"] if x["car"] == car)
+    assert row["bodyL"] == 5000 and row["bodyW"] == 2100 and row["driverId"] is None
+    api("cake", "saveCar", car=car, driverId="")  # водителя сняли — кузов остался
+    assert next(x for x in api("cake", "getCars")["cars"] if x["car"] == car)["bodyL"] == 5000
+    assert api("cake", "saveCar", car=car, bodyL=99999)["error"] == "bad_request"

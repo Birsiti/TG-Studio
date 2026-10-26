@@ -1,4 +1,4 @@
-# изменено 2026-10-25 21:00
+# изменено 2026-10-26 10:00
 """Объект bot, проверка доступа, выдача строк в JSON и общие проверки строк."""
 from __future__ import annotations
 
@@ -25,6 +25,9 @@ def _migrate(conn, now):
         conn.execute("ALTER TABLE trips ADD COLUMN car TEXT NOT NULL DEFAULT ''")  # машина рейса: по умолчанию последняя водителя, можно заменить
     if "stop" not in {r["name"] for r in conn.execute("PRAGMA table_info(orders)").fetchall()}:
         conn.execute("ALTER TABLE orders ADD COLUMN stop INTEGER NOT NULL DEFAULT 0")  # порядок точки в рейсе
+    if "body_l" not in {r["name"] for r in conn.execute("PRAGMA table_info(cars)").fetchall()}:
+        conn.execute("ALTER TABLE cars ADD COLUMN body_l INTEGER NOT NULL DEFAULT 0")  # размеры кузова машины, мм
+        conn.execute("ALTER TABLE cars ADD COLUMN body_w INTEGER NOT NULL DEFAULT 0")
     if "hired" not in {r["name"] for r in conn.execute("PRAGMA table_info(staff)").fetchall()}:
         conn.execute("ALTER TABLE staff ADD COLUMN hired INTEGER NOT NULL DEFAULT 0")  # наёмный водитель — машина чужой фирмы
         conn.execute("ALTER TABLE staff ADD COLUMN carrier TEXT NOT NULL DEFAULT ''")
@@ -54,7 +57,7 @@ def _service(p: dict) -> bool:
 # Водитель видит только своё: рейсы и отчёт о возврате. Остальное — склад (кладовщик и руководитель).
 DRIVER_ACTIONS = {"getMe", "getRefs", "getMyTrips", "reportTrip", "setOdometer", "hello", "reportStop", "addStopPhoto"}  # точки рейса приходят в getMyTrips
 OPEN_ACTIONS = {"getMe", "signup"}  # доступны любому, кто открыл приложение из бота: узнать свой допуск и оставить заявку
-ADMIN_ACTIONS = {"saveStaff", "deleteStaff", "getVisits", "logVisit", "getSignups", "decideSignup", "getCars", "saveCar"}  # кого пускать в приложение — решает только руководитель
+ADMIN_ACTIONS = {"saveStaff", "deleteStaff", "getVisits", "logVisit", "getSignups", "decideSignup", "saveCar"}  # кого пускать в приложение — решает только руководитель
 _warned = False
 
 
