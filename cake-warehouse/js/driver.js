@@ -1,4 +1,4 @@
-// изменено 2026-10-26 22:40
+// изменено 2026-10-27 01:28
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
@@ -142,7 +142,7 @@
       else location.href = `pogruzka.html?date=${t.date}&route=${encodeURIComponent(c.name)}${t.car ? '&car=' + encodeURIComponent(t.car) : ''}`;
     });
     Kit.on(sh.el, 'click', '[data-stop]', (e, el)=>{ if(e.target.closest('[data-map]')) return; haptic('light'); sh.close(); openStop(t, t.stops.find(s=>s.orderId === el.dataset.stop)); });
-    const all = sh.$('#mapAll'); if(all) all.addEventListener('click', ()=>{ haptic('light'); CakeMap.route(t.stops.map(s=>s.address)); });
+    const all = sh.$('#mapAll'); if(all) all.addEventListener('click', ()=>{ haptic('light'); CakeMap.trip(t.stops); });
     const b = sh.$('#goRep'); if(b) b.addEventListener('click', async ()=>{
       const left = (t.stops || []).filter(s=>!s.report).length;
       if(left && !await Kit.confirm(`Не сданы точки: ${left} из ${t.stops.length}. Всё равно сдать рейс?`, 'Сдать рейс')) return;
