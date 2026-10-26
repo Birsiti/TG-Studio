@@ -1,4 +1,4 @@
-# изменено 2026-10-26 10:00
+# изменено 2026-10-27 00:20
 """Объект bot, проверка доступа, выдача строк в JSON и общие проверки строк."""
 from __future__ import annotations
 
@@ -25,6 +25,8 @@ def _migrate(conn, now):
         conn.execute("ALTER TABLE trips ADD COLUMN car TEXT NOT NULL DEFAULT ''")  # машина рейса: по умолчанию последняя водителя, можно заменить
     if "stop" not in {r["name"] for r in conn.execute("PRAGMA table_info(orders)").fetchall()}:
         conn.execute("ALTER TABLE orders ADD COLUMN stop INTEGER NOT NULL DEFAULT 0")  # порядок точки в рейсе
+    if "per_box_q" not in {r["name"] for r in conn.execute("PRAGMA table_info(products)").fetchall()}:
+        conn.execute("ALTER TABLE products ADD COLUMN per_box_q INTEGER NOT NULL DEFAULT 0")  # «шт в ящике» названо на глаз — под вопросом
     if "body_l" not in {r["name"] for r in conn.execute("PRAGMA table_info(cars)").fetchall()}:
         conn.execute("ALTER TABLE cars ADD COLUMN body_l INTEGER NOT NULL DEFAULT 0")  # размеры кузова машины, мм
         conn.execute("ALTER TABLE cars ADD COLUMN body_w INTEGER NOT NULL DEFAULT 0")
@@ -108,7 +110,7 @@ def action(name: str, write: bool = False):
 
 def _product(r):
     return {"id": r["id"], "name": r["name"], "cat": r["cat"], "sku": r["sku"], "weightG": r["weight_g"], "shelfDays": r["shelf_days"],
-            "minQty": r["min_qty"], "perBox": r["per_box"], "sort": r["sort"], "active": bool(r["active"])}
+            "minQty": r["min_qty"], "perBox": r["per_box"], "perBoxQ": bool(r["per_box_q"]) if "per_box_q" in r.keys() else False, "sort": r["sort"], "active": bool(r["active"])}
 
 
 def _city(r):

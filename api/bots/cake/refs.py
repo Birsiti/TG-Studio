@@ -1,4 +1,4 @@
-# изменено 2026-10-17 21:00
+# изменено 2026-10-27 00:20
 """Справочники: торты, города, сотрудники, тара; кто я."""
 from __future__ import annotations
 
@@ -36,6 +36,8 @@ def save_product(ctx: Ctx, p: dict) -> dict:
             1 if v_bool(p, "active", default=True) else 0)
     if old:
         ctx.conn.execute("UPDATE products SET name=?,cat=?,sku=?,weight_g=?,shelf_days=?,min_qty=?,per_box=?,active=? WHERE id=?", (*data, pid))
+        if data[6] != old["per_box"]:
+            ctx.conn.execute("UPDATE products SET per_box_q=0 WHERE id=?", (pid,))  # число задали заново — вопрос снят
     else:
         ctx.conn.execute("INSERT INTO products(name,cat,sku,weight_g,shelf_days,min_qty,per_box,active,id,sort) VALUES(?,?,?,?,?,?,?,?,?,?)",
                          (*data, pid, _next_sort(ctx.conn, "products")))

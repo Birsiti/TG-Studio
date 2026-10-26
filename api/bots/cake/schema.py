@@ -1,11 +1,11 @@
-# изменено 2026-10-26 10:00
+# изменено 2026-10-27 00:20
 """Схема базы склада (SQLite) и общие константы."""
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS products(
   id TEXT PRIMARY KEY, name TEXT NOT NULL, cat TEXT NOT NULL DEFAULT '', sku TEXT NOT NULL DEFAULT '', weight_g INTEGER NOT NULL DEFAULT 0,
   shelf_days INTEGER NOT NULL DEFAULT 0, min_qty INTEGER NOT NULL DEFAULT 0, sort INTEGER NOT NULL DEFAULT 0,
-  per_box INTEGER NOT NULL DEFAULT 1,  -- штук в одном грузовом месте (коробке): пирожные 10 шт = 1 место
+  per_box INTEGER NOT NULL DEFAULT 1, per_box_q INTEGER NOT NULL DEFAULT 0,  -- штук в одном грузовом месте (коробке): пирожные 10 шт = 1 место
   active INTEGER NOT NULL DEFAULT 1, seed INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS cities(
   id TEXT PRIMARY KEY, name TEXT NOT NULL, code TEXT NOT NULL DEFAULT '', sort INTEGER NOT NULL DEFAULT 0,

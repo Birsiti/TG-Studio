@@ -1,4 +1,4 @@
-// изменено 2026-10-26 11:00
+// изменено 2026-10-27 00:20
 /* Расчёт погрузки рейса — чистые функции, без DOM (проверяются в node: db/test_load_plan.js).
    Вариант «Б»: ящик = один товар, не привязан к точке; водитель набирает заказ точки из общих ящиков.
    1. Порядок объезда: склад → точки → склад, кратчайший круг (до 10 точек — точный перебор, больше — ближайший + 2-opt).
@@ -83,7 +83,7 @@ window.CakeLoad = (function(){
   const isCake = p=> /торт/i.test(p.cat || '');
   // Шт в ящике: задано (>1) — как есть; не задано — оценка (флаг est)
   function perBox(p, cfg){
-    if(p.perBox > 1) return {n:p.perBox, est:false};
+    if(p.perBox > 1) return {n:p.perBox, est:!!p.perBoxQ};
     return {n: isCake(p) ? cfg.estCake : cfg.estOther, est:true};
   }
 
