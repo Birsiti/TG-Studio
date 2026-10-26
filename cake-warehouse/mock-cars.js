@@ -1,4 +1,4 @@
-// изменено 2026-10-25 21:30
+// изменено 2026-10-26 10:20
 /* ============================================================
    mock-cars.js — парк и правило «не в двух рейсах сразу» в демо-режиме
    (двойник api/bots/cake/cars.py: getCars, saveCar, проверка при отгрузке, inTransit в getCrew).
@@ -22,7 +22,8 @@
     S.trips.forEach(function(t){ if(t.car && t.status !== 'cancelled' && !(t.car in m)) m[t.car] = null; });
     return Object.keys(m).sort().map(function(car){
       var b = road(S, null, car);
-      return {car:car, driverId:m[car] ? m[car].id : null, driverName:m[car] ? m[car].name : '', busy:b ? b.num : null};
+      var bd = (S.carBody || {})[car] || [0, 0];
+      return {car:car, driverId:m[car] ? m[car].id : null, driverName:m[car] ? m[car].name : '', busy:b ? b.num : null, bodyL:bd[0], bodyW:bd[1]};
     });
   }
 
@@ -32,6 +33,11 @@
       var S = U.state(), car = String(p.car || '').trim().slice(0, 80);
       if(car.length < 3) return err('bad_request', 'car: от 3 символов');
       S.cars = S.cars || []; if(S.cars.indexOf(car) < 0) S.cars.push(car);
+      if('bodyL' in p || 'bodyW' in p){
+        var L = parseInt(p.bodyL, 10) || 0, W = parseInt(p.bodyW, 10) || 0;
+        if(L > 20000 || W > 4000) return err('bad_request', 'bodyL: слишком большое');
+        (S.carBody = S.carBody || {})[car] = [L, W];
+      }
       if('driverId' in p){
         var did = p.driverId || null;
         if(did){

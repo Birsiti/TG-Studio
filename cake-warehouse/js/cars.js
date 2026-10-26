@@ -1,4 +1,4 @@
-// изменено 2026-10-25 21:30
+// изменено 2026-10-26 10:20
 /* «Машины» — экран руководителя на главной: парк, кто за рулём (можно сменить), статистика по машине.
    Данные: getCars, saveCar, getRefs (водители, торты, города), getTrips (статистика — по рейсам с этой машиной). */
 window.CakeCars = (function(){
@@ -13,6 +13,8 @@ window.CakeCars = (function(){
   const kgOf = t=> (t.lines || []).reduce((s, l)=> s + (l.qty + (l.bonus || 0)) * ((prod[l.productId] || {}).weightG || 0), 0) / 1000;
   const pcsOf = t=> (t.lines || []).reduce((s, l)=> s + l.qty + (l.bonus || 0), 0);
   const kg = n=> num(Math.round(n)) + ' кг';
+  const metres = mm=> String(mm / 1000).replace('.', ',');
+  const bodyOf = c=> c.bodyL && c.bodyW ? `кузов ${metres(c.bodyL)} × ${metres(c.bodyW)} м` : 'кузов не задан';
 
   async function load(){
     const from = D.add(D.today(), -180), to = D.add(D.today(), 30);
@@ -42,6 +44,7 @@ window.CakeCars = (function(){
         ${m.plate ? html`<span class="team-line mono">${m.plate}</span>` : ''}
         ${c.busy ? html`<span class="role-chip r-driver">в рейсе №${c.busy}</span>` : html`<span class="role-chip r-storekeeper">свободна</span>`}
         <span class="team-line ${c.driverName ? '' : 'is-none'}">${c.driverName ? 'За рулём: ' + c.driverName : 'водитель не назначен'}</span>
+        <span class="team-line ${c.bodyL ? '' : 'is-none'}">${bodyOf(c)}</span>
         <span class="team-line">${s.trips ? `${s.trips} ${s.trips === 1 ? 'рейс' : 'рейсов'} · ${kg(s.kg)}` : 'рейсов пока не было'}</span></span>
       ${icon('right', 'row-chev')}</button>`;
   };
@@ -101,11 +104,28 @@ window.CakeCars = (function(){
           <span class="row-sub">${c.busy ? 'сейчас в рейсе №' + c.busy : 'машина свободна'}</span></span>
       </div>
       <button class="btn btn-ghost btn-block section" type="button" id="crChange">${icon('users')}${c.driverName ? 'Сменить водителя' : 'Назначить водителя'}</button>
+      <div class="eyebrow section" style="margin-bottom:8px">Кузов внутри, м · для погрузки</div>
+      <div class="car-body">
+        <label class="field"><span class="field-label">Длина</span><input class="input" id="crBL" inputmode="decimal" value="${c.bodyL ? metres(c.bodyL) : ''}" placeholder="5"></label>
+        <label class="field"><span class="field-label">Ширина</span><input class="input" id="crBW" inputmode="decimal" value="${c.bodyW ? metres(c.bodyW) : ''}" placeholder="2,1"></label>
+      </div>
+      <button class="btn btn-ghost btn-block" type="button" id="crBody">Сохранить кузов</button>
       <div class="eyebrow section" style="margin-bottom:8px">Статистика · 30 дней</div>
       <div class="stats">${stat('Рейсов', num(month.trips), `всего ${num(all.trips)}`)}${stat('Вес', kg(month.kg), `всего ${kg(all.kg)}`)}${stat('Тортов', num(month.pcs), 'шт')}${stat('Точек', num(month.points), 'разгрузок')}</div>
       ${whoList.length ? html`<div class="eyebrow section" style="margin-bottom:8px">Кто ездил на ней</div><div class="list">${whoList.map(w=>html`<div class="row"><span class="avatar">${Kit.initials(w.name)}</span><span class="row-main"><span class="row-title">${w.name}</span></span><span class="hint">${w.n} ${w.n === 1 ? 'рейс' : 'рейсов'}</span></div>`)}</div>` : ''}
       <div class="eyebrow section" style="margin-bottom:8px">Последние рейсы</div>
       ${last.length ? html`<div class="list">${last.map(t=>{ const dn = (drivers.find(d=>d.id === t.driverId) || {}).name; return html`<div class="row"><span class="row-main"><span class="row-title">№${t.num} · ${(cities[t.cityId] || {}).name || '—'}</span><span class="row-sub">${D.label(t.date)} · ${dn || 'без водителя'} · ${STATUS[t.status] || t.status}</span></span><span class="hint">${kg(kgOf(t))}</span></div>`; })}</div>` : html`<p class="hint">На этой машине рейсов пока не было.</p>`}`});
+    sh.$('#crBody').addEventListener('click', async ()=>{
+      const mm = id=>{ const v = parseFloat(sh.$(id).value.replace(',', '.')); return v > 0 ? Math.round(v * 1000) : 0; };
+      const L = mm('#crBL'), W = mm('#crBW');
+      if((L && L < 1000) || (W && W < 1000) || L > 20000 || W > 4000){ Kit.toast('Размеры в метрах, например 5 и 2,1', 'error'); return; }
+      Kit.busy(sh.$('#crBody'), true);
+      const r = await api('saveCar', {car:c.car, bodyL:L, bodyW:W});
+      Kit.busy(sh.$('#crBody'), false);
+      if(!r.ok){ fail(r); return; }
+      haptic('success'); Kit.toast('Кузов сохранён', 'ok'); sh.close();
+      if(await load()) render();
+    });
     sh.$('#crChange').addEventListener('click', ()=>{ haptic('light'); sh.close(); pickDriver(c, async ()=>{ if(await load()) render(); }); });
   }
 
