@@ -1,4 +1,4 @@
-// изменено 2026-10-26 23:55
+// изменено 2026-10-27 00:20
 /* Вкладка «Рейсы»: сборка → отгрузка → приёмка с возвратом тортов и ящиков. */
 (function(){
   "use strict";
@@ -113,7 +113,7 @@
       const ls = t.lines.filter(l=>P(l.productId).cat === cat);
       return html`<div class="cat-head eyebrow" style="margin:10px 0 4px">${cat} · ${ls.reduce((a, l)=>a + l.qty, 0)} шт · ${bx(ls)} ящ. · ${Cake.fmtKg(Cake.kgOf(ls))}</div>
         ${ls.map(l=>{ const b = Cake.boxCount(l.productId, l.qty); return html`<div class="kv kv-line"><span class="k">${L(l.productId)}</span><span class="v mono">${l.qty} шт · ${b.est ? '≈ ' : ''}${b.n} ящ.${closed ? html` <span class="hint">→ ${l.delivered}${l.back ? ' · возв ' + l.back : ''}${l.spoiled ? ' · брак ' + l.spoiled : ''}</span>` : html` <span class="hint">${Cake.fmtKg(Cake.kgOf([l]))}</span>`}</span></div>`; })}`;
-    })}${t.lines.some(l=> Cake.boxCount(l.productId, l.qty).est) ? html`<p class="hint">≈ — «шт в ящике» не задано, считаю по оценке: торт 2, остальное 10. Задать — в справочниках.</p>` : ''}`;
+    })}${t.lines.some(l=> Cake.boxCount(l.productId, l.qty).est) ? html`<p class="hint">≈ — «шт в ящике» не задано или под вопросом: не задано считаю по оценке (торт 2, остальное 10). Задать — в справочниках.</p>` : ''}`;
   }
   // Вес пустого ящика — для «с ящиками»; хранится на этом телефоне, пока не взвесили и не внесли в справочник
   function boxKgSheet(done){
