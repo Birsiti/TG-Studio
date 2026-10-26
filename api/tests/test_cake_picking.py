@@ -1,4 +1,4 @@
-# изменено 2026-10-18 16:30
+# изменено 2026-10-26 23:20
 """Сборка по кругу: заявки с фото, галочки, места, точки, миграция в старую базу."""
 from bots.cake import bot as cake_bot
 
@@ -12,7 +12,7 @@ def order(api, num):
 
 def test_orders_from_photos_match_paper(api):
     r = api("cake", "getOrders", date="2026-10-17")
-    assert len(r["orders"]) == 11 and r["routes"] == ["Бобруйск", "Дзержинск", "Маршрут 2", "Маршрут 3", "Маршрут 4"] and len(r["points"]) == 61
+    assert len(r["orders"]) == 11 and r["routes"] == ["Бобруйск", "Гродно 2", "Дзержинск", "Маршрут 2", "Маршрут 3", "Маршрут 4"] and len(r["points"]) == 78
     for num, (qty, places) in PAPER.items():
         o = order(api, num)
         q = sum(ln["qty"] for ln in o["lines"])
@@ -80,7 +80,7 @@ def test_places_from_photos_once(api):
 def test_migration_into_old_db(client, api):
     """База, созданная до сборки: таблиц заявок нет — при старте они появятся и заполнятся один раз."""
     conn = cake_bot.connect()
-    conn.executescript("DROP TABLE orders; DROP TABLE points; DROP TABLE places; DELETE FROM meta WHERE k IN ('orders_v1','orders_1810','orders_1810b','orders_1810c');"
+    conn.executescript("DROP TABLE orders; DROP TABLE points; DROP TABLE places; DELETE FROM meta WHERE k IN ('orders_v1','orders_1810','orders_1810b','orders_1810c','orders_2710');"
                        # таблица заявок первой версии — без trip_id
                        "CREATE TABLE orders(id TEXT PRIMARY KEY, num TEXT NOT NULL UNIQUE, date TEXT NOT NULL, point_id TEXT NOT NULL,"
                        " route TEXT NOT NULL DEFAULT '', comment TEXT NOT NULL DEFAULT '', lines TEXT NOT NULL DEFAULT '[]',"
@@ -115,7 +115,7 @@ def test_route_to_trip(api):
     assert t["taraOut"] == [{"taraId": "box", "qty": 4}] and "№300000" in t["note"]
     city = next(c for c in api("cake", "getRefs")["cities"] if c["id"] == t["cityId"])
     assert city["name"] == "Маршрут 2"
-    assert [c["name"] for c in api("cake", "getRefs")["cities"][:4]] == ["Бобруйск", "Дзержинск", "Маршрут 2", "Маршрут 3"]  # маршруты первыми, по порядку
+    assert [c["name"] for c in api("cake", "getRefs")["cities"][:5]] == ["Бобруйск", "Гродно 2", "Дзержинск", "Маршрут 2", "Маршрут 3"]  # маршруты первыми, по порядку
     assert all(o["tripId"] == t["id"] for o in api("cake", "getOrders", date=day)["orders"] if o["id"] in ids)
     assert api("cake", "routeToTrip", date=day, route="Маршрут 2")["error"] == "not_found"  # повторно не создаётся
     assert api("cake", "reopenPick", id=ids[0])["order"]["status"] == "new"  # рейс ещё на сборке — вернуть можно
@@ -313,3 +313,17 @@ def test_tara_back_on_loading(api):
     assert api("cake", "shipTrip", id=t["id"], taraBack=[{"taraId": "box", "qty": 3}])["trip"]["status"] == "shipped"
     assert debt() == had - 3 + 2  # сдал 3 старых, взял 2 под этот рейс
 
+
+
+def test_orders_2710_grodno(api):
+    """Гродно 2 на 27.10: 25 заявок = «Итого» листов; «Гродно 2» — свой город, а не «Маршрут 2»."""
+    from bots.cake.orders_2710 import TOTALS
+    from bots.cake.orders_seed import route_city
+    r = api("cake", "getOrders", date="2026-10-27")
+    got = {o["num"]: sum(ln["qty"] for ln in o["lines"]) for o in r["orders"] if o["num"] in TOTALS}
+    assert got == {k: v[0] for k, v in TOTALS.items()} and "Гродно 2" in r["routes"]
+    conn = cake_bot.connect()
+    try:
+        assert route_city(conn, "Гродно 2") != route_city(conn, "Маршрут 2") == "route-2"
+    finally:
+        conn.close()

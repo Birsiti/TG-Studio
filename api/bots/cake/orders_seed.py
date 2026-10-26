@@ -1,4 +1,4 @@
-# изменено 2026-10-17 18:10
+# изменено 2026-10-26 23:15
 """Сборка в уже работающей базе: недостающие колонки, маршруты как направления рейсов,
 точки и заявки с фото накладных (orders_data.py) — один раз."""
 from __future__ import annotations
@@ -6,7 +6,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from core import iso_now, jdump, new_id, scalar
-from bots.cake import orders_1810, orders_1810b, orders_1810c
+from bots.cake import orders_1810, orders_1810b, orders_1810c, orders_2710
 from bots.cake.catalog import SEED_PRODUCTS
 
 ADDED_PLACES = {"p095": 22, "p099": 54}  # Красный бархат, Ягодное наслаждение
@@ -16,8 +16,9 @@ from bots.cake.places_data import PLACES
 
 def route_city(conn, route: str) -> str:
     """Маршрут — направление рейса, как город: строка в cities (создаётся при нужде).
-    «Маршрут 2» — всегда route-2, даже если город переименовали: иначе рейсы разъедутся по двум городам."""
-    digits = "".join(ch for ch in route if ch.isdigit())
+    «Маршрут 2» — всегда route-2, даже если город переименовали: иначе рейсы разъедутся по двум городам.
+    Цифра в названии — номер маршрута только у «Маршрут N»; «Гродно 2» — свой город, не route-2."""
+    digits = "".join(ch for ch in route if ch.isdigit()) if route.lower().startswith("маршрут") else ""
     cid = (digits and scalar(conn, "SELECT id FROM cities WHERE id=?", (f"route-{digits}",))) or scalar(conn, "SELECT id FROM cities WHERE name=?", (route,))
     if cid:
         return cid
@@ -39,6 +40,7 @@ def migrate_picking(conn, now: datetime) -> None:
     seed_batch(conn, "orders_1810", orders_1810.POINTS, orders_1810.ORDERS, orders_1810.DAY)
     seed_batch(conn, "orders_1810b", orders_1810b.POINTS, orders_1810b.ORDERS, orders_1810b.DAY)
     seed_batch(conn, "orders_1810c", orders_1810c.POINTS, orders_1810c.ORDERS, orders_1810c.DAY)
+    seed_batch(conn, "orders_2710", orders_2710.POINTS, orders_2710.ORDERS, orders_2710.DAY)
     seed_per_box(conn)
     routes = [r["route"] for r in conn.execute("SELECT DISTINCT route FROM points WHERE route<>'' ORDER BY route").fetchall()]
     for i, route in enumerate(routes):  # маршруты — первыми и по порядку: 2, 3, … (каждый старт, идемпотентно)
