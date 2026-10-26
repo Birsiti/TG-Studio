@@ -1,4 +1,4 @@
-// изменено 2026-10-26 12:10
+// изменено 2026-10-26 22:40
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
@@ -98,6 +98,20 @@
       <p class="page-sub">${restricted ? 'Ваш Telegram не привязан к водителю — попросите кладовщика указать ваш id' : boss ? 'Выберите водителя — откроется его экран, как у него в телефоне' : 'Демо: выберите водителя. В рабочем режиме бот узнаёт водителя по Telegram.'}</p></div>
       ${restricted ? '' : html`<div class="list">${drivers.map(d=>html`<button class="row" type="button" data-pick="${d.id}"><span class="avatar">${Kit.initials(d.name)}</span>
         <span class="row-main"><span class="row-title">${d.name}</span><span class="row-sub">${d.car}</span></span>${icon('right', 'row-chev')}</button>`)}</div>`}`);
+    if(boss && !restricted) pickTrips();
+  }
+  // В списке водителей у каждого — его рейсы в работе (на сборке, в пути, ждёт приёмки), чтобы не заходить наугад
+  async function pickTrips(){
+    const today = D.today(), r = await api('getTrips', {from:D.add(today, -30), to:D.add(today, 30)});
+    if(!r.ok || ME) return;
+    const by = {};
+    r.trips.filter(t=> t.driverId && /draft|shipped|reported/.test(t.status)).forEach(t=> (by[t.driverId] = by[t.driverId] || []).push(t));
+    $$('[data-pick]').forEach(btn=>{
+      const ts = by[btn.dataset.pick];
+      if(!ts) return;
+      const d = REFS.staff.find(x=>x.id === btn.dataset.pick) || {};
+      $('.row-sub', btn).innerHTML = String(html`${d.car || ts[0].car || ''}${ts.map(t=>html`<span class="pill ${ST[t.status][1]} no-dot" style="display:flex;margin-top:4px;width:max-content">${ST[t.status][0]} · ${C(t.cityId).name} №${t.num}</span>`)}`);
+    });
   }
 
   Kit.on($('#view'), 'click', '[data-pick]', (e, el)=>{ Kit.store(PICK_KEY, el.dataset.pick); haptic('select'); loadTrips(el.dataset.pick); });
