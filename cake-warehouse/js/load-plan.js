@@ -1,4 +1,4 @@
-// изменено 2026-10-26 10:00
+// изменено 2026-10-26 11:00
 /* Расчёт погрузки рейса — чистые функции, без DOM (проверяются в node: db/test_load_plan.js).
    Вариант «Б»: ящик = один товар, не привязан к точке; водитель набирает заказ точки из общих ящиков.
    1. Порядок объезда: склад → точки → склад, кратчайший круг (до 10 точек — точный перебор, больше — ближайший + 2-opt).
@@ -124,10 +124,15 @@ window.CakeLoad = (function(){
     // ящики: сначала нужные позже; торты и остальное — в разные столбы
     // при равной точке открытия — сначала те, что опустеют позже: последние в очереди (они могут уйти в проход) освобождают его быстрее
     const queue = boxes.slice().sort((a, b)=> b.open - a.open || b.empty - a.empty || (a.cake === b.cake ? 0 : a.cake ? -1 : 1) || a.name.localeCompare(b.name, 'ru') || a.k - b.k);
+    // Раскладываем по всему кузову: столбов столько, сколько мест, высота — поровну (не больше layers…), а не высокие столбы у двери
+    const nC = boxes.filter(b=> b.cake).length, nO = boxes.length - nC, nAll = nC + nO, minC = Math.ceil(nC / cfg.layersCake), minO = Math.ceil(nO / cfg.layersOther);
+    let sC = nC ? Math.min(nC, Math.max(minC, Math.round(slots.length * nC / nAll))) : 0, sO = nO ? Math.min(nO, Math.max(minO, slots.length - sC)) : 0;
+    if(sC + sO > slots.length){ sC = minC; sO = minO; }   // мест мало — как раньше, до потолка слоёв
+    const heightOf = {cake:sC ? Math.min(cfg.layersCake, Math.ceil(nC / sC)) : cfg.layersCake, other:sO ? Math.min(cfg.layersOther, Math.ceil(nO / sO)) : cfg.layersOther};
     const stacks = []; let si = 0; const openStack = {cake:null, other:null};
     const over = [];
     queue.forEach(b=>{
-      const key = b.cake ? 'cake' : 'other', cap = b.cake ? cfg.layersCake : cfg.layersOther;
+      const key = b.cake ? 'cake' : 'other', cap = heightOf[key];
       let st = openStack[key];
       if(!st || st.boxes.length >= cap){
         if(si >= fillOrder.length){ over.push(b); return; }
