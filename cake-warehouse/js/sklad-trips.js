@@ -1,4 +1,4 @@
-// изменено 2026-10-27 00:20
+// изменено 2026-10-27 01:28
 /* Вкладка «Рейсы»: сборка → отгрузка → приёмка с возвратом тортов и ящиков. */
 (function(){
   "use strict";
@@ -62,7 +62,7 @@
       actions: t.status === 'draft' ? html`<button class="btn btn-ghost" type="button" data-a="edit">${icon('edit')}Изменить</button><button class="btn btn-primary" type="button" data-a="ship">${icon('truck')}Отгрузить</button>`
         : /shipped|reported/.test(t.status) ? html`<button class="btn btn-primary btn-block" type="button" data-a="close">${icon('check')}Принять рейс</button>` : ''});
     Kit.on(sh.el, 'click', '[data-map]', (e, el)=>{ haptic('light'); CakeMap.one(el.dataset.map); });
-    Kit.on(sh.el, 'click', '#mapAll', ()=>{ haptic('light'); CakeMap.route(t.stops.map(s=>s.address)); });
+    Kit.on(sh.el, 'click', '#mapAll', ()=>{ haptic('light'); CakeMap.trip(t.stops); });
     Kit.on(sh.el, 'click', '[data-a]', async (e, el)=>{
       const a = el.dataset.a;
       if(a === 'edit'){ sh.close(); editTrip(t); return; }

@@ -1,4 +1,4 @@
-// изменено 2026-10-26 22:50
+// изменено 2026-10-27 01:28
 /* Адреса точек на карте: одна точка — поиск по адресу (Яндекс Карты, в Беларуси точнее с адресами),
    весь рейс — маршрут через все точки в Google Картах. Google берёт в одну ссылку не больше 11 точек
    (откуда, 9 промежуточных, куда), поэтому длинный рейс делится на части, каждая следующая начинается
@@ -20,6 +20,14 @@ window.CakeMap = (function(){
   return {
     one: addr=> Kit.openLink(`${BASE}?text=${enc(addr)}`),
     // addrs — по порядку объезда; в начале и в конце можно дать склад («широта,долгота»)
+    // точки рейса (с pointId и address): порядок — кратчайший круг от склада по координатам, точки без координат в конце
+    trip: stops=>{
+      const G = window.CakeGeo, LP = window.CakeLoad, list = stops.filter(s=> s && s.address);
+      if(!G || !LP) return window.CakeMap.route(list.map(s=> s.address));
+      const g = list.filter(s=> G.points[s.pointId]), no = list.filter(s=> !G.points[s.pointId]);
+      const ord = LP.bestOrder([G.sklad].concat(g.map(s=> G.points[s.pointId]))).map(i=> g[i - 1]).concat(no);
+      window.CakeMap.route(ord.map(s=>{ const p = G.points[s.pointId]; return p ? `${p.lat.toFixed(5)},${p.lon.toFixed(5)}` : s.address; }));
+    },
     route: addrs=>{
       const pts = addrs.filter(Boolean).map(place), ch = parts(pts);
       if(!ch.length) return;
