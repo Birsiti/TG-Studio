@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-25 21:50 -->
+<!-- изменено 2026-10-26 12:00 -->
 <!DOCTYPE html>
 <html lang="ru">
 <head>
@@ -7,19 +7,19 @@
 <title>Милано — логист</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <script>window.KIT_THEME_DEFAULT = 'dark';</script>
-<script src="../kit/core.js?v=2610261956"></script>
-<script src="js/home-back.js?v=2610261956"></script>
-<link rel="stylesheet" href="../kit/base.css?v=2610261956">
-<link rel="stylesheet" href="brand.css?v=2610261956">
-<script src="mock-data.js?v=2610261956"></script>
-<script src="mock-orders.js?v=2610261956"></script>
-<script src="mock.js?v=2610261956"></script>
-<script src="mock-drivers.js?v=2610261956"></script>
-<script src="mock-cars.js?v=2610261956"></script>
-<script src="mock-picking.js?v=2610261956"></script>
-<script src="mock-files.js?v=2610261956"></script>
-<script src="mock-stops.js?v=2610261956"></script>
-<script src="karta-draft.js?v=2610261956"></script>
+<script src="../kit/core.js?v=2610262014"></script>
+<script src="js/home-back.js?v=2610262014"></script>
+<link rel="stylesheet" href="../kit/base.css?v=2610262014">
+<link rel="stylesheet" href="brand.css?v=2610262014">
+<script src="mock-data.js?v=2610262014"></script>
+<script src="mock-orders.js?v=2610262014"></script>
+<script src="mock.js?v=2610262014"></script>
+<script src="mock-drivers.js?v=2610262014"></script>
+<script src="mock-cars.js?v=2610262014"></script>
+<script src="mock-picking.js?v=2610262014"></script>
+<script src="mock-files.js?v=2610262014"></script>
+<script src="mock-stops.js?v=2610262014"></script>
+<script src="karta-draft.js?v=2610262014"></script>
 </head>
 <body data-role="logist">
 <div class="app has-tabbar">
@@ -32,23 +32,7 @@
   </header>
   <div id="modeNote"></div>
 
-  <section data-panel="stock" hidden>
-    <div class="page-head"><h1 class="page-title">Остатки</h1><p class="page-sub" id="stockSub"></p></div>
-    <div class="search"><span id="searchIc"></span><input class="input" id="q" type="search" placeholder="Название" autocomplete="off"></div>
-    <div class="chips scroll" id="stockCats" style="margin-top:12px"></div>
-    <div class="section" id="stockList"></div>
-  </section>
 
-  <section data-panel="income" hidden>
-    <div class="page-head"><h1 class="page-title">Приход</h1><p class="page-sub">Сколько тортов пришло с производства</p></div>
-    <div class="field-row">
-      <label class="field"><span class="field-label">Дата</span><input class="input" type="date" id="inDate"></label>
-      <label class="field"><span class="field-label">Откуда</span><input class="input" id="inNote" maxlength="200" placeholder="Цех"></label>
-    </div>
-    <button class="btn btn-ghost btn-block section" type="button" id="inFile"></button>
-    <div class="search section"><span data-ic="search"></span><input class="input" id="inQ" type="search" placeholder="Найти торт" autocomplete="off"></div>
-    <div class="card section" id="inList"></div>
-  </section>
 
   <section data-panel="pick" hidden>
     <div class="page-head"><h1 class="page-title">Заявки</h1><p class="page-sub">Заявки магазинов по маршрутам: загрузить из файла, проверить сборку, отдать маршрут в рейс</p></div>
@@ -67,57 +51,24 @@
     <div id="tripList"></div>
   </section>
 
-  <section data-panel="tara" hidden>
-    <div class="page-head"><h1 class="page-title">Ящики</h1><p class="page-sub">Сколько выдали водителю, сколько вернул и сколько за ним долг</p></div>
-    <div class="stats three" id="taraStats"></div>
-    <div class="section"><div class="section-head"><h2 class="section-title">По водителям</h2><span class="hint">долг — справа</span></div><div id="taraDrivers"></div></div>
-    <div class="section"><div class="section-head"><h2 class="section-title">Последние движения</h2></div><div id="taraHist"></div></div>
-  </section>
 
-  <section data-panel="drivers" hidden>
-    <div class="page-head"><h1 class="page-title">Водители</h1><p class="page-sub" id="drSub"></p></div>
-    <div class="chips scroll" id="drPeriod"></div>
-    <div class="chips scroll section" id="drKind"></div>
-    <div class="stats section" id="drStats"></div>
-    <div id="drList"></div>
-  </section>
 
-  <section data-panel="log" hidden>
-    <div class="page-head"><h1 class="page-title">Журнал</h1><p class="page-sub">Все движения тортов</p></div>
-    <div class="chips scroll" id="logRange"></div>
-    <div class="chips scroll" id="logType" style="margin-top:8px"></div>
-    <div class="section" id="logList"></div>
-    <button class="btn btn-ghost btn-block section" type="button" id="logCsv"></button>
-  </section>
 </div>
-
-<div class="actionbar over-tabbar is-hidden" id="inBar"><div class="actionbar-inner">
-  <div class="total"><div class="total-label">К приходу</div><div class="total-value" id="inTotal">0 шт</div></div>
-  <button class="btn btn-primary" type="button" id="inSave">Оприходовать</button>
-</div></div>
 
 <nav class="tabbar"><div class="tabbar-inner">
   <button type="button" data-tab="pick"><span data-ic="route"></span>Заявки</button>
   <button type="button" data-tab="trips"><span data-ic="truck"></span>Рейсы</button>
-  <button type="button" data-tab="drivers"><span data-ic="users"></span>Водители</button>
-  <button type="button" data-tab="tara"><span data-ic="layers"></span>Ящики</button>
-  <button type="button" data-tab="stock"><span data-ic="box"></span>Остатки</button>
 </div></nav>
 
-<script src="js/maps.js?v=2610261956"></script>
-<script src="js/cake-photos.js?v=2610261956"></script>
-<script src="js/common.js?v=2610261956"></script>
-<script src="js/crew.js?v=2610261956"></script>
-<script src="js/sklad-stock.js?v=2610261956"></script>
-<script src="js/sklad-income.js?v=2610261956"></script>
-<script src="js/sklad-pick-files.js?v=2610261956"></script>
-<script src="js/sklad-pick.js?v=2610261956"></script>
-<script src="js/sklad-pick-edit.js?v=2610261956"></script>
-<script src="js/sklad-trips.js?v=2610261956"></script>
-<script src="js/sklad-tara.js?v=2610261956"></script>
-<script src="js/sklad-log.js?v=2610261956"></script>
-<script src="js/import-file.js?v=2610261956"></script>
-<script src="js/admin-drivers.js?v=2610261956"></script>
-<script src="js/sklad-main.js?v=2610261956"></script>
+<script src="js/maps.js?v=2610262014"></script>
+<script src="js/cake-photos.js?v=2610262014"></script>
+<script src="js/common.js?v=2610262014"></script>
+<script src="js/crew.js?v=2610262014"></script>
+<script src="js/sklad-pick-files.js?v=2610262014"></script>
+<script src="js/sklad-pick.js?v=2610262014"></script>
+<script src="js/sklad-pick-edit.js?v=2610262014"></script>
+<script src="js/sklad-trips.js?v=2610262014"></script>
+<script src="js/import-file.js?v=2610262014"></script>
+<script src="js/sklad-main.js?v=2610262014"></script>
 </body>
 </html>

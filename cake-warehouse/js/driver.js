@@ -1,4 +1,4 @@
-// изменено 2026-10-25 19:00
+// изменено 2026-10-26 12:10
 /* Экран водителя: мои рейсы, долг по ящикам, отчёт о возврате. */
 (function(){
   "use strict";
@@ -125,7 +125,7 @@
     Kit.on(sh.el, 'click', '[data-map]', (e, el)=>{ haptic('light'); CakeMap.one(el.dataset.map); });
     Kit.on(sh.el, 'click', '[data-boss]', (e, el)=>{
       if(el.dataset.boss === 'crew') CakeCrew.editTrip(t, ()=>{ sh.close(); load(); });
-      else location.href = `pogruzka.html?date=${t.date}&route=${encodeURIComponent(c.name)}`;
+      else location.href = `pogruzka.html?date=${t.date}&route=${encodeURIComponent(c.name)}${t.car ? '&car=' + encodeURIComponent(t.car) : ''}`;
     });
     Kit.on(sh.el, 'click', '[data-stop]', (e, el)=>{ if(e.target.closest('[data-map]')) return; haptic('light'); sh.close(); openStop(t, t.stops.find(s=>s.orderId === el.dataset.stop)); });
     const all = sh.$('#mapAll'); if(all) all.addEventListener('click', ()=>{ haptic('light'); CakeMap.route(t.stops.map(s=>s.address)); });

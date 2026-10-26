@@ -1,4 +1,4 @@
-// изменено 2026-10-25 21:30
+// изменено 2026-10-26 12:00
 /* Главная (кнопка «Открыть» в боте @Milano_BY_Bot): витрина «Милано» — герой с тортом, лента тортов,
    «Сделать заказ» (оптовая витрина) и «Я сотрудник Милано» (входы по ролям).
    Сотрудник, добавленный в «Люди», сразу попадает на свой экран; руководитель после «Я сотрудник» выбирает вход сам.
@@ -97,8 +97,7 @@
           <button class="door team-open" type="button" data-cars="1">
           <span class="door-ic">${icon('truck')}</span>
           <span class="door-text"><span class="door-title">Машины</span><span class="door-sub">Кто за рулём, смена водителя, статистика</span></span>
-          <span class="door-go">${icon('right')}</span></button>
-          <button class="link-btn staff-link" type="button" data-preview="1">Посмотреть регистрацию глазами новичка</button>` : ''}
+          <span class="door-go">${icon('right')}</span></button>` : ''}
         ${api.mode() === 'demo' ? html`<p class="mode-note section">Демо-версия: данные примерные и хранятся только в этом телефоне — смело пробуйте всё, сломать ничего нельзя.</p>` : ''}
         ${back}`);
     };
@@ -210,7 +209,6 @@
     });
     Kit.on($('#view'), 'click', '[data-next]', ()=>{ haptic('light'); preview = false; doors(); });
     Kit.on($('#view'), 'click', '[data-skip]', ()=>{ haptic('light'); preview = false; try{ localStorage.setItem('cake-skip-reg', '1'); }catch(e){} doors(); });
-    Kit.on($('#view'), 'click', '[data-preview]', ()=>{ haptic('light'); preview = true; regForm(!canContact); });
     Kit.on($('#view'), 'click', '[data-team]', ()=>{ haptic('light'); setBack(()=>{ haptic('light'); doors(); }); window.CakeTeam.open(api, me, doors); });
     Kit.on($('#view'), 'click', '[data-cars]', ()=>{ haptic('light'); setBack(()=>{ haptic('light'); doors(); }); window.CakeCars.open(api, doors); });
     Kit.on($('#view'), 'click', '[data-recheck]', async ()=>{

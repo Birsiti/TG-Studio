@@ -1,4 +1,4 @@
-// изменено 2026-10-26 10:30
+// изменено 2026-10-26 12:10
 /* Экран «Погрузка»: маршрут на дату → порядок объезда, кузов сверху (столбы ящиков у прохода),
    лист каждой точки для водителя, ящики и бирки. Расчёт — в js/load-plan.js (CakeLoad).
    Открывается из «Заявки → Весь маршрут» (?date=…&route=…). Порядок точек и размеры — в этом телефоне. */
@@ -14,9 +14,9 @@
   const read = (k, d)=> { try{ return JSON.parse(localStorage.getItem(k)) || d; }catch(e){ return d; } };
   const write = (k, v)=> { try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} };
   const CAR_KEY = 'cake-load-car';
-  let cars = [], carName = read(CAR_KEY, '');
+  let cars = [], carName = new URLSearchParams(location.search).get('car') || read(CAR_KEY, '');  // из рейса — его машина
   // Кузов берётся у машины (по марке и госномеру); остальное — из настроек телефона
-  const carNow = ()=> cars.find(c=> c.car === carName && c.bodyL && c.bodyW) || cars.find(c=> c.bodyL && c.bodyW) || null;
+  const carNow = ()=> cars.find(c=> c.car === carName && c.bodyL && c.bodyW) || (cars.some(c=> c.car === carName) ? null : cars.find(c=> c.bodyL && c.bodyW)) || null;  // у машины рейса кузова нет — размеры по умолчанию, а не чужие
   const makeCfg = (saved)=>{ const c = carNow(); return Object.assign({}, LP.DEFAULTS, saved, c ? {bodyL:c.bodyL, bodyW:c.bodyW} : {}); };
   let cfg = makeCfg(read(CFG_KEY, {}));
   const q = new URLSearchParams(location.search);
