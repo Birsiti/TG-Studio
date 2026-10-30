@@ -1,4 +1,4 @@
-// изменено 2026-10-30 14:10
+// изменено 2026-10-30 15:00
 // ВРЕМЕННО: кнопка «Пропустить» на регистрации (data-skip) — убрать вместе с TGS_CAKE_OPEN_ALL, когда закроем доступ
 /* Главная (кнопка «Открыть» в боте @Milano_BY_Bot): витрина «Милано» — герой с тортом, лента тортов,
    «Сделать заказ» (оптовая витрина) и «Я сотрудник Милано» (входы по ролям).
@@ -39,7 +39,7 @@
 
   async function load(){
     const me = await api('getMe');
-    if(me.ok && me.staff && ROLE_PAGE[me.staff.role]){ location.replace(ROLE_PAGE[me.staff.role]); return; }
+    if(me.ok && me.staff && ROLE_PAGE[me.staff.role] && !/[?&]main=1\b/.test(location.search)){ location.replace(ROLE_PAGE[me.staff.role]); return; }  // ?main=1 — пришли кнопкой «На главную»
     const name = Kit.user.firstName;
     const strip = STRIP.concat(STRIP).map(([f, t])=>html`<figure><img src="img/cakes/${f}.jpg" alt="" decoding="async"><figcaption>${t}</figcaption></figure>`);
 
