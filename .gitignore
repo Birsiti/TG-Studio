@@ -6,7 +6,9 @@ node_modules/
 dist/
 .astro/
 
-# API: базы SQLite и кэш
+# API: базы SQLite, кэш, виртуальное окружение Python
 api/data/
+api/.venv/
+.venv/
 __pycache__/
 .pytest_cache/

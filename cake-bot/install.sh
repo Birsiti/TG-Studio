@@ -1,0 +1,118 @@
+#!/bin/bash
+# изменено 2026-10-17 12:55
+# Установка бота склада на iMac одной командой (как taxi-morning-digest:
+# бот живёт на iMac, .env + автозапуск launchd, без LEADTEX).
+#   cd ~/tg-studio/cake-bot && bash install.sh
+# Повторный запуск безопасен: обновит .env, перезапустит бота и API.
+# Без вопросов (по ssh): CAKE_TOKEN=<токен> [CAKE_ADMINS=<id>] bash install.sh
+set -euo pipefail
+cd "$(dirname "$0")"
+DIR="$(pwd)"
+LA="$HOME/Library/LaunchAgents"
+BOT_PLIST="$LA/com.tgstudio.cake-bot.plist"
+API_PLIST="$LA/xyz.tg-studio.api.plist"
+PB="${PLISTBUDDY:-/usr/libexec/PlistBuddy}"
+
+say() { printf '\n\033[1m%s\033[0m\n' "$1"; }
+die() { printf '\n\033[31m✘ %s\033[0m\n' "$1"; exit 1; }
+ask() { [ -t 0 ] && read -rp "$1" a || a="${2:-}"; echo "$a"; }  # без терминала — ответ по умолчанию
+envget() { [ -f .env ] && grep -E "^$1=" .env | head -1 | cut -d= -f2- || true; }
+# Токен — в адресе запроса; передаём curl через stdin, чтобы не светить его в списке процессов (ps)
+tgcall() { printf 'url = "%s/%s"\n' "$TG" "$1" | curl -s -K -; }
+json() { node -e "let d='';process.stdin.on('data',c=>d+=c).on('end',()=>{const j=JSON.parse(d||'{}');$1})"; }
+
+command -v node >/dev/null || die "Нет Node.js. Установите: brew install node"
+NODE="$(command -v node)"
+
+say "1/5 Токен бота"
+TOKEN="${CAKE_TOKEN:-$(envget BOT_TOKEN)}"
+if [ -n "$TOKEN" ] && [ -z "${CAKE_TOKEN:-}" ]; then
+  [[ "$(ask 'Токен уже есть в .env. Заменить? [y/N] ')" =~ ^[yYдД] ]] && TOKEN=""
+fi
+if [ -z "$TOKEN" ]; then
+  [ -t 0 ] || die "Нет токена: запустите CAKE_TOKEN=<токен> bash install.sh"
+  read -rsp "Вставьте токен от @BotFather (не отображается): " TOKEN; echo
+fi
+TG="${TELEGRAM_API:-https://api.telegram.org}/bot$TOKEN"
+BOT_NAME="$(tgcall getMe | json 'console.log(j.ok?j.result.username:"")')"
+[ -n "$BOT_NAME" ] || die "Telegram не принял токен. Проверьте его в @BotFather."
+echo "✔ Бот @$BOT_NAME"
+# Бот получает сообщения сам (long polling) — webhook от прежних сервисов снимаем
+tgcall deleteWebhook >/dev/null
+
+say "2/5 Руководитель"
+ADMINS="${CAKE_ADMINS:-$(envget ADMIN_IDS)}"
+if [ -n "$ADMINS" ] && [ -z "${CAKE_ADMINS:-}" ]; then
+  echo "Сейчас: $ADMINS"
+  [[ "$(ask 'Оставить? [Y/n] ')" =~ ^[nNнН] ]] && ADMINS=""
+fi
+if [ -z "$ADMINS" ]; then
+  # Запущенный бот забирал бы сообщения себе (409) — на время ожидания останавливаем
+  launchctl unload "$BOT_PLIST" 2>/dev/null || true
+  # Старые сообщения (от кого угодно) пропускаем — ждём только новый /start
+  LAST="$(tgcall 'getUpdates?offset=-1' | json 'const u=(j.result||[]).pop();console.log(u?u.update_id+1:0)' || echo 0)"
+  echo "Напишите боту @$BOT_NAME /start с телефона руководителя. Жду до 5 минут…"
+  for _ in $(seq 1 60); do
+    WHO="$(tgcall "getUpdates?timeout=5&offset=$LAST" | json 'const u=(j.result||[]).filter(x=>x.message&&x.message.from&&/^\/start/.test(x.message.text||"")).pop();if(u)console.log(u.message.from.id+" "+(u.message.from.first_name||""))' || true)"
+    [ -n "$WHO" ] && break
+  done
+  [ -n "${WHO:-}" ] || die "Сообщение не пришло. Запустите скрипт ещё раз."
+  echo "Руководитель: ${WHO#* } (id ${WHO%% *})"
+  ADMINS="${WHO%% *}"
+  if [[ "$(ask 'Верно? [Y/n] ')" =~ ^[nNнН] ]]; then read -rp "Введите id через запятую: " ADMINS; fi
+fi
+
+say "3/5 Настройки .env"
+KEY="$(envget SERVICE_KEY)"
+[ -n "$KEY" ] || KEY="$(openssl rand -hex 24)"
+[ -f .env ] || cp .env.example .env
+setenv() { if grep -qE "^$1=" .env; then sed -i '' "s|^$1=.*|$1=$2|" .env; else echo "$1=$2" >> .env; fi; }
+setenv BOT_TOKEN "$TOKEN"
+setenv ADMIN_IDS "$ADMINS"
+setenv SERVICE_KEY "$KEY"
+chmod 600 .env
+echo "✔ .env записан (в git не попадает)"
+npm install --silent
+
+say "4/5 API склада"
+if [ -f "$API_PLIST" ]; then
+  $PB -c "Add :EnvironmentVariables dict" "$API_PLIST" 2>/dev/null || true
+  for kv in "TGS_CAKE_BOT_TOKEN=$TOKEN" "TGS_CAKE_ADMINS=$ADMINS" "TGS_CAKE_SERVICE_KEY=$KEY"; do
+    $PB -c "Delete :EnvironmentVariables:${kv%%=*}" "$API_PLIST" 2>/dev/null || true
+    $PB -c "Add :EnvironmentVariables:${kv%%=*} string ${kv#*=}" "$API_PLIST"
+  done
+  # Без ProcessType launchd запускает агента как Background (урезанные CPU и диск): старт 29 с вместо 1 с
+  $PB -c "Delete :ProcessType" "$API_PLIST" 2>/dev/null || true
+  $PB -c "Add :ProcessType string Interactive" "$API_PLIST"
+  chmod 600 "$API_PLIST"  # в нём токен и служебный ключ
+  # Прогрев: на HDD холодный импорт FastAPI — до 2 минут; читаем файлы в кэш ОС,
+  # пока старый API ещё работает, — перезапуск после этого занимает секунды
+  [ -x ../api/.venv/bin/python ] && (cd ../api && .venv/bin/python -c "import server" >/dev/null 2>&1) || true
+  launchctl unload "$API_PLIST" 2>/dev/null || true
+  launchctl load "$API_PLIST"
+  # Без прогрева на iMac API поднимается до 2 минут — ждём /health до 180 с, иначе проверка ниже соврёт
+  API_URL="$(envget API_URL)"; API_URL="${API_URL:-http://127.0.0.1:8098/api/cake}"; HEALTH="${API_URL%%/api/*}/health"
+  printf "Жду API (%s)" "$HEALTH"
+  for _ in $(seq 1 90); do
+    curl -fs -m 2 "$HEALTH" | grep -q '"cake"' && { UP=1; break; }
+    printf "."; sleep 2
+  done
+  echo
+  [ -n "${UP:-}" ] && echo "✔ API перезапущен с настройками склада" \
+    || echo "⚠ API не ответил за 180 с: tail ~/Library/Logs/tgs-api.log"
+else
+  echo "⚠ API студии на этом iMac не установлен ($API_PLIST нет)."
+  echo "  Бот ответит руководителю кнопками, но склад будет в демо-режиме."
+  echo "  Установка API — api/README.md, потом запустите этот скрипт снова."
+fi
+
+say "5/5 Автозапуск бота"
+mkdir -p "$LA"
+sed -e "s|/usr/local/bin/node|$NODE|" -e "s|ЗАМЕНИ_НА_ПУТЬ/cake-bot|$DIR|g" \
+  deploy/com.tgstudio.cake-bot.plist.example > "$BOT_PLIST"
+launchctl unload "$BOT_PLIST" 2>/dev/null || true
+launchctl load "$BOT_PLIST"
+sleep 4
+node scripts/check.js || true
+echo
+echo "Готово. Напишите боту @$BOT_NAME /start. Логи: $DIR/err.log"

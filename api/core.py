@@ -1,4 +1,4 @@
-# изменено 2026-10-08 02:48
+# изменено 2026-10-17 17:00
 """Общее ядро API студии: SQLite на бота, реестр action, валидация,
 лимиты строк, демо-сид и ежедневное «освежение» демо-данных.
 
@@ -9,6 +9,8 @@
 """
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 import os
 import re
@@ -19,6 +21,7 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from typing import Any, Callable
+from urllib.parse import parse_qsl
 from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo("Europe/Minsk")
@@ -115,7 +118,7 @@ def v_int(p: dict, key: str, *, lo: int = 0, hi: int = 10**9, required: bool = T
         f = float(v)
     except (TypeError, ValueError):
         raise ApiError("bad_request", f"{key}: ожидается число")
-    if f != f or f != int(f):
+    if f != f or f in (float("inf"), float("-inf")) or f != int(f):
         raise ApiError("bad_request", f"{key}: ожидается целое")
     i = int(f)
     if not lo <= i <= hi:
@@ -240,6 +243,32 @@ def valid_user(v: Any) -> str | None:
     return None
 
 
+def verify_init_data(init_data: Any, bot_token: str, max_age: int = 86400) -> str | None:
+    """Проверка Telegram.WebApp.initData подписью бота (HMAC-SHA256, схема
+    из документации Telegram Mini Apps). Возвращает id пользователя или None,
+    если подписи нет, она не сходится или устарела (старше max_age секунд)."""
+    if not isinstance(init_data, str) or not init_data or len(init_data) > 4096 or not bot_token:
+        return None
+    try:
+        pairs = dict(parse_qsl(init_data, keep_blank_values=True, strict_parsing=True))
+    except ValueError:
+        return None
+    got = pairs.pop("hash", "")
+    check = "\n".join(f"{k}={v}" for k, v in sorted(pairs.items()))
+    secret = hmac.new(b"WebAppData", bot_token.encode(), hashlib.sha256).digest()
+    want = hmac.new(secret, check.encode(), hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(want, got):
+        return None
+    try:
+        auth = int(pairs.get("auth_date", "0"))
+        uid = json.loads(pairs.get("user", "{}")).get("id")
+    except (ValueError, AttributeError):
+        return None
+    if max_age and now().timestamp() - auth > max_age:
+        return None
+    return str(uid) if isinstance(uid, int) and not isinstance(uid, bool) else None
+
+
 # ============ БАЗА ============
 
 def dict_row(cursor, row):
@@ -319,11 +348,14 @@ class Action:
 
 class Bot:
     def __init__(self, name: str, schema: str, seed: Callable[[sqlite3.Connection, datetime], None],
-                 refresh: Callable[[sqlite3.Connection, datetime], None] | None = None):
+                 refresh: Callable[[sqlite3.Connection, datetime], None] | None = None,
+                 migrate: Callable[[sqlite3.Connection, datetime], None] | None = None):
         self.name = name
         self.schema = schema
         self.seed = seed
         self.refresh = refresh
+        self.migrate = migrate  # при каждом старте процесса после схемы и сида; должна быть идемпотентной
+        self.max_body = 64 * 1024  # предел тела запроса; бот с файлами может поднять
         self.actions: dict[str, Action] = {}
         self._ready = False
         self._refreshed_on: str | None = None
@@ -365,6 +397,8 @@ class Bot:
                             self.seed(conn, now())
                             conn.execute("INSERT INTO meta(k,v) VALUES('seeded',?)", (iso_now(),))
                             conn.execute("INSERT OR REPLACE INTO meta(k,v) VALUES('refreshed_on',?)", (today,))
+                        if self.migrate is not None:
+                            self.migrate(conn, now())
                         conn.execute("COMMIT")
                     except Exception:
                         conn.execute("ROLLBACK")

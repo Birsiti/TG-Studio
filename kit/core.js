@@ -1,4 +1,4 @@
-// изменено 2026-10-08 02:30
+// изменено 2026-10-25 20:00
 /* ============================================================
    kit/core.js — общий рантайм всех Mini App студии TG-Studio.
 
@@ -47,7 +47,8 @@
 
   function themeChoice(){
     var v = store(THEME_KEY);
-    return (v === 'light' || v === 'dark') ? v : 'auto';
+    // window.KIT_THEME_DEFAULT = 'dark' (до core.js): приложение стартует в этой теме, другая — только переключателем
+    return (v === 'light' || v === 'dark') ? v : (window.KIT_THEME_DEFAULT === 'dark' || window.KIT_THEME_DEFAULT === 'light' ? window.KIT_THEME_DEFAULT : 'auto');
   }
   function resolvedTheme(){
     var c = themeChoice();
@@ -247,6 +248,7 @@
     refresh:'<path d="M21 12a9 9 0 1 1-2.6-6.4L21 8"/><path d="M21 3v5h-5"/>',
     filter:'<path d="M3 4h18l-7 8.5V19l-4 2v-8.5z"/>',
     download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>',
+    upload:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M17 8l-5-5-5 5M12 3v12"/>',
     home:'<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
     send:'<path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/>',
     message:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
@@ -388,6 +390,7 @@
   }
   if(inTelegram && tg.BackButton){
     try{ tg.BackButton.onClick(function(){ var fn = backStack[backStack.length - 1]; if(fn) fn(); }); }catch(e){}
+    backRefresh();  // кнопка Telegram переживает переход между страницами — на новой странице без шагов прячем («Закрыть»)
   }
   var back = {
     push: function(fn){ backStack.push(fn); backRefresh(); },
@@ -396,6 +399,25 @@
   };
 
   /* ============ ШТОРКИ ============ */
+  // Поле в шторке под клавиатурой: после фокуса (и когда клавиатура поменяла высоту) — прокрутить его в середину видимого
+  function keepFocusVisible(){
+    var el = document.activeElement;
+    if(!el || !/^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName) || !el.closest('.sheet-body')) return;
+    var body = el.closest('.sheet-body'), vv = window.visualViewport;
+    // iOS: клавиатура может перекрыть страницу, не уменьшая её, — даём шторке место прокрутиться над ней
+    var kb = vv ? Math.max(0, window.innerHeight - vv.height - vv.offsetTop) : 0;
+    body.style.paddingBottom = kb > 40 ? (kb + 24) + 'px' : '';
+    var r = el.getBoundingClientRect(), br = body.getBoundingClientRect();
+    var top = br.top + 8, bottom = Math.min(br.bottom, vv ? vv.offsetTop + vv.height : br.bottom) - 16;
+    if(r.bottom > bottom || r.top < top) body.scrollTop += (r.top + r.height / 2) - (top + bottom) / 2;
+  }
+  document.addEventListener('focusin', function(e){ if(e.target.closest && e.target.closest('.sheet-body')) setTimeout(keepFocusVisible, 350); });
+  document.addEventListener('focusout', function(e){
+    var body = e.target.closest && e.target.closest('.sheet-body');
+    if(body) setTimeout(function(){ if(!body.contains(document.activeElement)) body.style.paddingBottom = ''; }, 300);
+  });
+  if(window.visualViewport) window.visualViewport.addEventListener('resize', function(){ setTimeout(keepFocusVisible, 50); });
+  if(inTelegram && tg.onEvent){ try{ tg.onEvent('viewportChanged', function(){ setTimeout(keepFocusVisible, 50); }); }catch(e){} }
   var sheetLayer = null;
   function ensureLayer(){
     if(sheetLayer) return sheetLayer;
@@ -485,6 +507,7 @@
     if(themePanel){ closeThemePanel(); return; }
     var cur = themeChoice();
     var opts = [['auto','Авто','auto'],['dark','Тёмная','moon'],['light','Светлая','sun']];
+    if(window.KIT_THEME_DEFAULT) opts.shift();  // тема по умолчанию задана — «Авто» не нужно
     var p = document.createElement('div');
     p.className = 'theme-panel';
     p.setAttribute('role', 'menu');
@@ -514,7 +537,7 @@
   });
   window.addEventListener('resize', closeThemePanel);
   function setTheme(v){
-    store(THEME_KEY, v === 'auto' ? null : v);
+    store(THEME_KEY, v === 'auto' || v === window.KIT_THEME_DEFAULT ? null : v);
     root.classList.add('theme-anim');
     applyTheme();
     setTimeout(function(){ root.classList.remove('theme-anim'); }, 400);
@@ -587,6 +610,8 @@
     }
     function api(action, payload){
       payload = Object.assign({userId: user.id}, payload || {});
+      // Подпись Telegram: сервер бота может проверить её токеном (см. api/core.py verify_init_data)
+      if(inTelegram && tg.initData) payload.initData = tg.initData;
       if(state.mode === 'demo') return viaMock(action, payload);
       var ctrl = window.AbortController ? new AbortController() : null;
       var timer = setTimeout(function(){ if(ctrl) ctrl.abort(); }, state.mode === 'live' ? 12000 : 6000);
@@ -601,7 +626,7 @@
         return r.json().catch(function(){ throw new Error('bad json'); });
       }).then(function(data){
         if(!data || typeof data.ok !== 'boolean') throw new Error('bad shape');
-        state.mode = 'live';
+        if(state.mode === 'unknown') state.mode = 'live'; // ушли в демо — до перезапуска остаёмся там, не смешиваем данные
         if(!data.ok && data.error === 'rate_limited') toast('Слишком много запросов — подождите минуту', 'error');
         return data;
       }).catch(function(err){
@@ -666,6 +691,13 @@
   /* ============ CSV ============ */
   function csv(filename, rows){
     var text = rows.map(function(r){ return r.map(function(c){ c = String(c == null ? '' : c); return /[";\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c; }).join(';'); }).join('\n');
+    function copy(){
+      var ok = function(){ toast('CSV скопирован — вставьте в Excel или заметки', 'ok'); };
+      var no = function(){ toast('Не удалось скопировать CSV', 'error'); };
+      if(navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(ok, no); else no();
+    }
+    // В Telegram (iOS/Android) скачивание blob-ссылки молча не работает — копируем в буфер
+    if(inTelegram) return copy();
     var blob = new Blob(['﻿' + text], {type: 'text/csv;charset=utf-8'});
     try{
       var a = document.createElement('a');
@@ -673,9 +705,7 @@
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function(){ URL.revokeObjectURL(a.href); }, 2000);
       toast('Файл ' + filename + ' сохранён', 'ok');
-    }catch(e){
-      if(navigator.clipboard) navigator.clipboard.writeText(text).then(function(){ toast('CSV скопирован в буфер', 'ok'); });
-    }
+    }catch(e){ copy(); }
   }
 
   /* ============ ПРОЧЕЕ ============ */

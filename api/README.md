@@ -1,4 +1,4 @@
-<!-- изменено 2026-10-08 03:22 -->
+<!-- изменено 2026-10-17 01:20 -->
 # API студии TG-Studio
 
 Один процесс на Python 3.12 (FastAPI + SQLite) обслуживает все демо-боты
@@ -13,8 +13,8 @@
 cd api
 python3.12 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-uvicorn server:app --port 8097
-curl http://localhost:8097/health
+uvicorn server:app --port 8098
+curl http://localhost:8098/health
 pytest -q            # тесты всех ботов
 ```
 
@@ -27,7 +27,7 @@ POST /api/<бот>        тело: {"action": "...", "userId": "...", ...payloa
 GET  /health           {"ok": true, "time": ..., "bots": [...]}
 ```
 
-Боты: `carwash`, `toolrent`, `versta`, `barbershop`, `most`, `studio`.
+Боты: `carwash`, `toolrent`, `versta`, `barbershop`, `most`, `studio`, `cake`.
 
 - **userId** — `tg.initDataUnsafe.user.id` из Telegram, вне Telegram —
   постоянный `web-…` id из localStorage (это делает `kit/core.js`).
@@ -42,12 +42,12 @@ GET  /health           {"ok": true, "time": ..., "bots": [...]}
   удаляются самые старые пользовательские строки (`seed=0`), демо-данные
   не трогаются. Плюс лимиты на пользователя (активные записи, машины и т.п.).
 - Коды ошибок: `bad_request`, `bad_json`, `unknown_action`, `unknown_bot`,
-  `no_user`, `not_found`, `slot_unavailable`, `limit`, `too_many`,
+  `no_user`, `not_found`, `slot_unavailable`, `no_stock`, `bad_state`, `forbidden`, `limit`, `too_many`,
   `rate_limited`, `too_large`, `server_error`.
 
 Фронт (`kit/core.js` → `Kit.createApi`) при недоступности API тихо
 переключается на моки (`<бот>/mock.js`) — демо никогда не ломается.
-Для локальной проверки фронта с живым API: `…/client.html?api=http://localhost:8097`.
+Для локальной проверки фронта с живым API: `…/client.html?api=http://localhost:8098`.
 
 ## Переменные окружения
 
@@ -57,6 +57,9 @@ GET  /health           {"ok": true, "time": ..., "bots": [...]}
 | `TGS_RATE_ALL` | `120` | Запросов в минуту с IP |
 | `TGS_RATE_WRITE` | `30` | Изменяющих запросов в минуту с IP |
 | `TGS_LEADS_WEBHOOK` | `https://tg-studio-leads.birsiti.workers.dev` | Куда пересылать заявки studio (пусто — не пересылать) |
+| `TGS_CAKE_ADMINS` | пусто | Склад тортов: tg id через запятую; если задано — `cake` доступен только им и сотрудникам с tg id из справочника |
+| `TGS_CAKE_BOT_TOKEN` | пусто | Склад тортов: токен бота из @BotFather. Если задан — каждый запрос должен нести подписанный Telegram `initData` (его шлёт `kit/core.js`), id пользователя берётся из подписи. **Только здесь, никогда в репозитории** |
+| `TGS_CAKE_SERVICE_KEY` | пусто | Склад тортов: служебный ключ бота `cake-bot` (тот же, что `SERVICE_KEY` в его `.env`) |
 | `TGS_STUDIO_KEY` | пусто | Ключ владельца: реальные заявки видны только в `dashboard.html?key=<ключ>` (без ключа — демо-заявки) |
 
 ## Заявки TG-Studio (studio)
@@ -97,7 +100,11 @@ tests/           pytest (FastAPI TestClient) — на каждого бота
 
 ## Выкатка на iMac (api.tg-studio.xyz)
 
-1. Python 3.12: `brew install python@3.12`.
+**Порт 8098.** На iMac порт 8097 занят витриной studio.tg-studio.xyz
+(`by.tgstudio.web`, `~/tgstudio-bot`, `uvicorn web:app`) — её не трогать.
+
+1. Python 3.12: `brew install python@3.12`; на macOS 10.15 Catalina brew не
+   работает — установщик `.pkg` с python.org (ставится в `/usr/local/bin/python3.12`).
 2. Код: `git clone https://github.com/birsiti/TG-Studio.git ~/tg-studio && cd ~/tg-studio/api`,
    затем venv и `pip install -r requirements.txt` (см. «Быстрый старт»).
 3. Автозапуск через launchd — `~/Library/LaunchAgents/xyz.tg-studio.api.plist`:
@@ -111,29 +118,41 @@ tests/           pytest (FastAPI TestClient) — на каждого бота
      <key>ProgramArguments</key><array>
        <string>/Users/USER/tg-studio/api/.venv/bin/uvicorn</string>
        <string>server:app</string><string>--host</string><string>127.0.0.1</string>
-       <string>--port</string><string>8097</string><string>--proxy-headers</string>
+       <string>--port</string><string>8098</string><string>--proxy-headers</string>
      </array>
      <key>EnvironmentVariables</key><dict>
        <key>TGS_DATA_DIR</key><string>/Users/USER/tg-studio-data</string>
        <key>TGS_STUDIO_KEY</key><string>ВАШ-СЛУЧАЙНЫЙ-КЛЮЧ</string>
+       <key>TGS_CAKE_BOT_TOKEN</key><string>ТОКЕН-БОТА-СКЛАДА</string>
+       <key>TGS_CAKE_ADMINS</key><string>TG-ID-РУКОВОДИТЕЛЯ</string>
+       <key>TGS_CAKE_SERVICE_KEY</key><string>СЛУЖЕБНЫЙ-КЛЮЧ-БОТА</string>
      </dict>
      <key>RunAtLoad</key><true/><key>KeepAlive</key><true/>
+     <key>ProcessType</key><string>Interactive</string>
      <key>StandardOutPath</key><string>/Users/USER/Library/Logs/tgs-api.log</string>
      <key>StandardErrorPath</key><string>/Users/USER/Library/Logs/tgs-api.log</string>
    </dict></plist>
    ```
 
    `launchctl load ~/Library/LaunchAgents/xyz.tg-studio.api.plist`
+
+   `ProcessType=Interactive` обязателен: без него launchd запускает агента
+   как Background (урезанные CPU и ввод-вывод) — на iMac старт 29 с вместо 1 с.
 4. Наружу — Cloudflare Tunnel: `cloudflared tunnel create tgs-api`,
    в `~/.cloudflared/config.yml` — `ingress: - hostname: api.tg-studio.xyz
-   service: http://127.0.0.1:8097` и `- service: http_status:404`, затем
+   service: http://127.0.0.1:8098` и `- service: http_status:404`, затем
    `cloudflared tunnel route dns tgs-api api.tg-studio.xyz` и
    `sudo cloudflared service install`. Cloudflare сам передаёт
    `cf-connecting-ip` — по нему считается лимит частоты.
-5. Проверка: `curl https://api.tg-studio.xyz/health`.
+5. Проверка: `curl http://127.0.0.1:8098/health`, снаружи — `curl https://api.tg-studio.xyz/health`.
+   Бот склада: в `cake-bot/.env` — `API_URL=http://127.0.0.1:8098/api/cake` (это значение по умолчанию).
 6. Бэкап: базы — обычные файлы SQLite; горячая копия:
    `sqlite3 data/carwash.db ".backup backup/carwash-$(date +%F).db"`.
-7. Обновление: `git pull && launchctl kickstart -k gui/$(id -u)/xyz.tg-studio.api`.
+7. Обновление: `git pull && (cd api && .venv/bin/python -c "import server") && launchctl kickstart -k gui/$(id -u)/xyz.tg-studio.api`.
+   Строка с `import server` — прогрев: на iMac (HDD) холодный импорт FastAPI
+   до 2 минут, прогретый — 0,5 с, а прогрев идёт, пока старый API ещё работает.
+   Без прогрева API поднимается **до 2 минут**; ждать готовности в цикле:
+   `until curl -sf http://127.0.0.1:8098/health >/dev/null; do sleep 5; done`.
 
 ## Ограничения демо
 

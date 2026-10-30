@@ -1,0 +1,341 @@
+# изменено 2026-10-26 23:20
+"""Сборка по кругу: заявки с фото, галочки, места, точки, миграция в старую базу."""
+from bots.cake import bot as cake_bot
+
+# «Итого» с бумаги: (кол-во без бонусов, грузовых мест) — как в cake-warehouse/db/check_db.py
+PAPER = {"1103561": (17, 17), "1103455": (78, 78), "1103609": (50, 52), "1103617": (6, 6)}
+
+
+def order(api, num):
+    return next(o for o in api("cake", "getOrders", date="2026-10-17")["orders"] if o["num"] == num)
+
+
+def test_orders_from_photos_match_paper(api):
+    r = api("cake", "getOrders", date="2026-10-17")
+    assert len(r["orders"]) == 11 and r["routes"] == ["Бобруйск", "Гродно 2", "Дзержинск", "Маршрут 2", "Маршрут 3", "Маршрут 4"] and len(r["points"]) == 78
+    for num, (qty, places) in PAPER.items():
+        o = order(api, num)
+        q = sum(ln["qty"] for ln in o["lines"])
+        assert (q, q + sum(ln["bonus"] for ln in o["lines"])) == (qty, places), num
+    assert order(api, "1103609")["route"] == "Маршрут 3"
+
+
+def test_pick_cycle(api):
+    o = order(api, "1103617")
+    assert o["status"] == "new" and o["checked"] == []
+    assert api("cake", "finishPick", id=o["id"], picker="Кобзев")["error"] == "bad_state"  # не всё отмечено
+    pid = o["lines"][0]["productId"]
+    assert api("cake", "checkLine", id=o["id"], productId=pid)["order"]["checked"] == [pid]
+    assert api("cake", "checkLine", id=o["id"], productId=pid, done=False)["order"]["checked"] == []
+    assert api("cake", "checkLine", id=o["id"], productId="p001")["error"] == "not_found"
+    api("cake", "checkLine", id=o["id"], productId=pid)
+    done = api("cake", "finishPick", id=o["id"], picker="Кобзев", boxes=2)["order"]
+    assert done["status"] == "picked" and done["picker"] == "Кобзев" and done["boxes"] == 2
+    assert api("cake", "checkLine", id=o["id"], productId=pid)["error"] == "bad_state"
+    assert api("cake", "deleteOrder", id=o["id"])["error"] == "bad_state"
+    assert api("cake", "reopenPick", id=o["id"])["order"]["status"] == "new"
+    # «Всё уже собрано»: без галочек, одним подтверждением; без сборщика ничего не меняется
+    o = order(api, "1103455")
+    assert api("cake", "finishPick", id=o["id"], all=True, boxes=-1)["error"] == "bad_request"  # ошибка — ничего не меняется
+    assert order(api, "1103455")["checked"] == []
+    done = api("cake", "finishPick", id=o["id"], all=True)["order"]  # без сборщика — смена собирает вместе
+    assert done["status"] == "picked" and sorted(done["checked"]) == sorted(ln["productId"] for ln in o["lines"])
+    api("cake", "reopenPick", id=o["id"])
+
+
+def test_save_order_and_places(api):
+    pts = api("cake", "getOrders")["points"]
+    r = api("cake", "saveOrder", num="2000001", date="2026-10-20", pointId=pts[0]["id"],
+            lines=[{"productId": "p002", "qty": 3}, {"productId": "p002", "qty": 1, "bonus": 1}])
+    o = r["order"]
+    assert o["lines"] == [{"productId": "p002", "qty": 4, "bonus": 1}] and o["route"] == pts[0]["route"]
+    assert api("cake", "saveOrder", num="2000001", pointId=pts[0]["id"], lines=[{"productId": "p002", "qty": 1}])["error"] == "bad_request"
+    assert api("cake", "saveOrder", num="2000002", pointId="nope", lines=[{"productId": "p002", "qty": 1}])["error"] == "not_found"
+    assert api("cake", "saveOrder", num="2000003", pointId=pts[0]["id"], lines=[{"productId": "nope", "qty": 1}])["error"] == "not_found"
+    api("cake", "checkLine", id=o["id"], productId="p002")
+    r = api("cake", "saveOrder", id=o["id"], num="2000001", date="2026-10-20", pointId=pts[0]["id"],
+            lines=[{"productId": "p002", "qty": 2}, {"productId": "p003", "qty": 1}])
+    assert r["order"]["checked"] == ["p002"]  # отметка уцелевшей строки сохраняется
+    assert "2026-10-20" in api("cake", "getOrders", date="2026-10-20")["dates"]
+    assert api("cake", "deleteOrder", id=o["id"])["ok"]
+    r = api("cake", "savePlaces", places=[{"productId": "p002", "place": 7}, {"productId": "p003", "place": 2}])["places"]
+    assert r["p002"] == 7 and r["p003"] == 2
+    r = api("cake", "savePlaces", places=[{"productId": "p002", "place": 0}])["places"]
+    assert "p002" not in r and r["p003"] == 2
+    p = api("cake", "savePoint", customer="Тест", address="г. Минск, ул. Тестовая, 1", route="Маршрут 9")["point"]
+    assert p["route"] == "Маршрут 9" and "Маршрут 9" in api("cake", "getOrders")["routes"]
+
+
+def test_places_from_photos_once(api):
+    """Места по фото ставятся в новую базу один раз; дальше в базе последнее сохранение из приложения."""
+    from bots.cake.places_data import PLACES
+    r = api("cake", "getOrders")["places"]
+    assert all(r.get(k) == v for k, v in PLACES.items() if k not in ("p002", "p003")) and PLACES["p007"] == 1  # p002/p003 правит тест выше
+    api("cake", "savePlaces", places=[{"productId": "p007", "place": 40}, {"productId": "p013", "place": 0}])
+    cake_bot._ready = False  # перезапуск API — правки не перетираются
+    r = api("cake", "getOrders")["places"]
+    assert r["p007"] == 40 and "p013" not in r and r["p018"] == PLACES["p018"]
+
+
+def test_migration_into_old_db(client, api):
+    """База, созданная до сборки: таблиц заявок нет — при старте они появятся и заполнятся один раз."""
+    conn = cake_bot.connect()
+    conn.executescript("DROP TABLE orders; DROP TABLE points; DROP TABLE places; DELETE FROM meta WHERE k IN ('orders_v1','orders_1810','orders_1810b','orders_1810c','orders_2710');"
+                       # таблица заявок первой версии — без trip_id
+                       "CREATE TABLE orders(id TEXT PRIMARY KEY, num TEXT NOT NULL UNIQUE, date TEXT NOT NULL, point_id TEXT NOT NULL,"
+                       " route TEXT NOT NULL DEFAULT '', comment TEXT NOT NULL DEFAULT '', lines TEXT NOT NULL DEFAULT '[]',"
+                       " checked TEXT NOT NULL DEFAULT '[]', status TEXT NOT NULL DEFAULT 'new', picker TEXT NOT NULL DEFAULT '',"
+                       " boxes INTEGER, picked_at TEXT, created_at TEXT NOT NULL, seed INTEGER NOT NULL DEFAULT 0);")
+    conn.close()
+    cake_bot._ready = False
+    assert len(api("cake", "getOrders", date="2026-10-17")["orders"]) == 11
+    cake_bot._ready = False  # повторный старт — без дублей
+    r = api("cake", "getOrders", date="2026-10-17")
+    assert len(r["orders"]) == 11 and all(o["tripId"] is None for o in r["orders"])
+
+
+def test_route_to_trip(api):
+    """Собранные заявки маршрута → рейс водителю → обычная отгрузка; отмена рейса освобождает заявки."""
+    day = "2026-10-21"
+    pts = [p for p in api("cake", "getOrders")["points"] if p["route"] == "Маршрут 2"][:2]
+    api("cake", "addIncome", lines=[{"productId": "p010", "qty": 20}, {"productId": "p011", "qty": 20}])
+    ids = []
+    for i, (pt, lines) in enumerate(zip(pts, ([{"productId": "p010", "qty": 3}], [{"productId": "p010", "qty": 2, "bonus": 1}, {"productId": "p011", "qty": 4}]))):
+        ids.append(api("cake", "saveOrder", num=f"30000{i}", date=day, pointId=pt["id"], lines=lines)["order"]["id"])
+    assert api("cake", "routeToTrip", date=day, route="Маршрут 2")["error"] == "bad_state"  # не собраны
+    for oid in ids:
+        o = next(x for x in api("cake", "getOrders", date=day)["orders"] if x["id"] == oid)
+        for ln in o["lines"]:
+            api("cake", "checkLine", id=oid, productId=ln["productId"])
+        api("cake", "finishPick", id=oid, picker="Кобзев", boxes=2)
+    r = api("cake", "routeToTrip", date=day, route="Маршрут 2", driverId="dr-ivan")
+    t = r["trip"]
+    assert r["orders"] == 2 and t["status"] == "draft" and t["driverId"] == "dr-ivan"
+    assert sorted((l["productId"], l["qty"]) for l in t["lines"]) == [("p010", 6), ("p011", 4)]  # бонус тоже едет
+    assert t["taraOut"] == [{"taraId": "box", "qty": 4}] and "№300000" in t["note"]
+    city = next(c for c in api("cake", "getRefs")["cities"] if c["id"] == t["cityId"])
+    assert city["name"] == "Маршрут 2"
+    assert [c["name"] for c in api("cake", "getRefs")["cities"][:5]] == ["Бобруйск", "Гродно 2", "Дзержинск", "Маршрут 2", "Маршрут 3"]  # маршруты первыми, по порядку
+    assert all(o["tripId"] == t["id"] for o in api("cake", "getOrders", date=day)["orders"] if o["id"] in ids)
+    assert api("cake", "routeToTrip", date=day, route="Маршрут 2")["error"] == "not_found"  # повторно не создаётся
+    assert api("cake", "reopenPick", id=ids[0])["order"]["status"] == "new"  # рейс ещё на сборке — вернуть можно
+    assert "Не собраны" in api("cake", "shipTrip", id=t["id"])["message"]  # но отгрузить без неё нельзя
+    api("cake", "finishPick", id=ids[0], all=True, boxes=2)
+    assert api("cake", "cancelTrip", id=t["id"])["trip"]["status"] == "cancelled"
+    t2 = api("cake", "routeToTrip", date=day, route="Маршрут 2", driverId="dr-ivan")["trip"]
+    assert api("cake", "shipTrip", id=t2["id"])["trip"]["status"] == "shipped"
+    assert api("cake", "reopenPick", id=ids[0])["error"] == "bad_state"  # уехала — назад нельзя
+
+
+def test_product_weight_and_per_box(api):
+    """Вес обязателен, «шт в грузовом месте» — 10 пирожных = 1 коробка."""
+    assert api("cake", "saveProduct", name="Без веса", cat="Пирожное")["error"] == "bad_request"
+    p = api("cake", "saveProduct", name="Корзинка", cat="Пирожное", weightG=60, perBox=10)["product"]
+    assert p["weightG"] == 60 and p["perBox"] == 10
+    p = api("cake", "saveProduct", id=p["id"], name="Корзинка", cat="Пирожное")["product"]  # без полей — прежние значения
+    assert p["weightG"] == 60 and p["perBox"] == 10
+    assert next(x for x in api("cake", "getRefs")["products"] if x["id"] == "p001")["perBox"] == 1
+
+
+def test_order_files_and_photo_only_order(api):
+    import base64
+    pts = api("cake", "getOrders")["points"]
+    o = api("cake", "saveOrder", num="3000001", date="2026-10-21", pointId=pts[0]["id"])["order"]  # заявка по фото — без строк
+    assert o["lines"] == []
+    jpg = base64.b64encode(b"\xff\xd8\xff\xe0" + b"x" * 5000).decode()
+    f = api("cake", "addOrderFile", orderId=o["id"], name="Заявка.jpg", mime="image/jpeg", data=jpg)["file"]
+    assert f["size"] == 5004
+    assert api("cake", "addOrderFile", orderId=o["id"], mime="text/html", data=jpg)["error"] == "bad_request"
+    assert api("cake", "addOrderFile", orderId=o["id"], mime="image/jpeg", data="не base64!")["error"] == "bad_request"
+    r = api("cake", "getOrders", date="2026-10-21")
+    assert next(x for x in r["orders"] if x["id"] == o["id"])["files"] == [{"id": f["id"], "name": "Заявка.jpg", "mime": "image/jpeg", "size": 5004}]
+    assert api("cake", "getOrderFile", id=f["id"])["file"]["data"] == jpg
+    # маршрут с заявкой без строк не отгрузить
+    assert api("cake", "finishAll", date="2026-10-21")["done"] >= 1
+    err = api("cake", "routeToTrip", date="2026-10-21", route=pts[0]["route"])
+    assert err["error"] == "bad_state" and "3000001" in err["message"]
+    api("cake", "reopenPick", id=o["id"])
+    assert api("cake", "deleteOrder", id=o["id"])["ok"]
+    assert api("cake", "getOrderFile", id=f["id"])["error"] == "not_found"  # файлы удалены вместе с заявкой
+
+
+def test_finish_all_marks_day(api):
+    day = "2026-10-17"
+    left = [o for o in api("cake", "getOrders", date=day)["orders"] if o["status"] == "new"]
+    r = api("cake", "finishAll", date=day, route="Маршрут 3")
+    assert r["done"] == sum(1 for o in left if o["route"] == "Маршрут 3")
+    after = api("cake", "getOrders", date=day)["orders"]
+    assert all(o["status"] == "picked" and len(o["checked"]) == len(o["lines"]) for o in after if o["route"] == "Маршрут 3")
+    for o in after:
+        if o["route"] == "Маршрут 3":
+            api("cake", "reopenPick", id=o["id"])
+
+
+def test_big_photo_fits_body_limit(client):
+    import base64
+    from tests.conftest import call
+    big = base64.b64encode(b"\xff" * (2 * 1024 * 1024)).decode()  # 2 МБ фото — больше 64 КБ общего предела студии
+    r = call(client, "cake", "addOrderFile", user="web-x", orderId="nope", mime="image/jpeg", data=big)
+    assert r["error"] == "not_found"  # дошло до действия, а не «too_large»
+
+
+def test_orders_1810_from_photos(client, api):
+    """Заявки 18.10 (маршрут «Дзержинск») сверены с «Итого» листов; в старую базу досеиваются один раз."""
+    from bots.cake.orders_1810 import TOTALS
+    # база, где заявок 18.10 и «Красного бархата» ещё нет (как на iMac до обновления)
+    conn = cake_bot.connect()
+    conn.executescript("DELETE FROM orders WHERE point_id LIKE 'dzr-%'; DELETE FROM points WHERE id LIKE 'dzr-%';"
+                       "DELETE FROM products WHERE id='p095'; DELETE FROM places WHERE product_id='p095';"
+                       "DELETE FROM meta WHERE k='orders_1810';")
+    conn.close()
+    cake_bot._ready = False
+    r = api("cake", "getOrders", date="2026-10-18")
+    got = {o["num"]: sum(ln["qty"] + ln["bonus"] for ln in o["lines"]) for o in r["orders"] if o["num"] in TOTALS}
+    assert got == {k: v[0] for k, v in TOTALS.items()} and "Дзержинск" in r["routes"]
+    assert r["places"]["p095"] == 22  # Красный бархат — новый товар на месте 22
+    cake_bot._ready = False  # повторный старт — без дублей
+    assert sum(o["num"] in TOTALS for o in api("cake", "getOrders", date="2026-10-18")["orders"]) == 11
+
+
+def test_orders_1810b_and_per_box(api):
+    """Вторая пачка 18.10: 24 заявки = «Итого» листов по штукам и грузовым местам; шт в коробке из накладных."""
+    import math
+    from bots.cake.orders_1810b import TOTALS
+    r = api("cake", "getOrders", date="2026-10-18")
+    per = {p["id"]: p["perBox"] for p in api("cake", "getRefs")["products"]}
+    got = {o["num"]: (sum(ln["qty"] for ln in o["lines"]), sum(math.ceil(ln["qty"] / per[ln["productId"]]) for ln in o["lines"]))
+           for o in r["orders"] if o["num"] in TOTALS}
+    assert got == {k: v[:2] for k, v in TOTALS.items()} and "Маршрут 4" in r["routes"]
+    assert per["p065"] == 10 and per["p092"] == 18 and per["p096"] == 10
+
+
+def test_orders_1810c_summaries(api):
+    """Сводные по маршрутам 2–4 и Бобруйск = «ВСЕГО» листов; на 18.10 всего 39 заявок."""
+    from bots.cake.orders_1810c import TOTALS
+    r = api("cake", "getOrders", date="2026-10-18")
+    got = {o["num"]: sum(ln["qty"] for ln in o["lines"]) for o in r["orders"] if o["num"] in TOTALS}
+    assert got == {k: v[0] for k, v in TOTALS.items()} and "Бобруйск" in r["routes"]
+    assert r["places"]["p099"] == 54 and len(r["orders"]) == 39
+
+
+def test_trip_stops(api):
+    """Логист даёт водителю заявки (точки): торты рейса — из заявок, адреса видит водитель, отгрузка — только собранные."""
+    day = "2026-10-25"
+    pts = api("cake", "getOrders")["points"]
+    a = api("cake", "saveOrder", num="T-1", date=day, pointId=pts[0]["id"], lines=[{"productId": "p001", "qty": 3, "bonus": 1}])["order"]
+    b = api("cake", "saveOrder", num="T-2", date=day, pointId=pts[1]["id"], lines=[{"productId": "p001", "qty": 2}, {"productId": "p002", "qty": 1}])["order"]
+    other = api("cake", "saveOrder", num="T-3", date="2026-10-26", pointId=pts[2]["id"], lines=[{"productId": "p002", "qty": 1}])["order"]
+    city = api("cake", "getRefs")["cities"][0]["id"]
+    t = api("cake", "saveTrip", date=day, cityId=city, driverId="dr-ivan", lines=[])["trip"]
+    assert api("cake", "setTripOrders", id=t["id"], orderIds=[other["id"]])["error"] == "bad_request"  # другая дата
+    t = api("cake", "setTripOrders", id=t["id"], orderIds=[b["id"], a["id"]])["trip"]
+    assert [s["num"] for s in t["stops"]] == ["T-2", "T-1"] and t["stops"][0]["address"] == pts[1]["address"]
+    assert sorted((l["productId"], l["qty"]) for l in t["lines"]) == [("p001", 6), ("p002", 1)]
+    t2 = api("cake", "saveTrip", date=day, route="Маршрут 7", lines=[])["trip"]  # без города — по маршруту
+    assert next(c for c in api("cake", "getRefs")["cities"] if c["id"] == t2["cityId"])["name"] == "Маршрут 7"
+    assert api("cake", "saveTrip", date=day, lines=[])["error"] == "bad_request"
+    assert api("cake", "setTripOrders", id=t2["id"], orderIds=[a["id"]])["error"] == "bad_state"  # уже в другом рейсе
+    api("cake", "saveOrder", id=a["id"], num="T-1", date=day, pointId=pts[0]["id"], lines=[{"productId": "p001", "qty": 5}])
+    t = next(x for x in api("cake", "getTrips")["trips"] if x["id"] == t["id"])
+    assert sorted((l["productId"], l["qty"]) for l in t["lines"]) == [("p001", 7), ("p002", 1)]  # правка заявки — в рейсе
+    assert "Не собраны: №T-2, №T-1" in api("cake", "shipTrip", id=t["id"])["message"]
+    api("cake", "adjustStock", productId="p001", actual=50)
+    api("cake", "adjustStock", productId="p002", actual=50)
+    for o in (a, b):
+        api("cake", "finishPick", id=o["id"], all=True, boxes=1)
+    t = api("cake", "shipTrip", id=t["id"])["trip"]
+    assert t["status"] == "shipped" and t["taraOut"] == [{"taraId": "box", "qty": 2}] and len(t["stops"]) == 2
+    mine = api("cake", "getMyTrips", driverId="dr-ivan")["trips"]
+    assert [s["num"] for s in next(x for x in mine if x["id"] == t["id"])["stops"]] == ["T-2", "T-1"]
+    assert api("cake", "setTripOrders", id=t["id"], orderIds=[])["error"] == "bad_state"
+
+
+
+def test_stop_column_migration(api):
+    """База iMac без orders.stop — колонка добавится при старте, заявки и рейсы целы."""
+    from bots.cake import bot as cake_bot
+    n = len(api("cake", "getOrders")["orders"])
+    conn = cake_bot.connect()
+    conn.executescript("ALTER TABLE orders DROP COLUMN stop;")
+    conn.close()
+    cake_bot._ready = False
+    assert len(api("cake", "getOrders")["orders"]) == n
+    assert all("stops" in t for t in api("cake", "getTrips")["trips"])
+
+
+def test_stop_report(api, monkeypatch):
+    """Водитель сдаёт каждую точку: всё ок или недостача / брак / пересорт + фото; чужой рейс — нельзя."""
+    import base64
+    day = "2026-10-27"
+    pts = api("cake", "getOrders")["points"]
+    a = api("cake", "saveOrder", num="S-1", date=day, pointId=pts[0]["id"], lines=[{"productId": "p001", "qty": 5}, {"productId": "p002", "qty": 2, "bonus": 1}])["order"]
+    b = api("cake", "saveOrder", num="S-2", date=day, pointId=pts[1]["id"], lines=[{"productId": "p001", "qty": 1}])["order"]
+    for pid in ("p001", "p002"):
+        api("cake", "adjustStock", productId=pid, actual=50)
+    t = api("cake", "saveTrip", date=day, route="Маршрут 8", driverId="dr-ivan", lines=[])["trip"]
+    api("cake", "setTripOrders", id=t["id"], orderIds=[a["id"], b["id"]])
+    assert api("cake", "reportStop", orderId=a["id"])["error"] == "bad_state"  # рейс ещё не уехал
+    for o in (a, b):
+        api("cake", "finishPick", id=o["id"], all=True, boxes=1)
+    r = api("cake", "shipTrip", id=t["id"]); assert r["ok"], r
+    assert api("cake", "reportStop", orderId=a["id"], lines=[{"productId": "p001", "short": 4, "spoiled": 2}])["error"] == "bad_request"  # больше, чем везли
+    assert api("cake", "reportStop", orderId=a["id"], lines=[{"productId": "p009", "short": 1}])["error"] == "not_found"
+    t = api("cake", "reportStop", orderId=a["id"], comment="Коробка помята",
+            lines=[{"productId": "p001", "short": 1, "spoiled": 1}, {"productId": "p002", "resort": 1, "resortTo": "p003"}])["trip"]
+    s = t["stops"][0]
+    assert s["report"]["ok"] is False and s["report"]["lines"][1] == {"productId": "p002", "short": 0, "spoiled": 0, "resort": 1, "resortTo": "p003"}
+    assert api("cake", "reportStop", orderId=b["id"])["trip"]["stops"][1]["report"]["ok"] is True  # всё сдано
+    jpg = base64.b64encode(b"\xff\xd8\xff\xe0" + b"0" * 100).decode()
+    assert api("cake", "addStopPhoto", orderId=a["id"], mime="application/pdf", data=jpg)["error"] == "bad_request"
+    assert api("cake", "addStopPhoto", orderId=a["id"], mime="image/jpeg", data=jpg)["file"]["name"] == "Фото с точки"
+    mine = api("cake", "getMyTrips", driverId="dr-ivan")["trips"]
+    assert next(x for x in mine if x["id"] == t["id"])["stops"][0]["photos"] == 1
+    monkeypatch.setenv("TGS_CAKE_ADMINS", "111")
+    api("cake", "saveStaff", user="111", id="dr-sergey", name="Сергей", role="driver", tgId="555")
+    assert api("cake", "reportStop", user="555", orderId=a["id"])["error"] == "forbidden"
+    api("cake", "saveStaff", user="111", id="dr-ivan", name="Иван", role="driver", tgId="777")
+    assert api("cake", "reportStop", user="777", orderId=b["id"])["ok"]
+
+
+def test_tara_back_on_loading(api):
+    """На погрузке нового рейса водитель сдаёт ящики с прошлых: больше, чем на руках, — нельзя."""
+    day = "2026-10-28"
+    pts = api("cake", "getOrders")["points"]
+    debt = lambda: next(d for d in api("cake", "getTara")["drivers"] if d["id"] == "dr-pavel")["tara"]["box"]["debt"]  # noqa: E731
+    api("cake", "taraMove", driverId="dr-pavel", taraId="box", kind="out", qty=5)
+    had = debt()
+    o = api("cake", "saveOrder", num="B-1", date=day, pointId=pts[0]["id"], lines=[{"productId": "p001", "qty": 1}])["order"]
+    api("cake", "adjustStock", productId="p001", actual=20)
+    api("cake", "finishPick", id=o["id"], all=True, boxes=2)
+    t = api("cake", "saveTrip", date=day, route="Маршрут 9", driverId="dr-pavel", lines=[])["trip"]
+    api("cake", "setTripOrders", id=t["id"], orderIds=[o["id"]])
+    assert api("cake", "shipTrip", id=t["id"], taraBack=[{"taraId": "box", "qty": had + 1}])["error"] == "bad_request"
+    assert api("cake", "shipTrip", id=t["id"], taraBack=[{"taraId": "box", "qty": 3}])["trip"]["status"] == "shipped"
+    assert debt() == had - 3 + 2  # сдал 3 старых, взял 2 под этот рейс
+
+
+
+def test_orders_2710_grodno(api):
+    """Гродно 2 на 27.10: 25 заявок = «Итого» листов; «Гродно 2» — свой город, а не «Маршрут 2»."""
+    from bots.cake.orders_2710 import TOTALS
+    from bots.cake.orders_seed import route_city
+    r = api("cake", "getOrders", date="2026-10-27")
+    got = {o["num"]: sum(ln["qty"] for ln in o["lines"]) for o in r["orders"] if o["num"] in TOTALS}
+    assert got == {k: v[0] for k, v in TOTALS.items()} and "Гродно 2" in r["routes"]
+    conn = cake_bot.connect()
+    try:
+        assert route_city(conn, "Гродно 2") != route_city(conn, "Маршрут 2") == "route-2"
+    finally:
+        conn.close()
+
+
+def test_trip_boxes_from_per_box(api):
+    """Ящики рейса без внесённых в заявки — по «шт в ящике»; не задано — оценка (торт 2, остальное 10)."""
+    from bots.cake.stops import calc_boxes
+    conn = cake_bot.connect()
+    try:
+        conn.execute("UPDATE products SET per_box=1 WHERE id='p053'")
+        # торт p007: 3 шт по 2 → 2; картошка p049: 15 шт по 14 → 2; муравейка p053 (не задано): 11 шт по 10 → 2
+        assert calc_boxes(conn, {"p007": 3, "p049": 15, "p053": 11}) == 6
+    finally:
+        conn.close()
